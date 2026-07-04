@@ -13,7 +13,7 @@
       --primary: #003087; --primary-light: #0060B6; --accent: #C8102E;
       --success: #1a7a3c; --warning: #e68900; --danger: #c0392b;
       --bg: #EDF1F8; --card: #ffffff; --text: #1a2535; --text-light: #6b7c93;
-      --border: #cdd6e8; --sidebar-w: 230px;
+      --border: #cdd6e8; --sidebar-w: 200px;
     }
     body { font-family: 'Segoe UI', Arial, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
     .header { background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%); color: white; padding: 0 24px; height: 58px; display: flex; align-items: center; justify-content: space-between; position: fixed; top: 0; left: 0; right: 0; z-index: 100; box-shadow: 0 2px 8px rgba(0,0,0,0.25); border-bottom: 3px solid var(--accent); }
@@ -22,7 +22,7 @@
     .header-sub { font-size: 11px; opacity: 0.8; }
     .header-date { font-size: 12px; opacity: 0.9; }
     .sidebar { position: fixed; top: 58px; left: 0; bottom: 0; width: var(--sidebar-w); background: var(--primary); padding: 16px 0; overflow-y: auto; z-index: 90; }
-    .nav-item { display: flex; align-items: center; gap: 10px; padding: 11px 20px; color: rgba(255,255,255,0.75); cursor: pointer; font-size: 13.5px; transition: all 0.2s; border-left: 3px solid transparent; }
+    .nav-item { display: flex; align-items: center; gap: 10px; padding: 11px 16px; color: rgba(255,255,255,0.75); cursor: pointer; font-size: 13.5px; transition: all 0.2s; border-left: 3px solid transparent; white-space: nowrap; }
     .nav-item:hover { background: rgba(255,255,255,0.1); color: white; }
     .nav-item.active { background: rgba(255,255,255,0.15); color: white; border-left-color: var(--accent); font-weight: 600; }
     .nav-icon { font-size: 17px; width: 22px; text-align: center; }
@@ -33,6 +33,17 @@
     .card { background: var(--card); border-radius: 10px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.07); margin-bottom: 20px; }
     .card-title { font-size: 14px; font-weight: 600; color: var(--text-light); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 14px; }
     .table-wrap { overflow-x: auto; }
+    /* Click hàng nhân viên → hiện nút sửa/xoá */
+    #table-nv tbody tr.nv-clickable { cursor: pointer; }
+    #table-nv tbody tr.nv-clickable:hover td { background: #f3f8ff; }
+    #table-nv tbody tr.nv-selected td { background: #e4f0ff !important; }
+    .nv-action-row td { padding: 8px 14px !important; background: #eef5ff; border-bottom: 1.5px solid var(--primary-light); text-align: right; }
+    .nv-act-btn { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; font-weight: 600; padding: 5px 13px; border-radius: 7px; cursor: pointer; border: 1px solid var(--border); background: #fff; transition: all .15s; }
+    .nv-act-btn svg { width: 15px; height: 15px; }
+    .nv-act-edit { color: var(--primary); border-color: #b0cde8; }
+    .nv-act-edit:hover { background: #dceaf7; }
+    .nv-act-del { color: var(--danger); border-color: #eab7b2; margin-left: 8px; }
+    .nv-act-del:hover { background: #fdecea; }
     table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
     th { background: #dde6f3; padding: 10px 12px; text-align: left; font-weight: 600; color: var(--primary); font-size: 12px; text-transform: uppercase; letter-spacing: 0.4px; border-bottom: 2px solid var(--border); }
     td { padding: 10px 12px; border-bottom: 1px solid var(--border); vertical-align: middle; }
@@ -198,12 +209,18 @@
     <!-- Panel nhóm nội bộ -->
     <div id="nhom-panel" style="display:none;margin-bottom:16px;">
       <div class="card" style="padding:16px 20px;">
-        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:14px;">
-          <div style="font-size:14px;font-weight:700;color:var(--primary);">📁 Nhóm nội bộ</div>
-          <button id="btn-tao-nhom" class="btn btn-primary btn-sm" onclick="openModalNhom(null)" style="display:none;">➕ Tạo nhóm</button>
+        <div id="nhom-head" onclick="toggleNhomPanel()" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;cursor:pointer;user-select:none;">
+          <div style="display:flex;align-items:center;gap:8px;font-size:14px;font-weight:700;color:var(--primary);">
+            <svg id="nhom-chevron" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="transition:transform .2s;flex-shrink:0;" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;" aria-hidden="true"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/></svg>
+            <span>Nhóm nội bộ</span>
+          </div>
+          <button id="btn-tao-nhom" class="btn btn-primary btn-sm" onclick="event.stopPropagation();openModalNhom(null)" style="display:none;">➕ Tạo nhóm</button>
         </div>
-        <div id="nhom-list" style="display:flex;flex-wrap:wrap;gap:8px;"></div>
-        <div id="nhom-empty" style="display:none;font-size:13px;color:var(--text-light);font-style:italic;">Chưa có nhóm nào. <span id="nhom-empty-hint"></span></div>
+        <div id="nhom-collapse" style="margin-top:14px;">
+          <div id="nhom-list" style="display:flex;flex-wrap:wrap;gap:8px;"></div>
+          <div id="nhom-empty" style="display:none;font-size:13px;color:var(--text-light);font-style:italic;">Chưa có nhóm nào. <span id="nhom-empty-hint"></span></div>
+        </div>
       </div>
     </div>
 
@@ -222,11 +239,10 @@
             <tr id="thead-nv-row">
               <th rowspan="2" style="width:40px;text-align:center;">STT</th>
               <th rowspan="2">Danh số</th>
-              <th rowspan="2">Họ và Tên</th>
+              <th rowspan="2" style="min-width:240px;">Họ và Tên</th>
               <th rowspan="2">Chức danh</th>
               <th rowspan="2" id="th-donvi-or-nhom">Nhóm</th>
               <th colspan="6" style="text-align:center;background:#d0e4f7;color:var(--primary);font-size:11px;padding:5px 8px;">LẦN CẤP GẦN NHẤT</th>
-              <th rowspan="2" style="text-align:center;">Thao tác</th>
             </tr>
             <tr>
               <th style="text-align:center;min-width:80px;">Quần áo</th>
@@ -1323,10 +1339,6 @@ function _nvRow(n,idx,showDrag,showNhomCol,donViFilter){
   const canEdit=canEditUnit(_currentUnit);
   const draggable=showDrag&&canEdit;
   const dragAttrs=draggable?`draggable="true" data-nv-id="${n.id}"`:'';
-  const actionBtns=canEdit
-    ?`<button class="btn btn-outline btn-sm" onclick="editNV('${n.id}')">✏️</button>
-       <button class="btn btn-danger btn-sm" style="margin-left:4px;" onclick="deleteNV('${n.id}')">🗑️</button>`
-    :`<span style="font-size:12px;color:var(--text-light);">👁️</span>`;
   const sttCell=draggable
     ?`<td style="text-align:center;color:var(--text-light);font-size:13px;cursor:grab;" title="Kéo để sắp xếp">⠿ ${idx+1}</td>`
     :`<td style="text-align:center;color:var(--text-light);font-size:13px;">${idx+1}</td>`;
@@ -1349,7 +1361,7 @@ function _nvRow(n,idx,showDrag,showNhomCol,donViFilter){
   const _wf={}; _warns.forEach(w=>_wf[w.field]=w);
   const _wc=(field,inner)=>{const w=_wf[field];return`<td style="text-align:center;${w?'background:#fdecea;':''}">${inner}${w?' <span style="color:#c0392b;">⚠️</span>':''}</td>`;};
   const _warnBtn=_warns.length?`<button class="btn btn-sm" onclick="openNVWarning('${n.id}')" title="${_warns.length} cảnh báo tháng cấp" style="background:#fff3cd;border:1px solid #e0a800;color:#8a6d00;padding:1px 7px;margin-left:6px;border-radius:6px;font-size:11.5px;font-weight:700;cursor:pointer;">⚠️ ${_warns.length}</button>`:'';
-  return`<tr data-id="${n.id}" ${dragAttrs}>
+  return`<tr data-id="${n.id}" ${dragAttrs}${canEdit?` class="nv-clickable" onclick="nvRowClick(event,'${n.id}')"`:''}>
     ${sttCell}
     <td><code style="background:#f4f7fa;padding:2px 6px;border-radius:4px;">${n.danhSo}</code></td>
     <td><strong>${n.ten}</strong>${genderIcon}${_warnBtn}${moiBadge}</td>
@@ -1361,7 +1373,6 @@ function _nvRow(n,idx,showDrag,showNhomCol,donViFilter){
     ${_wc('thangCapKinh',_fThang(n.thangCapKinh))}
     ${_wc('thangCapAoMua',_fThang(n.thangCapAoMua))}
     ${n.chucDanh==='Thợ hàn'?_wc('thangCapQAHan',_fThang(n.thangCapQAHan)):`<td style="text-align:center;"><span style="color:var(--text-light);font-size:11px;">N/A</span></td>`}
-    <td style="text-align:center;">${actionBtns}</td>
   </tr>`;
 }
 
@@ -1622,10 +1633,37 @@ function _populateChucDanhSelect(selectedValue){
 // Nhóm nội bộ
 function nextGroupId(donVi){const existing=daGroups.filter(g=>g.donVi===donVi).map(g=>g.id);const letters='ABCDEFGHIJKLMNOPQRSTUVWXYZ';for(let i=0;i<letters.length;i++){if(!existing.includes(letters[i]))return letters[i];}return'G'+existing.length;}
 function canManageNhom(donVi){return isAdmin();}
+let _nhomExpanded=true;
+function _applyNhomCollapse(){
+  const c=document.getElementById('nhom-collapse');
+  const ch=document.getElementById('nhom-chevron');
+  const bt=document.getElementById('btn-tao-nhom');
+  if(c)c.style.display=_nhomExpanded?'block':'none';
+  if(ch)ch.style.transform=_nhomExpanded?'rotate(0deg)':'rotate(-90deg)';
+  if(bt)bt.style.display=(_nhomExpanded&&bt.dataset.can==='1')?'':'none';
+}
+function toggleNhomPanel(){ _nhomExpanded=!_nhomExpanded; _applyNhomCollapse(); }
+// Click vào hàng nhân viên → hiện nút Sửa/Xoá (chỉ khi có quyền chỉnh)
+function nvRowClick(ev,id){
+  if(ev.target.closest('button,a,select,input,label'))return;
+  if(!canEditUnit(_currentUnit))return;
+  const tr=ev.currentTarget;
+  const next=tr.nextElementSibling;
+  const openForThis=next&&next.classList&&next.classList.contains('nv-action-row')&&next.dataset.for===String(id);
+  document.querySelectorAll('#table-nv tr.nv-action-row').forEach(r=>r.remove());
+  document.querySelectorAll('#table-nv tr.nv-selected').forEach(r=>r.classList.remove('nv-selected'));
+  if(openForThis)return;
+  tr.classList.add('nv-selected');
+  const ar=document.createElement('tr');
+  ar.className='nv-action-row'; ar.dataset.for=String(id);
+  ar.innerHTML=`<td colspan="11"><button class="nv-act-btn nv-act-edit" onclick="editNV('${id}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>Sửa</button><button class="nv-act-btn nv-act-del" onclick="deleteNV('${id}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg>Xoá</button></td>`;
+  tr.after(ar);
+}
 function renderNhomPanel(donVi){
   const panel=document.getElementById('nhom-panel');if(!donVi){panel.style.display='none';return;}
   panel.style.display='block';const canManage=canManageNhom(donVi);
-  const btnTao=document.getElementById('btn-tao-nhom');if(btnTao)btnTao.style.display=canManage?'':'none';
+  const btnTao=document.getElementById('btn-tao-nhom');if(btnTao)btnTao.dataset.can=canManage?'1':'0';
+  _applyNhomCollapse();
   const groups=daGroups.filter(g=>g.donVi===donVi);
   const list=document.getElementById('nhom-list');const empty=document.getElementById('nhom-empty');const hint=document.getElementById('nhom-empty-hint');
   if(!groups.length){list.style.display='none';empty.style.display='block';hint.textContent=canManage?'Nhấn "➕ Tạo nhóm" để bắt đầu.':'';}
