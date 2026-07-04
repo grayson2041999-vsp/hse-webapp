@@ -1547,11 +1547,11 @@
       sops.forEach(function(s){
         html += '<tr>'+
           '<td><span style="font-family:monospace;font-size:12.5px;color:var(--primary);font-weight:600">'+esc(s.ma_td||'—')+'</span></td>'+
-          '<td><b>'+esc(s.ten_sop||'')+'</b></td>'+
+          '<td style="font-weight:700;color:var(--text);font-size:13.5px">'+esc(s.ten_sop||'')+'</td>'+
           '<td style="color:var(--text-muted)">'+esc(s.don_vi||'—')+'</td>'+
           '<td style="color:var(--text-muted);font-size:12.5px">'+esc(fmtSopDate(s.ngay_pd))+'</td>'+
           '<td style="text-align:center">'+
-            (s.link ? '<a href="'+esc(s.link)+'" target="_blank" style="display:inline-flex;align-items:center;gap:5px;background:var(--primary);color:white;text-decoration:none;padding:5px 12px;border-radius:6px;font-size:12.5px;font-weight:600"><svg class="lic-emoji" width="1.05em" height="1.05em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex-shrink:0" aria-hidden="true"><path d="M6 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.704.706l3.588 3.588A2.4 2.4 0 0 1 20 8v12a2 2 0 0 1-2 2z"/><path d="M14 2v5a1 1 0 0 0 1 1h5"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/></svg> Xem</a>' : '<span style="color:var(--text-muted);font-size:12.5px">—</span>')+
+            (s.link ? '<a href="'+esc(s.link)+'" target="_blank" title="Xem tài liệu" style="display:inline-flex;align-items:center;gap:5px;background:var(--primary);color:white;text-decoration:none;padding:5px 12px;border-radius:6px;font-size:12.5px;font-weight:600"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg> Xem</a>' : '<span title="Chưa đính kèm tài liệu" style="display:inline-flex;color:var(--text-muted)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v5h5"/><path d="M16 13H8"/><path d="M16 17H8"/><path d="M10 9H8"/></svg></span>')+
           '</td>'+
           (admin ?
             '<td style="text-align:center">'+
