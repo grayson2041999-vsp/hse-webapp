@@ -657,7 +657,7 @@
     if(u){
       greeting = 'Xin chào <b>'+esc(u.fullname||u.username)+'</b>';
     } else {
-      greeting = 'Bảng điều khiển hệ thống Quản lý HSE · <a href="#" id="dashLoginLink" style="color:var(--brand);font-weight:600">Đăng nhập</a> để thao tác và nhập liệu.';
+      greeting = '<a href="#" id="dashLoginLink" style="color:var(--brand);font-weight:600">Đăng nhập</a> để thao tác và nhập liệu.';
     }
 
     wrap.appendChild(el("div","",
