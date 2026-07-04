@@ -302,9 +302,9 @@
 
   <!-- Tabs -->
   <div class="admin-tabs">
-    <div class="admin-tab active" id="phieu-tab-quy"    onclick="switchPhieuTab('quy')">📅 Phiếu quý</div>
-    <div class="admin-tab"        id="phieu-tab-nvmoi"  onclick="switchPhieuTab('nvmoi')">🆕 Nhân viên mới <span id="nvmoi-badge" style="display:none;background:var(--accent);color:#fff;font-size:10px;border-radius:10px;padding:1px 7px;margin-left:4px;"></span></div>
-    <div class="admin-tab"        id="phieu-tab-choduyet" onclick="switchPhieuTab('choduyet')" style="display:none;">⏳ Chờ duyệt <span id="choduyet-badge" style="display:none;background:var(--accent);color:#fff;font-size:10px;border-radius:10px;padding:1px 7px;margin-left:4px;"></span></div>
+    <div class="admin-tab active" id="phieu-tab-quy"    onclick="switchPhieuTab('quy')"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:5px" aria-hidden="true"><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M16 2v4"/><path d="M8 2v4"/><path d="M3 10h18"/></svg>Phiếu quý</div>
+    <div class="admin-tab"        id="phieu-tab-nvmoi"  onclick="switchPhieuTab('nvmoi')"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:5px" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" x2="19" y1="8" y2="14"/><line x1="22" x2="16" y1="11" y2="11"/></svg>Nhân viên mới <span id="nvmoi-badge" style="display:none;background:var(--accent);color:#fff;font-size:10px;border-radius:10px;padding:1px 7px;margin-left:4px;"></span></div>
+    <div class="admin-tab"        id="phieu-tab-choduyet" onclick="switchPhieuTab('choduyet')" style="display:none;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:5px" aria-hidden="true"><path d="M5 22h14"/><path d="M5 2h14"/><path d="M17 22v-4.172a2 2 0 0 0-.586-1.414L12 12l-4.414 4.414A2 2 0 0 0 7 17.828V22"/><path d="M7 2v4.172a2 2 0 0 0 .586 1.414L12 12l4.414-4.414A2 2 0 0 0 17 6.172V2"/></svg>Chờ duyệt <span id="choduyet-badge" style="display:none;background:var(--accent);color:#fff;font-size:10px;border-radius:10px;padding:1px 7px;margin-left:4px;"></span></div>
   </div>
 
   <!-- ══ Tab: Phiếu quý ══ -->
@@ -326,10 +326,10 @@
         <select id="bc-don-vi" onchange="renderBaoCaoQuy()" style="padding:9px 14px;border:1.5px solid var(--border);border-radius:7px;font-size:13.5px;min-width:180px;"></select>
       </div>
       <div style="display:flex;gap:8px;margin-left:auto;flex-wrap:wrap;align-items:center;">
-        <button class="btn btn-outline" onclick="fillTheoTinhMuc()" style="font-size:12.5px;border-color:var(--accent);color:var(--accent);">⚡ Điền theo định mức</button>
-        <button class="btn btn-primary" onclick="exportPhieuWord()">📄 Xuất Word</button>
-        <button class="btn btn-outline" onclick="exportChiTietExcel()">📊 Xuất Excel</button>
-        <button class="btn btn-success" onclick="submitPhieuQuy()" id="btn-submit-quy">✅ Gửi phê duyệt</button>
+        <button class="btn btn-outline" onclick="fillTheoTinhMuc()" style="font-size:12.5px;border-color:var(--accent);color:var(--accent);"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px" aria-hidden="true"><path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z"/></svg>Điền theo định mức</button>
+        <button class="btn btn-primary" onclick="exportPhieuWord()"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px" aria-hidden="true"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v5h5"/><path d="M16 13H8"/><path d="M16 17H8"/><path d="M10 9H8"/></svg>Xuất Word</button>
+        <button class="btn btn-outline" onclick="exportChiTietExcel()"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px" aria-hidden="true"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v5h5"/><path d="M8 13h2"/><path d="M14 13h2"/><path d="M8 17h2"/><path d="M14 17h2"/></svg>Xuất Excel</button>
+        <button class="btn btn-success" onclick="submitPhieuQuy()" id="btn-submit-quy"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>Gửi phê duyệt</button>
       </div>
     </div>
 
@@ -337,7 +337,7 @@
     <div id="quy-status-bar" style="display:none;padding:10px 14px;border-radius:8px;margin-bottom:14px;font-size:13px;font-weight:600;"></div>
 
     <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:10px;">
-      <div class="card-title" style="margin:0;">👷 Danh sách cấp phát theo nhân viên</div>
+      <div class="card-title" style="margin:0;display:flex;align-items:center;gap:7px;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 18a1 1 0 0 1-1-1v-2a1 1 0 0 1 1-1h20a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1"/><path d="M10 10V5a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v5"/><path d="M4 15v-3a6 6 0 0 1 6-6"/><path d="M14 6a6 6 0 0 1 6 6v3"/></svg>Danh sách cấp phát theo nhân viên</div>
     </div>
     <div class="table-wrap" style="margin-bottom:20px;">
       <table>
@@ -355,7 +355,7 @@
       </table>
     </div>
 
-    <div class="card-title" style="margin-bottom:10px;">📦 Tổng hợp trang bị cấp phát trong quý</div>
+    <div class="card-title" style="margin-bottom:10px;display:flex;align-items:center;gap:7px;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 21.73a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73z"/><path d="M12 22V12"/><path d="m3.3 7 8.7 5 8.7-5"/></svg>Tổng hợp trang bị cấp phát trong quý</div>
     <div class="table-wrap">
       <table>
         <thead><tr>
@@ -376,12 +376,12 @@
     <div class="card" style="border-radius:0 10px 10px 10px;">
       <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:16px;">
         <div>
-          <div class="card-title" style="margin:0;">🆕 Phiếu cấp BHLĐ cho nhân viên mới</div>
+          <div class="card-title" style="margin:0;display:flex;align-items:center;gap:7px;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" x2="19" y1="8" y2="14"/><line x1="22" x2="16" y1="11" y2="11"/></svg>Phiếu cấp BHLĐ cho nhân viên mới</div>
           <div style="font-size:12px;color:var(--text-light);margin-top:4px;">Danh sách nhân viên chưa được cấp BHLĐ lần đầu</div>
         </div>
-        <button class="btn btn-outline" onclick="exportPhieuNVMoiWord()" id="btn-export-nvmoi" style="display:none;">📄 Xuất Word</button>
-        <button class="btn btn-outline" onclick="exportPhieuNVMoiExcel()" style="display:none;" id="btn-export-nvmoi-xl">📊 Xuất Excel</button>
-        <button class="btn btn-success" onclick="submitPhieuNVMoi()" id="btn-submit-nvmoi">✅ Gửi phê duyệt</button>
+        <button class="btn btn-outline" onclick="exportPhieuNVMoiWord()" id="btn-export-nvmoi" style="display:none;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px" aria-hidden="true"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v5h5"/><path d="M16 13H8"/><path d="M16 17H8"/><path d="M10 9H8"/></svg>Xuất Word</button>
+        <button class="btn btn-outline" onclick="exportPhieuNVMoiExcel()" style="display:none;" id="btn-export-nvmoi-xl"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px" aria-hidden="true"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v5h5"/><path d="M8 13h2"/><path d="M14 13h2"/><path d="M8 17h2"/><path d="M14 17h2"/></svg>Xuất Excel</button>
+        <button class="btn btn-success" onclick="submitPhieuNVMoi()" id="btn-submit-nvmoi"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>Gửi phê duyệt</button>
       </div>
       <div id="nvmoi-empty" style="display:none;text-align:center;padding:40px;color:var(--text-light);">
         Không có nhân viên mới nào cần cấp BHLĐ lần đầu.
@@ -393,12 +393,12 @@
   <!-- ══ Tab: Chờ duyệt (Admin) ══ -->
   <div id="phieu-panel-choduyet" style="display:none;">
     <div class="card" style="border-radius:0 10px 10px 10px;">
-      <div class="card-title" style="margin-bottom:14px;">⏳ Phiếu yêu cầu đang chờ phê duyệt</div>
+      <div class="card-title" style="margin-bottom:14px;display:flex;align-items:center;gap:7px;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 22h14"/><path d="M5 2h14"/><path d="M17 22v-4.172a2 2 0 0 0-.586-1.414L12 12l-4.414 4.414A2 2 0 0 0 7 17.828V22"/><path d="M7 2v4.172a2 2 0 0 0 .586 1.414L12 12l4.414-4.414A2 2 0 0 0 17 6.172V2"/></svg>Phiếu yêu cầu đang chờ phê duyệt</div>
       <div id="choduyet-empty" style="display:none;text-align:center;padding:40px;color:var(--text-light);">Không có phiếu nào đang chờ duyệt.</div>
       <div id="choduyet-list"></div>
     </div>
     <div class="card" style="margin-top:16px;">
-      <div class="card-title" style="margin-bottom:14px;">✅ Phiếu đã phê duyệt (20 phiếu gần nhất)</div>
+      <div class="card-title" style="margin-bottom:14px;display:flex;align-items:center;gap:7px;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>Phiếu đã phê duyệt (20 phiếu gần nhất)</div>
       <div id="daduyet-list"><div style="text-align:center;padding:20px;color:var(--text-light);">Đang tải...</div></div>
     </div>
   </div>
@@ -1768,7 +1768,12 @@ function _ic(n,s){var P={
   back:'<path d="m12 19-7-7 7-7"/><path d="M19 12H5"/>',
   check:'<path d="M20 6 9 17l-5-5"/>',
   cal:'<rect width="18" height="18" x="3" y="4" rx="2"/><path d="M16 2v4"/><path d="M8 2v4"/><path d="M3 10h18"/>',
-  calc:'<rect width="16" height="20" x="4" y="2" rx="2"/><line x1="8" x2="16" y1="6" y2="6"/><line x1="16" x2="16" y1="14" y2="18"/><path d="M12 10h.01"/><path d="M8 10h.01"/><path d="M8 14h.01"/><path d="M12 14h.01"/><path d="M8 18h.01"/><path d="M12 18h.01"/>'
+  calc:'<rect width="16" height="20" x="4" y="2" rx="2"/><line x1="8" x2="16" y1="6" y2="6"/><line x1="16" x2="16" y1="14" y2="18"/><path d="M12 10h.01"/><path d="M8 10h.01"/><path d="M8 14h.01"/><path d="M12 14h.01"/><path d="M8 18h.01"/><path d="M12 18h.01"/>',
+  hour:'<path d="M5 22h14"/><path d="M5 2h14"/><path d="M17 22v-4.172a2 2 0 0 0-.586-1.414L12 12l-4.414 4.414A2 2 0 0 0 7 17.828V22"/><path d="M7 2v4.172a2 2 0 0 0 .586 1.414L12 12l4.414-4.414A2 2 0 0 0 17 6.172V2"/>',
+  zap:'<path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z"/>',
+  x:'<path d="M18 6 6 18"/><path d="m6 6 12 12"/>',
+  hat:'<path d="M2 18a1 1 0 0 1-1-1v-2a1 1 0 0 1 1-1h20a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1"/><path d="M10 10V5a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v5"/><path d="M4 15v-3a6 6 0 0 1 6-6"/><path d="M14 6a6 6 0 0 1 6 6v3"/>',
+  userplus:'<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" x2="19" y1="8" y2="14"/><line x1="22" x2="16" y1="11" y2="11"/>'
 };var p=P[n]||'';var sz=s||15;return '<svg width="'+sz+'" height="'+sz+'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;flex-shrink:0" aria-hidden="true">'+p+'</svg>';}
 function renderDanhMuc(){
   const wrap=document.getElementById('accordion-nhomtb');if(!wrap)return;
@@ -2458,30 +2463,30 @@ function renderChoduyetTab(){
   else{
     emptyEl.style.display='none';
     const changeCards=pendingChanges.map(c=>{
-      const tLabel={add:'➕ Thêm nhân viên',edit:'✏️ Sửa thông tin',delete:'🗑️ Xoá nhân viên'}[c.type]||'Thay đổi';
+      const tLabel={add:_ic('plus',14)+' Thêm nhân viên',edit:_ic('edit',14)+' Sửa thông tin',delete:_ic('del',14)+' Xoá nhân viên'}[c.type]||'Thay đổi';
       return `<div style="border:1.5px solid #f9c74f;border-radius:10px;padding:16px;margin-bottom:16px;background:#fffdf5;">
         <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:8px;">
           <div><strong style="color:var(--primary);">${tLabel}: ${_escH(c.nvTen||'')}</strong> <span style="font-size:12px;color:var(--text-light);">${_escH(c.donVi||'')}</span>
             <div style="font-size:12px;color:var(--text-light);margin-top:3px;">Gửi bởi: ${_escH(c.submittedBy||'—')} · ${c.submittedAt?new Date(c.submittedAt).toLocaleDateString('vi-VN'):''}</div></div>
           <div style="display:flex;gap:8px;flex-wrap:wrap;">
-            <button class="btn btn-success btn-sm" onclick="approveChange('${c.id}')">✅ Đồng ý</button>
-            <button class="btn btn-danger btn-sm" onclick="rejectChange('${c.id}')">❌ Từ chối</button>
+            <button class="btn btn-success btn-sm" onclick="approveChange('${c.id}')">${_ic('check',14)} Đồng ý</button>
+            <button class="btn btn-danger btn-sm" onclick="rejectChange('${c.id}')">${_ic('x',14)} Từ chối</button>
           </div>
         </div>
         ${c.diffHtml||''}
       </div>`;
     }).join('');
     pendingEl.innerHTML=changeCards+pending.map(p=>{
-      const label=p.type==='nv_moi'?`🆕 NV mới: ${_escH(p.nvTen||'')} (${_escH(p.chucDanh||'')}) – ${_escH(p.donVi||'')}`:`📅 Phiếu quý ${p.quyStr} – ${_escH(p.donVi||'')}`;
+      const label=p.type==='nv_moi'?`${_ic('userplus',14)} NV mới: ${_escH(p.nvTen||'')} (${_escH(p.chucDanh||'')}) – ${_escH(p.donVi||'')}`:`${_ic('cal',14)} Phiếu quý ${p.quyStr} – ${_escH(p.donVi||'')}`;
       const items=_parsePhieuItems(p.items);
       const itemRows=items.map((it,i)=>`<tr><td style="padding:4px 8px;font-size:12px;">${i+1}</td><td style="padding:4px 8px;font-size:12px;">${_escH(it.ten)}</td><td style="padding:4px 8px;font-size:12px;text-align:center;">${it.soLuongDinhMuc||''}</td><td style="padding:4px 8px;font-size:12px;text-align:center;font-weight:600;">${it.thucTe!==''&&it.thucTe!==undefined?it.thucTe:it.soLuongDinhMuc||'—'}</td><td style="padding:4px 8px;font-size:12px;color:var(--text-light);">${it.nvTen?_escH(it.nvTen):''}</td></tr>`).join('');
       return `<div style="border:1.5px solid var(--border);border-radius:10px;padding:16px;margin-bottom:16px;">
         <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:10px;">
           <div><strong style="color:var(--primary);">${label}</strong><div style="font-size:12px;color:var(--text-light);margin-top:3px;">Gửi bởi: ${_escH(p.submittedBy||'—')} · ${p.submittedAt?new Date(p.submittedAt).toLocaleDateString('vi-VN'):''}</div></div>
           <div style="display:flex;gap:8px;flex-wrap:wrap;">
-            <button class="btn btn-outline btn-sm" onclick="exportPhieuById('${p.id}','word')">📄 Xuất Word</button>
-            <button class="btn btn-success btn-sm" onclick="approvePhieu('${p.id}')">✅ Duyệt</button>
-            <button class="btn btn-danger btn-sm" onclick="rejectPhieu('${p.id}')">❌ Trả lại</button>
+            <button class="btn btn-outline btn-sm" onclick="exportPhieuById('${p.id}','word')">${_ic('file',14)} Xuất Word</button>
+            <button class="btn btn-success btn-sm" onclick="approvePhieu('${p.id}')">${_ic('check',14)} Duyệt</button>
+            <button class="btn btn-danger btn-sm" onclick="rejectPhieu('${p.id}')">${_ic('x',14)} Trả lại</button>
           </div>
         </div>
         <div style="max-height:220px;overflow-y:auto;">
@@ -2513,7 +2518,7 @@ function renderChoduyetTab(){
       return `<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-bottom:1px solid var(--border);font-size:13px;"${reasonTip}>
         <span>${label}</span>
         <div style="display:flex;align-items:center;gap:12px;">
-          <span class="badge ${isApproved?'badge-green':'badge-red'}">${isApproved?'✅ Đã duyệt':'❌ Từ chối'}</span>
+          <span class="badge ${isApproved?'badge-green':'badge-red'}">${isApproved?_ic('check',13)+' Đã duyệt':_ic('x',13)+' Từ chối'}</span>
           <span style="font-size:12px;color:var(--text-light);">${r.reviewedBy||''} · ${r.reviewedAt?new Date(r.reviewedAt).toLocaleDateString('vi-VN'):''}</span>
         </div>
       </div>`;
