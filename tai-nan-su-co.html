@@ -1,0 +1,891 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="description" content="Liên doanh Việt - Nga Vietsovpetro · Xí nghiệp Dịch vụ Cảng và CƯVTTB">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tai nạn - Sự cố · Quản lý HSE</title>
+  <link rel="stylesheet" href="assets/flatpickr.min.css">
+  <style>
+    :root {
+      --primary:       #003087;
+      --primary-light: #0060B6;
+      --primary-dark:  #002065;
+      --accent:        #C8102E;
+      --accent-dark:   #9E0D24;
+      --success:       #1a7a3c;
+      --warning:       #e68900;
+      --danger:        #c0392b;
+      --bg:            #EDF1F8;
+      --card:          #ffffff;
+      --text:          #1a2535;
+      --text-light:    #6b7c93;
+      --border:        #cdd6e8;
+    }
+    *{box-sizing:border-box;margin:0;padding:0;}
+    body{font-family:'Segoe UI',Arial,sans-serif;background:var(--bg);color:var(--text);font-size:13.5px;}
+    .layout{display:flex;min-height:100vh;}
+    .sidebar{width:230px;background:var(--primary);position:fixed;top:0;left:0;bottom:0;z-index:90;display:flex;flex-direction:column;overflow-y:auto;}
+    .nav-item{display:flex;align-items:center;gap:10px;padding:10px 18px;color:rgba(255,255,255,0.72);font-size:11px;letter-spacing:.5px;font-weight:600;border-left:3px solid transparent;transition:all .15s;text-decoration:none;}
+    .nav-item:hover{background:rgba(255,255,255,0.08);color:#fff;}
+    .nav-item.active{background:rgba(0,32,101,0.45);border-left-color:var(--accent);color:#fff;font-weight:600;}
+    .main{margin-left:230px;padding:76px 28px 40px;}
+    .topbar{background:linear-gradient(135deg,#003087 0%,#0060B6 100%);border-bottom:3px solid var(--accent);color:#fff;height:58px;display:flex;align-items:center;justify-content:space-between;padding:0 24px;position:fixed;top:0;left:230px;right:0;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,0.25);}
+    .topbar-right{display:flex;align-items:center;gap:10px;}
+    .user-badge{background:rgba(255,255,255,0.15);border:1.5px solid rgba(255,255,255,0.3);border-radius:7px;padding:5px 12px;font-size:12px;color:#fff;display:flex;align-items:center;gap:6px;}
+    .btn-login{background:rgba(255,255,255,0.15);border:1.5px solid rgba(255,255,255,0.35);color:#fff;padding:5px 14px;border-radius:7px;font-size:12.5px;font-weight:600;cursor:pointer;}
+    .btn-login:hover{background:rgba(255,255,255,0.25);}
+    .viewer-notice{font-size:12px;color:rgba(255,255,255,0.7);padding:5px 12px;border:1.5px solid rgba(255,255,255,0.35);border-radius:7px;}
+    .btn{display:inline-flex;align-items:center;gap:6px;padding:7px 16px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;border:none;transition:all .15s;}
+    .btn-primary{background:var(--primary-light);color:#fff;}
+    .btn-primary:hover{background:var(--primary);}
+    .btn-edit{background:#dceaf7;color:var(--primary);border:1px solid #b8d4ef;}
+    .btn-edit:hover{background:#b8d4ef;}
+    .btn-danger{background:#fdedec;color:var(--danger);border:1px solid #f5c6c2;}
+    .btn-danger:hover{background:#f8d7d4;}
+    .btn-sm{padding:4px 11px;font-size:12px;}
+    .btn-outline{background:#fff;border:1.5px solid var(--primary-light);color:var(--primary-light);}
+    .btn-outline:hover{background:#dceaf7;}
+    .page-title{font-size:20px;font-weight:700;color:var(--primary);margin-bottom:4px;}
+    .page-desc{font-size:12.5px;color:var(--text-light);margin-bottom:20px;}
+    .section-title{font-size:15px;font-weight:700;color:var(--primary);margin:26px 0 12px;display:flex;align-items:center;gap:8px;border-left:4px solid var(--accent);padding-left:10px;}
+    .toolbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;gap:8px;flex-wrap:wrap;}
+    .toolbar-left{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+    .sync-status{font-size:11.5px;color:var(--text-light);display:flex;align-items:center;gap:5px;}
+    .sync-dot{width:8px;height:8px;border-radius:50%;background:#ccc;display:inline-block;flex-shrink:0;}
+    .sync-dot.ok{background:var(--success);}
+    .sync-dot.err{background:var(--danger);}
+    .sync-dot.syncing{background:var(--warning);animation:pulse .9s infinite;}
+    @keyframes pulse{0%,100%{opacity:1;}50%{opacity:.35;}}
+    /* Stat cards */
+    .stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px;margin-bottom:8px;}
+    .stat-card{background:#fff;border-radius:10px;padding:14px 16px;box-shadow:0 2px 8px rgba(0,0,0,0.06);border-left:4px solid var(--primary);}
+    .stat-card.green{border-left-color:var(--success);}
+    .stat-card.orange{border-left-color:var(--warning);}
+    .stat-card.red{border-left-color:var(--accent);}
+    .stat-label{font-size:11.5px;color:var(--text-light);margin-bottom:5px;line-height:1.4;}
+    .stat-value{font-size:22px;font-weight:700;color:var(--primary);}
+    .stat-unit{font-size:11px;color:var(--text-light);margin-left:3px;}
+    /* Hero card: tổng giờ công an toàn (nổi bật) */
+    .hour-hero{background:linear-gradient(135deg,#003087 0%,#0060B6 100%);color:#fff;border-radius:12px;padding:20px 24px;box-shadow:0 4px 16px rgba(0,32,101,0.28);border-left:5px solid var(--accent);display:flex;align-items:center;justify-content:space-between;gap:18px;margin-bottom:14px;flex-wrap:wrap;}
+    .hour-hero .hh-label{font-size:13px;opacity:.9;margin-bottom:8px;font-weight:600;letter-spacing:.3px;text-transform:uppercase;}
+    .hour-hero .hh-value{font-size:40px;font-weight:800;line-height:1;}
+    .hour-hero .hh-unit{font-size:16px;font-weight:600;opacity:.85;margin-left:7px;}
+    .hour-hero .hh-sub{font-size:12px;opacity:.82;margin-top:9px;}
+    .hour-hero .hh-sub b{color:#fff;}
+    .btn-detail{background:rgba(255,255,255,0.16);border:1.5px solid rgba(255,255,255,0.45);color:#fff;padding:9px 18px;border-radius:9px;font-size:13.5px;font-weight:600;cursor:pointer;white-space:nowrap;transition:all .15s;}
+    .btn-detail:hover{background:rgba(255,255,255,0.3);}
+    .hour-hero.warn{background:linear-gradient(135deg,#8a5a00 0%,#e68900 100%);border-left-color:#fff;}
+    .anchor-note{font-size:12px;color:var(--text-light);margin-bottom:12px;background:#eef3fb;border:1px solid var(--border);border-radius:8px;padding:9px 12px;}
+    .anchor-note b{color:var(--primary);}
+    .anchor-warn{background:#fef5e4;border-color:#f6d28a;color:#8a5a00;}
+    /* Table */
+    .table-wrap{background:#fff;border-radius:10px;box-shadow:0 2px 8px rgba(0,0,0,0.07);overflow:auto;margin-bottom:14px;}
+    table{width:100%;border-collapse:collapse;}
+    th{background:#dde6f3;color:var(--primary);font-size:12px;font-weight:700;padding:9px 10px;text-align:center;white-space:nowrap;border:1px solid #c8d5ea;}
+    th.left{text-align:left;padding-left:14px;}
+    td{padding:8px 12px;border-bottom:1px solid #f0f3fa;border-right:1px solid #f3f5fa;font-size:12.5px;vertical-align:middle;text-align:right;}
+    td.month-col{text-align:left;font-weight:600;color:var(--primary);padding-left:14px;min-width:110px;}
+    td.action-col{text-align:center;width:90px;}
+    tr:last-child td{border-bottom:none;}
+    tr:hover td{background:#eef3fb;}
+    tr.total-row td{background:#dde6f3;font-weight:700;color:var(--primary);border-top:2px solid #b8c8e4;}
+    tr.total-row:hover td{background:#cdd6e8;}
+    .no-data{color:#bcc6d8;font-size:12px;}
+    /* Khung chi tiết giờ công (thu gọn, dễ nhìn) */
+    #hourDetail{max-width:470px;}
+    #hourDetail .anchor-note{font-size:11.5px;}
+    #hourDetail .table-wrap{max-height:330px;overflow:auto;box-shadow:0 1px 6px rgba(0,0,0,0.08);}
+    #hourDetail table{font-size:12px;}
+    #hourDetail th{padding:7px 10px;}
+    #hourDetail td{padding:6px 12px;}
+    #hourDetail td.month-col{min-width:96px;}
+    #hourDetail td.action-col{width:78px;}
+    /* Incident cards */
+    .inc-list{display:flex;flex-direction:column;gap:12px;}
+    .inc-card{background:#fff;border-radius:10px;box-shadow:0 2px 8px rgba(0,0,0,0.07);border-left:5px solid var(--accent);overflow:hidden;}
+    .inc-card.tech{border-left-color:var(--warning);}
+    .inc-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;padding:13px 16px;cursor:pointer;}
+    .inc-head:hover{background:#f6f9fd;}
+    .inc-caret{display:inline-block;color:var(--text-light);font-size:12px;margin-right:5px;transition:transform .15s;}
+    .inc-card.open .inc-caret{transform:rotate(90deg);}
+    .inc-count{color:var(--text-light);font-size:11.5px;}
+    .inc-body{border-top:1px solid #eef2f8;padding-top:4px;}
+    .inc-titlewrap{flex:1;min-width:0;}
+    .inc-name{font-size:15px;font-weight:700;color:var(--text);margin-bottom:6px;}
+    .inc-meta{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:12px;color:var(--text-light);}
+    .inc-time{font-weight:600;color:var(--primary);}
+    .inc-actions{display:flex;gap:6px;flex-shrink:0;}
+    .inc-desc{padding:0 16px 12px;font-size:13px;line-height:1.55;color:var(--text);white-space:pre-wrap;}
+    .otm-block{padding:0 16px 14px;}
+    .otm-block .otm-cap{font-size:11.5px;font-weight:700;color:var(--primary);text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px;}
+    .otm-table{width:100%;border-collapse:collapse;border:1px solid var(--border);border-radius:8px;overflow:hidden;}
+    .otm-table th{font-size:11.5px;padding:7px 9px;}
+    .otm-table td{text-align:left;font-size:12.5px;padding:7px 9px;}
+    .otm-table td.center{text-align:center;}
+    .badge{display:inline-block;padding:2px 9px;border-radius:20px;font-size:11px;font-weight:600;white-space:nowrap;}
+    .badge-blue{background:#dceaf7;color:#003087;}
+    .badge-green{background:#eafaf1;color:#1a7a3c;}
+    .badge-orange{background:#fef5e4;color:#e68900;}
+    .badge-red{background:#fdedec;color:#c0392b;}
+    .badge-gray{background:#f2f3f4;color:#6b7c93;}
+    .empty-box{background:#fff;border:1.5px dashed var(--border);border-radius:10px;padding:34px;text-align:center;color:var(--text-light);font-style:italic;}
+    /* Modal */
+    .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:200;align-items:center;justify-content:center;}
+    .modal-overlay.open{display:flex;}
+    .modal{background:#fff;border-radius:12px;padding:26px;width:680px;max-width:95vw;max-height:90vh;overflow-y:auto;box-shadow:0 8px 32px rgba(0,0,0,0.18);}
+    .modal-title{font-size:15.5px;font-weight:700;color:var(--primary);margin-bottom:18px;}
+    .form-group{margin-bottom:13px;}
+    .form-label{font-size:12.5px;font-weight:600;color:var(--text);margin-bottom:5px;display:block;}
+    .form-input,.form-select,textarea.form-input{width:100%;border:1.5px solid var(--border);border-radius:7px;padding:7px 10px;font-size:13px;outline:none;font-family:inherit;background:#fff;}
+    .form-input:focus,.form-select:focus,textarea.form-input:focus{border-color:var(--primary-light);}
+    textarea.form-input{min-height:84px;resize:vertical;line-height:1.5;}
+    .form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+    .form-section{font-size:11.5px;font-weight:700;color:var(--primary);padding:6px 0 4px;border-bottom:1px solid var(--border);margin:16px 0 10px;text-transform:uppercase;letter-spacing:.5px;display:flex;justify-content:space-between;align-items:center;}
+    .form-hint{font-size:11.5px;color:var(--text-light);margin-top:-4px;margin-bottom:8px;font-style:italic;}
+    .modal-footer{display:flex;justify-content:flex-end;gap:8px;margin-top:20px;padding-top:14px;border-top:1px solid var(--border);}
+    /* OTM editor rows */
+    .otm-edit-row{display:grid;grid-template-columns:1fr 130px 150px 32px;gap:8px;align-items:start;margin-bottom:8px;}
+    .otm-edit-head{display:grid;grid-template-columns:1fr 130px 150px 32px;gap:8px;font-size:11px;font-weight:700;color:var(--text-light);margin-bottom:4px;text-transform:uppercase;letter-spacing:.3px;}
+    .otm-del{background:#fdedec;color:var(--danger);border:1px solid #f5c6c2;border-radius:7px;cursor:pointer;font-size:14px;height:34px;}
+    .otm-del:hover{background:#f8d7d4;}
+    .flatpickr-input{background:#fff;}
+    /* Victim editor */
+    .vic-edit{border:1px solid var(--border);border-radius:9px;padding:12px;margin-bottom:10px;background:#f8fafd;position:relative;}
+    .vic-edit .vic-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+    .vic-edit .vic-del{position:absolute;top:8px;right:8px;background:#fdedec;color:var(--danger);border:1px solid #f5c6c2;border-radius:7px;cursor:pointer;font-size:13px;width:28px;height:26px;}
+    .vic-edit .vic-del:hover{background:#f8d7d4;}
+    .vic-edit .form-label{font-size:11.5px;}
+    .vic-no{font-size:11.5px;font-weight:700;color:var(--primary);margin-bottom:8px;}
+  </style>
+</head>
+<body>
+<script src="assets/db.js"></script>
+<script src="assets/hse-date.js"></script>
+<script src="assets/flatpickr.min.js"></script>
+<script src="assets/flatpickr-vn.js"></script>
+<script src="assets/app.js"></script>
+
+<!-- ════════ Modal: Nhập giờ công tháng ════════ -->
+<div class="modal-overlay" id="hourModal">
+  <div class="modal" style="width:420px;">
+    <div class="modal-title" id="hourModalTitle"><svg class="lic-emoji" width="1.05em" height="1.05em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex-shrink:0" aria-hidden="true"><line x1="10" x2="14" y1="2" y2="2"/><line x1="12" x2="15" y1="14" y2="11"/><circle cx="12" cy="14" r="8"/></svg> Nhập giờ công an toàn</div>
+    <input type="hidden" id="h_id">
+    <input type="hidden" id="h_nam">
+    <input type="hidden" id="h_thang">
+    <div class="form-group">
+      <label class="form-label">Số giờ công lao động an toàn (giờ)</label>
+      <input class="form-input" id="h_gio_cong" type="number" min="0" step="1" placeholder="0">
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline btn-sm" onclick="closeHourModal()">Huỷ</button>
+      <button class="btn btn-primary btn-sm" onclick="saveHour()"><svg class="lic-emoji" width="1.05em" height="1.05em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex-shrink:0" aria-hidden="true"><path d="M15.2 3a2 2 0 0 1 1.4.6l3.8 3.8a2 2 0 0 1 .6 1.4V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/><path d="M17 21v-7a1 1 0 0 0-1-1H8a1 1 0 0 0-1 1v7"/><path d="M7 3v4a1 1 0 0 0 1 1h7"/></svg> Lưu</button>
+    </div>
+  </div>
+</div>
+
+<!-- ════════ Modal: Thêm / sửa tai nạn - sự cố ════════ -->
+<div class="modal-overlay" id="incModal">
+  <div class="modal">
+    <div class="modal-title" id="incModalTitle"><svg class="lic-emoji" width="1.05em" height="1.05em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex-shrink:0" aria-hidden="true"><path d="M12 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.375 2.625a1 1 0 0 1 3 3l-9.013 9.014a2 2 0 0 1-.853.505l-2.873.84a.5.5 0 0 1-.62-.62l.84-2.873a2 2 0 0 1 .506-.852z"/></svg> Ghi nhận tai nạn - sự cố</div>
+    <input type="hidden" id="i_id">
+
+    <div class="form-group">
+      <label class="form-label">Tên tai nạn - sự cố <span style="color:var(--accent)">*</span></label>
+      <input class="form-input" id="i_ten" type="text" placeholder="VD: Tai nạn rơi vật từ trên cao tại cầu cảng số 2">
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Loại <span style="color:var(--accent)">*</span></label>
+        <select class="form-select" id="i_loai" onchange="onLoaiChange()">
+          <option value="tai_nan_lao_dong">Tai nạn lao động</option>
+          <option value="su_co_ky_thuat">Sự cố kỹ thuật nghiêm trọng</option>
+        </select>
+      </div>
+      <div class="form-group" id="mucDoGroup">
+        <label class="form-label">Mức độ <span style="color:var(--accent)">*</span></label>
+        <select class="form-select" id="i_muc_do">
+          <option value="nhe">Nhẹ</option>
+          <option value="nang">Nặng</option>
+          <option value="tu_vong">Chết người</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Thời gian xảy ra (giờ, ngày/tháng/năm) <span style="color:var(--accent)">*</span></label>
+      <input class="form-input" id="i_thoi_gian" type="text" placeholder="Chọn giờ và ngày...">
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Mô tả diễn biến</label>
+      <textarea class="form-input" id="i_mo_ta" placeholder="Mô tả diễn biến sự việc, nguyên nhân, hậu quả..."></textarea>
+    </div>
+
+    <div class="form-section" id="vicSection">
+      <span>Nạn nhân</span>
+      <button class="btn btn-edit btn-sm" type="button" onclick="addVicRow()">+ Thêm nạn nhân</button>
+    </div>
+    <div class="form-hint" id="vicHint">Khai báo (các) nạn nhân của vụ tai nạn. Có thể để trống nếu không có người bị nạn.</div>
+    <div id="vicRows"></div>
+
+    <div class="form-section">
+      <span>Danh mục OTM đính kèm</span>
+      <button class="btn btn-edit btn-sm" type="button" onclick="addOtmRow()">+ Thêm OTM</button>
+    </div>
+    <div class="form-hint">Chỉ nhập những OTM liên quan đến XNDV (Xí nghiệp Dịch vụ Cảng và Cung ứng VTTB).</div>
+    <div class="otm-edit-head">
+      <div>Nội dung</div><div>Thời hạn</div><div>Tình trạng</div><div></div>
+    </div>
+    <div id="otmRows"></div>
+
+    <div class="modal-footer">
+      <button class="btn btn-outline btn-sm" onclick="closeIncModal()">Huỷ</button>
+      <button class="btn btn-primary btn-sm" onclick="saveInc()"><svg class="lic-emoji" width="1.05em" height="1.05em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex-shrink:0" aria-hidden="true"><path d="M15.2 3a2 2 0 0 1 1.4.6l3.8 3.8a2 2 0 0 1 .6 1.4V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/><path d="M17 21v-7a1 1 0 0 0-1-1H8a1 1 0 0 0-1 1v7"/><path d="M7 3v4a1 1 0 0 0 1 1h7"/></svg> Lưu</button>
+    </div>
+  </div>
+</div>
+
+<!-- ════════ Layout ════════ -->
+<div class="layout">
+  <nav class="sidebar" id="sidebarNav"></nav>
+  <div style="flex:1;">
+    <div class="topbar">
+      <div>
+        <div style="font-size:11px;opacity:.75;">Liên doanh Việt - Nga Vietsovpetro</div>
+        <div style="font-size:12px;font-weight:700;opacity:.95;">Xí nghiệp Dịch vụ Cảng và Cung ứng vật tư thiết bị</div>
+      </div>
+      <div class="topbar-right" id="topbarRight"></div>
+    </div>
+    <div class="main">
+      <div class="page-title"><svg class="lic-emoji" width="1.05em" height="1.05em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex-shrink:0" aria-hidden="true"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg> Tai nạn - Sự cố</div>
+      <div class="page-desc" id="pageDesc">Theo dõi giờ công lao động an toàn và ghi nhận các tai nạn lao động, sự cố kỹ thuật nghiêm trọng.</div>
+
+      <div class="toolbar">
+        <div class="toolbar-left">
+          <div class="sync-status">
+            <span class="sync-dot" id="syncDot"></span>
+            <span id="syncText">—</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== Phần 1: Giờ công lao động an toàn ===== -->
+      <div class="section-title"><svg class="lic-emoji" width="1.05em" height="1.05em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex-shrink:0" aria-hidden="true"><line x1="10" x2="14" y1="2" y2="2"/><line x1="12" x2="15" y1="14" y2="11"/><circle cx="12" cy="14" r="8"/></svg> Giờ công lao động an toàn</div>
+      <div id="hourHero"></div>
+      <div class="stat-grid" id="statCards"></div>
+      <div id="hourDetail" style="display:none;">
+        <div id="anchorNote"></div>
+        <div class="table-wrap" id="hourTableWrap">
+          <table>
+            <thead>
+              <tr>
+                <th class="left">Tháng</th>
+                <th>Số giờ công an toàn (giờ)</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="hourBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ===== Phần 2: Ghi nhận tai nạn - sự cố ===== -->
+      <div class="section-title"><svg class="lic-emoji" width="1.05em" height="1.05em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex-shrink:0" aria-hidden="true"><path d="M7 18v-6a5 5 0 1 1 10 0v6"/><path d="M5 21a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-1a2 2 0 0 0-2-2H7a2 2 0 0 0-2 2z"/><path d="M21 12h1"/><path d="M18.5 4.5 18 5"/><path d="M2 12h1"/><path d="M12 2v1"/><path d="m4.929 4.929.707.707"/><path d="M12 12v6"/></svg> Ghi nhận tai nạn - sự cố</div>
+      <div class="toolbar">
+        <div class="toolbar-left" style="font-size:12.5px;color:var(--text-light);">Sắp xếp theo thời gian xảy ra (mới nhất ở trên).</div>
+        <div id="addIncWrap"></div>
+      </div>
+      <div class="inc-list" id="incList"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ══════════════ Constants ══════════════
+var K_SESS  = "hse_session";
+var K_USERS = "hse_users";
+var SLUG    = "tai-nan-su-co";
+
+var K_HOUR  = "hse_tnsc_gio_cong";   var SH_HOUR = "tnsc_gio_cong";
+var K_INC   = "hse_tnsc_su_kien";    var SH_INC  = "tnsc_su_kien";
+
+var MONTHS = ["Tháng 1","Tháng 2","Tháng 3","Tháng 4","Tháng 5","Tháng 6",
+              "Tháng 7","Tháng 8","Tháng 9","Tháng 10","Tháng 11","Tháng 12"];
+
+// ══════════════ Helpers ══════════════
+function lsLoad(k,d){try{var v=localStorage.getItem(k);return v?JSON.parse(v):d;}catch(e){return d;}}
+function lsSave(k,v){localStorage.setItem(k,JSON.stringify(v));}
+function num(v){var n=parseFloat(v);return isNaN(n)?0:n;}
+function esc(s){return String(s==null?"":s).replace(/[&<>"]/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c];});}
+function genId(){return Date.now().toString(36)+Math.random().toString(36).slice(2,6);}
+
+/* Định dạng ngày DD/MM/YYYY (an toàn timezone — dùng HSEDate) */
+function fmtDate(s){ return (window.HSEDate? HSEDate.fmt(s) : (s||"")); }
+
+/* Tách chuỗi "YYYY-MM-DD HH:mm" (hoặc ...THH:mm) KHÔNG qua Date() để tránh lệch giờ */
+function fmtDateTime(s){
+  if(!s) return "";
+  s=String(s).replace("T"," ");
+  var sp=s.indexOf(" ");
+  if(sp<0) return fmtDate(s);
+  var datePart=s.slice(0,sp);
+  var timePart=s.slice(sp+1,sp+6); // HH:mm
+  var dp=datePart.split("-");
+  if(dp.length===3){ datePart=dp[2]+"/"+dp[1]+"/"+dp[0]; }
+  return timePart+" - "+datePart;
+}
+
+/* Ngày hôm nay dạng ISO "YYYY-MM-DD" theo giờ địa phương */
+function todayISO(){
+  var d=new Date();
+  function p(n){return String(n).padStart(2,"0");}
+  return d.getFullYear()+"-"+p(d.getMonth()+1)+"-"+p(d.getDate());
+}
+
+// ══════════════ Auth ══════════════
+function currentUser(){
+  var un=lsLoad(K_SESS,null);
+  if(!un)return null;
+  return (lsLoad(K_USERS,[])||[]).find(function(u){return u.username===un;})||null;
+}
+function isAdmin(u){return u&&u.role==="admin";}
+function canEdit(u){
+  if(!u)return false;
+  if(u.role==="admin")return true;
+  if(u.role==="viewer")return false;
+  return (u.perms||[]).indexOf(SLUG)!==-1;
+}
+function roleLabel(r){return r==="admin"?"Admin":(r==="viewer"?"Viewer":"User");}
+function doLogout(){localStorage.removeItem(K_SESS);location.reload();}
+
+// ══════════════ Sidebar ══════════════
+(function buildSidebar(){
+  var LINKS=[
+    {href:"tong-quan.html",         icon:"📊", label:"Tổng quan"},
+    {href:"tai-nan-su-co.html",     icon:"⚠️", label:"Tai nạn - Sự cố", active:true},
+    {href:"pccc-cnch.html",         icon:"🧯", label:"PCCC & CNCH"},
+    {href:"cap-phat-bhld.html",     icon:"🦺", label:"Cấp phát BHLĐ"},
+    {href:"huan-luyen-dao-tao.html",icon:"🎓", label:"Huấn luyện - Đào tạo"},
+    {href:"sop.html",               icon:"📑", label:"SOP"},
+    {href:"kiem-tra-cac-cap.html",  icon:"🔍", label:"Kiểm tra các cấp"},
+    {href:"quan-ly-thiet-bi.html",  icon:"⚙️", label:"Quản lý thiết bị"},
+    {href:"kham-suc-khoe.html",     icon:"🩺", label:"Khám sức khoẻ nghề nghiệp"},
+    {href:"moi-truong.html",        icon:"🌿", label:"Môi trường"},
+    {href:"quan-ly-nha-thau.html",  icon:"👷", label:"Quản lý nhà thầu"},
+    {href:"ke-hoach.html",          icon:"🗓️", label:"Kế hoạch"},
+    {href:"bao-cao.html",           icon:"📈", label:"Báo cáo"},
+    {href:"quan-tri-he-thong.html", icon:"🛡️", label:"Quản trị hệ thống", adminOnly:true}
+  ];
+  var u=currentUser();
+  var nav=document.getElementById("sidebarNav");
+  if(!nav)return;
+  var html='';
+  LINKS.forEach(function(l){
+    if(l.adminOnly && !isAdmin(u)) return;
+    html+='<a href="'+l.href+'" class="nav-item'+(l.active?' active':'')+'">'+esc(l.label.toUpperCase())+'</a>';
+  });
+  nav.innerHTML=html;
+})();
+
+function buildTopbar(){
+  var u=currentUser();
+  var el=document.getElementById("topbarRight");
+  if(!el)return;
+  if(u){
+    el.innerHTML='<div class="user-badge"><svg class="lic-emoji" width="1.05em" height="1.05em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex-shrink:0" aria-hidden="true"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> '+esc(u.fullname||u.username)+
+      ' <span class="badge badge-blue" style="font-size:10px;">'+roleLabel(u.role)+'</span></div>'+
+      '<button class="btn-login" onclick="doLogout()">Đăng xuất</button>';
+  } else {
+    el.innerHTML='<span class="viewer-notice">Chế độ xem</span>';
+  }
+}
+
+// ══════════════ Data access ══════════════
+function getHours(){return lsLoad(K_HOUR,[])||[];}
+function saveHours(a){lsSave(K_HOUR,a);}
+function getHour(nam,thang){return getHours().find(function(r){return String(r.nam)===String(nam)&&String(r.thang)===String(thang);})||null;}
+function getIncidents(){return lsLoad(K_INC,[])||[];}
+function saveIncidents(a){lsSave(K_INC,a);}
+
+// ══════════════ Sync ══════════════
+function setSyncStatus(state,text){
+  var dot=document.getElementById("syncDot");
+  var txt=document.getElementById("syncText");
+  if(dot)dot.className="sync-dot"+(state?" "+state:"");
+  if(txt)txt.textContent=text||"";
+}
+function safePull(){
+  if(typeof DB==="undefined"){renderAll();return;}
+  DB.init();
+  var u=currentUser(); if(u)DB.setUser(u.username);
+  if(!DB.isReady()){renderAll();return;}
+  setSyncStatus("syncing","Đang đồng bộ...");
+  Promise.all([
+    DB.getAll(SH_HOUR).then(function(r){if(r&&r.length)saveHours(r);}).catch(function(){}),
+    DB.getAll(SH_INC).then(function(r){if(r&&r.length)saveIncidents(normIncList(r));}).catch(function(){})
+  ]).then(function(){
+    setSyncStatus("ok","Đã đồng bộ");
+    renderAll();
+  }).catch(function(){
+    setSyncStatus("err","Lỗi kết nối");
+    renderAll();
+  });
+}
+/* OTM lưu trên Sheets có thể là chuỗi JSON → parse lại về mảng */
+function normIncList(rows){
+  return (rows||[]).map(function(r){
+    if(typeof r.otms==="string"){ try{r.otms=JSON.parse(r.otms);}catch(e){r.otms=[];} }
+    if(!Array.isArray(r.otms)) r.otms=[];
+    if(typeof r.nanNhan==="string"){ try{r.nanNhan=JSON.parse(r.nanNhan);}catch(e){r.nanNhan=[];} }
+    if(!Array.isArray(r.nanNhan)) r.nanNhan=[];
+    return r;
+  });
+}
+
+// ══════════════ Mốc tính giờ công an toàn ══════════════
+/* Mốc = tháng SAU tháng xảy ra TAI NẠN LAO ĐỘNG gần nhất.
+   Sự cố kỹ thuật KHÔNG reset bộ đếm. */
+function latestAccident(){
+  var acc=getIncidents().filter(function(r){return r.loai==="tai_nan_lao_dong" && r.thoiGian;});
+  if(!acc.length) return null;
+  acc.sort(function(a,b){return String(b.thoiGian).localeCompare(String(a.thoiGian));});
+  return acc[0];
+}
+/* Trả về {y,m} của tháng bắt đầu tính giờ công, hoặc null nếu chưa có TNLĐ */
+function anchorStart(){
+  var a=latestAccident();
+  if(!a) return null;
+  var s=String(a.thoiGian);
+  var y=parseInt(s.slice(0,4),10);
+  var m=parseInt(s.slice(5,7),10);
+  if(isNaN(y)||isNaN(m)) return null;
+  m+=1; if(m>12){m=1;y+=1;} // tháng kế tiếp
+  return {y:y,m:m,acc:a};
+}
+/* Danh sách các tháng cần nhập, từ mốc đến tháng hiện tại (gồm cả tháng hiện tại) */
+function monthsToInput(){
+  var st=anchorStart();
+  if(!st) return [];
+  var now=new Date();
+  var ey=now.getFullYear(), em=now.getMonth()+1;
+  var list=[]; var y=st.y, m=st.m, guard=0;
+  while((y<ey || (y===ey && m<=em)) && guard<600){
+    list.push({y:y,m:m});
+    m++; if(m>12){m=1;y++;}
+    guard++;
+  }
+  return list;
+}
+
+// ══════════════ Render ══════════════
+function renderAll(){ renderHours(); renderIncidents(); }
+
+function renderHours(){
+  var u=currentUser();
+  var body=document.getElementById("hourBody");
+  var hero=document.getElementById("hourHero");
+  var note=document.getElementById("anchorNote");
+  var detail=document.getElementById("hourDetail");
+  var st=anchorStart();
+
+  if(!st){
+    hero.className="hour-hero warn";
+    hero.innerHTML='<div><div class="hh-label">Tổng giờ công lao động an toàn</div>'+
+      '<div><span class="hh-value">0</span><span class="hh-unit">giờ</span></div>'+
+      '<div class="hh-sub">Chưa ghi nhận tai nạn lao động — chưa xác định mốc tính giờ công an toàn.</div></div>';
+    detail.style.display="none";
+    renderHourCounts();
+    return;
+  }
+
+  var months=monthsToInput();
+  var total=0, filled=0, rows="";
+  months.forEach(function(mm){
+    var rec=getHour(mm.y,mm.m);
+    var has=rec && rec.gio_cong!=="" && rec.gio_cong!=null;
+    if(has){ total+=num(rec.gio_cong); filled++; }
+    var action="";
+    if(canEdit(u)){
+      action=has
+        ? '<button class="btn btn-edit btn-sm" onclick="openHour('+mm.y+','+mm.m+')"><svg class="lic-emoji" width="1.05em" height="1.05em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex-shrink:0" aria-hidden="true"><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"/><path d="m15 5 4 4"/></svg> Sửa</button>'
+        : '<button class="btn btn-primary btn-sm" onclick="openHour('+mm.y+','+mm.m+')">+ Nhập</button>';
+    }
+    rows+='<tr>'+
+      '<td class="month-col">'+MONTHS[mm.m-1]+' / '+mm.y+'</td>'+
+      '<td>'+(has?num(rec.gio_cong).toLocaleString('vi-VN'):'<span class="no-data">— chưa nhập —</span>')+'</td>'+
+      '<td class="action-col">'+action+'</td>'+
+    '</tr>';
+  });
+  rows+='<tr class="total-row"><td class="month-col">Tổng cộng</td>'+
+        '<td>'+total.toLocaleString('vi-VN')+'</td><td></td></tr>';
+  body.innerHTML=rows;
+
+  var open=(detail.style.display!=="none");
+  hero.className="hour-hero";
+  hero.innerHTML='<div><div class="hh-label">Tổng giờ công lao động an toàn</div>'+
+    '<div><span class="hh-value">'+total.toLocaleString('vi-VN')+'</span><span class="hh-unit">giờ</span></div>'+
+    '<div class="hh-sub">Tính từ <b>'+MONTHS[st.m-1]+'/'+st.y+'</b></div></div>'+
+    '<button class="btn-detail" id="hourToggleBtn" onclick="toggleHourDetail()"><svg class="lic-emoji" width="1.05em" height="1.05em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex-shrink:0" aria-hidden="true"><rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M12 11h4"/><path d="M12 16h4"/><path d="M8 11h.01"/><path d="M8 16h.01"/></svg> '+(open?'Ẩn chi tiết ▴':'Chi tiết ▾')+'</button>';
+
+  note.className="anchor-note";
+  note.innerHTML="Bảng theo dõi số giờ công lao động an toàn theo từng tháng, tính từ <b>"+MONTHS[st.m-1]+"/"+st.y+"</b> (sau tai nạn lao động gần nhất: <b>"+esc(st.acc.ten||"")+"</b> — "+fmtDateTime(st.acc.thoiGian)+").";
+
+  renderHourCounts();
+}
+
+function toggleHourDetail(){
+  var d=document.getElementById("hourDetail");
+  var b=document.getElementById("hourToggleBtn");
+  if(d.style.display==="none"){ d.style.display=""; if(b)b.innerHTML="📋 Ẩn chi tiết ▴"; }
+  else { d.style.display="none"; if(b)b.innerHTML="📋 Chi tiết ▾"; }
+}
+
+function renderHourCounts(){
+  var incs=getIncidents();
+  var nTN=incs.filter(function(r){return r.loai==="tai_nan_lao_dong";}).length;
+  var nSC=incs.filter(function(r){return r.loai==="su_co_ky_thuat";}).length;
+  var cards=[
+    {label:'Số vụ tai nạn lao động',value:nTN.toLocaleString('vi-VN'),unit:'vụ',cls:'red'},
+    {label:'Số sự cố kỹ thuật nghiêm trọng',value:nSC.toLocaleString('vi-VN'),unit:'sự cố',cls:'orange'}
+  ];
+  document.getElementById("statCards").innerHTML=cards.map(function(c){
+    return '<div class="stat-card '+c.cls+'"><div class="stat-label">'+c.label+'</div>'+
+      '<div><span class="stat-value">'+c.value+'</span><span class="stat-unit">'+c.unit+'</span></div></div>';
+  }).join('');
+}
+
+/* Trạng thái OTM (tính động): đang thực hiện + quá hạn → trễ hạn */
+function otmStatus(o){
+  if(o.tinhTrang==="da_hoan_thanh") return {label:"Đã hoàn thành",cls:"badge-green"};
+  if(o.thoiHan && o.thoiHan < todayISO()) return {label:"Trễ hạn",cls:"badge-red"};
+  return {label:"Đang thực hiện",cls:"badge-orange"};
+}
+
+function renderIncidents(){
+  var u=currentUser();
+  var wrap=document.getElementById("addIncWrap");
+  wrap.innerHTML = canEdit(u)
+    ? '<button class="btn btn-primary" onclick="openInc()">+ Thêm tai nạn / sự cố</button>' : '';
+
+  var list=getIncidents().slice();
+  list.sort(function(a,b){return String(b.thoiGian||"").localeCompare(String(a.thoiGian||""));});
+
+  var box=document.getElementById("incList");
+  if(!list.length){
+    box.innerHTML='<div class="empty-box">Chưa có tai nạn / sự cố nào được ghi nhận.</div>';
+    return;
+  }
+  box.innerHTML=list.map(function(r){
+    var isTN=r.loai==="tai_nan_lao_dong";
+    var loaiBadge=isTN
+      ? '<span class="badge badge-red">Tai nạn lao động</span>'
+      : '<span class="badge badge-orange">Sự cố kỹ thuật nghiêm trọng</span>';
+    var mucBadge="";
+    if(isTN){
+      var mp={nhe:['Nhẹ','badge-gray'],nang:['Nặng','badge-orange'],tu_vong:['Chết người','badge-red']};
+      var mm=mp[r.mucDo]||['—','badge-gray'];
+      mucBadge=' <span class="badge '+mm[1]+'">Mức độ: '+mm[0]+'</span>';
+    }
+    var actions="";
+    if(canEdit(u)){
+      actions='<button class="btn btn-edit btn-sm" onclick="event.stopPropagation();openInc(\''+r.id+'\')"><svg class="lic-emoji" width="1.05em" height="1.05em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex-shrink:0" aria-hidden="true"><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"/><path d="m15 5 4 4"/></svg> Sửa</button>'+
+              '<button class="btn btn-danger btn-sm" onclick="event.stopPropagation();delInc(\''+r.id+'\')"><svg class="lic-emoji" width="1.05em" height="1.05em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex-shrink:0" aria-hidden="true"><path d="M10 11v6"/><path d="M14 11v6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg> Xoá</button>';
+    }
+    // Cảnh báo OTM trễ hạn + đếm nhanh (hiện ngay ở dòng thu gọn)
+    var lateCount=(r.otms||[]).filter(function(o){return otmStatus(o).label==="Trễ hạn";}).length;
+    var lateBadge=lateCount?' <span class="badge badge-red"><svg class="lic-emoji" width="1.05em" height="1.05em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex-shrink:0" aria-hidden="true"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg> '+lateCount+' OTM trễ hạn</span>':'';
+    var cparts=[];
+    if(isTN && r.nanNhan && r.nanNhan.length) cparts.push(r.nanNhan.length+' nạn nhân');
+    if(r.otms && r.otms.length) cparts.push(r.otms.length+' OTM');
+    var counts=cparts.length?' <span class="inc-count">· '+cparts.join(' · ')+'</span>':'';
+    var vicHtml="";
+    if(r.nanNhan && r.nanNhan.length){
+      var vrows=r.nanNhan.map(function(v){
+        return '<tr><td>'+esc(v.hoTen||'')+'</td>'+
+          '<td class="center">'+esc(v.gioiTinh||'')+'</td>'+
+          '<td class="center">'+(v.ngaySinh?fmtDate(v.ngaySinh):'<span class="no-data">—</span>')+'</td>'+
+          '<td>'+esc(v.chucDanh||'')+'</td>'+
+          '<td class="center">'+(v.ngayVaoLam?fmtDate(v.ngayVaoLam):'<span class="no-data">—</span>')+'</td></tr>';
+      }).join('');
+      vicHtml='<div class="otm-block"><div class="otm-cap"><svg class="lic-emoji" width="1.05em" height="1.05em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex-shrink:0" aria-hidden="true"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>‍<svg class="lic-emoji" width="1.05em" height="1.05em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex-shrink:0" aria-hidden="true"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.106-3.105c.32-.322.863-.22.983.218a6 6 0 0 1-8.259 7.057l-7.91 7.91a1 1 0 0 1-2.999-3l7.91-7.91a6 6 0 0 1 7.057-8.259c.438.12.54.662.219.984z"/></svg> Nạn nhân</div>'+
+        '<table class="otm-table"><thead><tr><th class="left">Họ và tên</th><th>Giới tính</th><th>Ngày sinh</th><th class="left">Chức danh</th><th>Vào làm VSP</th></tr></thead>'+
+        '<tbody>'+vrows+'</tbody></table></div>';
+    }
+    var otmHtml="";
+    if(r.otms && r.otms.length){
+      var rows=r.otms.map(function(o){
+        var st=otmStatus(o);
+        return '<tr><td>'+esc(o.noiDung||'')+'</td>'+
+          '<td class="center">'+(o.thoiHan?fmtDate(o.thoiHan):'<span class="no-data">—</span>')+'</td>'+
+          '<td class="center"><span class="badge '+st.cls+'">'+st.label+'</span></td></tr>';
+      }).join('');
+      otmHtml='<div class="otm-block"><div class="otm-cap"><svg class="lic-emoji" width="1.05em" height="1.05em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex-shrink:0" aria-hidden="true"><path d="m16 6-8.414 8.586a2 2 0 0 0 2.829 2.829l8.414-8.586a4 4 0 1 0-5.657-5.657l-8.379 8.551a6 6 0 1 0 8.485 8.485l8.379-8.551"/></svg> OTM đính kèm (liên quan XNDV)</div>'+
+        '<table class="otm-table"><thead><tr><th class="left">Nội dung</th><th>Thời hạn</th><th>Tình trạng</th></tr></thead>'+
+        '<tbody>'+rows+'</tbody></table></div>';
+    }
+    var body=(r.moTa?'<div class="inc-desc">'+esc(r.moTa)+'</div>':'')+vicHtml+otmHtml;
+    if(!body) body='<div class="inc-desc" style="color:var(--text-light);font-style:italic;">Không có thông tin chi tiết bổ sung.</div>';
+    return '<div class="inc-card'+(isTN?'':' tech')+'" data-id="'+esc(r.id)+'">'+
+      '<div class="inc-head" onclick="toggleInc(\''+r.id+'\')"><div class="inc-titlewrap">'+
+        '<div class="inc-name"><span class="inc-caret">▸</span>'+esc(r.ten||'(Chưa đặt tên)')+'</div>'+
+        '<div class="inc-meta">'+loaiBadge+mucBadge+
+          ' <span class="inc-time"><svg class="lic-emoji" width="1.05em" height="1.05em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex-shrink:0" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg> '+fmtDateTime(r.thoiGian)+'</span>'+lateBadge+counts+'</div>'+
+      '</div><div class="inc-actions">'+actions+'</div></div>'+
+      '<div class="inc-body" style="display:none;">'+body+'</div>'+
+    '</div>';
+  }).join('');
+}
+
+function toggleInc(id){
+  var card=document.querySelector('.inc-card[data-id="'+id+'"]');
+  if(!card)return;
+  var body=card.querySelector('.inc-body');
+  if(!body)return;
+  if(body.style.display==="none"){ body.style.display=""; card.classList.add("open"); }
+  else { body.style.display="none"; card.classList.remove("open"); }
+}
+
+// ══════════════ Modal: Giờ công ══════════════
+function openHour(nam,thang){
+  var u=currentUser(); if(!canEdit(u)){alert("Bạn không có quyền nhập liệu.");return;}
+  var rec=getHour(nam,thang)||{};
+  document.getElementById("h_id").value=rec.id||'';
+  document.getElementById("h_nam").value=nam;
+  document.getElementById("h_thang").value=thang;
+  document.getElementById("h_gio_cong").value=(rec.gio_cong!=null&&rec.gio_cong!=='')?rec.gio_cong:'';
+  document.getElementById("hourModalTitle").textContent='Giờ công an toàn – '+MONTHS[thang-1]+' / '+nam;
+  document.getElementById("hourModal").classList.add("open");
+}
+function closeHourModal(){document.getElementById("hourModal").classList.remove("open");}
+function saveHour(){
+  var u=currentUser(); if(!canEdit(u)){alert("Bạn không có quyền nhập liệu.");return;}
+  var id=document.getElementById("h_id").value;
+  var nam=parseInt(document.getElementById("h_nam").value,10);
+  var thang=parseInt(document.getElementById("h_thang").value,10);
+  var gio=num(document.getElementById("h_gio_cong").value);
+  if(typeof DB!=="undefined"){DB.init(); if(u)DB.setUser(u.username);}
+
+  var all=getHours();
+  var data={nam:nam,thang:thang,gio_cong:gio,updatedBy:u?u.username:'',updatedAt:new Date().toISOString()};
+  if(id){
+    data.id=id;
+    var idx=all.findIndex(function(r){return r.id===id;});
+    if(idx>=0)all[idx]=Object.assign(all[idx],data); else all.push(data);
+    saveHours(all);
+    syncWrite('update',SH_HOUR,id,data);
+  } else {
+    data.id=genId(); data.createdAt=new Date().toISOString();
+    all.push(data); saveHours(all);
+    syncWrite('insert',SH_HOUR,null,data);
+  }
+  closeHourModal(); renderAll();
+}
+
+// ══════════════ Modal: Tai nạn - sự cố ══════════════
+function onLoaiChange(){
+  var loai=document.getElementById("i_loai").value;
+  var isTN=(loai==="tai_nan_lao_dong");
+  document.getElementById("mucDoGroup").style.display=isTN?"":"none";
+  // Nạn nhân chỉ áp dụng cho tai nạn lao động
+  var disp=isTN?"":"none";
+  document.getElementById("vicSection").style.display=disp;
+  document.getElementById("vicHint").style.display=disp;
+  document.getElementById("vicRows").style.display=disp;
+}
+
+/* ── Lịch tiếng Việt cho "Thời gian xảy ra" (có giờ), lưu "Y-m-d H:i" không lệch giờ ── */
+var _fpTG=null;
+function initThoiGianPicker(){
+  if(_fpTG) return _fpTG;
+  if(typeof flatpickr!=="function") return null;
+  var hasVn=!!(flatpickr.l10ns&&flatpickr.l10ns.vn);
+  _fpTG=flatpickr("#i_thoi_gian",{
+    enableTime:true, time_24hr:true,
+    dateFormat:"Y-m-d H:i",        // giá trị lưu: 2024-09-15 08:30
+    altInput:true, altFormat:"H:i, d/m/Y",  // hiển thị: 08:30, 15/09/2024
+    allowInput:true,
+    locale:hasVn?"vn":"default"
+  });
+  return _fpTG;
+}
+function setThoiGian(v){
+  v=(v||"").replace("T"," ");
+  if(_fpTG) _fpTG.setDate(v||null,false,"Y-m-d H:i");
+  else document.getElementById("i_thoi_gian").value=v;
+}
+function getThoiGian(){
+  if(_fpTG && _fpTG.selectedDates && _fpTG.selectedDates.length)
+    return _fpTG.formatDate(_fpTG.selectedDates[0],"Y-m-d H:i");
+  return (document.getElementById("i_thoi_gian").value||"").replace("T"," ");
+}
+
+/* ── Nạn nhân (nhiều người / 1 vụ) ── */
+function vicRowHtml(v){
+  v=v||{};
+  var g=function(x){return v.gioiTinh===x?' selected':'';};
+  return '<div class="vic-edit">'+
+    '<button type="button" class="vic-del" onclick="this.closest(\'.vic-edit\').remove()"><svg class="lic-emoji" width="1.05em" height="1.05em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex-shrink:0" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>'+
+    '<div class="vic-grid">'+
+      '<div class="form-group" style="margin-bottom:6px;"><label class="form-label">Họ và tên</label>'+
+        '<input class="form-input vic-hoten" type="text" value="'+esc(v.hoTen||'')+'" placeholder="Nguyễn Văn A"></div>'+
+      '<div class="form-group" style="margin-bottom:6px;"><label class="form-label">Giới tính</label>'+
+        '<select class="form-select vic-gt"><option value="Nam"'+g('Nam')+'>Nam</option><option value="Nữ"'+g('Nữ')+'>Nữ</option></select></div>'+
+      '<div class="form-group" style="margin-bottom:6px;"><label class="form-label">Ngày tháng năm sinh</label>'+
+        '<input class="form-input vic-ns" type="date" value="'+esc(v.ngaySinh||'')+'"></div>'+
+      '<div class="form-group" style="margin-bottom:6px;"><label class="form-label">Chức danh</label>'+
+        '<input class="form-input vic-cd" type="text" value="'+esc(v.chucDanh||'')+'" placeholder="VD: Công nhân bốc xếp"></div>'+
+      '<div class="form-group" style="margin-bottom:6px;"><label class="form-label">Bắt đầu làm việc tại Vietsovpetro</label>'+
+        '<input class="form-input vic-vl" type="date" value="'+esc(v.ngayVaoLam||'')+'"></div>'+
+    '</div></div>';
+}
+function addVicRow(v){
+  var c=document.getElementById("vicRows");
+  c.insertAdjacentHTML('beforeend',vicRowHtml(v));
+  if(window.HSEDate) HSEDate.attachAll(c);
+}
+function collectVics(){
+  var out=[];
+  document.querySelectorAll('#vicRows .vic-edit').forEach(function(row){
+    var hoTen=row.querySelector('.vic-hoten').value.trim();
+    var gt=row.querySelector('.vic-gt').value;
+    var nsEl=row.querySelector('.vic-ns');
+    var vlEl=row.querySelector('.vic-vl');
+    var ns=window.HSEDate?HSEDate.getValue(nsEl):nsEl.value;
+    var vl=window.HSEDate?HSEDate.getValue(vlEl):vlEl.value;
+    var cd=row.querySelector('.vic-cd').value.trim();
+    if(hoTen||ns||cd||vl){ out.push({hoTen:hoTen,gioiTinh:gt,ngaySinh:ns||'',chucDanh:cd,ngayVaoLam:vl||''}); }
+  });
+  return out;
+}
+
+function otmRowHtml(o){
+  o=o||{};
+  var sel=function(v){return o.tinhTrang===v?' selected':'';};
+  return '<div class="otm-edit-row">'+
+    '<textarea class="form-input otm-nd" style="min-height:34px;" placeholder="Nội dung OTM">'+esc(o.noiDung||'')+'</textarea>'+
+    '<input type="date" class="form-input otm-th" value="'+esc(o.thoiHan||'')+'">'+
+    '<select class="form-select otm-tt"><option value="dang_thuc_hien"'+sel('dang_thuc_hien')+'>Đang thực hiện</option>'+
+      '<option value="da_hoan_thanh"'+sel('da_hoan_thanh')+'>Đã hoàn thành</option></select>'+
+    '<button type="button" class="otm-del" onclick="this.closest(\'.otm-edit-row\').remove()"><svg class="lic-emoji" width="1.05em" height="1.05em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex-shrink:0" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>'+
+  '</div>';
+}
+function addOtmRow(o){
+  var c=document.getElementById("otmRows");
+  c.insertAdjacentHTML('beforeend',otmRowHtml(o));
+  if(window.HSEDate) HSEDate.attachAll(c);
+}
+function openInc(id){
+  var u=currentUser(); if(!canEdit(u)){alert("Bạn không có quyền nhập liệu.");return;}
+  var rec=id?getIncidents().find(function(r){return r.id===id;}):null;
+  document.getElementById("i_id").value=rec?rec.id:'';
+  document.getElementById("i_ten").value=rec?(rec.ten||''):'';
+  document.getElementById("i_loai").value=rec?(rec.loai||'tai_nan_lao_dong'):'tai_nan_lao_dong';
+  document.getElementById("i_muc_do").value=rec?(rec.mucDo||'nhe'):'nhe';
+  document.getElementById("i_mo_ta").value=rec?(rec.moTa||''):'';
+  initThoiGianPicker();
+  setThoiGian(rec?(rec.thoiGian||''):'');
+  var vc=document.getElementById("vicRows"); vc.innerHTML='';
+  if(rec && rec.nanNhan && rec.nanNhan.length) rec.nanNhan.forEach(function(v){addVicRow(v);});
+  var c=document.getElementById("otmRows"); c.innerHTML='';
+  if(rec && rec.otms && rec.otms.length) rec.otms.forEach(function(o){addOtmRow(o);});
+  else addOtmRow();
+  onLoaiChange();
+  document.getElementById("incModalTitle").textContent=rec?'✏️ Sửa tai nạn - sự cố':'📝 Ghi nhận tai nạn - sự cố';
+  document.getElementById("incModal").classList.add("open");
+}
+function closeIncModal(){document.getElementById("incModal").classList.remove("open");}
+function collectOtms(){
+  var out=[];
+  document.querySelectorAll('#otmRows .otm-edit-row').forEach(function(row){
+    var nd=row.querySelector('.otm-nd').value.trim();
+    var thEl=row.querySelector('.otm-th');
+    var th=window.HSEDate?HSEDate.getValue(thEl):thEl.value;
+    var tt=row.querySelector('.otm-tt').value;
+    if(nd||th){ out.push({noiDung:nd,thoiHan:th||'',tinhTrang:tt}); }
+  });
+  return out;
+}
+function saveInc(){
+  var u=currentUser(); if(!canEdit(u)){alert("Bạn không có quyền nhập liệu.");return;}
+  var ten=document.getElementById("i_ten").value.trim();
+  var loai=document.getElementById("i_loai").value;
+  var thoiGian=getThoiGian(); // "YYYY-MM-DD HH:mm" giờ địa phương — lưu nguyên, không lệch
+  if(!ten){alert("Vui lòng nhập tên tai nạn - sự cố.");return;}
+  if(!thoiGian){alert("Vui lòng chọn thời gian xảy ra.");return;}
+
+  if(typeof DB!=="undefined"){DB.init(); if(u)DB.setUser(u.username);}
+  var id=document.getElementById("i_id").value;
+  var data={
+    ten:ten, loai:loai,
+    mucDo:(loai==="tai_nan_lao_dong")?document.getElementById("i_muc_do").value:"",
+    thoiGian:thoiGian,
+    moTa:document.getElementById("i_mo_ta").value.trim(),
+    nanNhan:(loai==="tai_nan_lao_dong")?collectVics():[],
+    otms:collectOtms(),
+    updatedBy:u?u.username:'', updatedAt:new Date().toISOString()
+  };
+  var all=getIncidents();
+  if(id){
+    data.id=id;
+    var idx=all.findIndex(function(r){return r.id===id;});
+    if(idx>=0)all[idx]=Object.assign(all[idx],data); else all.push(data);
+    saveIncidents(all);
+    syncWrite('update',SH_INC,id,sheetInc(data));
+  } else {
+    data.id=genId(); data.createdAt=new Date().toISOString();
+    all.push(data); saveIncidents(all);
+    syncWrite('insert',SH_INC,null,sheetInc(data));
+  }
+  closeIncModal(); renderAll();
+}
+function delInc(id){
+  var u=currentUser(); if(!canEdit(u)){alert("Bạn không có quyền.");return;}
+  if(!confirm("Xoá tai nạn - sự cố này?"))return;
+  if(typeof DB!=="undefined"){DB.init(); if(u)DB.setUser(u.username);}
+  saveIncidents(getIncidents().filter(function(r){return r.id!==id;}));
+  syncWrite('delete',SH_INC,id,null);
+  renderAll();
+}
+/* OTM & Nạn nhân là mảng → tuần tự hoá JSON khi ghi lên Sheets (mỗi cái 1 ô) */
+function sheetInc(d){ var c=Object.assign({},d); c.otms=JSON.stringify(d.otms||[]); c.nanNhan=JSON.stringify(d.nanNhan||[]); return c; }
+
+// ══════════════ Sync write helper ══════════════
+function syncWrite(action,sheet,id,data){
+  if(typeof DB==="undefined"||!DB.isReady())return;
+  setSyncStatus("syncing","Đang lưu...");
+  var p;
+  if(action==="insert")      p=DB.insert(sheet,data);
+  else if(action==="update") p=DB.update(sheet,id,data);
+  else if(action==="delete") p=DB.delete(sheet,id);
+  if(!p)return;
+  p.then(function(){setSyncStatus("ok","Đã lưu vào Sheets ✓");})
+   .catch(function(e){
+     var msg=e&&e.message||"";
+     if(action==="update" && (msg.indexOf("Không tìm thấy")>=0||msg.indexOf("id=")>=0)){
+       DB.insert(sheet,data).then(function(){setSyncStatus("ok","Đã lưu vào Sheets ✓");})
+         .catch(function(e2){setSyncStatus("err","Lỗi Sheets: "+(e2&&e2.message||"unknown"));});
+     } else {
+       setSyncStatus("err","Lỗi Sheets: "+msg);
+     }
+   });
+}
+
+// ══════════════ Init ══════════════
+window.addEventListener("DOMContentLoaded",function(){
+  buildTopbar();
+  var u=currentUser();
+  var desc=document.getElementById("pageDesc");
+  if(desc){
+    if(!u) desc.textContent='Bạn đang xem ở chế độ khách.';
+    else if(canEdit(u)) desc.textContent='Bạn có quyền nhập và chỉnh sửa dữ liệu tai nạn - sự cố.';
+    else desc.textContent='Bạn chỉ có quyền xem dữ liệu tai nạn - sự cố.';
+  }
+  safePull();
+});
+</script>
+  <script src="assets/lucide-icons.js"></script>
+  <script src="assets/portal-nav.js"></script>
+</body>
+</html>

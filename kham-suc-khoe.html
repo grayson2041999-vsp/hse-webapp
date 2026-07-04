@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="description" content="Liên doanh Việt - Nga Vietsovpetro · Xí nghiệp Dịch vụ Cảng và CƯVTTB">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Khám sức khoẻ nghề nghiệp · Quản lý HSE</title>
+  <style>
+    :root {
+      --primary:       #003087;
+      --primary-light: #0060B6;
+      --primary-dark:  #002065;
+      --accent:        #C8102E;
+      --success:       #1a7a3c;
+      --warning:       #e68900;
+      --danger:        #c0392b;
+      --bg:            #EDF1F8;
+      --card:          #ffffff;
+      --text:          #1a2535;
+      --text-light:    #6b7c93;
+      --border:        #cdd6e8;
+    }
+    *{box-sizing:border-box;margin:0;padding:0;}
+    body{font-family:'Segoe UI',Arial,sans-serif;background:var(--bg);color:var(--text);font-size:13.5px;}
+    .layout{display:flex;min-height:100vh;}
+    .sidebar{width:230px;background:var(--primary);position:fixed;top:0;left:0;bottom:0;z-index:90;display:flex;flex-direction:column;overflow-y:auto;}
+    .nav-item{display:flex;align-items:center;gap:10px;padding:10px 18px;color:rgba(255,255,255,0.72);font-size:11px;letter-spacing:.5px;font-weight:600;border-left:3px solid transparent;transition:all .15s;text-decoration:none;}
+    .nav-item:hover{background:rgba(255,255,255,0.08);color:#fff;}
+    .nav-item.active{background:rgba(0,32,101,0.45);border-left-color:var(--accent);color:#fff;font-weight:600;}
+    .main{margin-left:230px;padding:76px 28px 40px;}
+    .topbar{background:linear-gradient(135deg,#003087 0%,#0060B6 100%);border-bottom:3px solid var(--accent);color:#fff;height:58px;display:flex;align-items:center;justify-content:space-between;padding:0 24px;position:fixed;top:0;left:230px;right:0;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,0.25);}
+    .topbar-right{display:flex;align-items:center;gap:10px;}
+    .user-badge{background:rgba(255,255,255,0.15);border:1.5px solid rgba(255,255,255,0.3);border-radius:7px;padding:5px 12px;font-size:12px;color:#fff;display:flex;align-items:center;gap:6px;}
+    .btn-login{background:rgba(255,255,255,0.15);border:1.5px solid rgba(255,255,255,0.35);color:#fff;padding:5px 14px;border-radius:7px;font-size:12.5px;font-weight:600;cursor:pointer;}
+    .btn-login:hover{background:rgba(255,255,255,0.25);}
+    .btn{display:inline-flex;align-items:center;gap:6px;padding:7px 16px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;border:none;transition:all .15s;}
+    .btn-primary{background:var(--primary-light);color:#fff;}
+    .btn-primary:hover{background:var(--primary);}
+    .btn-edit{background:#dceaf7;color:var(--primary);border:1px solid #b8d4ef;}
+    .btn-edit:hover{background:#b8d4ef;}
+    .btn-sm{padding:4px 11px;font-size:12px;}
+    .btn-outline{background:#fff;border:1.5px solid var(--primary-light);color:var(--primary-light);}
+    .btn-outline:hover{background:#dceaf7;}
+    .page-title{font-size:20px;font-weight:700;color:var(--primary);margin-bottom:4px;}
+    .page-desc{font-size:12.5px;color:var(--text-light);margin-bottom:20px;}
+    .toolbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;gap:8px;flex-wrap:wrap;}
+    .toolbar-left{display:flex;align-items:center;gap:12px;}
+    .year-chip{background:#dceaf7;color:var(--primary);font-weight:700;border-radius:7px;padding:6px 14px;font-size:13px;}
+    /* Summary stat cards */
+    .stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin-bottom:22px;}
+    .stat-card{background:#fff;border-radius:10px;padding:14px 16px;box-shadow:0 2px 8px rgba(0,0,0,0.06);border-left:4px solid var(--primary);}
+    .stat-card.green{border-left-color:var(--success);}
+    .stat-card.orange{border-left-color:var(--warning);}
+    .stat-card.red{border-left-color:var(--accent);}
+    .stat-label{font-size:11.5px;color:var(--text-light);margin-bottom:5px;line-height:1.4;}
+    .stat-value{font-size:19px;font-weight:700;color:var(--primary);}
+    .stat-unit{font-size:11px;color:var(--text-light);margin-left:3px;}
+    /* Donut grid */
+    .donut-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:18px;margin-bottom:24px;}
+    .donut-card{background:#fff;border-radius:12px;box-shadow:0 2px 10px rgba(0,0,0,0.07);padding:20px 18px 16px;display:flex;flex-direction:column;align-items:center;border-top:4px solid var(--primary);}
+    .donut-card .dc-title{font-size:14.5px;font-weight:700;color:var(--primary);text-align:center;line-height:1.35;}
+    .donut-card .dc-sub{font-size:11.5px;color:var(--text-light);margin-top:3px;margin-bottom:14px;text-align:center;}
+    .donut-wrap{position:relative;width:180px;height:180px;margin-bottom:14px;}
+    .donut-center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;}
+    .donut-pct{font-size:34px;font-weight:800;line-height:1;}
+    .donut-pct-label{font-size:11px;color:var(--text-light);margin-top:4px;}
+    .donut-nums{display:flex;width:100%;border-top:1px solid #eef1f7;padding-top:12px;margin-top:2px;}
+    .donut-num{flex:1;text-align:center;}
+    .donut-num .dn-val{font-size:16px;font-weight:700;}
+    .donut-num .dn-lbl{font-size:10.5px;color:var(--text-light);margin-top:2px;}
+    .dn-done{color:var(--success);}
+    .dn-total{color:var(--primary);}
+    .dn-left{color:var(--accent);}
+    .donut-meta{font-size:11px;color:var(--text-light);margin-top:12px;text-align:center;min-height:15px;}
+    .donut-actions{margin-top:12px;}
+    .empty-tag{font-size:11.5px;color:#aab4c6;font-style:italic;margin-top:12px;}
+    /* Modal */
+    .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:200;align-items:center;justify-content:center;}
+    .modal-overlay.open{display:flex;}
+    .modal{background:#fff;border-radius:12px;padding:26px;width:440px;max-width:95vw;box-shadow:0 8px 32px rgba(0,0,0,0.18);}
+    .modal-title{font-size:15.5px;font-weight:700;color:var(--primary);margin-bottom:4px;}
+    .modal-subtitle{font-size:12px;color:var(--text-light);margin-bottom:18px;}
+    .form-group{margin-bottom:14px;}
+    .form-label{font-size:12.5px;font-weight:600;color:var(--text);margin-bottom:5px;display:block;}
+    .form-input{width:100%;border:1.5px solid var(--border);border-radius:7px;padding:8px 11px;font-size:14px;outline:none;}
+    .form-input:focus{border-color:var(--primary-light);}
+    .form-hint{font-size:11px;color:var(--text-light);margin-top:4px;}
+    .form-err{color:var(--danger);font-size:12px;margin-top:8px;display:none;}
+    .modal-footer{display:flex;justify-content:flex-end;gap:8px;margin-top:18px;padding-top:14px;border-top:1px solid var(--border);}
+    /* Login modal */
+    #loginModal{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:300;align-items:center;justify-content:center;}
+    #loginModal.open{display:flex;}
+    .login-box{background:#fff;border-radius:12px;padding:28px;width:340px;box-shadow:0 8px 32px rgba(0,0,0,0.2);}
+    .login-title{font-size:16px;font-weight:700;color:var(--primary);margin-bottom:16px;text-align:center;}
+    .login-err{color:var(--danger);font-size:12.5px;margin-bottom:10px;display:none;}
+    /* Sync */
+    .sync-status{font-size:11.5px;color:var(--text-light);display:flex;align-items:center;gap:5px;}
+    .sync-dot{width:8px;height:8px;border-radius:50%;background:#ccc;display:inline-block;flex-shrink:0;}
+    .sync-dot.ok{background:var(--success);}
+    .sync-dot.err{background:var(--danger);}
+    .sync-dot.syncing{background:var(--warning);animation:pulse .9s infinite;}
+    @keyframes pulse{0%,100%{opacity:1;}50%{opacity:.35;}}
+    .badge{display:inline-block;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600;}
+    .badge-blue{background:#dceaf7;color:#003087;}
+    .viewer-notice{font-size:12px;color:rgba(255,255,255,0.7);padding:5px 12px;border:1.5px solid rgba(255,255,255,0.35);border-radius:7px;}
+  </style>
+</head>
+<body>
+<script src="assets/db.js"></script>
+<script src="assets/app.js"></script>
+
+<!-- Edit Modal -->
+<div class="modal-overlay" id="editModal">
+  <div class="modal">
+    <div class="modal-title" id="editModalTitle"><svg class="lic-emoji" width="1.05em" height="1.05em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex-shrink:0" aria-hidden="true"><path d="M12 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.375 2.625a1 1 0 0 1 3 3l-9.013 9.014a2 2 0 0 1-.853.505l-2.873.84a.5.5 0 0 1-.62-.62l.84-2.873a2 2 0 0 1 .506-.852z"/></svg> Cập nhật số liệu</div>
+    <div class="modal-subtitle" id="editModalSub"></div>
+    <input type="hidden" id="editLoai">
+    <div class="form-group">
+      <label class="form-label">Tổng số người cần khám</label>
+      <input class="form-input" id="f_tong" type="number" min="0" step="1" placeholder="0">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Số người đã hoàn thành</label>
+      <input class="form-input" id="f_dakham" type="number" min="0" step="1" placeholder="0">
+      <div class="form-hint">Tính đến thời điểm cập nhật. Phần trăm và số còn lại sẽ tự tính.</div>
+    </div>
+    <div class="form-err" id="editErr"></div>
+    <div class="modal-footer">
+      <button class="btn btn-outline btn-sm" onclick="closeEditModal()">Huỷ</button>
+      <button class="btn btn-primary btn-sm" onclick="confirmSave()"><svg class="lic-emoji" width="1.05em" height="1.05em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex-shrink:0" aria-hidden="true"><path d="M15.2 3a2 2 0 0 1 1.4.6l3.8 3.8a2 2 0 0 1 .6 1.4V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/><path d="M17 21v-7a1 1 0 0 0-1-1H8a1 1 0 0 0-1 1v7"/><path d="M7 3v4a1 1 0 0 0 1 1h7"/></svg> Lưu</button>
+    </div>
+  </div>
+</div>
+
+<div class="layout">
+  <nav class="sidebar" id="sidebarNav"></nav>
+  <div style="flex:1;">
+    <div class="topbar">
+      <div>
+        <div style="font-size:11px;opacity:.75;">Liên doanh Việt - Nga Vietsovpetro</div>
+        <div style="font-size:12px;font-weight:700;opacity:.95;">Xí nghiệp Dịch vụ Cảng và Cung ứng vật tư thiết bị</div>
+      </div>
+      <div class="topbar-right" id="topbarRight"></div>
+    </div>
+    <div class="main">
+      <div class="page-title"><svg class="lic-emoji" width="1.05em" height="1.05em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex-shrink:0" aria-hidden="true"><path d="M11 2v2"/><path d="M5 2v2"/><path d="M5 3H4a2 2 0 0 0-2 2v4a6 6 0 0 0 12 0V5a2 2 0 0 0-2-2h-1"/><path d="M8 15a6 6 0 0 0 12 0v-3"/><circle cx="20" cy="10" r="2"/></svg> Khám sức khoẻ nghề nghiệp</div>
+      <div class="page-desc" id="pageDesc">Theo dõi tiến độ thực hiện khám sức khoẻ định kỳ và khám bệnh nghề nghiệp.</div>
+
+      <div class="toolbar">
+        <div class="toolbar-left">
+          <span class="year-chip" id="yearChip">Năm —</span>
+          <div class="sync-status">
+            <span class="sync-dot" id="syncDot"></span>
+            <span id="syncText">—</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="donut-grid" id="donutGrid"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── Constants ──
+var K_KSK  = "hse_ksk";
+var SH_KSK = "ksk";
+var K_SESS = "hse_session";
+var K_USERS= "hse_users";
+var CUR_YEAR = new Date().getFullYear();
+
+// 3 đợt khám trong năm
+var DOTS = [
+  { loai:"dinh_ky",     title:"Khám sức khoẻ định kỳ",        sub:"Định kỳ · 1 năm/lần" },
+  { loai:"benh_nghe_1", title:"Khám bệnh nghề nghiệp – Lần 1", sub:"Bệnh nghề nghiệp · 2 đợt/năm" },
+  { loai:"benh_nghe_2", title:"Khám bệnh nghề nghiệp – Lần 2", sub:"Bệnh nghề nghiệp · 2 đợt/năm" }
+];
+
+// ── Helpers ──
+function lsLoad(k,d){try{var v=localStorage.getItem(k);return v?JSON.parse(v):d;}catch(e){return d;}}
+function lsSave(k,v){localStorage.setItem(k,JSON.stringify(v));}
+function num(v){var n=parseFloat(v);return isNaN(n)?0:n;}
+function esc(s){return String(s==null?"":s).replace(/[&<>"]/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c];});}
+function fmtInt(v){return num(v).toLocaleString('vi-VN');}
+function fmtDateTime(iso){
+  if(!iso)return "";
+  var d=new Date(iso);
+  if(isNaN(d.getTime()))return "";
+  function p(n){return n<10?"0"+n:""+n;}
+  return p(d.getDate())+"/"+p(d.getMonth()+1)+"/"+d.getFullYear()+" "+p(d.getHours())+":"+p(d.getMinutes());
+}
+
+// ── Auth ──
+function currentUser(){
+  var un=lsLoad(K_SESS,null);
+  if(!un)return null;
+  return (lsLoad(K_USERS,[])||[]).find(function(u){return u.username===un;})||null;
+}
+function isAdmin(u){return u&&u.role==="admin";}
+function canEdit(u){
+  if(!u)return false;
+  if(u.role==="admin")return true;
+  if(u.role==="viewer")return false;
+  return (u.perms||[]).indexOf("kham-suc-khoe")!==-1;
+}
+function roleLabel(r){return r==="admin"?"Admin":(r==="viewer"?"Viewer":"User");}
+
+// ── Logout (đăng nhập thực hiện ở trang Tổng quan) ──
+function doLogout(){localStorage.removeItem(K_SESS);location.reload();}
+
+// ── Sidebar ──
+(function buildSidebar(){
+  var LINKS=[
+    {href:"tong-quan.html",         icon:"📊", label:"Tổng quan"},
+    {href:"tai-nan-su-co.html",     icon:"⚠️", label:"Tai nạn - Sự cố"},
+    {href:"pccc-cnch.html",         icon:"🧯", label:"PCCC & CNCH"},
+    {href:"cap-phat-bhld.html",     icon:"🦺", label:"Cấp phát BHLĐ"},
+    {href:"huan-luyen-dao-tao.html",icon:"🎓", label:"Huấn luyện - Đào tạo"},
+    {href:"sop.html",               icon:"📑", label:"SOP"},
+    {href:"kiem-tra-cac-cap.html",  icon:"🔍", label:"Kiểm tra các cấp"},
+    {href:"quan-ly-thiet-bi.html",  icon:"⚙️", label:"Quản lý thiết bị"},
+    {href:"kham-suc-khoe.html",     icon:"🩺", label:"Khám sức khoẻ nghề nghiệp", active:true},
+    {href:"moi-truong.html",        icon:"🌿", label:"Môi trường"},
+    {href:"quan-ly-nha-thau.html",  icon:"👷", label:"Quản lý nhà thầu"},
+    {href:"ke-hoach.html",          icon:"🗓️", label:"Kế hoạch"},
+    {href:"bao-cao.html",           icon:"📈", label:"Báo cáo"},
+    {href:"quan-tri-he-thong.html", icon:"🛡️", label:"Quản trị hệ thống", adminOnly:true},
+  ];
+  var u=currentUser();
+  var nav=document.getElementById("sidebarNav");
+  if(!nav)return;
+  var html='';
+  LINKS.forEach(function(l){
+    if(l.adminOnly && !isAdmin(u)) return;
+    html+='<a href="'+l.href+'" class="nav-item'+(l.active?' active':'')+'">'+esc(l.label.toUpperCase())+'</a>';
+  });
+  nav.innerHTML=html;
+})();
+
+// ── Topbar ──
+function buildTopbar(){
+  var u=currentUser();
+  var el=document.getElementById("topbarRight");
+  if(!el)return;
+  if(u){
+    el.innerHTML='<div class="user-badge"><svg class="lic-emoji" width="1.05em" height="1.05em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex-shrink:0" aria-hidden="true"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> '+esc(u.fullname||u.username)+
+      ' <span class="badge badge-blue" style="font-size:10px;">'+roleLabel(u.role)+'</span></div>'+
+      '<button class="btn-login" onclick="doLogout()">Đăng xuất</button>';
+  } else {
+    el.innerHTML='<span class="viewer-notice">Chế độ xem</span>';
+  }
+}
+
+// ── Data ──
+// Chỉ giữ dữ liệu năm hiện tại; record cũ năm khác bị bỏ qua (sang năm reset).
+function getAllRecords(){return lsLoad(K_KSK,[])||[];}
+function saveAllRecords(arr){lsSave(K_KSK,arr);}
+function getRecord(loai){
+  return getAllRecords().find(function(r){
+    return String(r.nam)===String(CUR_YEAR) && r.loai===loai;
+  })||null;
+}
+
+// ── Sync ──
+function setSyncStatus(state,text){
+  var dot=document.getElementById("syncDot");
+  var txt=document.getElementById("syncText");
+  if(dot)dot.className="sync-dot"+(state?" "+state:"");
+  if(txt)txt.textContent=text||"";
+}
+function safePull(){
+  if(typeof DB==="undefined"){renderDonuts();return;}
+  DB.init();
+  setSyncStatus("syncing","Đang đồng bộ...");
+  DB.getAll(SH_KSK).then(function(rows){
+    if(rows&&rows.length){
+      saveAllRecords(rows);
+      setSyncStatus("ok","Đã đồng bộ");
+    } else {
+      setSyncStatus("ok","Đã kết nối");
+    }
+    renderDonuts();
+  }).catch(function(){
+    setSyncStatus("err","Lỗi kết nối — đang xem dữ liệu cục bộ");
+    renderDonuts();
+  });
+}
+// ── Donut SVG ──
+function pctColor(pct){
+  if(pct>=80)return "var(--success)";
+  if(pct>=50)return "var(--warning)";
+  return "var(--accent)";
+}
+function drawDonut(pct,hasData){
+  var R=70, CX=90, CY=90, SW=20;
+  var C=2*Math.PI*R;
+  var color=hasData?pctColor(pct):"#d6dde9";
+  var dash=hasData?(pct/100*C):0;
+  var pctText=hasData?Math.round(pct)+"%":"—";
+  var pctColorStyle=hasData?pctColor(pct):"#aab4c6";
+  return ''+
+  '<div class="donut-wrap">'+
+    '<svg width="180" height="180" viewBox="0 0 180 180">'+
+      '<circle cx="'+CX+'" cy="'+CY+'" r="'+R+'" fill="none" stroke="#eef1f7" stroke-width="'+SW+'"></circle>'+
+      '<circle cx="'+CX+'" cy="'+CY+'" r="'+R+'" fill="none" stroke="'+color+'" stroke-width="'+SW+'" '+
+        'stroke-linecap="round" stroke-dasharray="'+dash+' '+C+'" '+
+        'transform="rotate(-90 '+CX+' '+CY+')" style="transition:stroke-dasharray .5s ease;"></circle>'+
+    '</svg>'+
+    '<div class="donut-center">'+
+      '<div class="donut-pct" style="color:'+pctColorStyle+'">'+pctText+'</div>'+
+      '<div class="donut-pct-label">hoàn thành</div>'+
+    '</div>'+
+  '</div>';
+}
+
+// ── Render donuts ──
+function renderDonuts(){
+  var u=currentUser();
+  var grid=document.getElementById("donutGrid");
+  if(!grid)return;
+  var editable=canEdit(u);
+
+  grid.innerHTML=DOTS.map(function(d){
+    var rec=getRecord(d.loai);
+    var tong=rec?num(rec.tong):0;
+    var dakham=rec?num(rec.da_kham):0;
+    var hasData=!!rec && tong>0;
+    var pct=hasData?(dakham/tong*100):0;
+    var conlai=Math.max(0,tong-dakham);
+
+    var meta="";
+    if(rec && rec.updatedAt){
+      meta='Cập nhật: '+fmtDateTime(rec.updatedAt)+(rec.updatedBy?' · bởi '+esc(rec.updatedBy):'');
+    }
+
+    var nums=hasData?
+      ('<div class="donut-nums">'+
+        '<div class="donut-num"><div class="dn-val dn-done">'+fmtInt(dakham)+'</div><div class="dn-lbl">Đã khám</div></div>'+
+        '<div class="donut-num"><div class="dn-val dn-total">'+fmtInt(tong)+'</div><div class="dn-lbl">Tổng cần khám</div></div>'+
+        '<div class="donut-num"><div class="dn-val dn-left">'+fmtInt(conlai)+'</div><div class="dn-lbl">Còn lại</div></div>'+
+      '</div>')
+      : '<div class="empty-tag">Chưa nhập số liệu</div>';
+
+    var action=editable?
+      ('<div class="donut-actions"><button class="btn '+(rec?'btn-edit':'btn-primary')+' btn-sm" onclick="openEdit(\''+d.loai+'\')">'+
+        (rec?'✏️ Cập nhật':'+ Nhập số liệu')+'</button></div>')
+      : '';
+
+    return '<div class="donut-card">'+
+      '<div class="dc-title">'+esc(d.title)+'</div>'+
+      '<div class="dc-sub">'+esc(d.sub)+'</div>'+
+      drawDonut(pct,hasData)+
+      nums+
+      '<div class="donut-meta">'+meta+'</div>'+
+      action+
+    '</div>';
+  }).join('');
+}
+
+// ── Edit Modal ──
+function openEdit(loai){
+  var u=currentUser();
+  if(!canEdit(u)){alert("Bạn không có quyền nhập liệu.");return;}
+  var meta=DOTS.find(function(d){return d.loai===loai;});
+  var rec=getRecord(loai)||{};
+  document.getElementById("editLoai").value=loai;
+  document.getElementById("editModalTitle").textContent=(rec.id?'✏️ Cập nhật':'📝 Nhập số liệu')+' – Năm '+CUR_YEAR;
+  document.getElementById("editModalSub").textContent=meta?meta.title:'';
+  document.getElementById("f_tong").value=(rec.tong!==undefined&&rec.tong!==null&&rec.tong!=='')?rec.tong:'';
+  document.getElementById("f_dakham").value=(rec.da_kham!==undefined&&rec.da_kham!==null&&rec.da_kham!=='')?rec.da_kham:'';
+  document.getElementById("editErr").style.display="none";
+  document.getElementById("editModal").classList.add("open");
+}
+function closeEditModal(){document.getElementById("editModal").classList.remove("open");}
+
+function confirmSave(){
+  var u=currentUser();
+  if(!canEdit(u)){alert("Bạn không có quyền nhập liệu.");return;}
+  var loai=document.getElementById("editLoai").value;
+  var tong=num(document.getElementById("f_tong").value);
+  var dakham=num(document.getElementById("f_dakham").value);
+  var err=document.getElementById("editErr");
+
+  if(tong<0||dakham<0){err.textContent="Số lượng không được âm.";err.style.display="block";return;}
+  if(dakham>tong){err.textContent="Số đã khám không được lớn hơn tổng số cần khám.";err.style.display="block";return;}
+
+  var rec=getRecord(loai);
+  var data={
+    nam:CUR_YEAR, loai:loai, tong:tong, da_kham:dakham,
+    updatedBy:(u.fullname||u.username), updatedAt:new Date().toISOString()
+  };
+
+  if(typeof DB!=="undefined"){DB.init();if(u)DB.setUser(u.username);}
+
+  var all=getAllRecords();
+  if(rec && rec.id){
+    data.id=rec.id;
+    var idx=all.findIndex(function(r){return r.id===rec.id;});
+    if(idx>=0)all[idx]=Object.assign(all[idx],data); else all.push(data);
+    saveAllRecords(all);
+    if(typeof DB!=="undefined"){
+      setSyncStatus("syncing","Đang lưu...");
+      DB.update(SH_KSK,rec.id,data)
+        .then(function(){setSyncStatus("ok","Đã lưu vào Sheets ✓");})
+        .catch(function(e){
+          var msg=e&&e.message||"";
+          if(msg.indexOf("Không tìm thấy")>=0||msg.indexOf("id=")>=0){
+            DB.insert(SH_KSK,data)
+              .then(function(){setSyncStatus("ok","Đã lưu vào Sheets ✓");})
+              .catch(function(e2){setSyncStatus("err","Lỗi Sheets: "+(e2&&e2.message||"unknown"));});
+          } else {setSyncStatus("err","Lỗi Sheets: "+msg);}
+        });
+    }
+  } else {
+    data.id=Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+    all.push(data);
+    saveAllRecords(all);
+    if(typeof DB!=="undefined"){
+      setSyncStatus("syncing","Đang lưu...");
+      DB.insert(SH_KSK,data)
+        .then(function(){setSyncStatus("ok","Đã lưu vào Sheets ✓");})
+        .catch(function(e){setSyncStatus("err","Lỗi Sheets: "+(e&&e.message||"unknown"));});
+    }
+  }
+  closeEditModal();
+  renderDonuts();
+}
+
+// ── Page init ──
+window.addEventListener("DOMContentLoaded",function(){
+  buildTopbar();
+  document.getElementById("yearChip").textContent="Năm "+CUR_YEAR;
+
+  var u=currentUser();
+  var desc=document.getElementById("pageDesc");
+  if(desc){
+    if(!u)
+      desc.textContent='Bạn đang xem ở chế độ khách.';
+    else if(canEdit(u))
+      desc.textContent='Bạn có quyền nhập và cập nhật tiến độ khám sức khoẻ.';
+    else
+      desc.textContent='Bạn chỉ có quyền xem tiến độ khám sức khoẻ.';
+  }
+
+  safePull();
+});
+</script>
+  <script src="assets/lucide-icons.js"></script>
+  <script src="assets/portal-nav.js"></script>
+</body>
+</html>

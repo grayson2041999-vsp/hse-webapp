@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="description" content="Liên doanh Việt - Nga Vietsovpetro · Xí nghiệp Dịch vụ Cảng và CƯVTTB">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Quản lý HSE · Vietsovpetro</title>
+  <link rel="icon" href="assets/logo web.jpg">
+  <link rel="stylesheet" href="assets/style.css">
+  <link rel="stylesheet" href="assets/flatpickr.min.css">
+</head>
+<body>
+  <!-- Thư viện & lõi dùng chung -->
+  <script src="assets/flatpickr.min.js"></script>
+  <script src="assets/flatpickr-vn.js"></script>
+  <script src="assets/hse-date.js"></script>
+  <script src="assets/db.js"></script>
+  <script src="assets/app.js"></script>
+  <!-- Renderer cho các trang nhẹ -->
+  <script src="assets/huan-luyen-dao-tao.js"></script>
+  <script src="assets/nha-thau.js"></script>
+  <script src="assets/binh-ap-luc.js"></script>
+  <script src="assets/thiet-bi.js"></script>
+  <script src="assets/lucide-icons.js"></script>
+
+  <!-- Router theo hash: index.html#slug -->
+  <script>
+  (function(){
+    // Các trang nghiệp vụ lớn đứng riêng — điều hướng sang file HTML riêng
+    var STANDALONE = {
+      "tai-nan-su-co":1, "pccc-cnch":1, "kiem-tra-cac-cap":1, "moi-truong":1,
+      "ke-hoach":1, "cap-phat-bhld":1, "kham-suc-khoe":1
+    };
+    // Các trang nhẹ do index.html render qua app.js
+    var SHELL = {
+      "tong-quan":1, "sop":1, "huan-luyen-dao-tao":1, "quan-ly-nha-thau":1,
+      "quan-ly-thiet-bi":1, "quan-tri-he-thong":1
+    };
+
+    function route(){
+      var slug = (location.hash.slice(1) || "tong-quan").trim();
+      // Trang lớn → mở file riêng
+      if(STANDALONE[slug]){ location.href = slug + ".html"; return; }
+      // Slug lạ hoặc đã bỏ (vd bao-cao) → về trang chủ
+      if(!SHELL[slug]) slug = "tong-quan";
+      if(slug === "tong-quan") HSE.renderDashboard();
+      else HSE.renderPage(slug);
+      window.scrollTo(0, 0);
+    }
+
+    window.addEventListener("hashchange", route);
+    route();
+  })();
+  </script>
+</body>
+</html>

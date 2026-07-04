@@ -1,0 +1,2140 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="description" content="Liên doanh Việt - Nga Vietsovpetro · Xí nghiệp Dịch vụ Cảng và CƯVTTB">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PCCC & CNCH · Quản lý HSE</title>
+  <style>
+    :root {
+      --primary:       #003087;
+      --primary-light: #0060B6;
+      --primary-dark:  #002065;
+      --accent:        #C8102E;
+      --success:       #1a7a3c;
+      --warning:       #e68900;
+      --danger:        #c0392b;
+      --bg:            #EDF1F8;
+      --card:          #ffffff;
+      --text:          #1a2535;
+      --text-light:    #6b7c93;
+      --border:        #cdd6e8;
+    }
+    *{box-sizing:border-box;margin:0;padding:0;}
+    body{font-family:'Segoe UI',Arial,sans-serif;background:var(--bg);color:var(--text);font-size:13.5px;}
+
+    /* LAYOUT */
+    .layout{display:flex;min-height:100vh;}
+    .sidebar{width:230px;background:var(--primary);position:fixed;top:0;left:0;bottom:0;z-index:90;display:flex;flex-direction:column;overflow-y:auto;}
+    .nav-item{display:flex;align-items:center;gap:10px;padding:10px 18px;color:rgba(255,255,255,0.72);font-size:11px;letter-spacing:.5px;font-weight:600;border-left:3px solid transparent;transition:all .15s;text-decoration:none;}
+    .nav-item:hover{background:rgba(255,255,255,0.08);color:#fff;}
+    .nav-item.active{background:rgba(0,32,101,0.45);border-left-color:var(--accent);color:#fff;font-weight:600;}
+    .main{margin-left:230px;padding:76px 28px 40px;}
+
+    /* TOPBAR */
+    .topbar{background:linear-gradient(135deg,#003087 0%,#0060B6 100%);border-bottom:3px solid var(--accent);color:#fff;height:58px;display:flex;align-items:center;justify-content:space-between;padding:0 24px;position:fixed;top:0;left:230px;right:0;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,0.25);}
+    .topbar-right{display:flex;align-items:center;gap:10px;}
+    .user-badge{background:rgba(255,255,255,0.15);border:1.5px solid rgba(255,255,255,0.3);border-radius:7px;padding:5px 12px;font-size:12px;color:#fff;display:flex;align-items:center;gap:6px;}
+    .btn-login{background:rgba(255,255,255,0.15);border:1.5px solid rgba(255,255,255,0.35);color:#fff;padding:5px 14px;border-radius:7px;font-size:12.5px;font-weight:600;cursor:pointer;}
+    .btn-login:hover{background:rgba(255,255,255,0.25);}
+    .viewer-notice{font-size:12px;color:rgba(255,255,255,0.7);padding:5px 10px;}
+
+    /* TABS */
+    .page-title{font-size:20px;font-weight:700;color:var(--primary);margin-bottom:4px;}
+    .page-desc{font-size:12.5px;color:var(--text-light);margin-bottom:20px;}
+    .tab-bar{display:flex;border-bottom:2px solid var(--border);margin-bottom:22px;}
+    .tab-btn{padding:10px 22px;font-size:13.5px;font-weight:600;color:var(--text-light);cursor:pointer;border:none;background:none;border-bottom:2.5px solid transparent;margin-bottom:-2px;transition:all .15s;}
+    .tab-btn:hover{color:var(--primary);}
+    .tab-btn.active{color:var(--primary);border-bottom-color:var(--primary);}
+    .tab-pane{display:none;}
+    .tab-pane.active{display:block;}
+
+    /* BUTTONS */
+    .btn{display:inline-flex;align-items:center;gap:6px;padding:7px 16px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;border:none;transition:all .15s;}
+    .btn-primary{background:var(--primary-light);color:#fff;}
+    .btn-primary:hover{background:var(--primary);}
+    .btn-danger{background:#fdedec;color:var(--danger);border:1px solid #f5c6cb;}
+    .btn-danger:hover{background:#f5c6cb;}
+    .btn-edit{background:#dceaf7;color:var(--primary);border:1px solid #b8d4ef;}
+    .btn-edit:hover{background:#b8d4ef;}
+    .btn-sm{padding:4px 10px;font-size:12px;}
+    .btn-outline{background:#fff;border:1.5px solid var(--primary-light);color:var(--primary-light);}
+    .btn-outline:hover{background:#dceaf7;}
+
+    /* TOOLBAR */
+    .toolbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;gap:8px;flex-wrap:wrap;}
+    .toolbar-left{display:flex;align-items:center;gap:8px;}
+    .search-box{border:1.5px solid var(--border);border-radius:7px;padding:6px 12px;font-size:13px;width:220px;outline:none;background:#fff;}
+    .search-box:focus{border-color:var(--primary-light);}
+
+    /* TABLE */
+    .table-wrap{background:#fff;border-radius:10px;box-shadow:0 2px 8px rgba(0,0,0,0.07);overflow:auto;margin-bottom:24px;}
+    table{width:100%;border-collapse:collapse;}
+    th{background:#dde6f3;color:var(--primary);font-size:12.5px;font-weight:700;padding:10px 14px;text-align:left;white-space:nowrap;}
+    td{padding:9px 14px;border-bottom:1px solid #f0f3fa;font-size:13px;vertical-align:middle;}
+    tr:last-child td{border-bottom:none;}
+    tr:hover td{background:#eef3fb;}
+    .empty-row td{text-align:center;color:var(--text-light);padding:28px;font-style:italic;}
+
+    /* BADGES */
+    .badge{display:inline-block;padding:3px 9px;border-radius:20px;font-size:11.5px;font-weight:600;}
+    .badge-red{background:#fdedec;color:var(--danger);}
+    .badge-orange{background:#fef5e4;color:var(--warning);}
+    .badge-blue{background:#dceaf7;color:var(--primary);}
+    .badge-gray{background:#f2f3f4;color:var(--text-light);}
+    .badge-green{background:#eafaf1;color:var(--success);}
+
+    /* FORM */
+    .form-row{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;}
+    .form-row.full{grid-template-columns:1fr;}
+    .form-group{display:flex;flex-direction:column;gap:4px;}
+    .form-group label{font-size:12px;font-weight:600;color:var(--text-light);}
+    .form-group label .req{color:var(--danger);}
+    .inp{border:1.5px solid var(--border);border-radius:7px;padding:7px 11px;font-size:13px;font-family:inherit;outline:none;background:#fff;transition:border .15s;width:100%;}
+    .inp:focus{border-color:var(--primary-light);}
+    textarea.inp{resize:vertical;min-height:72px;}
+    select.inp{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath fill='%236b7c93' d='M0 0l5 6 5-6z'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;padding-right:28px;}
+
+    /* MODAL */
+    .modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:200;align-items:center;justify-content:center;}
+    .modal-bg.open{display:flex;}
+    .modal{background:#fff;border-radius:12px;width:560px;max-width:96vw;max-height:90vh;display:flex;flex-direction:column;box-shadow:0 8px 32px rgba(0,0,0,0.22);}
+    .modal-head{padding:15px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;background:linear-gradient(135deg,#003087,#0060B6);border-radius:12px 12px 0 0;}
+    .modal-head h3{font-size:14.5px;font-weight:700;color:#fff;}
+    .modal-close{background:rgba(255,255,255,0.15);border:none;color:#fff;width:28px;height:28px;border-radius:50%;cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center;}
+    .modal-close:hover{background:rgba(255,255,255,0.3);}
+    .modal-body{padding:20px;overflow-y:auto;flex:1;}
+    .modal-footer{padding:13px 20px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:8px;background:#f8f9fd;border-radius:0 0 12px 12px;}
+
+    /* QUICK SELECT CHIPS */
+    .chip-group{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px;}
+    .chip{padding:4px 11px;border-radius:20px;font-size:12px;border:1.5px solid var(--primary-light);color:var(--primary);background:#fff;cursor:pointer;transition:all .12s;}
+    .chip:hover{background:var(--primary-light);color:#fff;}
+
+    /* SECTION CARD */
+    .section-card{background:#fff;border-radius:10px;box-shadow:0 2px 8px rgba(0,0,0,0.07);padding:20px;margin-bottom:20px;}
+    .section-card-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;padding-bottom:12px;border-bottom:2px solid #f0f3fa;}
+    .section-card-title{font-size:14.5px;font-weight:700;color:var(--primary);display:flex;align-items:center;gap:8px;}
+
+    /* INFO BOX */
+    .info-box{background:#dceaf7;border-left:4px solid var(--primary);padding:10px 14px;border-radius:0 8px 8px 0;font-size:12.5px;color:var(--primary);margin-bottom:16px;}
+    .warn-box{background:#fef5e4;border-left:4px solid var(--warning);padding:10px 14px;border-radius:0 8px 8px 0;font-size:12.5px;color:#7a4a00;margin-bottom:16px;}
+
+    /* WIP */
+    .wip{background:#fff;border-radius:10px;padding:40px 24px;text-align:center;box-shadow:0 2px 8px rgba(0,0,0,0.07);}
+    .wip .ic{font-size:36px;margin-bottom:12px;}
+    .wip h3{font-size:15px;font-weight:700;color:var(--primary);margin-bottom:8px;}
+    .wip p{font-size:13px;color:var(--text-light);}
+
+    /* ZONE GRID – Phương tiện CC & CNCH */
+    .zone-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;max-width:900px;}
+    .zone-card{background:#fff;border-radius:12px;box-shadow:0 2px 10px rgba(0,0,0,0.08);
+      padding:24px 16px;text-align:center;cursor:pointer;border:2px solid transparent;
+      transition:all .18s;position:relative;overflow:hidden;}
+    .zone-card::before{content:'';position:absolute;top:0;left:0;right:0;height:4px;
+      background:linear-gradient(90deg,var(--primary),var(--primary-light));}
+    .zone-card:hover{border-color:var(--primary-light);box-shadow:0 4px 18px rgba(0,96,182,0.18);
+      transform:translateY(-2px);}
+    .zone-card:active{transform:translateY(0);}
+    .zone-card .zone-icon{font-size:32px;margin-bottom:10px;display:block;}
+    .zone-card .zone-num{position:absolute;top:10px;right:12px;font-size:11px;font-weight:700;
+      color:var(--primary-light);background:#dceaf7;border-radius:20px;padding:2px 8px;}
+    .zone-card .zone-name{font-size:13.5px;font-weight:700;color:var(--primary);
+      margin-bottom:6px;line-height:1.4;}
+    .zone-card .zone-count{font-size:12px;color:var(--text-light);}
+    .zone-card .zone-count span{font-weight:700;color:var(--primary-light);}
+    /* Hàng cuối 2 ô: căn giữa */
+    .zone-grid-last{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;max-width:900px;margin-top:0;}
+    .zone-grid-last .zone-card:last-child:nth-child(2){grid-column:2;}
+
+    /* ZONE VIEW – sơ đồ khu vực */
+    .zone-view{display:none;}
+    .zone-view.active{display:block;}
+    .zone-view-header{display:flex;align-items:center;gap:12px;margin-bottom:18px;}
+    .zone-back-btn{background:#dceaf7;border:none;color:var(--primary);font-size:13px;font-weight:700;
+      padding:7px 16px;border-radius:8px;cursor:pointer;display:flex;align-items:center;gap:6px;}
+    .zone-back-btn:hover{background:#b8d4ef;}
+    .zone-view-title{font-size:16px;font-weight:700;color:var(--primary);}
+    .zone-diagram-wrap{background:#fff;border-radius:10px;box-shadow:0 2px 8px rgba(0,0,0,0.07);
+      padding:24px;min-height:340px;display:flex;align-items:center;justify-content:center;
+      border:2px dashed var(--border);position:relative;}
+    .zone-diagram-placeholder{text-align:center;color:var(--text-light);}
+    .zone-diagram-placeholder .ic{font-size:40px;margin-bottom:12px;}
+    .zone-diagram-placeholder p{font-size:13px;}
+
+    /* MARKER */
+    #zoneDiagramWrap{overflow:hidden;}
+    #zoneDiagramWrap.has-diagram{padding:0;border:1.5px solid var(--border);min-height:auto;display:block;width:100%;}
+    #zoneDiagramWrap svg{display:block;width:100%;height:auto;cursor:crosshair;}
+    .zone-edit-hint{background:#dceaf7;border-left:4px solid var(--primary);padding:8px 14px;
+      border-radius:0 8px 8px 0;font-size:12.5px;color:var(--primary);margin-bottom:12px;display:none;}
+
+    /* TOAST */
+    #toast{position:fixed;bottom:24px;right:24px;padding:10px 18px;border-radius:8px;font-size:13px;font-weight:600;box-shadow:0 4px 16px rgba(0,0,0,0.2);z-index:999;display:none;color:#fff;}
+
+    /* MONTH FILTER */
+    .month-filter{display:flex;align-items:center;gap:10px;background:#fff;border-radius:10px;padding:12px 18px;box-shadow:0 2px 8px rgba(0,0,0,0.07);margin-bottom:18px;}
+    .month-filter label{font-size:12.5px;font-weight:600;color:var(--text-light);}
+
+    /* LOCK BADGE */
+    .lock-badge{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:20px;font-size:11.5px;font-weight:700;background:#fdedec;color:var(--danger);border:1px solid #f5c6cb;}
+    .lock-notice{background:#fdedec;border-left:4px solid var(--danger);padding:9px 14px;border-radius:0 8px 8px 0;font-size:12.5px;color:var(--danger);margin-bottom:12px;display:none;}
+
+    /* REPORT PREVIEW */
+    .report-preview{background:#f8f9fd;border:1.5px solid var(--border);border-radius:8px;padding:14px;max-height:220px;overflow-y:auto;font-size:12.5px;margin-bottom:14px;}
+    .report-preview table{width:100%;border-collapse:collapse;font-size:12px;}
+    .report-preview th{background:#dde6f3;color:var(--primary);padding:6px 8px;text-align:left;}
+    .report-preview td{padding:6px 8px;border-bottom:1px solid #eef0f5;}
+    .report-preview tr:last-child td{border-bottom:none;}
+    .section-divider{font-size:11px;font-weight:700;color:var(--text-light);text-transform:uppercase;letter-spacing:.5px;margin:14px 0 6px;padding-bottom:4px;border-bottom:1.5px solid var(--border);}
+
+    /* KẾ HOẠCH LIÊN QUAN sub-section header */
+    .kh-sub-header{font-size:12px;font-weight:700;color:var(--text-light);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;padding-bottom:6px;border-bottom:1.5px solid var(--border);}
+
+    @media(max-width:768px){
+      .sidebar{transform:translateX(-100%);}
+      .main{margin-left:0;padding:72px 14px 24px;}
+      .topbar{left:0;}
+      .form-row{grid-template-columns:1fr;}
+    }
+  </style>
+  <link rel="stylesheet" href="assets/flatpickr.min.css">
+  <script src="assets/flatpickr.min.js"></script>
+  <script src="assets/flatpickr-vn.js"></script>
+  <script src="assets/hse-date.js"></script>
+</head>
+<body>
+<div class="layout">
+  <aside class="sidebar" id="sidebar"></aside>
+
+  <header class="topbar">
+    <div>
+      <div style="font-size:11px;opacity:.75;">Liên doanh Việt - Nga Vietsovpetro</div>
+      <div style="font-size:12px;font-weight:700;opacity:.95;">Xí nghiệp Dịch vụ Cảng và Cung ứng vật tư thiết bị</div>
+    </div>
+    <div class="topbar-right" id="topbarRight"></div>
+  </header>
+
+  <main class="main">
+    <div class="page-title"><svg class="lic-emoji" width="1.05em" height="1.05em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex-shrink:0" aria-hidden="true"><path d="M15 6.5V3a1 1 0 0 0-1-1h-2a1 1 0 0 0-1 1v3.5"/><path d="M9 18h8"/><path d="M18 3h-3"/><path d="M11 3a6 6 0 0 0-6 6v11"/><path d="M5 13h4"/><path d="M17 10a4 4 0 0 0-8 0v10a2 2 0 0 0 2 2h4a2 2 0 0 0 2-2Z"/></svg> Phòng cháy, chữa cháy & Cứu nạn, cứu hộ</div>
+    <div class="page-desc" id="pageDesc"></div>
+
+    <div class="tab-bar">
+      <button class="tab-btn active" onclick="switchTab('bctd')"><svg class="lic-emoji" width="1.05em" height="1.05em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex-shrink:0" aria-hidden="true"><path d="M10.268 21a2 2 0 0 0 3.464 0"/><path d="M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326"/></svg> Hệ thống báo cháy tự động</button>
+      <button class="tab-btn" onclick="switchTab('phuongtien')"><svg class="lic-emoji" width="1.05em" height="1.05em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex-shrink:0" aria-hidden="true"><path d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2"/><path d="M15 18H9"/><path d="M19 18h2a1 1 0 0 0 1-1v-3.65a1 1 0 0 0-.22-.624l-3.48-4.35A1 1 0 0 0 17.52 8H14"/><circle cx="17" cy="18" r="2"/><circle cx="7" cy="18" r="2"/></svg> Phương tiện CC & CNCH</button>
+    </div>
+
+    <!-- TAB 1: HỆ THỐNG BCTD -->
+    <div class="tab-pane active" id="tab-bctd">
+
+      <!-- ADMIN: QUẢN LÝ THIẾT BỊ -->
+      <div id="adminDeviceSection" style="display:none">
+        <div class="section-card">
+          <div class="section-card-head">
+            <div class="section-card-title"><svg class="lic-emoji" width="1.05em" height="1.05em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex-shrink:0" aria-hidden="true"><path d="M9.671 4.136a2.34 2.34 0 0 1 4.659 0 2.34 2.34 0 0 0 3.319 1.915 2.34 2.34 0 0 1 2.33 4.033 2.34 2.34 0 0 0 0 3.831 2.34 2.34 0 0 1-2.33 4.033 2.34 2.34 0 0 0-3.319 1.915 2.34 2.34 0 0 1-4.659 0 2.34 2.34 0 0 0-3.32-1.915 2.34 2.34 0 0 1-2.33-4.033 2.34 2.34 0 0 0 0-3.831A2.34 2.34 0 0 1 6.35 6.051a2.34 2.34 0 0 0 3.319-1.915"/><circle cx="12" cy="12" r="3"/></svg> Quản lý danh sách hệ thống BCTĐ</div>
+            <button class="btn btn-primary btn-sm" onclick="openDeviceModal()">+ Thêm hệ thống</button>
+          </div>
+          <div class="table-wrap" style="margin-bottom:0">
+            <table>
+              <thead>
+                <tr>
+                  <th style="width:40px">#</th>
+                  <th>Tên hệ thống</th>
+                  <th>Vị trí lắp đặt</th>
+                  <th style="width:100px"></th>
+                </tr>
+              </thead>
+              <tbody id="tbodyDevices"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- USER + VIEWER: NHẬP/XEM BÁO LỖI -->
+      <div id="errorLogSection">
+        <div class="section-card">
+          <div class="section-card-head">
+            <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+              <div class="section-card-title"><svg class="lic-emoji" width="1.05em" height="1.05em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex-shrink:0" aria-hidden="true"><rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M12 11h4"/><path d="M12 16h4"/><path d="M8 11h.01"/><path d="M8 16h.01"/></svg> Nhật ký báo lỗi hệ thống BCTĐ</div>
+              <span id="lockBadge" class="lock-badge" style="display:none"><svg class="lic-emoji" width="1.05em" height="1.05em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex-shrink:0" aria-hidden="true"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg> Tháng đã khoá</span>
+            </div>
+            <div style="display:flex;gap:8px;align-items:center;">
+              <button class="btn btn-outline btn-sm" id="btnReport" onclick="openReportModal()" style="display:none"><svg class="lic-emoji" width="1.05em" height="1.05em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex-shrink:0" aria-hidden="true"><path d="M6 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.704.706l3.588 3.588A2.4 2.4 0 0 1 20 8v12a2 2 0 0 1-2 2z"/><path d="M14 2v5a1 1 0 0 0 1 1h5"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/></svg> Tạo báo cáo</button>
+              <button class="btn btn-sm" id="btnLockMonth" onclick="toggleLockMonth()" style="display:none"></button>
+            </div>
+            <div style="display:flex;gap:8px;align-items:center;">
+              <div class="month-filter" style="margin-bottom:0;padding:6px 12px;box-shadow:none;border:1.5px solid var(--border);border-radius:8px;">
+                <label>Lọc tháng:</label>
+                <select class="inp" id="filterLogMonth" style="width:80px;padding:4px 8px;font-size:12.5px;" onchange="renderErrorLog();updateLockUI()">
+                </select>
+                <select class="inp" id="filterLogYear" style="width:90px;padding:4px 8px;font-size:12.5px;" onchange="renderErrorLog();updateLockUI()">
+                </select>
+              </div>
+              <button class="btn btn-primary btn-sm" id="btnAddError" onclick="openErrorModal()">+ Nhập báo lỗi</button>
+            </div>
+          </div>
+          <div class="lock-notice" id="lockNotice"><svg class="lic-emoji" width="1.05em" height="1.05em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex-shrink:0" aria-hidden="true"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg> Tháng này đã được Admin khoá. Bạn không thể thêm, sửa hoặc xóa bản ghi.</div>
+          <div class="table-wrap" style="margin-bottom:0">
+            <table>
+              <thead>
+                <tr>
+                  <th style="width:40px">#</th>
+                  <th>Tháng</th>
+                  <th>Hệ thống</th>
+                  <th>Thiết bị – Vị trí</th>
+                  <th>Loại lỗi</th>
+                  <th>Ngày phát hiện</th>
+                  <th>Biện pháp khắc phục</th>
+                  <th>Người nhập</th>
+                  <th style="width:80px"></th>
+                </tr>
+              </thead>
+              <tbody id="tbodyErrors"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 2: PHƯƠNG TIỆN CC & CNCH -->
+    <div class="tab-pane" id="tab-phuongtien">
+
+      <!-- GRID 11 KHU VỰC -->
+      <div id="zoneGrid">
+        <div class="page-title" style="font-size:15px;margin-bottom:6px;"><svg class="lic-emoji" width="1.05em" height="1.05em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex-shrink:0" aria-hidden="true"><path d="M14.106 5.553a2 2 0 0 0 1.788 0l3.659-1.83A1 1 0 0 1 21 4.619v12.764a1 1 0 0 1-.553.894l-4.553 2.277a2 2 0 0 1-1.788 0l-4.212-2.106a2 2 0 0 0-1.788 0l-3.659 1.83A1 1 0 0 1 3 19.381V6.618a1 1 0 0 1 .553-.894l4.553-2.277a2 2 0 0 1 1.788 0z"/><path d="M15 5.764v15"/><path d="M9 3.236v15"/></svg> Chọn khu vực quản lý</div>
+        <div class="page-desc" style="margin-bottom:18px;">Nhấn vào một khu vực để xem sơ đồ và quản lý phương tiện CC & CNCH.</div>
+
+        <!-- Hàng 1–3: 9 ô -->
+        <div class="zone-grid" id="zoneGridMain"></div>
+        <!-- Hàng 4: 2 ô cuối, căn giữa -->
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;max-width:900px;margin-top:16px;" id="zoneGridLast"></div>
+      </div>
+
+      <!-- ZONE VIEW (sơ đồ khu vực) -->
+      <div id="zoneView" class="zone-view">
+        <div class="zone-view-header">
+          <button class="zone-back-btn" onclick="closeZoneView()">← Quay lại</button>
+          <div style="flex:1">
+            <div class="zone-view-title" id="zoneViewTitle"></div>
+            <div style="font-size:12px;color:var(--text-light);margin-top:2px;" id="zoneViewSub"></div>
+          </div>
+          <div id="zoneAdminBar" style="display:flex;gap:8px;align-items:center;"></div>
+        </div>
+        <div class="zone-edit-hint" id="zoneEditHint"><svg class="lic-emoji" width="1.05em" height="1.05em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex-shrink:0" aria-hidden="true"><path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5"/><path d="M9 18h6"/><path d="M10 22h4"/></svg> Nhấn vào sơ đồ để đặt điểm phương tiện CC & CNCH.</div>
+        <div class="zone-diagram-wrap" id="zoneDiagramWrap">
+          <div class="zone-diagram-placeholder">
+            <div class="ic"><svg class="lic-emoji" width="1.05em" height="1.05em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex-shrink:0" aria-hidden="true"><path d="M14.106 5.553a2 2 0 0 0 1.788 0l3.659-1.83A1 1 0 0 1 21 4.619v12.764a1 1 0 0 1-.553.894l-4.553 2.277a2 2 0 0 1-1.788 0l-4.212-2.106a2 2 0 0 0-1.788 0l-3.659 1.83A1 1 0 0 1 3 19.381V6.618a1 1 0 0 1 .553-.894l4.553-2.277a2 2 0 0 1 1.788 0z"/><path d="M15 5.764v15"/><path d="M9 3.236v15"/></svg></div>
+            <p>Sơ đồ khu vực đang được xây dựng.</p>
+          </div>
+        </div>
+        <div id="zoneMarkerList" style="margin-top:16px;"></div>
+      </div>
+
+    </div>
+
+  </main>
+</div>
+
+<!-- MODAL THÊM/SỬA THIẾT BỊ (Admin) -->
+<div class="modal-bg" id="deviceModalBg">
+  <div class="modal" style="width:460px">
+    <div class="modal-head">
+      <h3 id="deviceModalTitle">Thêm hệ thống BCTĐ</h3>
+      <button class="modal-close" onclick="closeDeviceModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-row full" style="margin-bottom:14px">
+        <div class="form-group">
+          <label>Tên hệ thống <span class="req">*</span></label>
+          <input class="inp" id="dName" placeholder="VD: FG Kho căn cứ Cảng MR-2900, Tủ báo cháy Secutron MR-2200...">
+        </div>
+      </div>
+      <div class="form-row full">
+        <div class="form-group">
+          <label>Vị trí lắp đặt <span class="req">*</span></label>
+          <input class="inp" id="dLocation" placeholder="VD: Kho căn cứ Cảng XNDV số 69 đường 30/4...">
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeDeviceModal()">Hủy</button>
+      <button class="btn btn-primary" onclick="saveDevice()"><svg class="lic-emoji" width="1.05em" height="1.05em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex-shrink:0" aria-hidden="true"><path d="M15.2 3a2 2 0 0 1 1.4.6l3.8 3.8a2 2 0 0 1 .6 1.4V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/><path d="M17 21v-7a1 1 0 0 0-1-1H8a1 1 0 0 0-1 1v7"/><path d="M7 3v4a1 1 0 0 0 1 1h7"/></svg> Lưu</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL NHẬP BÁO LỖI (User) -->
+<div class="modal-bg" id="errorModalBg">
+  <div class="modal" style="width:580px">
+    <div class="modal-head">
+      <h3 id="errorModalTitle">Nhập báo lỗi hệ thống BCTĐ</h3>
+      <button class="modal-close" onclick="closeErrorModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <div id="noDeviceWarn" class="warn-box" style="display:none">
+        <svg class="lic-emoji" width="1.05em" height="1.05em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex-shrink:0" aria-hidden="true"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg> Chưa có hệ thống nào được tạo. Vui lòng liên hệ Admin để thêm hệ thống trước.
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Tháng <span class="req">*</span></label>
+          <select class="inp" id="eMonth" onchange="updateDateRange()"></select>
+        </div>
+        <div class="form-group">
+          <label>Năm <span class="req">*</span></label>
+          <select class="inp" id="eYear" onchange="updateDateRange()"></select>
+        </div>
+      </div>
+      <div class="form-row full" style="margin-bottom:10px">
+        <div class="form-group">
+          <label>Hệ thống <span class="req">*</span></label>
+          <select class="inp" id="eDevice"></select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Thiết bị <span class="req">*</span></label>
+          <input class="inp" id="eChildDevice" placeholder="VD: SD123, HD456,...">
+        </div>
+        <div class="form-group">
+          <label>Vị trí thiết bị <span class="req">*</span></label>
+          <input class="inp" id="eDevLocation" placeholder="VD: kho A1, kho H1,...">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Loại lỗi <span class="req">*</span></label>
+          <select class="inp" id="eErrType" onchange="toggleCustomErr()">
+            <option value="Lỗi thiết bị">Lỗi thiết bị</option>
+            <option value="Khác">Khác</option>
+          </select>
+        </div>
+        <div class="form-group" id="customErrGroup" style="display:none">
+          <label>Mô tả lỗi khác <span class="req">*</span></label>
+          <input class="inp" id="eErrCustom" placeholder="Nhập mô tả lỗi...">
+        </div>
+        <div class="form-group" id="detectDateGroup">
+          <label>Ngày phát hiện <span class="req">*</span></label>
+          <input class="inp" type="date" id="eDetectDate">
+        </div>
+      </div>
+      <div class="form-row full">
+        <div class="form-group">
+          <label>Biện pháp khắc phục <span class="req">*</span></label>
+          <div class="chip-group" style="margin-bottom:8px">
+            <span class="chip" onclick="appendBienPhap('Kiểm tra hiện trường')">Kiểm tra hiện trường</span>
+            <span class="chip" onclick="appendBienPhap('Khởi động lại hệ thống')">Khởi động lại hệ thống</span>
+            <span class="chip" onclick="appendBienPhap('Phối hợp với Đội BVVT tiếp tục giám sát hệ thống')">Phối hợp với Đội BVVT giám sát</span>
+          </div>
+          <textarea class="inp" id="eMeasure" placeholder="Nhập biện pháp khắc phục hoặc chọn mẫu nhanh ở trên..." rows="3"></textarea>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeErrorModal()">Hủy</button>
+      <button class="btn btn-primary" onclick="saveError()"><svg class="lic-emoji" width="1.05em" height="1.05em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex-shrink:0" aria-hidden="true"><path d="M15.2 3a2 2 0 0 1 1.4.6l3.8 3.8a2 2 0 0 1 .6 1.4V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/><path d="M17 21v-7a1 1 0 0 0-1-1H8a1 1 0 0 0-1 1v7"/><path d="M7 3v4a1 1 0 0 0 1 1h7"/></svg> Lưu</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL THÊM PHƯƠNG TIỆN (click trên sơ đồ) -->
+<div class="modal-bg" id="markerModalBg">
+  <div class="modal" style="width:420px">
+    <div class="modal-head">
+      <h3 id="markerModalTitle">Thêm phương tiện CC & CNCH</h3>
+      <button class="modal-close" onclick="closeMarkerModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-row full" style="margin-bottom:14px">
+        <div class="form-group">
+          <label>Loại phương tiện <span class="req">*</span></label>
+          <select class="inp" id="markerType"></select>
+        </div>
+      </div>
+      <div class="form-row" style="margin-bottom:14px">
+        <div class="form-group">
+          <label>Số lượng <span class="req">*</span></label>
+          <input class="inp" id="markerQty" type="number" min="1" value="1" placeholder="1">
+        </div>
+        <div class="form-group">
+          <label>Ghi chú</label>
+          <input class="inp" id="markerNote" placeholder="VD: hành lang tầng 2...">
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeMarkerModal()">Hủy</button>
+      <button class="btn btn-primary" onclick="confirmSaveMarker()"><svg class="lic-emoji" width="1.05em" height="1.05em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex-shrink:0" aria-hidden="true"><path d="M15.2 3a2 2 0 0 1 1.4.6l3.8 3.8a2 2 0 0 1 .6 1.4V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/><path d="M17 21v-7a1 1 0 0 0-1-1H8a1 1 0 0 0-1 1v7"/><path d="M7 3v4a1 1 0 0 0 1 1h7"/></svg> Lưu</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL QUẢN LÝ DANH MỤC PHƯƠNG TIỆN (Admin) -->
+<div class="modal-bg" id="ptTypeModalBg">
+  <div class="modal" style="width:480px">
+    <div class="modal-head">
+      <h3><svg class="lic-emoji" width="1.05em" height="1.05em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex-shrink:0" aria-hidden="true"><path d="M9.671 4.136a2.34 2.34 0 0 1 4.659 0 2.34 2.34 0 0 0 3.319 1.915 2.34 2.34 0 0 1 2.33 4.033 2.34 2.34 0 0 0 0 3.831 2.34 2.34 0 0 1-2.33 4.033 2.34 2.34 0 0 0-3.319 1.915 2.34 2.34 0 0 1-4.659 0 2.34 2.34 0 0 0-3.32-1.915 2.34 2.34 0 0 1-2.33-4.033 2.34 2.34 0 0 0 0-3.831A2.34 2.34 0 0 1 6.35 6.051a2.34 2.34 0 0 0 3.319-1.915"/><circle cx="12" cy="12" r="3"/></svg> Danh mục phương tiện CC & CNCH</h3>
+      <button class="modal-close" onclick="closePTTypeModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="info-box" style="margin-bottom:14px">Danh mục này áp dụng cho tất cả khu vực trong toàn bộ hệ thống.</div>
+      <div style="display:flex;gap:8px;margin-bottom:14px;">
+        <input class="inp" id="newPTTypeName" placeholder="Nhập tên loại phương tiện mới..." style="flex:1"
+          onkeydown="if(event.key==='Enter')addPTType()">
+        <button class="btn btn-primary" onclick="addPTType()">+ Thêm</button>
+      </div>
+      <div id="ptTypeList"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-primary" onclick="closePTTypeModal()"><svg class="lic-emoji" width="1.05em" height="1.05em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex-shrink:0" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg> Xong</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<!-- MODAL TẠO BÁO CÁO -->
+<div class="modal-bg" id="reportModalBg">
+  <div class="modal" style="width:660px">
+    <div class="modal-head">
+      <h3><svg class="lic-emoji" width="1.05em" height="1.05em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex-shrink:0" aria-hidden="true"><path d="M6 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.704.706l3.588 3.588A2.4 2.4 0 0 1 20 8v12a2 2 0 0 1-2 2z"/><path d="M14 2v5a1 1 0 0 0 1 1h5"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/></svg> Tạo báo cáo tình trạng HTBCTĐ</h3>
+      <button class="modal-close" onclick="closeReportModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-row">
+        <div class="form-group">
+          <label>Chọn tháng báo cáo <span class="req">*</span></label>
+          <select class="inp" id="rMonth" onchange="previewReportData()"></select>
+        </div>
+        <div class="form-group">
+          <label>Năm</label>
+          <select class="inp" id="rYear" onchange="previewReportData()"></select>
+        </div>
+      </div>
+
+      <div class="section-divider">Dữ liệu thiết bị báo lỗi (tự động từ nhật ký)</div>
+      <div class="report-preview" id="reportPreview"></div>
+
+      <div class="section-divider">Thông tin bổ sung (Admin nhập)</div>
+      <div class="form-row full" style="margin-bottom:10px">
+        <div class="form-group">
+          <label>Thiết bị mới lắp đặt / cải tạo chưa đưa vào hoạt động</label>
+          <textarea class="inp" id="rNewDevices" rows="2" placeholder="Nếu không có, để trống"></textarea>
+        </div>
+      </div>
+      <div class="form-row full" style="margin-bottom:10px">
+        <div class="form-group">
+          <label>Công trình chưa được lắp đặt hệ thống báo cháy tự động</label>
+          <textarea class="inp" id="rNoSystem" rows="2" placeholder="Nếu không có, để trống"></textarea>
+        </div>
+      </div>
+      <div class="form-row full">
+        <div class="form-group">
+          <label>Người thực hiện (tên người xuất báo cáo) <span class="req">*</span></label>
+          <input class="inp" id="rPreparedBy" placeholder="Họ và tên">
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeReportModal()">Hủy</button>
+      <button class="btn btn-primary" onclick="generateReport()" id="btnGenReport">
+        <svg class="lic-emoji" width="1.05em" height="1.05em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex-shrink:0" aria-hidden="true"><path d="M12 15V3"/><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/></svg> Xuất báo cáo .docx
+      </button>
+    </div>
+  </div>
+</div>
+
+<script src="assets/db.js"></script>
+<script>
+/* ================================================================
+   PCCC & CNCH – Hệ thống báo cháy tự động
+   ================================================================ */
+
+var MENU=[
+  {slug:"tong-quan",title:"Tổng quan",icon:"📊"},
+  {slug:"tai-nan-su-co",title:"Tai nạn - Sự cố",icon:"⚠️"},
+  {slug:"pccc-cnch",title:"PCCC & CNCH",icon:"🧯"},
+  {slug:"cap-phat-bhld",title:"Cấp phát BHLĐ",icon:"🦺"},
+  {slug:"huan-luyen-dao-tao",title:"Huấn luyện - Đào tạo",icon:"🎓"},
+  {slug:"sop",title:"SOP",icon:"📑"},
+  {slug:"kiem-tra-cac-cap",title:"Kiểm tra các cấp",icon:"🔍"},
+  {slug:"quan-ly-thiet-bi",title:"Quản lý thiết bị",icon:"⚙️"},
+  {slug:"kham-suc-khoe",title:"Khám sức khoẻ",icon:"🩺"},
+  {slug:"moi-truong",title:"Môi trường",icon:"🌿"},
+  {slug:"quan-ly-nha-thau",title:"Quản lý nhà thầu",icon:"👷"},
+  {slug:"ke-hoach",title:"Kế hoạch",icon:"🗓️"},
+  {slug:"bao-cao",title:"Báo cáo",icon:"📈"},
+  {slug:"quan-tri-he-thong",title:"Quản trị hệ thống",icon:"🛡️",adminOnly:true}
+];
+
+var K_USERS   = "hse_users";
+var K_SESS    = "hse_session";
+var K_DEVICES = "hse_pccc_devices";
+var K_ERRORS  = "hse_pccc_errors";
+var K_LOCKED        = "hse_pccc_locked_months";
+var K_LOCKED_SHEET  = "pccc_locked_months";
+
+function load(k,d){try{var v=localStorage.getItem(k);return v?JSON.parse(v):d;}catch(e){return d;}}
+function save(k,v){localStorage.setItem(k,JSON.stringify(v));}
+function esc(s){return String(s==null?"":s).replace(/[&<>"]/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c];});}
+function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,6);}
+function fmtDate(s){
+  if(!s)return"—";
+  if(typeof s==="string"&&s.indexOf("T")>=0) s=s.split("T")[0];
+  // Dùng HSEDate.toISO thay vì toISOString() để tránh lệch ngày do UTC vs GMT+7
+  if(s instanceof Date) s=window.HSEDate ? HSEDate.toISO(s) : (s.getFullYear()+"-"+String(s.getMonth()+1).padStart(2,"0")+"-"+String(s.getDate()).padStart(2,"0"));
+  var p=String(s).split("-");
+  return p.length===3?p[2]+"/"+p[1]+"/"+p[0]:s;
+}
+
+/* ---- AUTH ---- */
+function seedUsers(){
+  var u=load(K_USERS,null);
+  if(!u||!u.length){
+    save(K_USERS,[{id:"1",username:"admin",password:"admin123",fullname:"Quản trị viên",
+      role:"admin",perms:MENU.map(function(m){return m.slug;}),active:true}]);
+  }
+}
+function getUsers(){return load(K_USERS,[]);}
+function findUser(un){var us=getUsers();for(var i=0;i<us.length;i++)if(us[i].username===un)return us[i];return null;}
+function currentUser(){var un=load(K_SESS,null);return un?findUser(un):null;}
+function isAdmin(u){return u&&u.role==="admin";}
+function canEdit(u){
+  if(!u) return false;
+  if(u.role==="viewer") return false;
+  if(u.role==="admin") return true;
+  return (u.perms||[]).indexOf("pccc-cnch") >= 0;
+}
+function canView(u){
+  if(!u)return true;
+  if(u.role==="admin")return true;
+  return (u.perms||[]).indexOf("pccc-cnch")>=0;
+}
+
+/* ---- SIDEBAR ---- */
+function buildSidebar(){
+  var u=currentUser();
+  var html='<nav style="flex:1;padding-top:8px">';
+  MENU.forEach(function(m){
+    if(m.adminOnly&&(!u||u.role!=="admin"))return;
+    var active=m.slug==="pccc-cnch"?" active":"";
+    html+='<a class="nav-item'+active+'" href="'+m.slug+'.html">'+m.title.toUpperCase()+'</a>';
+  });
+  html+='</nav>';
+  document.getElementById("sidebar").innerHTML=html;
+}
+
+/* ---- TOPBAR ---- */
+function buildTopbar(){
+  var u=currentUser();
+  var right=document.getElementById("topbarRight");
+  if(u){
+    var rc=u.role==="admin"?"#C8102E":u.role==="viewer"?"#6b7c93":"#1a7a3c";
+    right.innerHTML='<div class="user-badge"><span><svg class="lic-emoji" width="1.05em" height="1.05em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex-shrink:0" aria-hidden="true"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span><span>'+esc(u.fullname||u.username)+'</span>'+
+      '<span style="background:'+rc+';color:#fff;padding:1px 7px;border-radius:10px;font-size:11px;font-weight:700;margin-left:4px">'+
+      (u.role==="admin"?"Admin":u.role==="viewer"?"Viewer":"User")+'</span></div>'+
+      '<button class="btn-login" onclick="doLogout()">Đăng xuất</button>';
+  } else {
+    right.innerHTML='<span class="viewer-notice">Chế độ xem</span>';
+  }
+  var u2=currentUser();
+  var desc=document.getElementById("pageDesc");
+  if(!u2) desc.innerHTML='<span style="color:var(--text-light)">Bạn đang xem ở chế độ khách. </span><a href="#" onclick="openLoginModal();return false;" style="color:var(--primary);font-weight:600">Đăng nhập</a><span style="color:var(--text-light)"> để thao tác.</span>';
+  else if(canEdit(u2)) desc.textContent='Bạn có quyền thao tác trên trang này.';
+  else desc.textContent='Bạn chỉ có quyền xem trang này.';
+}
+
+/* ---- TABS ---- */
+function switchTab(tab){
+  document.querySelectorAll('.tab-btn').forEach(function(b,i){
+    b.classList.toggle('active',(tab==='bctd'?i===0:i===1));
+  });
+  document.getElementById('tab-bctd').classList.toggle('active',tab==='bctd');
+  document.getElementById('tab-phuongtien').classList.toggle('active',tab==='phuongtien');
+  if(tab==='bctd'){ populateMonthFilter(); renderErrorLog(); updateLockUI(); }
+}
+
+/* ---- DATA ---- */
+function getDevices(){return load(K_DEVICES,[]);}
+function getErrors(){return load(K_ERRORS,[]);}
+
+/* saveDevices / saveErrors: chỉ lưu localStorage, Sheets được xử lý riêng theo từng thao tác */
+function saveDevices(data){ save(K_DEVICES, data); }
+function saveErrors(data){ save(K_ERRORS, data); }
+
+function _dbToast(ok, msg){
+  if(ok) showToast("☁️ "+msg+" đã lên Sheets","info");
+  else   showToast("⚠️ Lưu local OK, chưa sync Sheets: "+msg,"warning");
+}
+
+function safePullDevices(){
+  if(!DB||!DB.isReady()) return;
+  DB.getAll("pccc_devices").then(function(r){
+    if(r&&r.length){ save(K_DEVICES,r); renderDevices(); populateDeviceSelect(); }
+  }).catch(function(){});
+}
+function safePullErrors(){
+  if(!DB||!DB.isReady()) return;
+  DB.getAll("pccc_errors").then(function(r){
+    if(r&&r.length){
+      save(K_ERRORS,r);
+      populateMonthFilter();
+      renderErrorLog();
+    }
+  }).catch(function(){});
+}
+function safePullLockedMonths(){
+  if(!DB||!DB.isReady()) return;
+  DB.getAll(K_LOCKED_SHEET).then(function(r){
+    if(r!==null&&r!==undefined){
+      save(K_LOCKED, r||[]);
+      updateLockUI();
+      renderErrorLog();
+    }
+  }).catch(function(){});
+}
+
+var SH_PT_TYPES   = "pt_cc_cnch_types";
+var SH_PT_MARKERS = "pt_cc_cnch_markers";
+
+function safePullPTTypes(){
+  if(!DB||!DB.isReady()) return;
+  DB.getAll(SH_PT_TYPES).then(function(r){
+    if(r&&r.length){
+      // Sheets có data → cập nhật localStorage
+      savePTTypes(r.map(function(x){return x.name;}));
+    } else {
+      // Sheets trống → seed toàn bộ danh mục hiện tại (gồm defaults) lên Sheets
+      var types=getPTTypes();
+      var now=new Date().toISOString();
+      var rows=types.map(function(name){
+        return {id:uid(),name:name,createdBy:'system',createdAt:now};
+      });
+      DB.bulkWrite(SH_PT_TYPES,rows).catch(function(){});
+    }
+  }).catch(function(){});
+}
+
+function safePullPTMarkers(){
+  if(!DB||!DB.isReady()) return;
+  DB.getAll(SH_PT_MARKERS).then(function(r){
+    if(r&&r.length){
+      // Gom markers theo zoneId
+      var grouped={};
+      r.forEach(function(m){
+        if(!grouped[m.zoneId]) grouped[m.zoneId]=[];
+        grouped[m.zoneId].push(m);
+      });
+      save(K_PT, grouped);
+      // Cập nhật UI nếu đang mở zone view
+      var zv=document.getElementById("zoneView");
+      if(zv&&zv.classList.contains("active")){
+        var zoneId=zv.dataset.zoneId;
+        if(zoneId){ renderMarkers(zoneId); renderMarkerList(zoneId); }
+      }
+      buildZoneGrid();
+    }
+  }).catch(function(){});
+}
+
+/* ---- RENDER DEVICES (Admin) ---- */
+function renderDevices(){
+  var u=currentUser();
+  var adm=isAdmin(u);
+  var items=getDevices();
+  var tb=document.getElementById("tbodyDevices");
+  if(!items.length){
+    tb.innerHTML='<tr class="empty-row"><td colspan="4">Chưa có hệ thống nào. Nhấn <b>+ Thêm hệ thống</b> để bắt đầu.</td></tr>';
+    return;
+  }
+  tb.innerHTML=items.map(function(x,i){
+    var btns=adm?
+      '<button class="btn btn-edit btn-sm" onclick="openDeviceModal(\''+x.id+'\')"><svg class="lic-emoji" width="1.05em" height="1.05em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex-shrink:0" aria-hidden="true"><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"/><path d="m15 5 4 4"/></svg></button> '+
+      '<button class="btn btn-danger btn-sm" onclick="deleteDevice(\''+x.id+'\')"><svg class="lic-emoji" width="1.05em" height="1.05em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex-shrink:0" aria-hidden="true"><path d="M10 11v6"/><path d="M14 11v6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>':'';
+    return '<tr><td style="color:var(--text-light);font-size:12px">'+(i+1)+'</td>'+
+      '<td style="font-weight:600">'+esc(x.name)+'</td>'+
+      '<td>'+esc(x.location)+'</td>'+
+      '<td style="white-space:nowrap">'+btns+'</td></tr>';
+  }).join("");
+}
+
+/* ================================================================
+   KHOÁ THÁNG
+   ================================================================ */
+function getLockedMonths(){ return load(K_LOCKED,[]); }
+
+function isMonthLocked(m,y){
+  return getLockedMonths().some(function(x){ return x.month===m && x.year===y; });
+}
+
+function toggleLockMonth(){
+  var fm=parseInt(document.getElementById("filterLogMonth").value);
+  var fy=parseInt(document.getElementById("filterLogYear").value);
+  if(!fm||!fy){ showToast("⚠️ Vui lòng chọn một tháng cụ thể để khoá/mở khoá","warning"); return; }
+  var locked=isMonthLocked(fm,fy);
+  var u=currentUser();
+  if(locked){
+    if(!confirm("Mở khoá Tháng "+fm+"/"+fy+"? User sẽ có thể chỉnh sửa lại dữ liệu tháng này.")) return;
+    var lockId="lock-"+fm+"-"+fy;
+    var newArr=getLockedMonths().filter(function(x){ return !(x.month===fm&&x.year===fy); });
+    save(K_LOCKED, newArr);
+    // Xóa khỏi Sheets
+    if(typeof DB!=="undefined"&&DB.isReady()){
+      DB.delete(K_LOCKED_SHEET, lockId).catch(function(){});
+    }
+    showToast("🔓 Đã mở khoá Tháng "+fm+"/"+fy,"success");
+  } else {
+    if(!confirm("Khoá Tháng "+fm+"/"+fy+"? User sẽ không thể thêm/sửa/xóa bản ghi tháng này.")) return;
+    var lockId="lock-"+fm+"-"+fy;
+    var lockItem={id:lockId, month:fm, year:fy, lockedAt:new Date().toISOString(), lockedBy:u?(u.fullname||u.username):"Admin"};
+    var arr=getLockedMonths();
+    arr.push(lockItem);
+    save(K_LOCKED, arr);
+    // Ghi lên Sheets
+    if(typeof DB!=="undefined"&&DB.isReady()){
+      DB.insert(K_LOCKED_SHEET, lockItem).catch(function(){});
+    }
+    showToast("🔒 Đã khoá Tháng "+fm+"/"+fy,"danger");
+  }
+  updateLockUI();
+  renderErrorLog();
+}
+
+function updateLockUI(){
+  var u=currentUser();
+  var adm=isAdmin(u);
+  var fm=parseInt(document.getElementById("filterLogMonth").value);
+  var fy=parseInt(document.getElementById("filterLogYear").value);
+  var specificMonth=!!(fm&&fy);
+  var locked=specificMonth && isMonthLocked(fm,fy);
+
+  // Badge "Tháng đã khoá"
+  var badge=document.getElementById("lockBadge");
+  if(badge) badge.style.display=locked?"":"none";
+
+  // Thông báo cho user
+  var notice=document.getElementById("lockNotice");
+  if(notice) notice.style.display=(locked&&!adm)?"block":"none";
+
+  // Nút khoá/mở khoá (chỉ admin, khi đang lọc tháng cụ thể)
+  var btn=document.getElementById("btnLockMonth");
+  if(btn){
+    btn.style.display=(adm&&specificMonth)?"":"none";
+    if(locked){
+      btn.textContent="Mở khoá tháng";
+      btn.className="btn btn-sm btn-outline";
+    } else {
+      btn.textContent="Khoá tháng";
+      btn.className="btn btn-sm btn-danger";
+    }
+  }
+
+  // Nút "+ Nhập báo lỗi": ẩn nếu tháng đã khoá (và user không phải admin)
+  var u2=currentUser();
+  var editable=u2&&canEdit(u2);
+  var btnAdd=document.getElementById("btnAddError");
+  if(btnAdd) btnAdd.style.display=(editable&&!locked)?"":"none";
+}
+
+/* ---- KIỂM TRA QUYỀN SỞ HỮU BẢN GHI ---- */
+function isOwner(rec){
+  var u=currentUser();
+  if(!u||!rec) return false;
+  if(isAdmin(u)) return true; // Admin luôn có quyền
+  // So sánh theo fullname hoặc username
+  return (u.fullname&&rec.createdBy===u.fullname) || rec.createdBy===u.username;
+}
+
+/* ---- RENDER ERROR LOG ---- */
+function renderErrorLog(){
+  var u=currentUser();
+  var editable=u&&canEdit(u);
+  var items=getErrors();
+  var fm=document.getElementById("filterLogMonth").value;
+  var fy=document.getElementById("filterLogYear").value;
+  if(fm) items=items.filter(function(x){return String(x.month)===fm;});
+  if(fy) items=items.filter(function(x){return String(x.year)===fy;});
+  var tb=document.getElementById("tbodyErrors");
+  if(!items.length){
+    tb.innerHTML='<tr class="empty-row"><td colspan="9">Chưa có bản ghi báo lỗi nào'+(fm||fy?' trong khoảng thời gian đã chọn':'')+'. '+(editable?'Nhấn <b>+ Nhập báo lỗi</b> để thêm.':'')+'</td></tr>';
+    return;
+  }
+  var devices=getDevices();
+  tb.innerHTML=items.map(function(x,i){
+    var dev=devices.find(function(d){return d.id===x.deviceId;})||{};
+    var errLabel=x.errType==="Khác"?(x.errCustom||"Khác"):"Báo lỗi"+(x.childDevice?" "+x.childDevice:"")+(x.devLocation?" – "+x.devLocation:"");
+    var rowLocked=isMonthLocked(x.month,x.year);
+    var canEditRow=editable&&!rowLocked&&isOwner(x);
+    var btns=rowLocked
+      ?'<span style="font-size:11px;color:var(--danger)"><svg class="lic-emoji" width="1.05em" height="1.05em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex-shrink:0" aria-hidden="true"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span>'
+      :(canEditRow
+        ?'<button class="btn btn-edit btn-sm" onclick="openErrorModal(\''+x.id+'\')"><svg class="lic-emoji" width="1.05em" height="1.05em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex-shrink:0" aria-hidden="true"><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"/><path d="m15 5 4 4"/></svg></button> '+
+         '<button class="btn btn-danger btn-sm" onclick="deleteError(\''+x.id+'\')"><svg class="lic-emoji" width="1.05em" height="1.05em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex-shrink:0" aria-hidden="true"><path d="M10 11v6"/><path d="M14 11v6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>'
+        :(editable?'<span style="font-size:11px;color:var(--text-light)" title="Bạn không thể sửa bản ghi của người khác">—</span>':''));
+    var parentLabel=esc(dev.name||x.deviceId);
+    var childLabel=esc(x.childDevice||"—")+(x.devLocation?' – <span style="color:var(--text-light)">'+esc(x.devLocation)+'</span>':"");
+    return '<tr>'+
+      '<td style="color:var(--text-light);font-size:12px">'+(i+1)+'</td>'+
+      '<td><span class="badge badge-blue">T'+x.month+'/'+x.year+'</span></td>'+
+      '<td style="font-weight:600">'+parentLabel+'</td>'+
+      '<td style="font-size:12.5px">'+childLabel+'</td>'+
+      '<td><span class="badge '+(x.errType==="Khác"?"badge-orange":"badge-red")+'">'+esc(errLabel)+'</span></td>'+
+      '<td style="white-space:nowrap">'+fmtDate(x.detectDate)+'</td>'+
+      '<td style="max-width:220px;font-size:12.5px">'+esc(x.measure||"—")+'</td>'+
+      '<td style="font-size:12px;color:var(--text-light)">'+esc(x.createdBy||"—")+'</td>'+
+      '<td style="white-space:nowrap">'+btns+'</td></tr>';
+  }).join("");
+}
+
+/* ---- POPULATE MONTH FILTER ---- */
+function populateMonthFilter(){
+  var now=new Date();
+  var curMonth=now.getMonth()+1;
+  var selM=document.getElementById("filterLogMonth");
+  var selY=document.getElementById("filterLogYear");
+  var curM=selM.value||String(curMonth), curY=selY.value;
+  // Bỏ option "Tất cả", mặc định chọn tháng hiện tại
+  selM.innerHTML=[1,2,3,4,5,6,7,8,9,10,11,12].map(function(m){
+    return '<option value="'+m+'"'+(String(m)===curM?' selected':'')+'>Tháng '+m+'</option>';
+  }).join("");
+  var years=[];
+  var errs=getErrors();
+  errs.forEach(function(x){if(x.year&&years.indexOf(x.year)<0)years.push(x.year);});
+  if(years.indexOf(now.getFullYear())<0)years.push(now.getFullYear());
+  years.sort(function(a,b){return b-a;});
+  selY.innerHTML=years.map(function(y){
+    return '<option value="'+y+'"'+(String(y)===(curY||String(now.getFullYear()))?' selected':'')+'>'+y+'</option>';
+  }).join("");
+}
+
+
+/* ================================================================
+   MODAL THIẾT BỊ (Admin)
+   ================================================================ */
+var _editDeviceId=null;
+function openDeviceModal(editId){
+  _editDeviceId=editId||null;
+  var existing=editId?getDevices().find(function(x){return x.id===editId;}):null;
+  document.getElementById("deviceModalTitle").textContent=editId?"Chỉnh sửa hệ thống":"Thêm hệ thống BCTĐ";
+  document.getElementById("dName").value=existing?existing.name:"";
+  document.getElementById("dLocation").value=existing?existing.location:"";
+  document.getElementById("deviceModalBg").classList.add("open");
+  setTimeout(function(){document.getElementById("dName").focus();},80);
+}
+function closeDeviceModal(){document.getElementById("deviceModalBg").classList.remove("open");}
+function saveDevice(){
+  var name=(document.getElementById("dName").value||"").trim();
+  var location=(document.getElementById("dLocation").value||"").trim();
+  if(!name){showToast("⚠️ Vui lòng nhập tên hệ thống","warning");return;}
+  if(!location){showToast("⚠️ Vui lòng nhập vị trí lắp đặt","warning");return;}
+  var data=getDevices();
+  var isNew=!_editDeviceId;
+  var item;
+  if(!isNew){
+    var idx=data.findIndex(function(x){return x.id===_editDeviceId;});
+    if(idx>=0){ data[idx]=Object.assign(data[idx],{name:name,location:location}); item=data[idx]; }
+  } else {
+    item={id:uid(),name:name,location:location,createdAt:new Date().toISOString()};
+    data.push(item);
+  }
+  saveDevices(data);
+  // Sheets: insert hoặc update từng record, không bulkWrite
+  if(typeof DB!=="undefined"&&DB.isReady()&&item){
+    var _devOp=isNew
+      ? DB.insert("pccc_devices",item)
+      : DB.update("pccc_devices",item.id,{name:name,location:location}).catch(function(e){
+          if(e&&e.message&&e.message.indexOf("tìm thấy")>=0)
+            return DB.insert("pccc_devices",item);
+          throw e;
+        });
+    _devOp.then(function(){ _dbToast(true,"Hệ thống"); })
+          .catch(function(e){ _dbToast(false,e&&e.message||""); });
+  }
+  closeDeviceModal();
+  renderDevices();
+  populateDeviceSelect();
+  showToast("✅ Đã lưu hệ thống","success");
+}
+function deleteDevice(id){
+  if(!confirm("Xóa hệ thống này? Các bản ghi báo lỗi liên quan vẫn được giữ lại."))return;
+  saveDevices(getDevices().filter(function(x){return x.id!==id;}));
+  // Sheets: xóa đúng record theo id
+  if(typeof DB!=="undefined"&&DB.isReady()){
+    DB.delete("pccc_devices",id).catch(function(){});
+  }
+  renderDevices();
+  populateDeviceSelect();
+  showToast("🗑️ Đã xóa thiết bị","danger");
+}
+
+/* ================================================================
+   MODAL NHẬP BÁO LỖI (User)
+   ================================================================ */
+var _editErrorId=null;
+function openErrorModal(editId){
+  _editErrorId=editId||null;
+  var devices=getDevices();
+  var warn=document.getElementById("noDeviceWarn");
+  warn.style.display=devices.length?"none":"block";
+  populateDeviceSelect();
+  populateYearMonthSelect();
+  var existing=editId?getErrors().find(function(x){return x.id===editId;}):null;
+  document.getElementById("errorModalTitle").textContent=editId?"Chỉnh sửa bản ghi báo lỗi":"Nhập báo lỗi hệ thống BCTĐ";
+  if(existing){
+    document.getElementById("eMonth").value=existing.month;
+    document.getElementById("eYear").value=existing.year;
+    document.getElementById("eDevice").value=existing.deviceId;
+    document.getElementById("eChildDevice").value=existing.childDevice||"";
+    document.getElementById("eDevLocation").value=existing.devLocation||"";
+    document.getElementById("eErrType").value=existing.errType;
+    document.getElementById("eErrCustom").value=existing.errCustom||"";
+    if(window.HSEDate)HSEDate.setValue(document.getElementById("eDetectDate"),existing.detectDate||"");else document.getElementById("eDetectDate").value=existing.detectDate||"";
+    document.getElementById("eMeasure").value=existing.measure||"";
+    toggleCustomErr();
+    updateDateRange();
+  } else {
+    var now=new Date();
+    document.getElementById("eMonth").value=now.getMonth()+1;
+    document.getElementById("eYear").value=now.getFullYear();
+    document.getElementById("eChildDevice").value="";
+    document.getElementById("eDevLocation").value="";
+    document.getElementById("eErrType").value="Lỗi thiết bị";
+    document.getElementById("eErrCustom").value="";
+    if(window.HSEDate)HSEDate.setValue(document.getElementById("eDetectDate"),"");else document.getElementById("eDetectDate").value="";
+    document.getElementById("eMeasure").value="";
+    toggleCustomErr();
+    updateDateRange();
+  }
+  document.getElementById("errorModalBg").classList.add("open");
+}
+function closeErrorModal(){document.getElementById("errorModalBg").classList.remove("open");}
+
+function populateDeviceSelect(){
+  var devices=getDevices();
+  var sel=document.getElementById("eDevice");
+  var cur=sel.value;
+  sel.innerHTML=devices.length
+    ?devices.map(function(d){return'<option value="'+d.id+'"'+(d.id===cur?' selected':'')+'>'+esc(d.name)+' — '+esc(d.location)+'</option>';}).join("")
+    :'<option value="">— Chưa có hệ thống —</option>';
+}
+
+function populateYearMonthSelect(){
+  var now=new Date();
+  var selM=document.getElementById("eMonth");
+  var selY=document.getElementById("eYear");
+  selM.innerHTML=[1,2,3,4,5,6,7,8,9,10,11,12].map(function(m){
+    return'<option value="'+m+'">Tháng '+m+'</option>';
+  }).join("");
+  var years=[];
+  for(var y=now.getFullYear()-2;y<=now.getFullYear()+1;y++)years.push(y);
+  selY.innerHTML=years.map(function(y){
+    return'<option value="'+y+'"'+(y===now.getFullYear()?' selected':'')+'>'+y+'</option>';
+  }).join("");
+}
+
+function updateDateRange(){
+  // Bỏ ràng buộc min/max — ngày phát hiện có thể nằm ngoài tháng báo cáo
+  // (lỗi phát hiện tháng trước nhưng ghi nhận vào tháng sau là hợp lệ)
+  var inp=document.getElementById("eDetectDate");
+  inp.removeAttribute("min");
+  inp.removeAttribute("max");
+}
+
+function toggleCustomErr(){
+  var v=document.getElementById("eErrType").value;
+  var cg=document.getElementById("customErrGroup");
+  var dg=document.getElementById("detectDateGroup");
+  cg.style.display=v==="Khác"?"block":"none";
+  cg.parentElement.style.gridTemplateColumns=v==="Khác"?"1fr 1fr":"1fr 1fr";
+}
+
+function appendBienPhap(text){
+  var ta=document.getElementById("eMeasure");
+  var cur=(ta.value||"").trim();
+  ta.value=cur?(cur+". "+text):text;
+  ta.focus();
+}
+
+function saveError(){
+  var month=parseInt(document.getElementById("eMonth").value);
+  var year=parseInt(document.getElementById("eYear").value);
+  var deviceId=document.getElementById("eDevice").value;
+  var childDevice=(document.getElementById("eChildDevice").value||"").trim();
+  var devLocation=(document.getElementById("eDevLocation").value||"").trim();
+  var errType=document.getElementById("eErrType").value;
+  var errCustom=document.getElementById("eErrCustom").value.trim();
+  var detectDate=document.getElementById("eDetectDate").value;
+  var measure=(document.getElementById("eMeasure").value||"").trim();
+  var u=currentUser();
+
+  if(isMonthLocked(month,year)){showToast("🔒 Tháng "+month+"/"+year+" đã bị khoá. Không thể lưu.","danger");return;}
+  if(!_editErrorId===false){// đang edit
+    var _existing=getErrors().find(function(x){return x.id===_editErrorId;});
+    if(_existing&&!isOwner(_existing)){showToast("⚠️ Bạn không có quyền sửa bản ghi của người khác.","warning");return;}
+  }
+  if(!deviceId){showToast("⚠️ Vui lòng chọn hệ thống","warning");return;}
+  if(!childDevice){showToast("⚠️ Vui lòng nhập tên thiết bị","warning");return;}
+  if(!devLocation){showToast("⚠️ Vui lòng nhập vị trí thiết bị","warning");return;}
+  if(errType==="Khác"&&!errCustom){showToast("⚠️ Vui lòng nhập mô tả lỗi","warning");return;}
+  if(!detectDate){showToast("⚠️ Vui lòng chọn ngày phát hiện","warning");return;}
+  if(!measure){showToast("⚠️ Vui lòng nhập biện pháp khắc phục","warning");return;}
+
+  var item={
+    id:_editErrorId||uid(),
+    month:month, year:year,
+    deviceId:deviceId,
+    childDevice:childDevice,
+    devLocation:devLocation,
+    errType:errType,
+    errCustom:errType==="Khác"?errCustom:"",
+    detectDate:detectDate,
+    measure:measure,
+    createdBy:u?(u.fullname||u.username):"Khách",
+    createdAt:new Date().toISOString()
+  };
+  var isNew=!_editErrorId;
+  var data=getErrors();
+  if(!isNew){
+    var idx=data.findIndex(function(x){return x.id===_editErrorId;});
+    if(idx>=0)data[idx]=item; else data.push(item);
+  } else { data.push(item); }
+  saveErrors(data);
+  // Sheets: insert hoặc update từng record, không bulkWrite
+  // Nếu update thất bại vì record chưa có trong Sheets → tự động insert (upsert)
+  if(typeof DB!=="undefined"&&DB.isReady()){
+    var _sheetsOp=isNew
+      ? DB.insert("pccc_errors",item)
+      : DB.update("pccc_errors",item.id,item).catch(function(e){
+          if(e&&e.message&&e.message.indexOf("tìm thấy")>=0)
+            return DB.insert("pccc_errors",item);
+          throw e;
+        });
+    _sheetsOp.then(function(){ _dbToast(true,"Bản ghi"); })
+             .catch(function(e){ _dbToast(false,e&&e.message||""); });
+  }
+  populateMonthFilter();
+  renderErrorLog();
+  closeErrorModal();
+  showToast("✅ Đã lưu bản ghi báo lỗi","success");
+}
+
+function deleteError(id){
+  var rec=getErrors().find(function(x){return x.id===id;});
+  if(rec&&isMonthLocked(rec.month,rec.year)){showToast("🔒 Tháng "+rec.month+"/"+rec.year+" đã bị khoá. Không thể xóa.","danger");return;}
+  if(rec&&!isOwner(rec)){showToast("⚠️ Bạn không có quyền xóa bản ghi của người khác.","warning");return;}
+  if(!confirm("Xóa bản ghi báo lỗi này?"))return;
+  saveErrors(getErrors().filter(function(x){return x.id!==id;}));
+  // Sheets: xóa đúng record theo id
+  if(typeof DB!=="undefined"&&DB.isReady()){
+    DB.delete("pccc_errors",id).catch(function(){});
+  }
+  populateMonthFilter();
+  renderErrorLog();
+  showToast("🗑️ Đã xóa","danger");
+}
+
+/* ---- SETUP UI BASED ON ROLE ---- */
+function setupRoleUI(){
+  var u=currentUser();
+  var adm=isAdmin(u);
+  var editable=u&&canEdit(u);
+  document.getElementById("adminDeviceSection").style.display=adm?"block":"none";
+  var btnR=document.getElementById("btnReport");
+  if(btnR) btnR.style.display=adm?"":"none";
+  updateLockUI();
+}
+
+function doLogout(){localStorage.removeItem(K_SESS);location.reload();}
+
+document.getElementById("deviceModalBg").addEventListener("click",function(e){if(e.target===this)closeDeviceModal();});
+document.getElementById("errorModalBg").addEventListener("click",function(e){if(e.target===this)closeErrorModal();});
+
+/* ---- TOAST ---- */
+var _tt;
+function showToast(msg,type){
+  var t=document.getElementById("toast");
+  var c={success:"#1a7a3c",warning:"#e68900",danger:"#c0392b",info:"#0060B6"};
+  t.style.background=c[type]||c.info;
+  t.textContent=msg;t.style.display="block";t.style.opacity="1";
+  clearTimeout(_tt);
+  _tt=setTimeout(function(){t.style.opacity="0";setTimeout(function(){t.style.display="none";},300);},2800);
+}
+
+/* ================================================================
+   BÁO CÁO – MODAL + GENERATE DOCX
+   ================================================================ */
+document.getElementById("reportModalBg").addEventListener("click",function(e){if(e.target===this)closeReportModal();});
+document.getElementById("markerModalBg").addEventListener("click",function(e){if(e.target===this)closeMarkerModal();});
+document.getElementById("ptTypeModalBg").addEventListener("click",function(e){if(e.target===this)closePTTypeModal();});
+
+function openReportModal(){
+  populateReportSelects();
+  previewReportData();
+  var u=currentUser();
+  document.getElementById("rPreparedBy").value=u?(u.fullname||u.username):"";
+  document.getElementById("rNewDevices").value="";
+  document.getElementById("rNoSystem").value="";
+  document.getElementById("reportModalBg").classList.add("open");
+}
+function closeReportModal(){ document.getElementById("reportModalBg").classList.remove("open"); }
+
+function populateReportSelects(){
+  var now=new Date();
+  var selM=document.getElementById("rMonth");
+  var selY=document.getElementById("rYear");
+  selM.innerHTML=[1,2,3,4,5,6,7,8,9,10,11,12].map(function(m){
+    return'<option value="'+m+'"'+(m===(now.getMonth()+1)?' selected':'')+'>Tháng '+m+'</option>';
+  }).join("");
+  var years=[];
+  for(var y=now.getFullYear()-2;y<=now.getFullYear();y++) years.push(y);
+  selY.innerHTML=years.map(function(y){
+    return'<option value="'+y+'"'+(y===now.getFullYear()?' selected':'')+'>'+y+'</option>';
+  }).join("");
+}
+
+function previewReportData(){
+  var m=parseInt(document.getElementById("rMonth").value);
+  var y=parseInt(document.getElementById("rYear").value);
+  var errors=getErrors().filter(function(e){return e.month===m&&e.year===y;});
+  var devices=getDevices();
+  var prev=document.getElementById("reportPreview");
+  if(!errors.length){
+    prev.innerHTML='<div style="color:var(--text-light);font-style:italic;text-align:center;padding:10px">Không có bản ghi báo lỗi trong Tháng '+m+'/'+y+'</div>';
+    return;
+  }
+  var rows=errors.map(function(e,i){
+    var dev=devices.find(function(d){return d.id===e.deviceId;})||{};
+    var errLabel=e.errType==="Khác"?(e.errCustom||"Khác"):"Báo lỗi"+(e.childDevice?" "+e.childDevice:"")+(e.devLocation?" – "+e.devLocation:"");
+    var dd=e.detectDate?e.detectDate.split("-").reverse().join("/"):"";
+    return '<tr><td style="text-align:center">'+(i+1)+'</td>'+
+      '<td>'+esc(dev.name||"")+'</td>'+
+      '<td>'+esc(dev.location||"")+'</td>'+
+      '<td>'+esc(errLabel)+'</td>'+
+      '<td style="white-space:nowrap">'+esc(dd)+'</td>'+
+      '<td>'+esc(e.measure||"")+'</td></tr>';
+  }).join("");
+  prev.innerHTML='<table><thead><tr>'+
+    '<th>#</th><th>Hệ thống</th><th>Vị trí</th><th>Tình trạng</th><th>Ngày PH</th><th>Biện pháp KP</th>'+
+    '</tr></thead><tbody>'+rows+'</tbody></table>';
+}
+
+/* ---- GENERATE DOCX ---- */
+function generateReport(){
+  var m=parseInt(document.getElementById("rMonth").value);
+  var y=parseInt(document.getElementById("rYear").value);
+  var preparedBy=(document.getElementById("rPreparedBy").value||"").trim();
+  if(!preparedBy){showToast("⚠️ Vui lòng nhập tên người thực hiện","warning");return;}
+
+  var errors=getErrors().filter(function(e){return e.month===m&&e.year===y;});
+  var devices=getDevices();
+  var newDevices=(document.getElementById("rNewDevices").value||"").trim();
+  var noSystem=(document.getElementById("rNoSystem").value||"").trim();
+
+  var btn=document.getElementById("btnGenReport");
+  btn.disabled=true; btn.textContent="Đang tạo...";
+
+  if(!window.docxLoaded){
+    var s=document.createElement("script");
+    s.src="assets/docx.iife.js";
+    s.onload=function(){
+      if(typeof docx==="undefined"){
+        showToast("❌ Thư viện tải nhưng không khởi tạo được. Thử lại.","danger");
+        btn.disabled=false; btn.textContent="Xuất báo cáo .docx";
+        return;
+      }
+      window.docxLoaded=true;
+      _buildAndDownload(m,y,errors,devices,newDevices,noSystem,preparedBy,btn);
+    };
+    s.onerror=function(){
+      showToast("❌ Không tải được thư viện. Kiểm tra kết nối mạng.","danger");
+      btn.disabled=false; btn.textContent="Xuất báo cáo .docx";
+    };
+    document.head.appendChild(s);
+  } else {
+    _buildAndDownload(m,y,errors,devices,newDevices,noSystem,preparedBy,btn);
+  }
+}
+
+function _buildAndDownload(m,y,errors,devices,newDevices,noSystem,preparedBy,btn){
+  fetch("assets/vsp_logo_bctd.jpeg")
+    .then(function(r){return r.arrayBuffer();})
+    .catch(function(){return null;})
+    .then(function(logoBuffer){
+      _doBuild(m,y,errors,devices,newDevices,noSystem,preparedBy,btn,logoBuffer);
+    });
+}
+
+function _doBuild(m,y,errors,devices,newDevices,noSystem,preparedBy,btn,logoBuffer){
+  try {
+    /* jshint ignore:start */
+    var D=window.docx||docx; /* eslint-disable-line no-undef */
+    /* jshint ignore:end */
+    if(!D||!D.BorderStyle){ throw new Error("Thư viện docx chưa sẵn sàng"); }
+
+    var TW=9355;
+    var COLS=[564,1705,1249,1556,1945,2336];
+    var HDR_LOGO_W=2010; var HDR_TEXT_W=7498;
+
+    function fmtD(s){ if(!s)return""; if(typeof s==="string"&&s.indexOf("T")>=0)s=s.split("T")[0]; var p=String(s).split("-"); return p.length===3?p[2]+"/"+p[1]+"/"+p[0]:s; }
+
+    var bdr={style:D.BorderStyle.SINGLE,size:4,color:"000000"};
+    var allB={top:bdr,bottom:bdr,left:bdr,right:bdr};
+    var thinB={style:D.BorderStyle.SINGLE,size:2,color:"000000"};
+    var thinAllB={top:thinB,bottom:thinB,left:thinB,right:thinB};
+    var noB={top:{style:D.BorderStyle.NONE},bottom:{style:D.BorderStyle.NONE},left:{style:D.BorderStyle.NONE},right:{style:D.BorderStyle.NONE}};
+
+    function pr(children,opts){
+      opts=opts||{};
+      return new D.Paragraph({children:children,alignment:opts.align||D.AlignmentType.LEFT,
+        spacing:{before:opts.before||0,after:opts.after===undefined?80:opts.after}});
+    }
+    function run(text,opts){
+      opts=opts||{};
+      return new D.TextRun({text:text,font:"Times New Roman",size:opts.size||24,
+        bold:opts.bold||false,italics:opts.italic||false,color:opts.color||"000000",
+        underline:opts.underline?{}:undefined});
+    }
+    function hCell(text,w){
+      return new D.TableCell({borders:allB,width:{size:w,type:D.WidthType.DXA},margins:{top:80,bottom:80,left:80,right:80},
+        verticalAlign:D.VerticalAlign.CENTER,shading:{fill:"003087",type:D.ShadingType.CLEAR},
+        children:[new D.Paragraph({alignment:D.AlignmentType.CENTER,
+          children:[new D.TextRun({text:text,bold:true,color:"FFFFFF",size:20,font:"Times New Roman"})]
+        })]
+      });
+    }
+    function dCell(text,w,center){
+      return new D.TableCell({borders:allB,width:{size:w,type:D.WidthType.DXA},margins:{top:60,bottom:60,left:80,right:80},
+        verticalAlign:D.VerticalAlign.CENTER,
+        children:[new D.Paragraph({alignment:center?D.AlignmentType.CENTER:D.AlignmentType.LEFT,
+          children:[new D.TextRun({text:String(text||""),size:20,font:"Times New Roman"})]
+        })]
+      });
+    }
+
+    var logoCell;
+    if(logoBuffer){
+      logoCell=new D.TableCell({
+        borders:thinAllB,width:{size:HDR_LOGO_W,type:D.WidthType.DXA},
+        margins:{top:60,bottom:60,left:60,right:60},
+        verticalAlign:D.VerticalAlign.CENTER,
+        children:[new D.Paragraph({
+          alignment:D.AlignmentType.CENTER,
+          children:[new D.ImageRun({
+            type:"jpeg",data:logoBuffer,
+            transformation:{width:110,height:90},
+            altText:{title:"VSP Logo",description:"Vietsovpetro",name:"logo"}
+          })]
+        })]
+      });
+    } else {
+      logoCell=new D.TableCell({
+        borders:thinAllB,width:{size:HDR_LOGO_W,type:D.WidthType.DXA},
+        margins:{top:60,bottom:60,left:60,right:60},
+        children:[new D.Paragraph({alignment:D.AlignmentType.CENTER,
+          children:[new D.TextRun({text:"VIETSOVPETRO",bold:true,size:18,font:"Times New Roman"})]
+        })]
+      });
+    }
+    var quyDinhLines=[
+      "QUY ĐỊNH",
+      "PHỐI HỢP GIỮA CÁC ĐƠN VỊ VỀ VIỆC VẬN HÀNH, BẢO DƯỠNG, SỬA CHỮA HỆ THỐNG",
+      "BÁO CHÁY TỰ ĐỘNG TRÊN CÁC CÔNG TRÌNH BỜ TRONG LIÊN DOANH VIỆT – NGA VIETSOVPETRO",
+      "ПОЛОЖЕНИЕ О ВЗАИМОДЕЙСТВИИ ПОДРАЗДЕЛЕНИЙ СП ПРИ ВЫПОЛНЕНИИ РАБОТ ПО",
+      "ЭКСПЛУАТАЦИИ, ТЕХНИЧЕСКОМУ ОБСЛУЖИВАНИЮ И РЕМОНТУ СИСТЕМ АВТОМАТИЧЕСКОЙ",
+      "ПОЖАРНОЙ СИГНАЛИЗАЦИИ НА БЕРЕГОВЫХ ОБЪЕКТАХ СП \"ВЬЕТСОВПЕТРО\""
+    ];
+    var textCell=new D.TableCell({
+      borders:thinAllB,width:{size:HDR_TEXT_W,type:D.WidthType.DXA},
+      margins:{top:80,bottom:80,left:100,right:100},
+      verticalAlign:D.VerticalAlign.CENTER,
+      children:quyDinhLines.map(function(line,i){
+        return new D.Paragraph({
+          alignment:D.AlignmentType.CENTER,
+          spacing:{before:0,after:i===0?40:0},
+          children:[new D.TextRun({text:line,bold:true,size:i===0?20:17,font:"Times New Roman"})]
+        });
+      })
+    });
+    var headerTable=new D.Table({
+      width:{size:HDR_LOGO_W+HDR_TEXT_W,type:D.WidthType.DXA},
+      columnWidths:[HDR_LOGO_W,HDR_TEXT_W],
+      margins:{top:0,bottom:0,left:0,right:0},
+      rows:[new D.TableRow({children:[logoCell,textCell]})]
+    });
+
+    var errRows=[
+      new D.TableRow({tableHeader:true,children:[
+        hCell("Stt\nП.п",COLS[0]),
+        hCell("Tên hệ thống\nНаименование оборудования",COLS[1]),
+        hCell("Vị trí lắp đặt\nМесто установки",COLS[2]),
+        hCell("Tình trạng hư hỏng/báo lỗi\nСостояние/повреждения",COLS[3]),
+        hCell("Ngày phát hiện hư hỏng/báo lỗi\nДата обнаружения/повреждения",COLS[4]),
+        hCell("Biện pháp khắc phục\nМероприятия для устранения",COLS[5])
+      ]})
+    ];
+    // Gom lỗi theo deviceId
+    var errorsByDevice={};
+    errors.forEach(function(e){
+      if(!errorsByDevice[e.deviceId]) errorsByDevice[e.deviceId]=[];
+      errorsByDevice[e.deviceId].push(e);
+    });
+
+    if(!devices.length){
+      // Chưa có hệ thống nào
+      errRows.push(new D.TableRow({children:[
+        new D.TableCell({borders:allB,width:{size:TW,type:D.WidthType.DXA},columnSpan:6,
+          margins:{top:80,bottom:80,left:80,right:80},
+          children:[new D.Paragraph({alignment:D.AlignmentType.CENTER,
+            children:[new D.TextRun({text:"Chưa có hệ thống nào được cấu hình",italics:true,size:20,font:"Times New Roman"})]
+          })]
+        })
+      ]}));
+    } else {
+      var rowNum=0;
+      devices.forEach(function(dev){
+        var devErrors=errorsByDevice[dev.id]||[];
+        rowNum++;
+        if(!devErrors.length){
+          // Hệ thống không có lỗi → 1 hàng, ghi "Không ghi nhận hư hỏng/báo lỗi"
+          errRows.push(new D.TableRow({children:[
+            dCell(String(rowNum),COLS[0],true),
+            new D.TableCell({borders:allB,width:{size:COLS[1],type:D.WidthType.DXA},
+              margins:{top:60,bottom:60,left:80,right:80},verticalAlign:D.VerticalAlign.CENTER,
+              children:[new D.Paragraph({children:[new D.TextRun({text:dev.name||"",bold:true,size:20,font:"Times New Roman"})]})]
+            }),
+            dCell(dev.location||"",COLS[2]),
+            new D.TableCell({borders:allB,width:{size:COLS[3],type:D.WidthType.DXA},
+              margins:{top:60,bottom:60,left:80,right:80},verticalAlign:D.VerticalAlign.CENTER,
+              children:[new D.Paragraph({children:[new D.TextRun({text:"Không ghi nhận hư hỏng/báo lỗi",italics:true,size:20,font:"Times New Roman"})]})]
+            }),
+            dCell("",COLS[4],true),
+            dCell("",COLS[5])
+          ]}));
+        } else {
+          // Hệ thống có lỗi → gộp các hàng bằng rowSpan
+          devErrors.forEach(function(e,idx){
+            var eLabel=e.errType==="Khác"?(e.errCustom||"Khác"):"Báo lỗi"+(e.childDevice?" "+e.childDevice:"")+(e.devLocation?" – "+e.devLocation:"");
+            var rowCells=[];
+            if(idx===0){
+              rowCells.push(new D.TableCell({borders:allB,width:{size:COLS[0],type:D.WidthType.DXA},
+                rowSpan:devErrors.length,margins:{top:60,bottom:60,left:80,right:80},
+                verticalAlign:D.VerticalAlign.CENTER,
+                children:[new D.Paragraph({alignment:D.AlignmentType.CENTER,
+                  children:[new D.TextRun({text:String(rowNum),size:20,font:"Times New Roman"})]})]
+              }));
+              rowCells.push(new D.TableCell({borders:allB,width:{size:COLS[1],type:D.WidthType.DXA},
+                rowSpan:devErrors.length,margins:{top:60,bottom:60,left:80,right:80},
+                verticalAlign:D.VerticalAlign.CENTER,
+                children:[new D.Paragraph({children:[new D.TextRun({text:dev.name||"",bold:true,size:20,font:"Times New Roman"})]})]
+              }));
+              rowCells.push(new D.TableCell({borders:allB,width:{size:COLS[2],type:D.WidthType.DXA},
+                rowSpan:devErrors.length,margins:{top:60,bottom:60,left:80,right:80},
+                verticalAlign:D.VerticalAlign.CENTER,
+                children:[new D.Paragraph({children:[new D.TextRun({text:dev.location||"",size:20,font:"Times New Roman"})]})]
+              }));
+            }
+            rowCells.push(dCell(eLabel,COLS[3]));
+            rowCells.push(dCell(fmtD(e.detectDate),COLS[4],true));
+            rowCells.push(dCell(e.measure||"",COLS[5]));
+            errRows.push(new D.TableRow({children:rowCells}));
+          });
+        }
+      });
+    }
+
+    var sigTable=new D.Table({
+      width:{size:TW,type:D.WidthType.DXA},
+      columnWidths:[Math.floor(TW*0.45), Math.floor(TW*0.55)],
+      rows:[
+        new D.TableRow({children:[
+          new D.TableCell({borders:noB,width:{size:Math.floor(TW*0.45),type:D.WidthType.DXA},
+            children:[new D.Paragraph({children:[new D.TextRun({text:""})]})]
+          }),
+          new D.TableCell({borders:noB,width:{size:Math.floor(TW*0.55),type:D.WidthType.DXA},
+            margins:{top:0,bottom:0,left:80,right:80},
+            children:[
+              new D.Paragraph({alignment:D.AlignmentType.CENTER,spacing:{before:0,after:40},
+                children:[new D.TextRun({text:"Giám đốc XNDV",bold:true,size:24,font:"Times New Roman"})]}),
+              new D.Paragraph({alignment:D.AlignmentType.CENTER,spacing:{before:0,after:0},
+                children:[new D.TextRun({text:"Директор ПОСОМ",bold:true,size:22,font:"Times New Roman"})]})
+            ]
+          })
+        ]}),
+        new D.TableRow({children:[
+          new D.TableCell({borders:noB,width:{size:Math.floor(TW*0.45),type:D.WidthType.DXA},
+            children:[new D.Paragraph({spacing:{before:0,after:0},children:[new D.TextRun({text:"",size:24})]}),
+                      new D.Paragraph({spacing:{before:0,after:0},children:[new D.TextRun({text:"",size:24})]}),
+                      new D.Paragraph({spacing:{before:0,after:0},children:[new D.TextRun({text:"",size:24})]})]
+          }),
+          new D.TableCell({borders:noB,width:{size:Math.floor(TW*0.55),type:D.WidthType.DXA},
+            children:[new D.Paragraph({spacing:{before:0,after:0},children:[new D.TextRun({text:"",size:24})]}),
+                      new D.Paragraph({spacing:{before:0,after:0},children:[new D.TextRun({text:"",size:24})]}),
+                      new D.Paragraph({spacing:{before:0,after:0},children:[new D.TextRun({text:"",size:24})]})]
+          })
+        ]})
+      ]
+    });
+
+    var doc=new D.Document({sections:[{
+      properties:{page:{size:{width:11907,height:16840},margin:{top:851,right:992,bottom:709,left:1560}}},
+      children:[
+        headerTable,
+        pr([],{after:160}),
+        pr([run("BÁO CÁO TÌNH TRẠNG HOẠT ĐỘNG CỦA",{bold:true,size:26})],{align:D.AlignmentType.CENTER,after:20}),
+        pr([run("HỆ THỐNG BÁO CHÁY TỰ ĐỘNG",{bold:true,size:26})],{align:D.AlignmentType.CENTER,after:40}),
+        pr([run("Отчет о техническом состоянии системы АПС",{bold:true,size:22})],{align:D.AlignmentType.CENTER,after:60}),
+        pr([run("Tháng/Месяц      "+m+"/"+y,{size:24})],{align:D.AlignmentType.CENTER,after:40}),
+        pr([run("Đơn vị/Предприятие: XN Dịch vụ / ПОСОМ",{size:24})],{align:D.AlignmentType.CENTER,after:200}),
+        pr([run("1.  Các thiết bị hư hỏng/báo lỗi/",{bold:true})],{after:0}),
+        pr([run("    Выявленные отказы, повреждения оборудований:",{bold:true})],{after:100}),
+        new D.Table({width:{size:TW,type:D.WidthType.DXA},columnWidths:COLS,rows:errRows}),
+        pr([run("2.  Các thiết bị mới lắp đặt/cải tạo lại chưa đưa vào hoạt động: ",{bold:true})],{before:240,after:0}),
+        pr([run("    Установка нового оборудования/ модернизация без ввода в эксплуатацию:",{size:22})],{after:80}),
+        pr([run(newDevices||"",{size:24})],{after:200}),
+        pr([run("3.  Các công trình chưa được lắp đặt hệ thống báo cháy tự động:",{bold:true})],{after:0}),
+        pr([run("    Объекты, на которых не установлена система АПС:",{size:22})],{after:80}),
+        pr([run(noSystem||"",{size:24})],{after:600}),
+        sigTable,
+        pr([],{after:240}),
+        pr([run("Ký tắt",{bold:true,underline:true})],{after:0}),
+        pr([run("Phòng Kỹ thuật – Vật tư",{bold:true,underline:true})],{after:240}),
+        pr([run("Thực hiện/ Выпол.: ",{bold:true,italic:true}),run(preparedBy,{bold:true,italic:true})],{after:0}),
+      ]
+    }]});
+
+    D.Packer.toBlob(doc).then(function(blob){
+      var url=URL.createObjectURL(blob);
+      var a=document.createElement("a");
+      a.href=url;
+      a.download="BaoCao_BCTD_T"+m+"_"+y+".docx";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      btn.disabled=false; btn.textContent="Xuất báo cáo .docx";
+      closeReportModal();
+      showToast("✅ Đã xuất báo cáo tháng "+m+"/"+y,"success");
+    });
+  } catch(err){
+    console.error(err);
+    showToast("❌ Lỗi tạo báo cáo: "+err.message,"danger");
+    btn.disabled=false; btn.textContent="Xuất báo cáo .docx";
+  }
+}
+
+/* ---- SYNC STATUS ---- */
+function updateSyncStatus(){
+  var el=document.getElementById("syncStatus");
+  if(!el)return;
+  var dbOk=typeof DB!=="undefined"&&DB.isReady();
+  var dirty=load(K_ERRORS_DIRTY,false);
+  if(!dbOk){
+    el.textContent="Chưa kết nối Sheets";
+    el.style.background="#fef5e4"; el.style.color="#e68900";
+  } else if(dirty){
+    el.textContent="Chưa sync";
+    el.style.background="#fdedec"; el.style.color="#c0392b";
+  } else {
+    el.textContent="Đã sync";
+    el.style.background="#eafaf1"; el.style.color="#1a7a3c";
+  }
+}
+
+function manualSync(){
+  var el=document.getElementById("syncStatus");
+  if(el){el.textContent="Đang kiểm tra...";el.style.background="#dceaf7";el.style.color="#003087";}
+  if(typeof DB==="undefined"||!DB.isReady()){
+    showToast("❌ Chưa cấu hình URL Google Sheets. Vào Quản trị hệ thống → Cài đặt DB.","danger");
+    updateSyncStatus(); return;
+  }
+  DB.testConnection().then(function(){
+    var p1=DB.bulkWrite("pccc_devices", getDevices()).then(function(){save(K_DEVICES_DIRTY,false);});
+    var p2=DB.bulkWrite("pccc_errors",  getErrors()).then(function(){save(K_ERRORS_DIRTY,false);});
+    return Promise.all([p1,p2]);
+  }).then(function(){
+    showToast("✅ Sync thành công — Sheets đã được cập nhật","success");
+    updateSyncStatus();
+  }).catch(function(e){
+    showToast("❌ Lỗi kết nối Sheets: "+(e&&e.message||"Không rõ nguyên nhân"),"danger");
+    updateSyncStatus();
+  });
+}
+
+/* ================================================================
+   PHƯƠNG TIỆN CC & CNCH – ZONE GRID
+   ================================================================ */
+var ZONES=[
+  {id:"z1",  icon:"🏢", name:"Toà nhà điều hành"},
+  {id:"z2",  icon:"🛢️", name:"Trạm nhiên liệu và các kho trong khu vực"},
+  {id:"z3",  icon:"📦", name:"Các kho cảng"},
+  {id:"z4",  icon:"🏭", name:"Các kho trung tâm"},
+  {id:"z5",  icon:"🏗️", name:"Khu kho 1700"},
+  {id:"z6",  icon:"⚙️", name:"Khu vực bãi sắt, kho thông minh, kho axetylen"},
+  {id:"z7",  icon:"🚢", name:"Cảng biển"},
+  {id:"z8",  icon:"🚗", name:"Các gara"},
+  {id:"z9",  icon:"🔧", name:"Xưởng sửa chữa ô tô"},
+  {id:"z10", icon:"⚒️", name:"Xưởng sửa chữa cơ khí"},
+  {id:"z11", icon:"💨", name:"Khu kho trạm oxy"}
+];
+
+var K_PT = "hse_phuongtien_markers"; // localStorage key
+
+function getPTMarkers(zoneId){
+  var all=load(K_PT,{});
+  return all[zoneId]||[];
+}
+
+function countPT(zoneId){
+  return getPTMarkers(zoneId).length;
+}
+
+function buildZoneGrid(){
+  var main=document.getElementById("zoneGridMain");
+  var last=document.getElementById("zoneGridLast");
+  if(!main||!last) return;
+
+  // 9 ô đầu
+  main.innerHTML=ZONES.slice(0,9).map(function(z,i){
+    var cnt=countPT(z.id);
+    return '<div class="zone-card" onclick="openZoneView(\''+z.id+'\')" title="'+z.name+'">'+
+      '<span class="zone-num">'+(i+1)+'</span>'+
+      '<div class="zone-name">'+z.name+'</div>'+
+      '<div class="zone-count">Phương tiện: <span>'+cnt+'</span></div>'+
+    '</div>';
+  }).join("");
+
+  // 2 ô cuối, căn giữa (để trống cột 1, dùng cột 2 và 3)
+  last.innerHTML=
+    '<div></div>'+
+    ZONES.slice(9).map(function(z,i){
+      var cnt=countPT(z.id);
+      return '<div class="zone-card" onclick="openZoneView(\''+z.id+'\')" title="'+z.name+'">'+
+        '<span class="zone-num">'+(10+i)+'</span>'+
+        '<div class="zone-name">'+z.name+'</div>'+
+        '<div class="zone-count">Phương tiện: <span>'+cnt+'</span></div>'+
+      '</div>';
+    }).join("");
+}
+
+function openZoneView(zoneId){
+  var zone=ZONES.find(function(z){return z.id===zoneId;});
+  if(!zone) return;
+  document.getElementById("zoneGrid").style.display="none";
+  document.getElementById("zoneViewTitle").textContent=zone.name;
+  document.getElementById("zoneViewSub").textContent="Sơ đồ khu vực • Quản lý phương tiện CC & CNCH";
+  document.getElementById("zoneView").classList.add("active");
+  document.getElementById("zoneView").dataset.zoneId=zoneId;
+  buildZoneToolbar(zoneId);
+  renderZoneDiagram(zoneId);
+}
+
+function closeZoneView(){
+  document.getElementById("zoneView").classList.remove("active");
+  document.getElementById("zoneGrid").style.display="";
+  buildZoneGrid(); // cập nhật số lượng
+}
+
+/* ================================================================
+   PHƯƠNG TIỆN CC & CNCH – DANH MỤC & MARKER SYSTEM
+   ================================================================ */
+var K_PT_TYPES = "hse_pt_types";
+
+var DEFAULT_PT_TYPES = [
+  "Bình chữa cháy CO₂",
+  "Bình chữa cháy bột ABC",
+  "Bình chữa cháy bọt AFFF",
+  "Xe đẩy chữa cháy",
+  "Vòi rồng chữa cháy",
+  "Trụ nước chữa cháy",
+  "Hộp / Tủ PCCC",
+  "Mặt nạ phòng độc",
+  "Dụng cụ phá dỡ CNCH",
+  "AED – Máy khử rung tim"
+];
+
+function getPTTypes(){
+  var s=load(K_PT_TYPES,null);
+  return (s&&s.length)?s:DEFAULT_PT_TYPES.slice();
+}
+function savePTTypes(arr){ save(K_PT_TYPES,arr); }
+
+function getZoneMarkers(zoneId){
+  var all=load(K_PT,{});
+  return all[zoneId]||[];
+}
+function saveZoneMarkers(zoneId,markers){
+  var all=load(K_PT,{});
+  all[zoneId]=markers;
+  save(K_PT,all);
+}
+
+/* ---- SVG HELPER ---- */
+function _floorWindows(wy,wh,indices){
+  var xs=[70,170,270,370,470,570];
+  return indices.reduce(function(acc,i){
+    return acc
+      +'<rect x="'+xs[i]+'" y="'+wy+'" width="60" height="'+wh+'" fill="#a8c8f0" stroke="#6b9fd4" stroke-width="1" rx="2"/>'
+      +'<line x1="'+(xs[i]+30)+'" y1="'+wy+'" x2="'+(xs[i]+30)+'" y2="'+(wy+wh)+'" stroke="#6b9fd4" stroke-width="0.5"/>'
+      +'<line x1="'+xs[i]+'" y1="'+(wy+Math.round(wh/2))+'" x2="'+(xs[i]+60)+'" y2="'+(wy+Math.round(wh/2))+'" stroke="#6b9fd4" stroke-width="0.5"/>';
+  },'');
+}
+
+/* ---- SVG: TÒA NHÀ ĐIỀU HÀNH (chiếu đứng) ---- */
+function svgZ1(){
+  return '<svg id="zoneSvg" viewBox="0 0 700 410" xmlns="http://www.w3.org/2000/svg" style="display:block;width:100%;height:auto;">'
+  // Nền trời
+  +'<rect x="0" y="0" width="700" height="410" fill="#eef3fb"/>'
+  // Mặt đất
+  +'<rect x="0" y="373" width="700" height="37" fill="#c5d0e0"/>'
+  +'<line x1="0" y1="373" x2="700" y2="373" stroke="#6b7c93" stroke-width="1.5"/>'
+  +'<text x="350" y="395" font-family="Segoe UI,Arial" font-size="11" fill="#6b7c93" text-anchor="middle">— Mặt đất —</text>'
+  // Bóng đổ tòa nhà
+  +'<rect x="33" y="91" width="642" height="284" fill="#b8c8de"/>'
+  // Thân tòa nhà (5 tầng)
+  +'<rect x="30" y="88" width="640" height="285" fill="#dde6f3" stroke="#003087" stroke-width="2"/>'
+  // Phân cách tầng
+  +'<line x1="30" y1="145" x2="670" y2="145" stroke="#003087" stroke-width="1" opacity="0.3"/>'
+  +'<line x1="30" y1="202" x2="670" y2="202" stroke="#003087" stroke-width="1" opacity="0.3"/>'
+  +'<line x1="30" y1="259" x2="670" y2="259" stroke="#003087" stroke-width="1" opacity="0.3"/>'
+  +'<line x1="30" y1="316" x2="670" y2="316" stroke="#003087" stroke-width="1" opacity="0.3"/>'
+  // Dải nhãn tầng trái
+  +'<rect x="30" y="88" width="38" height="285" fill="rgba(0,48,135,0.07)"/>'
+  +'<line x1="68" y1="88" x2="68" y2="373" stroke="#003087" stroke-width="0.75" opacity="0.35"/>'
+  // Mũ parapét
+  +'<rect x="26" y="82" width="648" height="10" fill="#003087" rx="1"/>'
+  // Bóng phòng kỹ thuật
+  +'<rect x="231" y="39" width="246" height="52" fill="#b8c8de"/>'
+  // Sân thượng – Phòng kỹ thuật
+  +'<rect x="228" y="36" width="244" height="52" fill="#cdd6e8" stroke="#003087" stroke-width="1.5"/>'
+  +'<text x="350" y="67" font-family="Segoe UI,Arial" font-size="11" fill="#003087" font-weight="600" text-anchor="middle">Phòng kỹ thuật (sân thượng)</text>'
+  // Cửa chính T1
+  +'<rect x="291" y="325" width="98" height="48" fill="#8ab4d9" stroke="#003087" stroke-width="1.5" rx="2"/>'
+  +'<line x1="340" y1="325" x2="340" y2="373" stroke="#003087" stroke-width="1" opacity="0.4"/>'
+  +'<rect x="326" y="354" width="10" height="5" fill="#003087" rx="2" opacity="0.6"/>'
+  +'<rect x="352" y="354" width="10" height="5" fill="#003087" rx="2" opacity="0.6"/>'
+  // Nhãn tầng
+  +'<text x="49" y="120" font-family="Segoe UI,Arial" font-size="11" fill="#003087" font-weight="700" text-anchor="middle">T.5</text>'
+  +'<text x="49" y="177" font-family="Segoe UI,Arial" font-size="11" fill="#003087" font-weight="700" text-anchor="middle">T.4</text>'
+  +'<text x="49" y="234" font-family="Segoe UI,Arial" font-size="11" fill="#003087" font-weight="700" text-anchor="middle">T.3</text>'
+  +'<text x="49" y="291" font-family="Segoe UI,Arial" font-size="11" fill="#003087" font-weight="700" text-anchor="middle">T.2</text>'
+  +'<text x="49" y="348" font-family="Segoe UI,Arial" font-size="11" fill="#003087" font-weight="700" text-anchor="middle">T.1</text>'
+  // Layer marker (JS sẽ inject vào đây)
+  +'<g id="markerLayer"></g>'
+  +'</svg>';
+}
+
+var ZONE_DIAGRAMS={ z1: svgZ1 };
+
+/* ---- RENDER ZONE DIAGRAM ---- */
+function renderZoneDiagram(zoneId){
+  var wrap=document.getElementById("zoneDiagramWrap");
+  var fn=ZONE_DIAGRAMS[zoneId];
+  if(!fn){
+    wrap.className="zone-diagram-wrap";
+    wrap.style.cssText="";
+    wrap.innerHTML='<div class="zone-diagram-placeholder"><div class="ic"><svg class="lic-emoji" width="1.05em" height="1.05em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex-shrink:0" aria-hidden="true"><path d="M14.106 5.553a2 2 0 0 0 1.788 0l3.659-1.83A1 1 0 0 1 21 4.619v12.764a1 1 0 0 1-.553.894l-4.553 2.277a2 2 0 0 1-1.788 0l-4.212-2.106a2 2 0 0 0-1.788 0l-3.659 1.83A1 1 0 0 1 3 19.381V6.618a1 1 0 0 1 .553-.894l4.553-2.277a2 2 0 0 1 1.788 0z"/><path d="M15 5.764v15"/><path d="M9 3.236v15"/></svg></div><p>Sơ đồ khu vực này đang được xây dựng.</p></div>';
+    return;
+  }
+  wrap.className="zone-diagram-wrap has-diagram";
+  wrap.innerHTML=fn();
+  var svg=wrap.querySelector('svg');
+  if(!svg) return;
+  svg.addEventListener('click',function(e){
+    var u=currentUser();
+    if(!canEdit(u)){showToast('⚠️ Bạn không có quyền thêm phương tiện','warning');return;}
+    var rect=svg.getBoundingClientRect();
+    var vb=svg.viewBox.baseVal;
+    var x=(e.clientX-rect.left)*(vb.width/rect.width);
+    var y=(e.clientY-rect.top)*(vb.height/rect.height);
+    openMarkerModal(zoneId,x,y);
+  });
+  renderMarkers(zoneId);
+  renderMarkerList(zoneId);
+}
+
+/* ---- RENDER MARKERS TRÊN SVG ---- */
+function renderMarkers(zoneId){
+  var layer=document.getElementById('markerLayer');
+  if(!layer) return;
+  var markers=getZoneMarkers(zoneId);
+  var u=currentUser();
+  var adm=isAdmin(u);
+
+  // Xóa markers cũ
+  while(layer.firstChild) layer.removeChild(layer.firstChild);
+
+  var NS='http://www.w3.org/2000/svg';
+  markers.forEach(function(m){
+    var canDel=adm||(u&&(u.fullname===m.createdBy||u.username===m.createdBy));
+
+    // Nhóm marker
+    var g=document.createElementNS(NS,'g');
+    g.style.cursor='pointer';
+
+    // Vòng tròn chính
+    var c=document.createElementNS(NS,'circle');
+    c.setAttribute('cx',m.x); c.setAttribute('cy',m.y); c.setAttribute('r','13');
+    c.setAttribute('fill','#C8102E'); c.setAttribute('stroke','#fff'); c.setAttribute('stroke-width','2');
+    c.setAttribute('opacity','0.92');
+    g.appendChild(c);
+
+    // Nhãn ký tự
+    var t=document.createElementNS(NS,'text');
+    t.setAttribute('x',m.x); t.setAttribute('y',m.y+4);
+    t.setAttribute('text-anchor','middle'); t.setAttribute('font-family','Arial');
+    t.setAttribute('font-size','11'); t.setAttribute('fill','#fff'); t.setAttribute('font-weight','bold');
+    t.style.pointerEvents='none';
+    t.textContent=(m.note||m.type||'').substring(0,3).toUpperCase();
+    g.appendChild(t);
+
+    // Tooltip title
+    var title=document.createElementNS(NS,'title');
+    title.textContent=m.type+' × '+(m.qty||1)+(m.note?' — '+m.note:'')+(m.createdBy?' ('+m.createdBy+')':'');
+    g.appendChild(title);
+
+    // Click → toast info
+    (function(marker){ g.addEventListener('click',function(e){
+      e.stopPropagation();
+      var msg='📍 '+marker.type+' × '+(marker.qty||1);
+      if(marker.note) msg+=' — '+marker.note;
+      if(marker.createdBy) msg+=' ('+marker.createdBy+')';
+      showToast(msg,'info');
+    }); })(m);
+
+    layer.appendChild(g);
+
+    // Nút xóa (chỉ admin hoặc người tạo)
+    if(canDel){
+      var dc=document.createElementNS(NS,'circle');
+      dc.setAttribute('cx',m.x+12); dc.setAttribute('cy',m.y-12); dc.setAttribute('r','8');
+      dc.setAttribute('fill','#002065'); dc.setAttribute('stroke','#fff'); dc.setAttribute('stroke-width','1.5');
+      dc.style.cursor='pointer';
+      (function(marker){ dc.addEventListener('click',function(e){
+        e.stopPropagation();
+        deleteMarkerById(zoneId,marker.id);
+      }); })(m);
+
+      var dx=document.createElementNS(NS,'text');
+      dx.setAttribute('x',m.x+12); dx.setAttribute('y',m.y-9);
+      dx.setAttribute('text-anchor','middle'); dx.setAttribute('font-family','Arial');
+      dx.setAttribute('font-size','12'); dx.setAttribute('fill','#fff');
+      dx.style.pointerEvents='none';
+      dx.textContent='×';
+
+      layer.appendChild(dc);
+      layer.appendChild(dx);
+    }
+  });
+}
+
+function deleteMarkerById(zoneId,markerId){
+  if(!confirm('Xóa phương tiện này?')) return;
+  saveZoneMarkers(zoneId,getZoneMarkers(zoneId).filter(function(m){return m.id!==markerId;}));
+  renderMarkers(zoneId);
+  renderMarkerList(zoneId);
+  buildZoneGrid();
+  showToast('🗑️ Đã xóa phương tiện','danger');
+  // Sync lên Sheets
+  if(typeof DB!=="undefined"&&DB.isReady()){
+    DB.delete(SH_PT_MARKERS,markerId).catch(function(){});
+  }
+}
+
+/* ---- DANH SÁCH MARKER BÊN DƯỚI SƠ ĐỒ ---- */
+var _markerViewMode = 'summary'; // 'summary' | 'detail'
+
+function renderMarkerList(zoneId){
+  var wrap=document.getElementById('zoneMarkerList');
+  if(!wrap) return;
+  var markers=getZoneMarkers(zoneId);
+  var u=currentUser(); var adm=isAdmin(u);
+
+  if(!markers.length){
+    wrap.innerHTML='<div class="section-card"><div style="text-align:center;color:var(--text-light);padding:16px;font-style:italic;font-size:13px;">Chưa có phương tiện nào được đặt trong khu vực này.</div></div>';
+    return;
+  }
+
+  // Tính tổng số điểm và tổng số lượng
+  var totalQty=markers.reduce(function(s,m){return s+(m.qty||1);},0);
+
+  // Toggle button
+  var isSummary=(_markerViewMode==='summary');
+  var toggleBtn='<button class="btn btn-outline btn-sm" onclick="_markerViewMode=\''+(isSummary?'detail':'summary')+'\';renderMarkerList(\''+zoneId+'\')" style="font-size:12px;">'+(isSummary?'📋 Xem chi tiết':'📊 Xem tổng hợp')+'</button>';
+
+  var tableHtml='';
+
+  if(isSummary){
+    // Gom nhóm theo type
+    var grouped={};
+    markers.forEach(function(m){
+      if(!grouped[m.type]) grouped[m.type]={qty:0,notes:[],count:0};
+      grouped[m.type].qty+=(m.qty||1);
+      grouped[m.type].count++;
+      if(m.note) grouped[m.type].notes.push(m.note);
+    });
+    var sRows=Object.keys(grouped).map(function(type,i){
+      var g=grouped[type];
+      var notes=g.notes.length?g.notes.join('; '):'—';
+      return '<tr>'+
+        '<td style="color:var(--text-light);font-size:12px">'+(i+1)+'</td>'+
+        '<td style="font-weight:600">'+esc(type)+'</td>'+
+        '<td style="text-align:center;font-weight:700;color:var(--primary)">'+g.qty+'</td>'+
+        '<td style="font-size:12px;color:var(--text-light)">'+g.count+' vị trí</td>'+
+        '<td style="font-size:12px">'+esc(notes)+'</td>'+
+      '</tr>';
+    }).join('');
+    tableHtml='<div class="table-wrap" style="margin-bottom:0"><table>'+
+      '<thead><tr><th style="width:40px">#</th><th>Loại phương tiện</th><th style="width:80px">Tổng SL</th><th style="width:80px">Vị trí</th><th>Ghi chú</th></tr></thead>'+
+      '<tbody>'+sRows+'</tbody></table></div>';
+  } else {
+    // Chi tiết từng marker
+    var dRows=markers.map(function(m,i){
+      var canAct=adm||(u&&(u.fullname===m.createdBy||u.username===m.createdBy));
+      var btns=canAct?
+        '<button class="btn btn-edit btn-sm" onclick="openEditMarkerModal(\''+zoneId+'\',\''+m.id+'\')"><svg class="lic-emoji" width="1.05em" height="1.05em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex-shrink:0" aria-hidden="true"><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"/><path d="m15 5 4 4"/></svg></button> '+
+        '<button class="btn btn-danger btn-sm" onclick="deleteMarkerById(\''+zoneId+'\',\''+m.id+'\')"><svg class="lic-emoji" width="1.05em" height="1.05em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex-shrink:0" aria-hidden="true"><path d="M10 11v6"/><path d="M14 11v6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>':'';
+      return '<tr>'+
+        '<td style="color:var(--text-light);font-size:12px">'+(i+1)+'</td>'+
+        '<td style="font-weight:600">'+esc(m.type)+'</td>'+
+        '<td style="text-align:center;font-weight:700;color:var(--primary)">'+(m.qty||1)+'</td>'+
+        '<td>'+esc(m.note||'—')+'</td>'+
+        '<td style="font-size:12px;color:var(--text-light)">'+esc(m.createdBy||'—')+'</td>'+
+        '<td style="white-space:nowrap">'+btns+'</td></tr>';
+    }).join('');
+    tableHtml='<div class="table-wrap" style="margin-bottom:0"><table>'+
+      '<thead><tr><th style="width:40px">#</th><th>Loại phương tiện</th><th style="width:80px">Số lượng</th><th>Ghi chú</th><th>Người nhập</th><th style="width:90px"></th></tr></thead>'+
+      '<tbody>'+dRows+'</tbody></table></div>';
+  }
+
+  wrap.innerHTML='<div class="section-card">'+
+    '<div class="section-card-head">'+
+      '<div class="section-card-title"><svg class="lic-emoji" width="1.05em" height="1.05em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex-shrink:0" aria-hidden="true"><rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M12 11h4"/><path d="M12 16h4"/><path d="M8 11h.01"/><path d="M8 16h.01"/></svg> Phương tiện trong khu vực <span style="font-size:12px;font-weight:400;color:var(--text-light);margin-left:6px;">('+markers.length+' vị trí · '+totalQty+' thiết bị)</span></div>'+
+      toggleBtn+
+    '</div>'+
+    tableHtml+
+    '</div>';
+}
+
+/* ---- ZONE TOOLBAR ---- */
+function buildZoneToolbar(zoneId){
+  var bar=document.getElementById('zoneAdminBar');
+  var hint=document.getElementById('zoneEditHint');
+  if(!bar) return;
+  var u=currentUser();
+  hint.style.display=canEdit(u)?'block':'none';
+  bar.innerHTML=isAdmin(u)?
+    '<button class="btn btn-outline btn-sm" onclick="openPTTypeModal()"><svg class="lic-emoji" width="1.05em" height="1.05em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex-shrink:0" aria-hidden="true"><path d="M9.671 4.136a2.34 2.34 0 0 1 4.659 0 2.34 2.34 0 0 0 3.319 1.915 2.34 2.34 0 0 1 2.33 4.033 2.34 2.34 0 0 0 0 3.831 2.34 2.34 0 0 1-2.33 4.033 2.34 2.34 0 0 0-3.319 1.915 2.34 2.34 0 0 1-4.659 0 2.34 2.34 0 0 0-3.32-1.915 2.34 2.34 0 0 1-2.33-4.033 2.34 2.34 0 0 0 0-3.831A2.34 2.34 0 0 1 6.35 6.051a2.34 2.34 0 0 0 3.319-1.915"/><circle cx="12" cy="12" r="3"/></svg> Quản lý danh mục</button>':'';
+}
+
+/* ---- MARKER MODAL ---- */
+var _mkPending={zoneId:null,x:0,y:0,editId:null};
+function openMarkerModal(zoneId,x,y,editId){
+  _mkPending={zoneId:zoneId,x:x,y:y,editId:editId||null};
+  var types=getPTTypes();
+  document.getElementById('markerType').innerHTML=types.map(function(t){
+    return '<option value="'+esc(t)+'">'+esc(t)+'</option>';
+  }).join('');
+  var existing=editId?getZoneMarkers(zoneId).find(function(m){return m.id===editId;}):null;
+  document.getElementById('markerModalTitle').textContent=editId?'Sửa phương tiện CC & CNCH':'Thêm phương tiện CC & CNCH';
+  document.getElementById('markerType').value=existing?existing.type:(types[0]||'');
+  document.getElementById('markerQty').value=existing?(existing.qty||1):1;
+  document.getElementById('markerNote').value=existing?(existing.note||''):'';
+  document.getElementById('markerModalBg').classList.add('open');
+  setTimeout(function(){document.getElementById('markerQty').focus();},80);
+}
+function openEditMarkerModal(zoneId,markerId){
+  var m=getZoneMarkers(zoneId).find(function(x){return x.id===markerId;});
+  if(!m) return;
+  openMarkerModal(zoneId,m.x,m.y,markerId);
+}
+function closeMarkerModal(){document.getElementById('markerModalBg').classList.remove('open');}
+function confirmSaveMarker(){
+  var type=document.getElementById('markerType').value;
+  var qty=parseInt(document.getElementById('markerQty').value)||1;
+  var note=(document.getElementById('markerNote').value||'').trim();
+  if(!type){showToast('⚠️ Chọn loại phương tiện','warning');return;}
+  if(qty<1){showToast('⚠️ Số lượng phải ≥ 1','warning');return;}
+  var u=currentUser();
+  var zoneId=_mkPending.zoneId;
+  var isEdit=!!_mkPending.editId;
+  var arr=getZoneMarkers(zoneId);
+
+  if(isEdit){
+    // Cập nhật record hiện có
+    var idx=arr.findIndex(function(m){return m.id===_mkPending.editId;});
+    if(idx<0){showToast('⚠️ Không tìm thấy bản ghi','warning');return;}
+    arr[idx]=Object.assign({},arr[idx],{
+      type:type, qty:qty, note:note,
+      updatedBy:u?(u.fullname||u.username):'Khách',
+      updatedAt:new Date().toISOString()
+    });
+    var updated=arr[idx];
+    saveZoneMarkers(zoneId,arr);
+    closeMarkerModal();
+    renderMarkers(zoneId);
+    renderMarkerList(zoneId);
+    showToast('✅ Đã cập nhật: '+type,'success');
+    // Sync lên Sheets
+    if(typeof DB!=="undefined"&&DB.isReady()){
+      DB.update(SH_PT_MARKERS,updated.id,updated)
+        .catch(function(e){
+          // Nếu chưa có trên Sheets thì insert
+          if(e&&e.message&&e.message.indexOf('tìm thấy')>=0)
+            return DB.insert(SH_PT_MARKERS,updated);
+          throw e;
+        })
+        .then(function(){_dbToast(true,'Phương tiện');})
+        .catch(function(e){_dbToast(false,e&&e.message||'');});
+    }
+  } else {
+    // Thêm mới
+    var m={id:uid(),zoneId:zoneId,type:type,qty:qty,note:note,
+      x:Math.round(_mkPending.x),y:Math.round(_mkPending.y),
+      createdBy:u?(u.fullname||u.username):'Khách',
+      createdAt:new Date().toISOString()};
+    arr.push(m);
+    saveZoneMarkers(zoneId,arr);
+    closeMarkerModal();
+    renderMarkers(zoneId);
+    renderMarkerList(zoneId);
+    buildZoneGrid();
+    showToast('✅ Đã thêm: '+type,'success');
+    // Sync lên Sheets
+    if(typeof DB!=="undefined"&&DB.isReady()){
+      DB.insert(SH_PT_MARKERS,m)
+        .then(function(){_dbToast(true,'Phương tiện');})
+        .catch(function(e){_dbToast(false,e&&e.message||'');});
+    }
+  }
+}
+
+/* ---- PT TYPE MODAL (Admin) ---- */
+function openPTTypeModal(){
+  renderPTTypes();
+  document.getElementById('newPTTypeName').value='';
+  document.getElementById('ptTypeModalBg').classList.add('open');
+}
+function closePTTypeModal(){
+  document.getElementById('ptTypeModalBg').classList.remove('open');
+}
+function renderPTTypes(){
+  var types=getPTTypes();
+  var wrap=document.getElementById('ptTypeList');
+  if(!types.length){
+    wrap.innerHTML='<div style="color:var(--text-light);text-align:center;padding:12px;font-style:italic">Chưa có loại phương tiện nào.</div>';
+    return;
+  }
+  wrap.innerHTML='<div class="table-wrap" style="margin-bottom:0"><table>'+
+    '<thead><tr><th style="width:36px">#</th><th>Tên loại phương tiện</th><th style="width:90px"></th></tr></thead><tbody>'+
+    types.map(function(t,i){
+      var safeT=esc(t);
+      return '<tr id="ptrow-'+i+'">'+
+        '<td style="color:var(--text-light);font-size:12px">'+(i+1)+'</td>'+
+        '<td id="ptcell-'+i+'">'+safeT+'</td>'+
+        '<td style="white-space:nowrap">'+
+          '<button class="btn btn-edit btn-sm" onclick="startEditPTType('+i+',\''+safeT+'\')"><svg class="lic-emoji" width="1.05em" height="1.05em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex-shrink:0" aria-hidden="true"><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"/><path d="m15 5 4 4"/></svg></button> '+
+          '<button class="btn btn-danger btn-sm" onclick="deletePTType(\''+safeT+'\')"><svg class="lic-emoji" width="1.05em" height="1.05em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex-shrink:0" aria-hidden="true"><path d="M10 11v6"/><path d="M14 11v6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>'+
+        '</td></tr>';
+    }).join('')+'</tbody></table></div>';
+}
+
+function startEditPTType(idx,oldName){
+  var cell=document.getElementById('ptcell-'+idx);
+  if(!cell) return;
+  cell.innerHTML='<div style="display:flex;gap:6px;align-items:center;">'+
+    '<input id="ptEditInp-'+idx+'" class="inp" style="padding:4px 8px;font-size:13px;flex:1" value="'+esc(oldName)+'" onkeydown="if(event.key===\'Enter\')confirmEditPTType('+idx+',\''+esc(oldName)+'\');if(event.key===\'Escape\')renderPTTypes();">'+
+    '<button class="btn btn-primary btn-sm" onclick="confirmEditPTType('+idx+',\''+esc(oldName)+'\')"><svg class="lic-emoji" width="1.05em" height="1.05em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex-shrink:0" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></button>'+
+    '<button class="btn btn-outline btn-sm" onclick="renderPTTypes()"><svg class="lic-emoji" width="1.05em" height="1.05em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex-shrink:0" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>'+
+  '</div>';
+  setTimeout(function(){
+    var inp=document.getElementById('ptEditInp-'+idx);
+    if(inp){inp.focus();inp.select();}
+  },50);
+}
+
+function confirmEditPTType(idx,oldName){
+  var inp=document.getElementById('ptEditInp-'+idx);
+  if(!inp) return;
+  var newName=(inp.value||'').trim();
+  if(!newName){showToast('⚠️ Tên không được để trống','warning');return;}
+  if(newName===oldName){renderPTTypes();return;}
+  var types=getPTTypes();
+  if(types.indexOf(newName)>=0){showToast('⚠️ Tên này đã tồn tại','warning');return;}
+  var i=types.indexOf(oldName);
+  if(i<0){showToast('⚠️ Không tìm thấy loại cần sửa','warning');return;}
+  types[i]=newName;
+  savePTTypes(types);
+  renderPTTypes();
+  showToast('✅ Đã đổi tên thành: '+newName,'success');
+  // Sync lên Sheets: tìm record theo tên cũ rồi update
+  if(typeof DB!=="undefined"&&DB.isReady()){
+    DB.getAll(SH_PT_TYPES).then(function(r){
+      var found=r&&r.find(function(x){return x.name===oldName;});
+      if(found){
+        DB.update(SH_PT_TYPES,found.id,{name:newName})
+          .then(function(){_dbToast(true,'Danh mục');})
+          .catch(function(e){_dbToast(false,e&&e.message||'');});
+      }
+    }).catch(function(){});
+  }
+}
+function addPTType(){
+  var name=(document.getElementById('newPTTypeName').value||'').trim();
+  if(!name){showToast('⚠️ Nhập tên loại phương tiện','warning');return;}
+  var types=getPTTypes();
+  if(types.indexOf(name)>=0){showToast('⚠️ Loại này đã tồn tại','warning');return;}
+  types.push(name);
+  savePTTypes(types);
+  document.getElementById('newPTTypeName').value='';
+  renderPTTypes();
+  showToast('✅ Đã thêm: '+name,'success');
+  // Sync lên Sheets
+  if(typeof DB!=="undefined"&&DB.isReady()){
+    var u=currentUser();
+    var item={id:uid(),name:name,createdBy:u?(u.fullname||u.username):'Admin',createdAt:new Date().toISOString()};
+    DB.insert(SH_PT_TYPES,item)
+      .then(function(){_dbToast(true,'Danh mục');})
+      .catch(function(e){_dbToast(false,e&&e.message||'');});
+  }
+}
+function deletePTType(name){
+  if(!confirm('Xóa loại "'+name+'"?')) return;
+  savePTTypes(getPTTypes().filter(function(t){return t!==name;}));
+  renderPTTypes();
+  showToast('🗑️ Đã xóa','danger');
+  // Sync lên Sheets: xóa theo name (tìm id trước)
+  if(typeof DB!=="undefined"&&DB.isReady()){
+    DB.getAll(SH_PT_TYPES).then(function(r){
+      var found=r&&r.find(function(x){return x.name===name;});
+      if(found) DB.delete(SH_PT_TYPES,found.id).catch(function(){});
+    }).catch(function(){});
+  }
+}
+
+/* ---- INIT ---- */
+seedUsers();
+if(typeof DB!=="undefined"){
+  DB.init();
+  var _u=currentUser();
+  if(_u)DB.setUser(_u.username);
+}
+buildSidebar();
+buildTopbar();
+setupRoleUI();
+populateMonthFilter();
+renderDevices();
+renderErrorLog();
+buildZoneGrid();
+// Pull từ Sheets
+setTimeout(function(){
+  if(typeof DB==="undefined"||!DB.isReady()) return;
+  safePullDevices();
+  safePullErrors();
+  safePullLockedMonths();
+  safePullPTTypes();
+  safePullPTMarkers();
+},1500);
+</script>
+  <script src="assets/lucide-icons.js"></script>
+  <script src="assets/portal-nav.js"></script>
+</body>
+</html>
