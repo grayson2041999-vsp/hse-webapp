@@ -46,6 +46,19 @@
     .tab-btn{padding:10px 22px;font-size:13.5px;font-weight:600;color:var(--text-light);cursor:pointer;border:none;background:none;border-bottom:2.5px solid transparent;margin-bottom:-2px;transition:all .15s;white-space:nowrap;}
     .tab-btn:hover{color:var(--primary);}
     .tab-btn.active{color:var(--primary);border-bottom-color:var(--primary);}
+    /* Khung căn giữa toàn trang */
+    .content-wrap{max-width:1280px;margin:0 auto;width:100%;}
+    /* 2 nút chức năng dạng ô vuông */
+    .kt-actions{display:flex;gap:12px;flex-wrap:wrap;}
+    .kt-tile{width:158px;min-height:94px;border-radius:12px;padding:13px 15px;display:flex;flex-direction:column;justify-content:space-between;align-items:flex-start;cursor:pointer;transition:transform .15s,box-shadow .15s;font-family:inherit;text-align:left;}
+    .kt-tile:hover{transform:translateY(-2px);box-shadow:0 6px 16px rgba(0,48,135,.16);}
+    .kt-tile-primary{background:var(--primary);border:1.5px solid var(--primary);color:#fff;}
+    .kt-tile-secondary{background:#fff;border:1.5px solid var(--border);color:var(--primary);}
+    .kt-tile-label{font-weight:700;font-size:14px;}
+    .kt-tile-desc{font-size:11.5px;opacity:.85;margin-top:1px;}
+    .kt-tile-secondary .kt-tile-desc{color:var(--text-light);opacity:1;}
+    .kt-back{display:inline-flex;align-items:center;gap:6px;background:none;border:none;color:var(--primary);font-weight:600;font-size:13px;cursor:pointer;padding:4px 0;margin-bottom:10px;font-family:inherit;}
+    .kt-back:hover{text-decoration:underline;}
     .tab-pane{display:none;}
     .tab-pane.active{display:block;}
 
@@ -224,18 +237,22 @@
 
   <!-- ══════ MAIN ══════ -->
   <main class="main">
+  <div class="content-wrap">
     <div class="page-title"><svg class="lic-emoji" width="1.05em" height="1.05em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex-shrink:0" aria-hidden="true"><rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M12 11h4"/><path d="M12 16h4"/><path d="M8 11h.01"/><path d="M8 16h.01"/></svg> Kiểm tra các cấp</div>
     <div class="page-desc" id="pageDesc"></div>
 
-    <!-- TAB BAR -->
-    <div class="tab-bar" id="tabBar">
-      <button class="tab-btn active" onclick="switchTab('baocao')"><svg class="lic-emoji" width="1.05em" height="1.05em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex-shrink:0" aria-hidden="true"><path d="M3 3v16a2 2 0 0 0 2 2h16"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/></svg> Báo cáo</button>
-      <button class="tab-btn" onclick="switchTab('danhsach')"><svg class="lic-emoji" width="1.05em" height="1.05em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex-shrink:0" aria-hidden="true"><path d="M6 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.704.706l3.588 3.588A2.4 2.4 0 0 1 20 8v12a2 2 0 0 1-2 2z"/><path d="M14 2v5a1 1 0 0 0 1 1h5"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/></svg> Danh sách</button>
-      <button class="tab-btn" id="tabBtnNhap" onclick="switchTab('nhap')" style="display:none;"><svg class="lic-emoji" width="1.05em" height="1.05em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex-shrink:0" aria-hidden="true"><path d="M5 12h14"/><path d="M12 5v14"/></svg> Nhập mới</button>
-    </div>
-
-    <!-- ─── TAB: BÁO CÁO ─── -->
+    <!-- ─── TAB: BÁO CÁO (màn hình mặc định) ─── -->
     <div class="tab-pane active" id="tab-baocao">
+      <div class="kt-actions" style="justify-content:flex-end;margin-bottom:16px;">
+        <button class="kt-tile kt-tile-secondary" onclick="switchTab('danhsach')">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="8" x2="21" y1="6" y2="6"/><line x1="8" x2="21" y1="12" y2="12"/><line x1="8" x2="21" y1="18" y2="18"/><line x1="3" x2="3.01" y1="6" y2="6"/><line x1="3" x2="3.01" y1="12" y2="12"/><line x1="3" x2="3.01" y1="18" y2="18"/></svg>
+          <span><span class="kt-tile-label">Danh sách</span><span class="kt-tile-desc" style="display:block;">Xem tất cả phiếu</span></span>
+        </button>
+        <button class="kt-tile kt-tile-primary" id="tabBtnNhap" onclick="switchTab('nhap')" style="display:none;">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v5h5"/><path d="M12 18v-6"/><path d="M9 15h6"/></svg>
+          <span><span class="kt-tile-label">Nhập mới</span><span class="kt-tile-desc" style="display:block;">Tạo phiếu kiểm tra</span></span>
+        </button>
+      </div>
       <div class="section-card">
         <div class="section-card-head" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
           <div class="section-card-title"><svg class="lic-emoji" width="1.05em" height="1.05em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex-shrink:0" aria-hidden="true"><path d="M3 3v16a2 2 0 0 0 2 2h16"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/></svg> Báo cáo kiểm tra an toàn</div>
@@ -324,6 +341,7 @@
 
     <!-- ─── TAB: NHẬP MỚI ─── -->
     <div class="tab-pane" id="tab-nhap">
+      <button class="kt-back" onclick="switchTab('baocao')"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg> Báo cáo</button>
       <div class="section-card">
         <div class="section-card-head">
           <div class="section-card-title"><svg class="lic-emoji" width="1.05em" height="1.05em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex-shrink:0" aria-hidden="true"><path d="M5 12h14"/><path d="M12 5v14"/></svg> Nhập kiểm tra mới</div>
@@ -490,6 +508,7 @@
 
     <!-- ─── TAB: DANH SÁCH ─── -->
     <div class="tab-pane" id="tab-danhsach">
+      <button class="kt-back" onclick="switchTab('baocao')"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg> Báo cáo</button>
       <div class="section-card">
         <div class="section-card-head">
           <div class="section-card-title"><svg class="lic-emoji" width="1.05em" height="1.05em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex-shrink:0" aria-hidden="true"><path d="M6 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.704.706l3.588 3.588A2.4 2.4 0 0 1 20 8v12a2 2 0 0 1-2 2z"/><path d="M14 2v5a1 1 0 0 0 1 1h5"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/></svg> Danh sách kiểm tra</div>
@@ -510,6 +529,7 @@
         <div id="listContainer"></div>
       </div>
     </div>
+  </div>
 
   </main>
 </div>
@@ -1861,7 +1881,7 @@ function init(){
   buildTopbar();
 
   // Hiển thị tab Nhập mới chỉ khi có quyền
-  document.getElementById("tabBtnNhap").style.display=canAnyInput(u)?"inline-block":"none";
+  document.getElementById("tabBtnNhap").style.display=canAnyInput(u)?"":"none";
 
   buildCapSelector();
   buildThangNamSelects();
