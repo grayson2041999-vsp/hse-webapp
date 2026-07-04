@@ -1342,7 +1342,7 @@ function _nvRow(n,idx,showDrag,showNhomCol,donViFilter){
   const sttCell=draggable
     ?`<td style="text-align:center;color:var(--text-light);font-size:13px;cursor:grab;" title="Kéo để sắp xếp">⠿ ${idx+1}</td>`
     :`<td style="text-align:center;color:var(--text-light);font-size:13px;">${idx+1}</td>`;
-  const genderIcon=n.gioiTinh==='nu'?' <span title="Nhân viên nữ" style="font-size:15px;">👩</span>':'';
+  const genderIcon=n.gioiTinh==='nu'?' <span title="Nhân viên nữ" style="display:inline-flex;vertical-align:-2px;color:#d6336c;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="9" r="5"/><path d="M12 14v8"/><path d="M9 18h6"/></svg></span>':'';
   const isMoi=!n.loaiNV||n.loaiNV==='moi';
   const moiBadge=isMoi?'<br><span style="display:inline-block;margin-top:3px;background:#e53935;color:#fff;font-size:10.5px;font-weight:700;padding:1px 7px;border-radius:10px;">🆕 CẤP LẦN ĐẦU</span>':'';
   let nhomCell='';
