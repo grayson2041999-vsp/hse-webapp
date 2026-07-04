@@ -49,6 +49,8 @@
       'font-size:12.5px;font-weight:600;background:rgba(255,255,255,.15);border:1.5px solid rgba(255,255,255,.3);'+
       'padding:6px 12px;border-radius:7px;transition:.15s;white-space:nowrap}'+
     '.portal-back:hover{background:rgba(255,255,255,.28)}'+
+    /* Nhóm nút Trang chủ + tiêu đề/tên đơn vị ở bên trái topbar */
+    '.pn-left{display:flex;align-items:center;gap:14px;min-width:0}'+
     /* Nút hamburger cũ (sidebar đã ẩn) → bỏ */
     '.btn-hamburger,.menu-btn{display:none!important}'+
     /* Khung phải chuẩn: gear + user-box + logout */
@@ -93,7 +95,19 @@
       a.href = "index.html";
       a.className = "portal-back";
       a.innerHTML = svg("arrow-left",16) + '<span>Trang chủ</span>';
-      bar.insertBefore(a, bar.firstChild);
+      // Gom nút Trang chủ CHUNG NHÓM với khối tiêu đề/tên đơn vị bên trái,
+      // để tiêu đề không bị "space-between" đẩy ra giữa topbar.
+      var leftInfo = bar.firstElementChild;
+      var isRight = leftInfo && (leftInfo.id === "topbarRight" || (leftInfo.className || "").indexOf("topbar-right") >= 0);
+      if(leftInfo && !isRight){
+        var group = document.createElement("div");
+        group.className = "pn-left";
+        bar.insertBefore(group, leftInfo);
+        group.appendChild(a);
+        group.appendChild(leftInfo);
+      } else {
+        bar.insertBefore(a, bar.firstChild);
+      }
     }
 
     /* 2) Đổi tiêu đề module: icon Lucide + tên chuẩn */
