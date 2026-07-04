@@ -443,7 +443,10 @@
       leftHtml=
         '<a href="index.html" class="tb-back">'+lic("arrow-left",16)+'<span>Trang chủ</span></a>'+
         '<span class="tb-sep"></span>'+
-        '<div class="tb-title">'+(m&&m.licon?lic(m.licon,18):"")+'<span>'+esc(m?m.title:"")+'</span></div>';
+        '<div class="tb-org" style="display:flex;flex-direction:column;justify-content:center;line-height:1.3;">'+
+          '<div style="font-size:11px;opacity:.75;">'+esc(ORG_PARENT)+'</div>'+
+          '<div style="font-size:12px;font-weight:700;opacity:.95;">'+esc(ORG)+'</div>'+
+        '</div>';
     }
     var gearHtml = isAdmin(u)
       ? '<a href="index.html#quan-tri-he-thong" class="tb-gear'+(activeSlug==="quan-tri-he-thong"?" on":"")+'" title="Quản trị hệ thống" aria-label="Quản trị hệ thống">'+

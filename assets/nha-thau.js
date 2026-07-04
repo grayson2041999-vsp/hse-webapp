@@ -122,6 +122,13 @@
     _c.innerHTML = "";
     _c.appendChild(_styles());
 
+    /* Tiêu đề tên trang (theo mẫu: tên trang nằm ở body) */
+    var _pt = document.createElement("div");
+    _pt.className = "page-title";
+    _pt.style.cssText = "display:flex;align-items:center;gap:9px;margin-bottom:16px;";
+    _pt.innerHTML = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink:0"><path d="M10 10V5a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v5"/><path d="M14 6a6 6 0 0 1 6 6v3"/><path d="M4 15v-3a6 6 0 0 1 6-6"/><rect x="2" y="15" width="20" height="4" rx="1"/></svg><span>Quản lý nhà thầu</span>';
+    _c.appendChild(_pt);
+
     /* Toolbar */
     var toolbar = document.createElement("div");
     toolbar.className = "nt-toolbar";
