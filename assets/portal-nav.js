@@ -89,7 +89,10 @@
   function run(){
     /* 1) Nút quay về trang chủ — chỉ chèn nếu trang chưa có link về trang chủ */
     var bar = document.querySelector(".topbar") || document.querySelector(".header");
-    var hasBack = document.querySelector('a[href="index.html"], a[href="tong-quan.html"]');
+    // CHỈ kiểm tra trong thanh tiêu đề (bar), KHÔNG quét cả trang: sidebar ẩn của
+    // vài trang có mục "Tổng quan" → tong-quan.html khiến guard hiểu nhầm là trang
+    // đã có nút về trang chủ → bỏ chèn nút. Đây là lý do 6 trang thiếu nút.
+    var hasBack = bar && bar.querySelector('a[href="index.html"], a[href="tong-quan.html"], .portal-back');
     if(bar && !hasBack){
       var a = document.createElement("a");
       a.href = "index.html";
