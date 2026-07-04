@@ -45,6 +45,35 @@
   function load(k, def){ try{ var v=localStorage.getItem(k); return v?JSON.parse(v):def; }catch(e){ return def; } }
   function sheetDateToLocal(s){ if(!s||typeof s!=="string"||s.indexOf("T")<0) return s; var d=new Date(s); return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"); }
   function save(k, v){ localStorage.setItem(k, JSON.stringify(v)); }
+
+  /* -------- TOAST DÙNG CHUNG --------
+     Trước đây showToast chỉ được định nghĩa trong một vài trang standalone
+     (ke-hoach.html, pccc-cnch.html, cap-phat-bhld.html). Ở index.html (nơi
+     có tab Quản trị hệ thống) không có showToast → mọi thao tác thêm/sửa/xoá/
+     khoá user gọi showToast trong bước đồng bộ Sheets sẽ ném ReferenceError,
+     khiến admin không nhận được phản hồi. Định nghĩa 1 bản tự chứa ở đây để
+     dùng chung; chỉ tạo khi trang chưa có bản riêng. */
+  if (typeof global.showToast !== "function") {
+    global.showToast = function(msg, type){
+      try {
+        var box = document.getElementById("hse-toast-box");
+        if(!box){
+          box = document.createElement("div");
+          box.id = "hse-toast-box";
+          box.style.cssText = "position:fixed;z-index:99999;right:18px;bottom:18px;display:flex;flex-direction:column;gap:8px;max-width:340px;";
+          document.body.appendChild(box);
+        }
+        var colors = { success:"#1a7f37", error:"#d1242f", warning:"#9a6700", info:"#0060B6" };
+        var t = document.createElement("div");
+        t.style.cssText = "background:"+(colors[type]||"#003087")+";color:#fff;padding:10px 14px;border-radius:8px;font-size:13px;line-height:1.4;box-shadow:0 4px 14px rgba(0,0,0,.18);opacity:0;transform:translateY(8px);transition:all .2s;";
+        t.textContent = msg;
+        box.appendChild(t);
+        requestAnimationFrame(function(){ t.style.opacity="1"; t.style.transform="translateY(0)"; });
+        setTimeout(function(){ t.style.opacity="0"; t.style.transform="translateY(8px)"; setTimeout(function(){ if(t.parentNode) t.parentNode.removeChild(t); }, 250); }, 3200);
+      } catch(e) { /* không bao giờ để toast làm hỏng luồng chính */ }
+    };
+  }
+
   function allSlugs(){ return MENU.map(function(m){return m.slug;}); }
   function menuBySlug(s){ for(var i=0;i<MENU.length;i++) if(MENU[i].slug===s) return MENU[i]; return null; }
 

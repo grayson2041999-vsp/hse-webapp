@@ -143,6 +143,28 @@ var DB = (function() {
     return Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
   }
 
+  /* ─── OUTBOX: hàng đợi thao tác ghi CHƯA lên được Sheets ───
+     Mục đích: nếu ghi lên Google Sheets thất bại (mất mạng / quyền / CORS),
+     thao tác vẫn được nhớ lại để (1) KHÔNG bị "hồi sinh"/"quay lui" khi sync
+     lại từ Sheets, và (2) tự động thử ghi lại ở lần sync sau.
+     Mỗi sheet có outbox riêng, lưu trong localStorage. Mỗi id giữ 1 entry
+     mới nhất: {op:'insert'|'update'|'delete', id, data?, ts}. */
+  function _outboxKey(sheet){ return "hse_db_outbox_" + sheet; }
+  function _getOutbox(sheet){ try { return JSON.parse(localStorage.getItem(_outboxKey(sheet))) || []; } catch(e){ return []; } }
+  function _setOutbox(sheet, arr){
+    if (arr && arr.length) localStorage.setItem(_outboxKey(sheet), JSON.stringify(arr));
+    else localStorage.removeItem(_outboxKey(sheet));
+  }
+  function _outboxRemove(sheet, id){
+    _setOutbox(sheet, _getOutbox(sheet).filter(function(o){ return String(o.id) !== String(id); }));
+  }
+  function _outboxPush(sheet, entry){
+    // Thao tác mới cho cùng 1 id sẽ thay thế thao tác cũ (vd: delete đè insert)
+    var a = _getOutbox(sheet).filter(function(o){ return String(o.id) !== String(entry.id); });
+    a.push(entry);
+    _setOutbox(sheet, a);
+  }
+
   /* =========================================================
      PUBLIC API
      ========================================================= */
@@ -173,7 +195,11 @@ var DB = (function() {
       if (!res.ok) throw new Error(res.error);
       // Cập nhật cache
       if (_cache[sheet]) _cache[sheet].push(res.data);
+      _outboxRemove(sheet, obj.id);   // đã lên Sheets → xoá khỏi hàng đợi
       return res.data;
+    }).catch(function(e) {
+      _outboxPush(sheet, { op: "insert", id: String(obj.id), data: obj, ts: Date.now() });
+      throw e;
     });
   }
 
@@ -186,7 +212,11 @@ var DB = (function() {
         var idx = _cache[sheet].findIndex(function(r) { return String(r.id) === String(id); });
         if (idx >= 0) _cache[sheet][idx] = res.data;
       }
+      _outboxRemove(sheet, id);   // đã lên Sheets → xoá khỏi hàng đợi
       return res.data;
+    }).catch(function(e) {
+      _outboxPush(sheet, { op: "update", id: String(id), data: data, ts: Date.now() });
+      throw e;
     });
   }
 
@@ -198,7 +228,12 @@ var DB = (function() {
       if (_cache[sheet]) {
         _cache[sheet] = _cache[sheet].filter(function(r) { return String(r.id) !== String(id); });
       }
+      _outboxRemove(sheet, id);   // đã xoá trên Sheets → gỡ tombstone
       return true;
+    }).catch(function(e) {
+      // Ghi "tombstone" để lần sync sau KHÔNG hồi sinh bản ghi + sẽ thử xoá lại
+      _outboxPush(sheet, { op: "delete", id: String(id), ts: Date.now() });
+      throw e;
     });
   }
 
@@ -267,25 +302,64 @@ var DB = (function() {
     lsKey = lsKey || "hse_users";
     if (!_url) return Promise.resolve(null);
     return getAll("users").then(function(rows) {
-      // 1) Danh sách từ Sheets (dedup theo id — khóa duy nhất, không dùng username)
       function keyOf(x){ return x && x.id != null ? String(x.id) : (x && x.username); }
+
+      // 0) Đọc hàng đợi thao tác chưa lên được Sheets (outbox) + tập id có trên Sheets
+      var pending = _getOutbox("users");
+      var pendById = {};
+      pending.forEach(function(o){ pendById[String(o.id)] = o; });
+      var sheetIds = {};
+      (rows || []).forEach(function(r){ var k = keyOf(r); if(k) sheetIds[k] = true; });
+
+      // 0b) Dọn tombstone "chết": id đang chờ xoá nhưng Sheets đã không còn
+      //     → server đã xoá xong ở lần trước, gỡ khỏi outbox để khỏi retry vô hạn.
+      pending.forEach(function(o){
+        if (o.op === "delete" && !sheetIds[String(o.id)]) _outboxRemove("users", o.id);
+      });
+      pending = _getOutbox("users");
+      pendById = {};
+      pending.forEach(function(o){ pendById[String(o.id)] = o; });
+
+      // 1) Danh sách từ Sheets (dedup theo id); áp outbox:
+      //    - đang chờ xoá  → bỏ qua (KHÔNG hồi sinh)
+      //    - đang chờ sửa  → dùng bản sửa ở máy (KHÔNG để bản Sheets cũ đè lên)
       var seen = {}, sheetUsers = [];
-      (rows || []).forEach(function(r){ var k=keyOf(r); if(k && !seen[k]){ seen[k]=true; sheetUsers.push(r); } });
+      (rows || []).forEach(function(r){
+        var k = keyOf(r); if(!k || seen[k]) return; seen[k] = true;
+        var p = pendById[k];
+        if (p && p.op === "delete") return;
+        if (p && p.op === "update" && p.data) { sheetUsers.push(p.data); return; }
+        sheetUsers.push(r);
+      });
 
       // 2) Danh sách cục bộ
       var local = [];
       try { local = JSON.parse(localStorage.getItem(lsKey)) || []; } catch(e) {}
 
-      // 3) User CHỈ có ở máy (id chưa có trên Sheets) — không được để mất
-      var localOnly = local.filter(function(u){ var k=keyOf(u); return k && !seen[k]; });
+      // 3) User CHỈ có ở máy (id chưa có trên Sheets), trừ những cái đang chờ xoá
+      var localOnly = local.filter(function(u){
+        var k = keyOf(u); if(!k || seen[k]) return false;
+        var p = pendById[k];
+        return !(p && p.op === "delete");
+      });
 
-      // 4) Hợp nhất: Sheets là nguồn chính + bổ sung user chỉ-có-ở-máy
+      // 4) Hợp nhất và lưu lại
       var merged = sheetUsers.concat(localOnly);
       localStorage.setItem(lsKey, JSON.stringify(merged));
 
-      // 5) Đẩy các user chỉ-có-ở-máy lên Sheets để bền vững & hiển thị cho admin khác
+      // 5) Thử lại các thao tác còn treo trong outbox (mỗi hàm tự gỡ outbox khi thành công)
+      pending.forEach(function(o){
+        if (o.op === "delete")      del("users", o.id).catch(function(){});
+        else if (o.op === "update") update("users", o.id, o.data || {}).catch(function(){});
+        else if (o.op === "insert") insert("users", o.data || {}).catch(function(){});
+      });
+
+      // 6) Đẩy các user chỉ-có-ở-máy chưa từng nằm trong outbox lên Sheets
       //    (insert phía server là UPSERT theo id nên an toàn, không tạo trùng)
-      localOnly.forEach(function(u){ insert("users", u).catch(function(){}); });
+      localOnly.forEach(function(u){
+        var k = keyOf(u); if (pendById[k]) return;   // đã retry ở bước 5
+        insert("users", u).catch(function(){});
+      });
 
       return merged;
     }).catch(function(e) {
