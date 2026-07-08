@@ -22,13 +22,13 @@
     .header-title { font-size: 15px; font-weight: 700; }
     .header-sub { font-size: 11px; opacity: 0.8; }
     .header-date { font-size: 12px; opacity: 0.9; }
-    .sidebar { position: fixed; top: 58px; left: 0; bottom: 0; width: var(--sidebar-w); background: var(--primary); padding: 16px 0; overflow-y: auto; z-index: 90; }
+    .sidebar { display: none; position: fixed; top: 58px; left: 0; bottom: 0; width: var(--sidebar-w); background: var(--primary); padding: 16px 0; overflow-y: auto; z-index: 90; }
     .nav-item { display: flex; align-items: center; gap: 10px; padding: 11px 16px; color: rgba(255,255,255,0.75); cursor: pointer; font-size: 13.5px; transition: all 0.2s; border-left: 3px solid transparent; white-space: nowrap; }
     .nav-item:hover { background: rgba(255,255,255,0.1); color: white; }
     .nav-item.active { background: rgba(255,255,255,0.15); color: white; border-left-color: var(--accent); font-weight: 600; }
     .nav-icon { font-size: 17px; width: 22px; text-align: center; }
     .nav-divider { height: 1px; background: rgba(255,255,255,0.1); margin: 10px 16px; }
-    .main { margin-left: var(--sidebar-w); margin-top: 58px; padding: 24px; min-height: calc(100vh - 58px); }
+    .main { margin-left: 0; margin-top: 58px; padding: 24px; min-height: calc(100vh - 58px); }
     .page { display: none; } .page.active { display: block; }
     .page-title { font-size: 20px; font-weight: 700; color: var(--primary); margin-bottom: 20px; display: flex; align-items: center; gap: 8px; }
     .card { background: var(--card); border-radius: 10px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.07); margin-bottom: 20px; }
@@ -106,9 +106,6 @@
     .sidebar-overlay.open { display: block; }
     @media (max-width: 768px) {
       :root { --sidebar-w: 0px; }
-      .btn-hamburger { display: flex; }
-      .sidebar { transform: translateX(-100%); transition: transform 0.3s; width: 230px; z-index: 110; }
-      .sidebar.open { transform: translateX(0); }
       .main { margin-left: 0; }
       .header-date { display: none; }
     }
@@ -214,6 +211,11 @@
         <h4>Tính toán nhu cầu mua sắm</h4>
         <p>Tổng hợp vật tư cần mua theo định mức và tồn kho hiện có.</p>
       </div>
+      <div class="cp-tile cp-task" id="cp-approve-tile" style="display:none;" onclick="showPage('phieu-yeu-cau')">
+        <div class="cp-ic"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></div>
+        <h4>Phê duyệt <span id="cp-approve-badge" style="display:none;background:var(--accent,#C8102E);color:#fff;font-size:11px;font-weight:700;border-radius:20px;padding:1px 8px;margin-left:4px;vertical-align:middle;">0</span></h4>
+        <p>Duyệt phiếu cấp phát và thay đổi nhân sự đang chờ (chỉ Admin).</p>
+      </div>
     </div>
     <div class="cp-sec-title">Tra cứu</div>
     <div class="cp-grid">
@@ -312,6 +314,7 @@
      TRANG: DANH MỤC BHLĐ
      ============================ -->
 <div id="page-danh-muc" class="page">
+  <button class="btn btn-outline" onclick="showPage('quan-ly-cap-phat')" style="padding:7px 16px;font-size:13px;margin-bottom:16px;">← Trang chủ</button>
   <div class="page-title"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0" aria-hidden="true"><path d="M3 5h.01"/><path d="M3 12h.01"/><path d="M3 19h.01"/><path d="M8 5h13"/><path d="M8 12h13"/><path d="M8 19h13"/></svg>Danh mục</div>
   <!-- Nhóm trang bị -->
   <div class="card" style="margin-bottom:20px;">
@@ -327,6 +330,7 @@
      TRANG: ĐỊNH MỨC CẤP PHÁT
      ============================ -->
 <div id="page-dinh-muc" class="page">
+  <button class="btn btn-outline" onclick="showPage('quan-ly-cap-phat')" style="padding:7px 16px;font-size:13px;margin-bottom:16px;">← Trang chủ</button>
   <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
     <div class="page-title" style="margin:0;"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0" aria-hidden="true"><path d="M21.3 15.3a2.4 2.4 0 0 1 0 3.4l-2.6 2.6a2.4 2.4 0 0 1-3.4 0L2.7 8.7a2.4 2.4 0 0 1 0-3.4l2.6-2.6a2.4 2.4 0 0 1 3.4 0Z"/><path d="m14.5 12.5 2-2"/><path d="m11.5 9.5 2-2"/><path d="m8.5 6.5 2-2"/><path d="m17.5 15.5 2-2"/></svg>Định mức cấp phát</div>
     <button class="btn btn-primary" onclick="exportDinhMucWord()"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px" aria-hidden="true"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v5h5"/><path d="M16 13H8"/><path d="M16 17H8"/><path d="M10 9H8"/></svg>Xuất Word</button>
@@ -350,6 +354,7 @@
      TRANG: PHIẾU YÊU CẦU
      ============================ -->
 <div id="page-phieu-yeu-cau" class="page">
+  <button class="btn btn-outline" onclick="showPage('quan-ly-cap-phat')" style="padding:7px 16px;font-size:13px;margin-bottom:16px;">← Trang chủ</button>
   <div class="page-title"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0" aria-hidden="true"><rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M12 11h4"/><path d="M12 16h4"/><path d="M8 11h.01"/><path d="M8 16h.01"/></svg>Phiếu yêu cầu cấp phát BHLĐ</div>
 
   <!-- Tabs -->
@@ -460,6 +465,7 @@
      TRANG: TỒN KHO
      ============================ -->
 <div id="page-ton-kho" class="page">
+  <button class="btn btn-outline" onclick="showPage('quan-ly-cap-phat')" style="padding:7px 16px;font-size:13px;margin-bottom:16px;">← Trang chủ</button>
   <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:20px;">
     <div class="page-title" style="margin:0;"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0" aria-hidden="true"><path d="M22 8.35V20a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V8.35A2 2 0 0 1 3.26 6.5l8-3.2a2 2 0 0 1 1.48 0l8 3.2A2 2 0 0 1 22 8.35Z"/><path d="M6 18h12"/><path d="M6 14h12"/><path d="M6 10h12"/></svg>Tồn kho</div>
     <div id="ton-kho-actions" style="display:flex;gap:8px;"></div>
@@ -491,6 +497,7 @@
      TRANG: NHU CẦU MUA SẮM
      ============================ -->
 <div id="page-nhu-cau" class="page">
+  <button class="btn btn-outline" onclick="showPage('quan-ly-cap-phat')" style="padding:7px 16px;font-size:13px;margin-bottom:16px;">← Trang chủ</button>
   <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:20px;">
     <div class="page-title" style="margin:0;"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0" aria-hidden="true"><circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"/></svg>Nhu cầu mua sắm</div>
     <button id="btn-export-nhucau" class="btn btn-outline" onclick="exportNhuCauExcel()" style="display:none;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px" aria-hidden="true"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v5h5"/><path d="M8 13h2"/><path d="M14 13h2"/><path d="M8 17h2"/><path d="M14 17h2"/></svg>Tải Excel</button>
@@ -1285,6 +1292,20 @@ function cpShowHome(){
   var h=document.getElementById('cp-home'); if(h)h.style.display='block';
   var pk=document.getElementById('nv-unit-picker'); if(pk)pk.style.display='none';
   var dt=document.getElementById('nv-unit-detail'); if(dt)dt.style.display='none';
+  cpUpdateApproveTile();
+}
+// Hiện thẻ "Phê duyệt" cho admin + badge số mục đang chờ
+function cpUpdateApproveTile(){
+  var tile=document.getElementById('cp-approve-tile'); if(!tile)return;
+  var admin = (typeof isAdmin==='function') && isAdmin();
+  tile.style.display = admin ? 'flex' : 'none';
+  if(!admin) return;
+  var nP=0,nC=0;
+  try{ nP=BHLD.lsGet('phieu_requests').filter(function(p){return p.status==='pending';}).length; }catch(e){}
+  try{ nC=BHLD.lsGet('pending_changes').filter(function(c){return c.status==='pending';}).length; }catch(e){}
+  var n=nP+nC;
+  var b=document.getElementById('cp-approve-badge');
+  if(b){ b.textContent=n; b.style.display=n?'inline-block':'none'; }
 }
 function cpOpenNhanVien(){
   var h=document.getElementById('cp-home'); if(h)h.style.display='none';
