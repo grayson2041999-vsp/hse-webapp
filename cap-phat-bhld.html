@@ -234,6 +234,11 @@
         <h4>Tồn kho</h4>
         <p>Số lượng tồn hiện tại và lịch sử nhập/xuất.</p>
       </div>
+      <div class="cp-tile" onclick="cpOpenNhanVien()">
+        <div class="cp-ic"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
+        <h4>Nhân sự</h4>
+        <p>Tra cứu danh sách và thông tin nhân viên theo đơn vị.</p>
+      </div>
     </div>
   </div>
 
@@ -1376,17 +1381,13 @@ function renderUnitPicker(){
     return;
   }
 
-  // Luôn hiển thị tất cả 6 đơn vị; tab không có quyền thì mờ + không click được
-  const allowedUnits=getCentralUserUnits(); // null = admin (thấy + vào được tất cả)
-  const _cu=getCentralUser();
-  const isViewer=_cu&&_cu.role==='viewer';
-
+  // TRA CỨU NHÂN SỰ: mọi người (viewer + user + khách) đều xem được danh sách
+  // của mọi đơn vị. Quyền CHỈNH SỬA vẫn do canEditUnit/applyEditMode quyết định.
   let html=UNIT_ORDER.map(u=>{
     const count=daNhanVien.filter(n=>n.boPhan===u).length;
     const icon=_unitIcon(u);
     const safeU=u.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
-    // Viewer được vào xem tất cả đơn vị (chỉ không chỉnh sửa)
-    const canEnter = allowedUnits===null || isViewer || allowedUnits.includes(u);
+    const canEnter = true;
     if(canEnter){
       return`<button class="nv-unit-card" onclick="selectUnit('${safeU}')">
         <span class="nv-unit-icon">${icon}</span>
@@ -1403,8 +1404,8 @@ function renderUnitPicker(){
     }
   }).join('');
 
-  // Chỉ admin hoặc người xem toàn bộ mới thấy "Chưa phân đơn vị"
-  if(allowedUnits===null){
+  // Ai cũng thấy nhóm "Chưa phân đơn vị" khi tra cứu nhân sự
+  {
     const orphans=daNhanVien.filter(n=>!n.boPhan||!n.boPhan.trim());
     if(orphans.length>0) html+=`<button class="nv-unit-card" onclick="selectOrphanUnit()" style="border-color:#e74c3c;background:#fff5f5;">
       <span class="nv-unit-name" style="color:#c0392b;">Chưa phân đơn vị</span>
