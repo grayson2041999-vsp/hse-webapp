@@ -3637,10 +3637,18 @@ function _cpwPhieu(dv,q){try{return BHLD.lsGet('phieu_requests').filter(function
 
 function cpwInit(){
   var dvSel=document.getElementById('cpw-donvi'),qSel=document.getElementById('cpw-quy');
-  var allowed=(typeof getCentralUserUnits==='function')?getCentralUserUnits():null;
-  var allDv=[...new Set(daNhanVien.map(function(n){return n.boPhan;}).filter(Boolean))].sort(function(a,b){return a.localeCompare(b,'vi');});
-  var dvList=allowed===null?allDv:allDv.filter(function(dv){return allowed.includes(dv);});
-  dvSel.innerHTML=dvList.length?dvList.map(function(dv){return '<option value="'+_escH(dv)+'">'+_escH(dv)+'</option>';}).join(''):'<option value="">(không có đơn vị được phân quyền)</option>';
+  var allDv=[...new Set(daNhanVien.map(function(n){return n.boPhan;}).filter(Boolean))];
+  // CHỈ liệt kê đơn vị mà tài khoản ĐƯỢC PHÉP cấp phát (canEditUnit).
+  // → chưa đăng nhập: rỗng; viewer: chỉ Test; user: đơn vị của họ + Test; admin: tất cả.
+  var units=[...new Set((typeof UNIT_ORDER!=='undefined'?UNIT_ORDER:[]).concat(allDv))]
+    .filter(function(dv){return typeof canEditUnit==='function'&&canEditUnit(dv);})
+    .sort(function(a,b){return a.localeCompare(b,'vi');});
+  if(!units.length){
+    dvSel.innerHTML='<option value="">(không có đơn vị)</option>';qSel.innerHTML='';
+    document.getElementById('cpw-steps').innerHTML='<div class="card" style="color:var(--text-light);">Bạn cần <b>đăng nhập</b> bằng tài khoản có quyền cấp phát để dùng chức năng này. (Viewer chỉ thao tác được ở đơn vị <b>Test</b>.)</div>';
+    return;
+  }
+  dvSel.innerHTML=units.map(function(dv){return '<option value="'+_escH(dv)+'">'+_escH(dv)+'</option>';}).join('');
   var qOpts=(typeof buildQuyOptions==='function')?buildQuyOptions():[];
   var curQ=(typeof getCurrentQuy==='function')?getCurrentQuy():'';
   qSel.innerHTML=qOpts.map(function(q){return '<option value="'+q+'"'+(q===curQ?' selected':'')+'>'+q+'</option>';}).join('');
