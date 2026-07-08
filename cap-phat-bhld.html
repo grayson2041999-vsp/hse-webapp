@@ -628,7 +628,7 @@
 
     <!-- Loại NV: mới / cũ -->
     <div style="margin-top:14px;padding:12px 16px;background:#f7f9fc;border-radius:8px;border:1px solid var(--border);">
-      <label style="display:flex;align-items:center;gap:10px;cursor:pointer;user-select:none;">
+      <label id="nv-loai-moi-row" style="display:flex;align-items:center;gap:10px;cursor:pointer;user-select:none;">
         <input type="checkbox" id="nv-loai-moi" onchange="toggleNvMoi()" style="width:17px;height:17px;cursor:pointer;accent-color:var(--primary-light);">
         <span style="font-size:13px;font-weight:600;color:var(--primary);">🆕 Nhân viên mới (chưa từng được cấp BHLĐ)</span>
       </label>
@@ -1770,12 +1770,13 @@ function openModalNV(){
   document.getElementById('nv-co-quanao').value='';
   document.getElementById('nv-co-giay').value='';
   document.getElementById('nv-nu').checked=false;
-  document.getElementById('nv-loai-moi').checked=false;
+  document.getElementById('nv-loai-moi').checked=true; // Thêm mới → luôn là nhân viên mới
   document.getElementById('nv-moi-thang-m').value='';
   document.getElementById('nv-moi-thang-y').value='';
   clearMonthYear('nv-thang-quanao');clearMonthYear('nv-thang-giay');clearMonthYear('nv-thang-non');
   clearMonthYear('nv-thang-kinh');clearMonthYear('nv-thang-ao-mua');clearMonthYear('nv-thang-qa-han');
   _populateChucDanhSelect('');toggleNvMoi();toggleQAHan();
+  var _lr=document.getElementById('nv-loai-moi-row'); if(_lr)_lr.style.display='none'; // ẩn ô chọn loại khi thêm
   openModal('modal-nv');
 }
 function editNV(id){
@@ -1794,6 +1795,7 @@ function editNV(id){
   // Nếu loaiNV='moi' (chưa phê duyệt phiếu lần đầu), đánh dấu checkbox nhân viên mới
   const isMoi=n.loaiNV==='moi';
   document.getElementById('nv-loai-moi').checked=isMoi;
+  var _lr=document.getElementById('nv-loai-moi-row'); if(_lr)_lr.style.display='flex'; // sửa: vẫn cho chọn loại
   toggleNvMoi();
   if(isMoi&&n.ngayVaoLam&&n.ngayVaoLam.length>=7){const parts=n.ngayVaoLam.split('-');document.getElementById('nv-moi-thang-m').value=parts[1]||'';document.getElementById('nv-moi-thang-y').value=parts[0]||'';}
   else{document.getElementById('nv-moi-thang-m').value='';document.getElementById('nv-moi-thang-y').value='';}
