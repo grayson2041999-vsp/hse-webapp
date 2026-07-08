@@ -1044,10 +1044,10 @@ function isAdmin(){
   return u&&u.role==='admin';
 }
 function canEditUnit(donVi){
+  if(donVi==='Test')return true; // Sandbox: MỌI người (kể cả chưa đăng nhập / Viewer) thao tác được ở đơn vị Test
   const u=getCentralUser();
   if(!u)return false;
   if(u.role==='admin')return true;
-  if(donVi==='Test')return true; // Sandbox: mọi tài khoản đăng nhập (kể cả Viewer) thao tác được ở đơn vị Test
   if(u.role==='viewer')return false;
   return Array.isArray(u.capPhatUnits)&&u.capPhatUnits.includes(donVi);
 }
