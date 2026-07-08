@@ -1261,8 +1261,13 @@
   /* -------- PHẦN CÀI ĐẶT DB (hiển thị trong trang Quản trị) -------- */
   function renderDBSettings(container) {
     if(!container) return;
-    var dbReady = typeof DB !== "undefined" && DB.isReady();
-    var currentUrl = dbReady ? localStorage.getItem("hse_db_url") || "" : "";
+    container.innerHTML =
+      '<div style="margin-top:20px;padding-top:20px;border-top:1px solid var(--border)">'+
+        '<h3 style="font-size:15px;font-weight:700;color:var(--brand);margin-bottom:6px;">Kết nối cơ sở dữ liệu</h3>'+
+        '<p style="font-size:12.5px;color:var(--text-muted);margin:0;">✅ Đang kết nối <b>Supabase</b>. Dữ liệu được lưu và đồng bộ tự động — không cần cấu hình gì thêm.</p>'+
+      '</div>';
+    return; // ── Đã chuyển sang Supabase; phần cấu hình Google Sheets bên dưới không còn dùng ──
+    /* eslint-disable */
     container.innerHTML =
       '<div style="margin-top:20px;padding-top:20px;border-top:1px solid var(--border)">' +
         '<h3 style="font-size:15px;font-weight:700;color:var(--brand);margin-bottom:6px;"><svg class="lic-emoji" width="1.05em" height="1.05em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex-shrink:0" aria-hidden="true"><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/></svg> Kết nối Google Sheets Database</h3>' +
