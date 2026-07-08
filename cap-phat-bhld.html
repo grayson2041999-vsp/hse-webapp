@@ -234,7 +234,7 @@
         <h4>Tồn kho</h4>
         <p>Số lượng tồn hiện tại và lịch sử nhập/xuất.</p>
       </div>
-      <div class="cp-tile" onclick="cpOpenNhanVien()">
+      <div class="cp-tile" onclick="cpOpenTraCuu()">
         <div class="cp-ic"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
         <h4>Nhân sự</h4>
         <p>Tra cứu danh sách và thông tin nhân viên theo đơn vị.</p>
@@ -253,6 +253,35 @@
       </div>
     </div>
     <div id="cpw-steps"></div>
+  </div>
+
+  <!-- ===== TRA CỨU NHÂN SỰ (bảng lớn: tìm kiếm + lọc) ===== -->
+  <div id="cp-nhansu" style="display:none;">
+    <button class="btn btn-outline" onclick="cpShowHome()" style="padding:7px 16px;font-size:13px;margin-bottom:16px;">← Trang chủ</button>
+    <div class="page-title" style="font-size:19px;margin-bottom:14px;">Tra cứu nhân sự</div>
+    <div class="card">
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px;">
+        <input id="cpns-search" class="search-input" type="search" autocomplete="off" placeholder="Tìm theo họ tên, danh số..." oninput="cpRenderNhanSu()" style="flex:1;min-width:240px;">
+        <select id="cpns-donvi" onchange="cpRenderNhanSu()" style="min-width:180px;"></select>
+        <select id="cpns-chucdanh" onchange="cpRenderNhanSu()" style="min-width:200px;"></select>
+      </div>
+      <div id="cpns-count" style="font-size:12.5px;color:var(--text-light);margin-bottom:8px;"></div>
+      <div class="table-wrap"><table id="cpns-table"><thead>
+        <tr>
+          <th rowspan="2" style="width:44px;text-align:center;">STT</th>
+          <th rowspan="2">Danh số</th>
+          <th rowspan="2" style="min-width:180px;">Họ và tên</th>
+          <th rowspan="2" style="min-width:160px;">Chức danh</th>
+          <th rowspan="2">Đơn vị</th>
+          <th rowspan="2" style="text-align:center;">Cỡ QA</th>
+          <th rowspan="2" style="text-align:center;">Cỡ giày</th>
+          <th colspan="6" style="text-align:center;background:#d0e4f7;color:var(--primary);font-size:11px;">Lần cấp gần nhất</th>
+        </tr>
+        <tr>
+          <th style="text-align:center;">Quần áo</th><th style="text-align:center;">Giày</th><th style="text-align:center;">Mũ</th><th style="text-align:center;">Kính</th><th style="text-align:center;">Áo mưa</th><th style="text-align:center;">QA thợ hàn</th>
+        </tr>
+      </thead><tbody id="cpns-tbody"></tbody></table></div>
+    </div>
   </div>
 
   <!-- VIEW A: CHỌN ĐƠN VỊ -->
@@ -1311,7 +1340,53 @@ function cpShowHome(){
   var pk=document.getElementById('nv-unit-picker'); if(pk)pk.style.display='none';
   var dt=document.getElementById('nv-unit-detail'); if(dt)dt.style.display='none';
   var wz=document.getElementById('cp-wizard'); if(wz)wz.style.display='none';
+  var ns=document.getElementById('cp-nhansu'); if(ns)ns.style.display='none';
   cpUpdateApproveTile();
+}
+// ===== TRA CỨU NHÂN SỰ (bảng lớn) =====
+function cpOpenTraCuu(){
+  document.getElementById('cp-home').style.display='none';
+  ['nv-unit-picker','nv-unit-detail','cp-wizard'].forEach(function(i){var e=document.getElementById(i);if(e)e.style.display='none';});
+  var v=document.getElementById('cp-nhansu'); if(v)v.style.display='block';
+  var units=[...new Set(daNhanVien.map(function(n){return n.boPhan;}).filter(Boolean))].sort(function(a,b){return a.localeCompare(b,'vi');});
+  var dvSel=document.getElementById('cpns-donvi');
+  dvSel.innerHTML='<option value="">— Tất cả đơn vị —</option>'+units.map(function(u){return '<option value="'+_escH(u)+'">'+_escH(u)+'</option>';}).join('');
+  var cds=[...new Set(daNhanVien.map(function(n){return n.chucDanh;}).filter(Boolean))].sort(function(a,b){return a.localeCompare(b,'vi');});
+  var cdSel=document.getElementById('cpns-chucdanh');
+  cdSel.innerHTML='<option value="">— Tất cả chức danh —</option>'+cds.map(function(c){return '<option value="'+_escH(c)+'">'+_escH(c)+'</option>';}).join('');
+  document.getElementById('cpns-search').value='';
+  cpRenderNhanSu();
+}
+function cpRenderNhanSu(){
+  var q=(document.getElementById('cpns-search').value||'').trim().toLowerCase();
+  var dv=document.getElementById('cpns-donvi').value||'';
+  var cd=document.getElementById('cpns-chucdanh').value||'';
+  var f=(typeof _fThangTxt==='function')?_fThangTxt:function(x){return x||'';};
+  var list=daNhanVien.filter(function(n){
+    if(dv&&n.boPhan!==dv)return false;
+    if(cd&&n.chucDanh!==cd)return false;
+    if(q&&(((n.ten||'')+' '+(n.danhSo||'')).toLowerCase().indexOf(q)<0))return false;
+    return true;
+  }).sort(function(a,b){var d=(a.boPhan||'').localeCompare(b.boPhan||'','vi');return d!==0?d:(a.ten||'').localeCompare(b.ten||'','vi');});
+  var body=list.map(function(n,i){
+    return '<tr>'+
+      '<td style="text-align:center;color:var(--text-light);">'+(i+1)+'</td>'+
+      '<td><code style="font-size:12px;color:var(--text-light);">'+_escH(n.danhSo||'')+'</code></td>'+
+      '<td><strong>'+_escH(n.ten||'')+'</strong></td>'+
+      '<td style="font-size:12.5px;">'+_escH(n.chucDanh||'')+'</td>'+
+      '<td style="font-size:12.5px;">'+_escH(n.boPhan||'—')+'</td>'+
+      '<td style="text-align:center;">'+_escH(n.coQuanAo||'')+'</td>'+
+      '<td style="text-align:center;">'+_escH(n.coGiay||'')+'</td>'+
+      '<td style="text-align:center;font-size:12px;">'+_escH(f(n.thangCapQuanAo)||'-')+'</td>'+
+      '<td style="text-align:center;font-size:12px;">'+_escH(f(n.thangCapGiay)||'-')+'</td>'+
+      '<td style="text-align:center;font-size:12px;">'+_escH(f(n.thangCapMu)||'-')+'</td>'+
+      '<td style="text-align:center;font-size:12px;">'+_escH(f(n.thangCapKinh)||'-')+'</td>'+
+      '<td style="text-align:center;font-size:12px;">'+_escH(f(n.thangCapAoMua)||'-')+'</td>'+
+      '<td style="text-align:center;font-size:12px;">'+_escH(f(n.thangCapQAHan)||'-')+'</td>'+
+    '</tr>';
+  }).join('');
+  document.getElementById('cpns-tbody').innerHTML=body||'<tr><td colspan="13" style="text-align:center;padding:24px;color:var(--text-light);">Không có nhân viên phù hợp.</td></tr>';
+  document.getElementById('cpns-count').textContent='Tìm thấy '+list.length+' nhân viên';
 }
 // Hiện thẻ "Phê duyệt" cho admin + badge số mục đang chờ
 function cpUpdateApproveTile(){
