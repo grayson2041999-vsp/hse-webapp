@@ -1017,7 +1017,7 @@
       '<div class="modal-f"><button class="btn btn-ghost" id="mc">Huỷ</button><button class="btn btn-accent" id="ms">Lưu</button></div></div>';
 
     var permBox = $("#m_perms",bg);
-    var CAP_PHAT_UNITS = ['Cảng biển','Căn cứ Kho - Giao nhận','Xưởng sửa chữa','Đội xe VTHH&PTTBCD','Đội xe VCHK','Bộ máy điều hành'];
+    var CAP_PHAT_UNITS = ['Cảng biển','Căn cứ Kho - Giao nhận','Xưởng sửa chữa','Đội xe VTHH&PTTBCD','Đội xe VCHK','Bộ máy điều hành','Test'];
     MENU.forEach(function(item){
       if(item.adminOnly) return;
       if(item.adminEditOnly) return;
