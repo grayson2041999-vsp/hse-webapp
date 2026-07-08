@@ -255,6 +255,13 @@
     <div id="cpw-steps"></div>
   </div>
 
+  <!-- ===== WIZARD: CẤP PHÁT CHO NHÂN VIÊN MỚI (3 bước) ===== -->
+  <div id="cp-nvmoi-wizard" style="display:none;">
+    <button class="btn btn-outline" onclick="cpShowHome()" style="padding:7px 16px;font-size:13px;margin-bottom:16px;">← Trang chủ</button>
+    <div class="page-title" style="font-size:19px;margin-bottom:14px;">Cấp phát cho nhân viên mới</div>
+    <div id="cpnv-steps"></div>
+  </div>
+
   <!-- ===== TRA CỨU NHÂN SỰ (bảng lớn: tìm kiếm + lọc) ===== -->
   <div id="cp-nhansu" style="display:none;">
     <button class="btn btn-outline" onclick="cpShowHome()" style="padding:7px 16px;font-size:13px;margin-bottom:16px;">← Trang chủ</button>
@@ -1342,6 +1349,7 @@ function cpShowHome(){
   var dt=document.getElementById('nv-unit-detail'); if(dt)dt.style.display='none';
   var wz=document.getElementById('cp-wizard'); if(wz)wz.style.display='none';
   var ns=document.getElementById('cp-nhansu'); if(ns)ns.style.display='none';
+  var nvw=document.getElementById('cp-nvmoi-wizard'); if(nvw)nvw.style.display='none';
   cpUpdateApproveTile();
 }
 // ===== TRA CỨU NHÂN SỰ (bảng lớn) =====
@@ -1415,7 +1423,99 @@ function cpOpenNhanVien(){
   var dt=document.getElementById('nv-unit-detail'); if(dt)dt.style.display='none';
   renderUnitPicker();
 }
-function cpGoNewEmployee(){ cpOpenNhanVien(); }
+function cpGoNewEmployee(){ cpnvOpen(); }
+// ===== WIZARD: CẤP PHÁT CHO NHÂN VIÊN MỚI (3 bước) =====
+function _cpnvNewEmps(){ return daNhanVien.filter(function(n){return n.loaiNV==='moi'&&(typeof canEditUnit!=='function'||canEditUnit(n.boPhan));}); }
+function _cpnvPendingIds(){ return new Set(BHLD.lsGet('phieu_requests').filter(function(p){return p.type==='nv_moi'&&p.status==='pending';}).map(function(p){return String(p.nvId);})); }
+function cpnvOpen(){
+  document.getElementById('cp-home').style.display='none';
+  ['nv-unit-picker','nv-unit-detail','cp-wizard','cp-nhansu'].forEach(function(i){var e=document.getElementById(i);if(e)e.style.display='none';});
+  var v=document.getElementById('cp-nvmoi-wizard'); if(v)v.style.display='block';
+  cpnvRender();
+}
+function cpnvAddEmployee(){
+  var units=(typeof UNIT_ORDER!=='undefined'?UNIT_ORDER:[]).filter(function(u){return typeof canEditUnit==='function'&&canEditUnit(u);});
+  if(units.length&&(!_currentUnit||!canEditUnit(_currentUnit)))_currentUnit=units[0];
+  if(typeof openModalNV==='function')openModalNV();
+}
+function cpnvRender(){
+  var host=document.getElementById('cpnv-steps'); if(!host)return;
+  var newEmps=_cpnvNewEmps();
+  var pendIds=_cpnvPendingIds();
+  var toSend=newEmps.filter(function(n){return !pendIds.has(String(n.id));});
+  var pendingEmps=newEmps.filter(function(n){return pendIds.has(String(n.id));});
+  var approved=BHLD.lsGet('phieu_requests').filter(function(p){return p.type==='nv_moi'&&p.status==='approved';})
+    .sort(function(a,b){return new Date(b.reviewedAt||b.createdAt||0)-new Date(a.reviewedAt||a.createdAt||0);}).slice(0,20);
+
+  // Bước 1
+  var b1='<button class="btn btn-primary btn-sm" onclick="cpnvAddEmployee()">'+_ic('userplus',15)+' Thêm nhân viên mới</button>';
+  if(newEmps.length){
+    b1+='<div style="margin-top:12px;"><div style="font-size:12.5px;color:var(--text-light);margin-bottom:6px;">Nhân viên mới chưa hoàn tất ('+newEmps.length+'):</div>'+
+      '<div class="table-wrap"><table><thead><tr><th style="width:40px;text-align:center;">STT</th><th>Danh số</th><th>Họ tên</th><th>Chức danh</th><th>Đơn vị</th><th style="text-align:center;">Trạng thái</th></tr></thead><tbody>'+
+      newEmps.map(function(n,i){var st=pendIds.has(String(n.id))?_cpwBadge('cho_duyet'):_cpwBadge('dang_lam');
+        return '<tr><td style="text-align:center;">'+(i+1)+'</td><td>'+_escH(n.danhSo||'')+'</td><td><strong>'+_escH(n.ten||'')+'</strong></td><td style="font-size:12.5px;">'+_escH(n.chucDanh||'')+'</td><td style="font-size:12.5px;">'+_escH(n.boPhan||'')+'</td><td style="text-align:center;">'+st+'</td></tr>';
+      }).join('')+'</tbody></table></div></div>';
+  } else {
+    b1+='<div style="margin-top:10px;font-size:13px;color:var(--text-light);">Chưa có nhân viên mới. Bấm nút trên để thêm (nhớ tích "Nhân viên mới" và nhập tháng vào làm).</div>';
+  }
+  var s1='dang_lam';
+
+  // Bước 2
+  var s2, b2;
+  if(newEmps.length===0){ s2='khoa'; b2='<div style="display:flex;align-items:center;gap:6px;color:var(--text-light);font-size:13px;">'+_ic('lock',15)+'Thêm nhân viên mới ở Bước 1 để mở bước này.</div>'; }
+  else {
+    s2 = (toSend.length===0 && pendingEmps.length) ? 'cho_duyet' : 'dang_lam';
+    b2='';
+    if(pendingEmps.length) b2+='<div style="display:flex;align-items:center;gap:6px;color:var(--warning);font-size:13.5px;margin-bottom:10px;">'+_ic('hour',16)+pendingEmps.length+' nhân viên đã gửi, đang chờ Admin duyệt.</div>';
+    if(toSend.length){
+      b2+='<p style="font-size:12.5px;color:var(--text-light);margin:0 0 8px;">Kiểm tra/điều chỉnh số lượng cấp phát lần đầu rồi gửi Admin phê duyệt.</p>'+
+        '<div id="cpnv-qty"></div>'+
+        '<div style="margin-top:12px;"><button class="btn btn-success btn-sm" onclick="cpnvSubmit()">'+_ic('check',15)+' Gửi phê duyệt ('+toSend.length+' NV)</button></div>';
+    } else if(!pendingEmps.length){
+      b2+='<div style="font-size:13px;color:var(--text-light);">Không có nhân viên cần gửi.</div>';
+    }
+  }
+
+  // Bước 3
+  var s3 = approved.length ? 'san_sang' : 'khoa';
+  var b3;
+  if(!approved.length){ b3='<div style="display:flex;align-items:center;gap:6px;color:var(--text-light);font-size:13px;">'+_ic('lock',15)+'Phiếu được Admin duyệt sẽ hiện ở đây để xuất & trình ký. (Thời hạn cấp phát được cập nhật khi Admin duyệt.)</div>'; }
+  else {
+    b3='<div class="table-wrap"><table><thead><tr><th style="width:40px;text-align:center;">STT</th><th>Nhân viên</th><th>Chức danh</th><th>Đơn vị</th><th>Duyệt lúc</th><th style="text-align:center;">Xuất phiếu</th></tr></thead><tbody>'+
+      approved.map(function(p,i){return '<tr><td style="text-align:center;">'+(i+1)+'</td><td><strong>'+_escH(p.nvTen||'')+'</strong> <span style="color:var(--text-light);font-size:11px;">'+_escH(p.nvDanhSo||'')+'</span></td><td style="font-size:12.5px;">'+_escH(p.chucDanh||'')+'</td><td style="font-size:12.5px;">'+_escH(p.donVi||'')+'</td><td style="font-size:12px;color:var(--text-light);">'+(p.reviewedAt?new Date(p.reviewedAt).toLocaleDateString('vi-VN'):'')+'</td><td style="text-align:center;"><button class="btn btn-outline btn-sm" onclick="exportPhieuById(\''+p.id+'\',\'word\')">'+_ic('file',13)+' Word</button></td></tr>';}).join('')+
+      '</tbody></table></div>';
+  }
+
+  host.innerHTML=_cpwStepCard(1,'Thêm nhân viên mới','userplus',s1,b1)+
+    _cpwStepCard(2,'Điền số lượng & gửi duyệt','edit',s2,b2)+
+    _cpwStepCard(3,'Xuất phiếu & trình ký','file',s3,b3);
+  if(newEmps.length&&toSend.length)cpnvRenderQty(toSend);
+}
+function cpnvRenderQty(list){
+  var host=document.getElementById('cpnv-qty'); if(!host)return;
+  var html='';
+  list.forEach(function(nv){
+    var items=(typeof computeNVMoiItems==='function')?computeNVMoiItems(nv):[];
+    var ng=nv.ngayVaoLam?('Tháng '+nv.ngayVaoLam.split('-')[1]+'/'+nv.ngayVaoLam.split('-')[0]):'—';
+    html+='<div style="border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:14px;">'+
+      '<div style="margin-bottom:10px;"><strong style="color:var(--primary);">'+_escH(nv.ten)+'</strong> <span style="font-size:12px;color:var(--text-light);">DS '+_escH(nv.danhSo||'—')+' · '+_escH(nv.chucDanh||'')+' · '+_escH(nv.boPhan||'')+' · vào làm '+ng+'</span></div>'+
+      '<div class="table-wrap"><table><thead><tr><th style="width:28px;">#</th><th>Tên trang bị</th><th style="width:60px;">ĐVT</th><th style="text-align:center;">Định mức</th><th style="text-align:center;">Yêu cầu thực tế</th><th style="min-width:140px;">Ghi chú</th></tr></thead><tbody>';
+    items.forEach(function(it,idx){
+      var key='nvmoi_'+nv.id+'_'+it.tbId;
+      var saved=(window._nvMoiEdits&&window._nvMoiEdits[key])||{};
+      var tv=saved.thucTe!==undefined?saved.thucTe:it.soLuong;
+      html+='<tr><td style="text-align:center;color:var(--text-light);">'+(idx+1)+'</td><td>'+_escH(it.ten)+'</td><td>'+_escH(it.donVi)+'</td><td style="text-align:center;font-weight:600;">'+it.soLuong+'</td>'+
+        '<td style="text-align:center;"><input type="number" min="0" value="'+tv+'" '+_inputStyle+' onchange="saveNVMoiEdit(\''+nv.id+'\',\''+it.tbId+'\',\'thucTe\',this.value)"></td>'+
+        '<td><input type="text" value="'+_escH(saved.ghiChu||'')+'" '+_textStyle+' onchange="saveNVMoiEdit(\''+nv.id+'\',\''+it.tbId+'\',\'ghiChu\',this.value)" placeholder="Ghi chú..."></td></tr>';
+    });
+    html+='</tbody></table></div></div>';
+  });
+  host.innerHTML=html;
+}
+function cpnvSubmit(){
+  if(typeof submitPhieuNVMoi==='function')submitPhieuNVMoi();
+  setTimeout(cpnvRender,60);
+}
 // Mở wizard Cấp phát hàng quý (3 bước có khoá)
 function cpGoQuarterly(){
   document.getElementById('cp-home').style.display='none';
@@ -4036,6 +4136,9 @@ function _cpwOnRealtime(table,payload){
       if(row.donVi===_cpwDonVi&&row.quyStr===_cpwQuy){cpwLoad(_cpwDonVi,_cpwQuy).then(function(st){_cpwState=st;cpwRender();});}
     }else{ cpwRender(); }
   }
+  var nvw=document.getElementById('cp-nvmoi-wizard');
+  var nvTyping=ae&&ae.closest&&ae.closest('#cpnv-qty');
+  if(nvw&&nvw.style.display!=='none'&&!nvTyping&&typeof cpnvRender==='function')cpnvRender();
   if(typeof cpUpdateApproveTile==='function')cpUpdateApproveTile();
   if(typeof isAdmin==='function'&&isAdmin()&&typeof renderChoduyetTab==='function'){
     var pg=document.getElementById('page-phieu-yeu-cau');
