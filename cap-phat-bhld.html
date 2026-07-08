@@ -3544,6 +3544,8 @@ document.addEventListener('DOMContentLoaded',()=>{
   // (Không redirect — cho phép viewer và anonymous xem read-only, giống các trang khác trong app)
   renderHeaderUser();
   _updateNotifBadge();
+  // Realtime: tự cập nhật khi Admin duyệt/trả về (phiếu, thay đổi nhân sự, tiến trình)
+  if(window.HSE_SB)_cpwSetupRealtime(); else window.addEventListener('hse-sb-ready',_cpwSetupRealtime,{once:true});
   // Ngày giờ header
   const dateEl=document.getElementById('header-date');
   if(dateEl){const now=new Date();dateEl.textContent=now.toLocaleDateString('vi-VN',{weekday:'long',year:'numeric',month:'long',day:'numeric'});}
@@ -3848,6 +3850,50 @@ function cpwFinalize(){
     showToast('✅ Hoàn tất! Đã cập nhật thời hạn cho '+nUpd+' nhân viên.');
     cpwRender();
   });
+}
+/* ===================== REALTIME luồng cấp phát ===================== */
+var _cpwRtChannel=null;
+function _cpwSetupRealtime(){
+  var sb=window.HSE_SB; if(!sb||_cpwRtChannel)return;
+  try{
+    _cpwRtChannel=sb.channel('cap-phat-rt')
+      .on('postgres_changes',{event:'*',schema:'public',table:'phieu_requests'},function(p){_cpwOnRealtime('phieu_requests',p);})
+      .on('postgres_changes',{event:'*',schema:'public',table:'pending_changes'},function(p){_cpwOnRealtime('pending_changes',p);})
+      .on('postgres_changes',{event:'*',schema:'public',table:'cap_phat_tien_trinh'},function(p){_cpwOnRealtime('cap_phat_tien_trinh',p);})
+      .subscribe();
+  }catch(e){ console.warn('[Realtime] setup lỗi:',e&&e.message||e); }
+}
+function _rtMergeCache(table,payload){
+  if(!BHLD.LS_MAP||!BHLD.LS_MAP[table])return;
+  var arr=BHLD.lsGet(table)||[];
+  var ev=payload.eventType||payload.event;
+  var id=(payload.new&&payload.new.id)||(payload.old&&payload.old.id);
+  if(!id)return;
+  if(ev==='DELETE'){arr=arr.filter(function(r){return String(r.id)!==String(id);});}
+  else{var i=arr.findIndex(function(r){return String(r.id)===String(id);});if(i>=0)arr[i]=payload.new;else arr.push(payload.new);}
+  BHLD.lsSet(table,arr);
+}
+function _cpwOnRealtime(table,payload){
+  _rtMergeCache(table,payload);
+  var ae=document.activeElement;
+  var typingQty=ae&&ae.closest&&ae.closest('#cpw-b2-host'); // đừng vẽ đè khi đang gõ số lượng
+  var wz=document.getElementById('cp-wizard');
+  var wizardOpen=wz&&wz.style.display!=='none'&&_cpwState;
+  if(wizardOpen&&!typingQty){
+    if(table==='cap_phat_tien_trinh'){
+      var row=payload.new||payload.old||{};
+      if(row.donVi===_cpwDonVi&&row.quyStr===_cpwQuy){cpwLoad(_cpwDonVi,_cpwQuy).then(function(st){_cpwState=st;cpwRender();});}
+    }else{ cpwRender(); }
+  }
+  if(typeof cpUpdateApproveTile==='function')cpUpdateApproveTile();
+  if(typeof isAdmin==='function'&&isAdmin()&&typeof renderChoduyetTab==='function'){
+    var pg=document.getElementById('page-phieu-yeu-cau');
+    if(pg&&pg.classList.contains('active'))renderChoduyetTab();
+  }
+  if(table==='phieu_requests'&&typeof _renderQuyStatusBar==='function'){
+    var q=document.getElementById('bc-quy'),d=document.getElementById('bc-don-vi');
+    if(q&&q.value)_renderQuyStatusBar(q.value,d?d.value:'');
+  }
 }
 </script>
 </body>
