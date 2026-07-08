@@ -1859,6 +1859,8 @@ let _expandedNhomIds=new Set();
 // Helper icon Lucide dùng chung cho các tab (Danh mục / Định mức / Tồn kho / Nhu cầu)
 function _ic(n,s){var P={
   plus:'<path d="M5 12h14"/><path d="M12 5v14"/>',
+  lock:'<rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>',
+  download:'<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/>',
   edit:'<path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/>',
   del:'<path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/>',
   eye:'<path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/>',
@@ -3661,13 +3663,14 @@ function cpwSave(patch){
   var sb=_cpwSB();if(!sb)return Promise.resolve();
   return sb.from('cap_phat_tien_trinh').upsert(Object.assign({},_cpwState),{onConflict:'id'}).then(function(){}).catch(function(e){showToast('⚠️ Lưu tiến trình lỗi: '+(e&&e.message||e),'error');});
 }
-var _CPW_BADGE={dang_lam:['#dceaf7','#003087','Đang thực hiện'],cho_duyet:['#fef5e4','#9a6700','Chờ Admin duyệt'],dat:['#eafaf1','#1a7a3c','Đã xong'],khoa:['#f2f3f4','#888','🔒 Đang khoá'],chua:['#f2f3f4','#666','Chưa làm'],tra_ve:['#fdedec','#c0392b','Bị trả về'],san_sang:['#dceaf7','#003087','Sẵn sàng'],xong:['#eafaf1','#1a7a3c','✅ Hoàn tất']};
-function _cpwBadge(s){var b=_CPW_BADGE[s]||_CPW_BADGE.chua;return '<span style="background:'+b[0]+';color:'+b[1]+';font-size:12px;font-weight:700;border-radius:20px;padding:3px 12px;">'+b[2]+'</span>';}
-function _cpwStepCard(n,title,status,body){
+var _CPW_BADGE={dang_lam:['#dceaf7','#003087','Đang thực hiện','hour'],cho_duyet:['#fef5e4','#9a6700','Chờ Admin duyệt','hour'],dat:['#eafaf1','#1a7a3c','Đã xong','check'],khoa:['#f2f3f4','#888','Đang khoá','lock'],chua:['#f2f3f4','#666','Chưa làm','clip'],tra_ve:['#fdedec','#c0392b','Bị trả về','x'],san_sang:['#dceaf7','#003087','Sẵn sàng','right'],xong:['#eafaf1','#1a7a3c','Hoàn tất','check']};
+function _cpwBadge(s){var b=_CPW_BADGE[s]||_CPW_BADGE.chua;return '<span style="display:inline-flex;align-items:center;gap:4px;background:'+b[0]+';color:'+b[1]+';font-size:12px;font-weight:700;border-radius:20px;padding:3px 12px;">'+_ic(b[3],13)+b[2]+'</span>';}
+function _cpwStepCard(n,title,icon,status,body){
   var locked=status==='khoa';
   return '<div class="card" style="margin-bottom:16px;'+(locked?'opacity:.6;':'')+'">'+
     '<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:10px;">'+
       '<div style="display:flex;align-items:center;gap:10px;"><span style="width:28px;height:28px;border-radius:50%;background:var(--primary);color:#fff;display:inline-flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;flex-shrink:0;">'+n+'</span>'+
+      '<span style="color:var(--primary);display:inline-flex;align-items:center;">'+_ic(icon,18)+'</span>'+
       '<strong style="font-size:15px;color:var(--primary);">'+title+'</strong></div>'+_cpwBadge(status)+'</div>'+
     '<div style="padding-left:38px;">'+body+'</div></div>';
 }
@@ -3680,64 +3683,68 @@ function cpwRender(){
   var b2done=s2==='dat';
   var s3=!b2done?'khoa':(st.b3TrangThai==='xong'?'xong':'san_sang');
   var html='';
-  html+=_cpwStepCard(1,'Kiểm tra danh sách nhân viên',s1,cpwStep1Body(s1,pend,b2done));
-  html+=_cpwStepCard(2,'Điền số lượng yêu cầu cấp phát',s2,cpwStep2Body(s2,phieu));
-  html+=_cpwStepCard(3,'Xuất phiếu & trình ký',s3,cpwStep3Body(s3,phieu));
+  html+=_cpwStepCard(1,'Kiểm tra danh sách nhân viên','search',s1,cpwStep1Body(s1,pend,b2done));
+  html+=_cpwStepCard(2,'Điền số lượng yêu cầu cấp phát','edit',s2,cpwStep2Body(s2,phieu));
+  html+=_cpwStepCard(3,'Xuất phiếu & trình ký','file',s3,cpwStep3Body(s3,phieu));
   document.getElementById('cpw-steps').innerHTML=html;
-  var cb=document.getElementById('cpw-b1-confirm');if(cb)cb.addEventListener('change',cpwUpdateContinueBtn);
-  cpwUpdateContinueBtn();
 }
 function cpwStep1Body(s1,pend,b2done){
   if(s1==='dat'){
-    var extra=(!b2done)?' <a href="#" onclick="event.preventDefault();cpwResetStep1();" style="font-size:12.5px;color:var(--danger);">Làm lại từ đầu</a>':'';
-    return '<div style="color:var(--success);font-size:13.5px;">✔ Danh sách nhân viên đã được xác nhận đúng.'+extra+'</div>';
+    var extra=(!b2done)?' · <a href="#" onclick="event.preventDefault();cpwResetStep1();" style="font-size:12.5px;color:var(--danger);">Làm lại từ đầu</a>':'';
+    return '<div style="display:flex;align-items:center;gap:6px;color:var(--success);font-size:13.5px;">'+_ic('check',16)+'<span>Danh sách nhân viên đã được xác nhận đúng.'+extra+'</span></div>';
   }
   if(s1==='cho_duyet'){
-    return '<div style="color:var(--warning);font-size:13.5px;margin-bottom:10px;">⏳ Bạn đã gửi <b>'+pend.length+'</b> thay đổi nhân sự, đang chờ Admin duyệt. Bước này sẽ tự mở lại khi được duyệt (hoặc quay về đầu nếu bị trả lại).</div>'+
-      '<button class="btn btn-outline btn-sm" onclick="cpwEditList()">Xem / chỉnh sửa danh sách</button>';
+    return '<div style="display:flex;align-items:flex-start;gap:6px;color:var(--warning);font-size:13.5px;margin-bottom:10px;">'+_ic('hour',16)+'<span>Bạn đã gửi <b>'+pend.length+'</b> thay đổi nhân sự, đang chờ Admin duyệt. Bước này tự mở lại khi được duyệt (hoặc quay về đầu nếu bị trả lại).</span></div>'+
+      '<button class="btn btn-outline btn-sm" onclick="cpwEditList()">'+_ic('eye',15)+' Xem / chỉnh sửa danh sách</button>';
   }
-  // dang_lam
-  var printed=_cpwState.daInDanhSach;
-  return '<p style="font-size:13.5px;color:var(--text-light);margin:0 0 12px;">In danh sách nhân viên hiện tại để kiểm tra. Nếu đúng → xác nhận và Tiếp tục. Nếu sai → chỉnh sửa rồi gửi Admin duyệt.</p>'+
-    '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;">'+
-      '<button class="btn btn-primary btn-sm" onclick="cpwPrintList()">🖨️ In danh sách nhân viên</button>'+
-      '<button class="btn btn-outline btn-sm" onclick="cpwEditList()">✏️ Cần chỉnh sửa danh sách</button>'+
-      (printed?'<span style="align-self:center;font-size:12.5px;color:var(--success);">✔ Đã in</span>':'')+
+  // dang_lam — chia 2 bước nhỏ, ép đúng quy trình
+  var got=_cpwState.daInDanhSach;
+  var subA='<div style="margin-bottom:14px;">'+
+      '<div style="font-weight:600;font-size:13.5px;color:var(--text);margin-bottom:6px;">Bước 1.1 — Tải Excel danh sách để kiểm tra</div>'+
+      '<p style="font-size:12.5px;color:var(--text-light);margin:0 0 8px;">File Excel hiển thị đầy đủ: cỡ quần áo, cỡ giày và các tháng cấp của từng nhân viên.</p>'+
+      '<button class="btn btn-primary btn-sm" onclick="cpwExportExcel()">'+_ic('sheet',15)+' Tải Excel danh sách</button>'+
+      (got?' <span style="display:inline-flex;align-items:center;gap:4px;color:var(--success);font-size:12.5px;margin-left:6px;">'+_ic('check',14)+'Đã tải — hãy mở file kiểm tra</span>':'')+
     '</div>'+
-    '<label style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text);'+(printed?'':'opacity:.5;')+'"><input type="checkbox" id="cpw-b1-confirm" '+(printed?'':'disabled')+' style="width:auto;"> Tôi xác nhận danh sách nhân viên đã đúng.</label>'+
-    '<div style="margin-top:12px;"><button class="btn btn-success btn-sm" id="cpw-b1-continue" onclick="cpwContinueStep1()" disabled>Tiếp tục →</button></div>';
+    '<div style="border-top:1px dashed var(--border);padding-top:14px;'+(got?'':'opacity:.45;pointer-events:none;')+'">'+
+      '<div style="font-weight:600;font-size:13.5px;color:var(--text);margin-bottom:8px;">Bước 1.2 — Sau khi kiểm tra, chọn một</div>'+
+      '<div style="display:flex;gap:10px;flex-wrap:wrap;">'+
+        '<button class="btn btn-success btn-sm" onclick="cpwContinueStep1()">'+_ic('check',15)+' Danh sách đã đúng — Tiếp tục</button>'+
+        '<button class="btn btn-outline btn-sm" onclick="cpwEditList()">'+_ic('edit',15)+' Cần chỉnh sửa danh sách</button>'+
+      '</div>'+
+      (got?'':'<div style="font-size:12px;color:var(--text-light);margin-top:8px;">Hãy tải Excel ở Bước 1.1 để kiểm tra trước khi chọn.</div>')+
+    '</div>';
+  return subA;
 }
 function cpwStep2Body(s2,phieu){
-  if(s2==='khoa')return '<div style="font-size:13px;color:var(--text-light);">🔒 Hoàn tất Bước 1 để mở bước này.</div>';
-  if(s2==='dat')return '<div style="color:var(--success);font-size:13.5px;">✔ Phiếu số lượng đã được Admin duyệt.</div>';
-  if(s2==='cho_duyet')return '<div style="color:var(--warning);font-size:13.5px;margin-bottom:10px;">⏳ Phiếu đã gửi, đang chờ Admin duyệt.</div><button class="btn btn-outline btn-sm" onclick="cpwGoQuantity()">Xem lại phiếu</button>';
-  if(s2==='tra_ve')return '<div style="color:var(--danger);font-size:13.5px;margin-bottom:10px;">❌ Phiếu bị Admin trả về'+(phieu&&phieu.rejectReason?': <b>'+_escH(phieu.rejectReason)+'</b>':'')+'. Vui lòng nhập lại số lượng và gửi duyệt lại.</div><button class="btn btn-primary btn-sm" onclick="cpwGoQuantity()">Nhập lại số lượng</button>';
-  return '<p style="font-size:13.5px;color:var(--text-light);margin:0 0 12px;">Điền số lượng cấp phát theo thực tế rồi gửi Admin phê duyệt.</p><button class="btn btn-primary btn-sm" onclick="cpwGoQuantity()">Nhập số lượng cấp phát</button>';
+  if(s2==='khoa')return '<div style="display:flex;align-items:center;gap:6px;font-size:13px;color:var(--text-light);">'+_ic('lock',15)+'Hoàn tất Bước 1 để mở bước này.</div>';
+  if(s2==='dat')return '<div style="display:flex;align-items:center;gap:6px;color:var(--success);font-size:13.5px;">'+_ic('check',16)+'Phiếu số lượng đã được Admin duyệt.</div>';
+  if(s2==='cho_duyet')return '<div style="display:flex;align-items:center;gap:6px;color:var(--warning);font-size:13.5px;margin-bottom:10px;">'+_ic('hour',16)+'Phiếu đã gửi, đang chờ Admin duyệt.</div><button class="btn btn-outline btn-sm" onclick="cpwGoQuantity()">'+_ic('eye',15)+' Xem lại phiếu</button>';
+  if(s2==='tra_ve')return '<div style="display:flex;align-items:flex-start;gap:6px;color:var(--danger);font-size:13.5px;margin-bottom:10px;">'+_ic('x',16)+'<span>Phiếu bị Admin trả về'+(phieu&&phieu.rejectReason?': <b>'+_escH(phieu.rejectReason)+'</b>':'')+'. Vui lòng nhập lại số lượng và gửi duyệt lại.</span></div><button class="btn btn-primary btn-sm" onclick="cpwGoQuantity()">'+_ic('edit',15)+' Nhập lại số lượng</button>';
+  return '<p style="font-size:13.5px;color:var(--text-light);margin:0 0 12px;">Điền số lượng cấp phát theo thực tế rồi gửi Admin phê duyệt.</p><button class="btn btn-primary btn-sm" onclick="cpwGoQuantity()">'+_ic('edit',15)+' Nhập số lượng cấp phát</button>';
 }
 function cpwStep3Body(s3,phieu){
-  if(s3==='khoa')return '<div style="font-size:13px;color:var(--text-light);">🔒 Hoàn tất Bước 2 (phiếu được duyệt) để mở bước này.</div>';
-  if(s3==='xong')return '<div style="color:var(--success);font-size:13.5px;">✅ Đã hoàn tất'+(_cpwState.hoanTatAt?' vào '+new Date(_cpwState.hoanTatAt).toLocaleDateString('vi-VN'):'')+'. Thời hạn cấp phát của nhân viên đã được cập nhật.</div>';
+  if(s3==='khoa')return '<div style="display:flex;align-items:center;gap:6px;font-size:13px;color:var(--text-light);">'+_ic('lock',15)+'Hoàn tất Bước 2 (phiếu được duyệt) để mở bước này.</div>';
+  if(s3==='xong')return '<div style="display:flex;align-items:center;gap:6px;color:var(--success);font-size:13.5px;">'+_ic('check',16)+'<span>Đã hoàn tất'+(_cpwState.hoanTatAt?' vào '+new Date(_cpwState.hoanTatAt).toLocaleDateString('vi-VN'):'')+'. Thời hạn cấp phát của nhân viên đã được cập nhật.</span></div>';
   return '<p style="font-size:13.5px;color:var(--text-light);margin:0 0 12px;">Xuất phiếu để trình ký. Sau khi trình ký, xác nhận để hệ thống cập nhật thời hạn cấp phát mới cho nhân viên.</p>'+
     '<div style="display:flex;gap:8px;flex-wrap:wrap;">'+
-      '<button class="btn btn-outline btn-sm" onclick="cpwExport()">⬇️ Xuất phiếu (Word)</button>'+
-      '<button class="btn btn-success btn-sm" onclick="cpwFinalize()">✅ Xác nhận trình ký & cập nhật thời hạn</button>'+
+      '<button class="btn btn-outline btn-sm" onclick="cpwExport()">'+_ic('file',15)+' Xuất phiếu (Word)</button>'+
+      '<button class="btn btn-success btn-sm" onclick="cpwFinalize()">'+_ic('check',15)+' Xác nhận trình ký & cập nhật thời hạn</button>'+
     '</div>';
 }
-function cpwUpdateContinueBtn(){
-  var btn=document.getElementById('cpw-b1-continue');if(!btn)return;
-  var cb=document.getElementById('cpw-b1-confirm');
-  var pend=_cpwPendingChanges(_cpwDonVi);
-  btn.disabled=!(_cpwState.daInDanhSach&&cb&&cb.checked&&pend.length===0);
-}
-function cpwPrintList(){
+function cpwExportExcel(){
+  if(typeof XLSX==='undefined'){showToast('Thư viện Excel chưa tải xong, thử lại sau giây lát.','warning');return;}
   var dv=_cpwDonVi;
-  var list=daNhanVien.filter(function(n){return n.boPhan===dv;});
-  var rows=list.map(function(n,i){return '<tr><td style="text-align:center;">'+(i+1)+'</td><td>'+_escH(n.danhSo||'')+'</td><td>'+_escH(n.ten||'')+'</td><td>'+_escH(n.chucDanh||'')+'</td></tr>';}).join('');
-  var w=window.open('','_blank');
-  if(!w){showToast('Trình duyệt chặn cửa sổ in. Cho phép popup rồi thử lại.','warning');return;}
-  w.document.write('<html><head><title>Danh sách NV - '+_escH(dv)+'</title><style>body{font-family:Arial;padding:24px}table{border-collapse:collapse;width:100%}th,td{border:1px solid #333;padding:6px 9px;font-size:13px}th{background:#dde6f3}h3{text-align:center;margin:0 0 4px}</style></head><body><h3>DANH SÁCH NHÂN VIÊN — '+_escH(dv)+'</h3><div style="text-align:center;margin-bottom:12px;">Quý '+_escH(_cpwQuy)+' · Tổng '+list.length+' người</div><table><thead><tr><th style="width:44px;">STT</th><th>Danh số</th><th>Họ và tên</th><th>Chức danh</th></tr></thead><tbody>'+rows+'</tbody></table></body></html>');
-  w.document.close();w.focus();w.print();
+  var nvList=daNhanVien.filter(function(n){return n.boPhan===dv;});
+  if(!nvList.length){showToast('Đơn vị này chưa có nhân viên.','warning');return;}
+  var headers=['STT','Danh số','Họ và Tên','Chức danh','Cỡ QA','Cỡ Giày','T.cấp Quần áo','T.cấp Giày','T.cấp Mũ BH','T.cấp Kính BH','T.cấp Áo mưa','T.cấp QA thợ hàn'];
+  var rows=[['DANH SÁCH NHÂN VIÊN – '+dv.toUpperCase()],['Quý '+_cpwQuy+' · Xuất ngày: '+new Date().toLocaleDateString('vi-VN')],[],headers];
+  var stt=1; nvList.forEach(function(n){rows.push(_nvToExcelRow(n,stt++));});
+  var ws=XLSX.utils.aoa_to_sheet(rows);
+  ws['!cols']=[{wch:5},{wch:13},{wch:26},{wch:22},{wch:8},{wch:8},{wch:15},{wch:13},{wch:13},{wch:13},{wch:15},{wch:20}];
+  var wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Nhân viên');
+  XLSX.writeFile(wb,'KiemTra_NhanVien_'+dv.replace(/[\/\\?*[\]:]/g,'_')+'.xlsx');
   cpwSave({daInDanhSach:true}).then(cpwRender);
+  showToast('✅ Đã tải Excel. Mở file để kiểm tra danh sách nhân viên.');
 }
 function cpwEditList(){
   var wz=document.getElementById('cp-wizard');if(wz)wz.style.display='none';
@@ -3745,6 +3752,7 @@ function cpwEditList(){
   if(typeof selectUnit==='function')selectUnit(_cpwDonVi);
 }
 function cpwContinueStep1(){
+  if(!_cpwState.daInDanhSach){showToast('Hãy tải Excel danh sách để kiểm tra trước.','warning');return;}
   if(_cpwPendingChanges(_cpwDonVi).length){showToast('Còn thay đổi nhân sự đang chờ duyệt.','warning');return;}
   cpwSave({b1TrangThai:'dat',buoc:2}).then(function(){showToast('✅ Đã hoàn tất Bước 1.');cpwRender();});
 }
