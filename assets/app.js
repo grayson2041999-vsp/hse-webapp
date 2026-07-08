@@ -871,7 +871,7 @@
     var bar = el("div","toolbar");
     bar.innerHTML='<button class="btn btn-accent" id="addU">＋ Thêm người dùng</button>'+
       '<div class="muted">Vai trò: <b>Admin</b> toàn quyền · <b>User</b> thao tác theo phân quyền · <b>Viewer</b> chỉ xem.</div>'+
-      '<div class="spacer"></div><input class="inp" id="q" placeholder="Tìm theo tên / tài khoản...">';
+      '<div class="spacer"></div><input class="inp" id="q" type="search" name="hse_user_search" autocomplete="off" placeholder="Tìm theo tên / tài khoản...">';
     container.appendChild(bar);
 
     var tw = el("div","table-wrap"); var tbl = el("table"); tbl.id="utbl"; tw.appendChild(tbl); container.appendChild(tw);
@@ -988,7 +988,7 @@
       '<div class="modal"><div class="modal-h"><h3 id="mt">Người dùng</h3><button class="x" id="mx">×</button></div>'+
       '<div class="modal-b">'+
         '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">'+
-          '<div class="field"><label>Email</label><input class="inp" id="m_un" type="text" style="width:100%" placeholder="VD: sonlhh.sd"></div>'+
+          '<div class="field"><label>Email</label><input class="inp" id="m_un" type="text" autocomplete="off" style="width:100%" placeholder="VD: sonlhh.sd"></div>'+
           '<div class="field"><label>Danh số</label><input class="inp" id="m_ds" style="width:100%" placeholder="VD: 21398"></div>'+
         '</div>'+
         '<div class="field"><label>Họ và tên</label><input class="inp" id="m_fn" style="width:100%"></div>'+
@@ -1003,8 +1003,8 @@
           '<div style="font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px;"><svg class="lic-emoji" width="1.05em" height="1.05em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex-shrink:0" aria-hidden="true"><path d="m15.5 7.5 2.3 2.3a1 1 0 0 0 1.4 0l2.1-2.1a1 1 0 0 0 0-1.4L19 4"/><path d="m21 2-9.6 9.6"/><circle cx="7.5" cy="15.5" r="5.5"/></svg> Đặt mật khẩu ban đầu</div>'+
           '<div style="font-size:12px;color:var(--text-muted);margin-bottom:10px;">Chỉ dùng khi tạo tài khoản mới. Người dùng tự đổi mật khẩu qua hồ sơ cá nhân.</div>'+
           '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">'+
-            '<div class="field"><label>Mật khẩu <span style="color:var(--danger)">*</span></label><input class="inp" id="m_pw" type="password" style="width:100%" placeholder="Tối thiểu 6 ký tự"></div>'+
-            '<div class="field"><label>Xác nhận mật khẩu</label><input class="inp" id="m_pw2" type="password" style="width:100%" placeholder="Nhập lại mật khẩu"></div>'+
+            '<div class="field"><label>Mật khẩu <span style="color:var(--danger)">*</span></label><input class="inp" id="m_pw" type="password" autocomplete="new-password" style="width:100%" placeholder="Tối thiểu 6 ký tự"></div>'+
+            '<div class="field"><label>Xác nhận mật khẩu</label><input class="inp" id="m_pw2" type="password" autocomplete="new-password" style="width:100%" placeholder="Nhập lại mật khẩu"></div>'+
           '</div>'+
         '</div>'+
         '<div id="m_approve_wrap" style="display:none;background:#fef9e7;border:1px solid #fde68a;border-radius:8px;padding:10px 14px;margin-top:12px;">'+
