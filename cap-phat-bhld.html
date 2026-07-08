@@ -3696,6 +3696,9 @@ function cpwRender(){
   html+=_cpwStepCard(1,'Kiểm tra danh sách nhân viên','search',s1,cpwStep1Body(s1,pend,b2done));
   html+=_cpwStepCard(2,'Điền số lượng yêu cầu cấp phát','edit',s2,cpwStep2Body(s2,phieu));
   html+=_cpwStepCard(3,'Xuất phiếu & trình ký','file',s3,cpwStep3Body(s3,phieu));
+  if(_cpwDonVi==='Test'&&typeof canEditUnit==='function'&&canEditUnit('Test')){
+    html+='<div style="margin-top:6px;text-align:right;"><button class="btn btn-outline btn-sm" style="color:var(--danger);border-color:#eab7b2;" onclick="cpwResetTest()">'+_ic('undo',15)+' Reset đơn vị Test</button></div>';
+  }
   document.getElementById('cpw-steps').innerHTML=html;
   if(s2==='chua'||s2==='tra_ve')cpwRenderQuantity(); // nhúng bảng nhập số lượng vào Bước 2
 }
@@ -3845,6 +3848,41 @@ function cpwFinalize(){
   cpwSave({b3TrangThai:'xong',buoc:3,hoanTatAt:new Date().toISOString()}).then(function(){
     showToast('✅ Hoàn tất! Đã cập nhật thời hạn cho '+nUpd+' nhân viên.');
     cpwRender();
+  });
+}
+// ── Reset toàn bộ dữ liệu thử nghiệm của đơn vị Test (giữ nhân viên) ──
+function _cpwClearPhieuDataForTest(testNv){
+  var ids={}; testNv.forEach(function(n){ids[String(n.id)]=true;});
+  Object.keys(phieuData||{}).forEach(function(q){
+    var obj=phieuData[q]; if(!obj)return;
+    Object.keys(obj).forEach(function(key){ if(ids[key.split('_')[0]])delete obj[key]; });
+  });
+  if(typeof saveData==='function')saveData('phieu-data',phieuData);
+}
+function cpwResetTest(){
+  if(_cpwDonVi!=='Test'){showToast('Chỉ áp dụng cho đơn vị Test.','warning');return;}
+  if(typeof canEditUnit==='function'&&!canEditUnit('Test')){showToast('Bạn không có quyền.','error');return;}
+  if(!confirm('Reset TOÀN BỘ dữ liệu thử nghiệm của đơn vị Test?\n\n• Xoá tất cả phiếu quý, thay đổi nhân sự, tiến trình wizard của Test\n• Đưa thời hạn cấp phát của nhân viên Test về trống\n\nNhân viên Test được GIỮ lại. Không hoàn tác được.'))return;
+  if(!confirm('Xác nhận lần cuối: reset đơn vị Test?'))return;
+  var jobs=[];
+  BHLD.lsGet('phieu_requests').filter(function(p){return p.donVi==='Test';}).forEach(function(p){jobs.push(BHLD.push.delete('phieu_requests',p.id));});
+  BHLD.lsGet('pending_changes').filter(function(c){return c.donVi==='Test';}).forEach(function(c){jobs.push(BHLD.push.delete('pending_changes',c.id));});
+  var resetFields={thangCapQuanAo:'',thangCapQAHan:'',thangCapAoMua:'',thangCapGiay:'',thangCapMu:'',thangCapKinh:''};
+  var testNv=daNhanVien.filter(function(n){return n.boPhan==='Test';});
+  testNv.forEach(function(n){
+    var idx=daNhanVien.findIndex(function(x){return String(x.id)===String(n.id);});
+    if(idx>=0)daNhanVien[idx]=Object.assign({},daNhanVien[idx],resetFields);
+    jobs.push(BHLD.push.update('nhanvien',n.id,resetFields));
+  });
+  if(typeof saveData==='function')saveData('nhanvien',daNhanVien);BHLD.lsSet('nhanvien',daNhanVien);
+  _cpwClearPhieuDataForTest(testNv);
+  var sb=window.HSE_SB;
+  if(sb)jobs.push(sb.from('cap_phat_tien_trinh').delete().eq('donVi','Test'));
+  Promise.all(jobs.map(function(j){return Promise.resolve(j).catch(function(){});})).then(function(){
+    _cpwState=null;
+    if(typeof renderTableNV==='function'&&_currentUnit==='Test')renderTableNV();
+    showToast('✅ Đã reset đơn vị Test. Bắt đầu lại từ Bước 1.');
+    cpwOnSelect();
   });
 }
 /* ===================== REALTIME luồng cấp phát ===================== */
