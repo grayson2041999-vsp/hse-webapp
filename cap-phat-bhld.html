@@ -276,6 +276,7 @@
           <th rowspan="2" style="text-align:center;">Cỡ QA</th>
           <th rowspan="2" style="text-align:center;">Cỡ giày</th>
           <th colspan="6" style="text-align:center;background:#d0e4f7;color:var(--primary);font-size:11px;">Lần cấp gần nhất</th>
+          <th rowspan="2" style="text-align:center;">Thao tác</th>
         </tr>
         <tr>
           <th style="text-align:center;">Quần áo</th><th style="text-align:center;">Giày</th><th style="text-align:center;">Mũ</th><th style="text-align:center;">Kính</th><th style="text-align:center;">Áo mưa</th><th style="text-align:center;">QA thợ hàn</th>
@@ -1369,6 +1370,9 @@ function cpRenderNhanSu(){
     return true;
   }).sort(function(a,b){var d=(a.boPhan||'').localeCompare(b.boPhan||'','vi');return d!==0?d:(a.ten||'').localeCompare(b.ten||'','vi');});
   var body=list.map(function(n,i){
+    var act=(typeof canEditUnit==='function'&&canEditUnit(n.boPhan))
+      ? '<button class="btn btn-ghost btn-sm" style="padding:4px 8px;" title="Sửa" onclick="cpNsEdit(\''+n.id+'\')">'+_ic('edit',13)+'</button> <button class="btn btn-danger btn-sm" style="padding:4px 8px;" title="Xoá" onclick="cpNsDelete(\''+n.id+'\')">'+_ic('del',13)+'</button>'
+      : '<span style="color:var(--text-light);">—</span>';
     return '<tr>'+
       '<td style="text-align:center;color:var(--text-light);">'+(i+1)+'</td>'+
       '<td><code style="font-size:12px;color:var(--text-light);">'+_escH(n.danhSo||'')+'</code></td>'+
@@ -1383,11 +1387,15 @@ function cpRenderNhanSu(){
       '<td style="text-align:center;font-size:12px;">'+_escH(f(n.thangCapKinh)||'-')+'</td>'+
       '<td style="text-align:center;font-size:12px;">'+_escH(f(n.thangCapAoMua)||'-')+'</td>'+
       '<td style="text-align:center;font-size:12px;">'+_escH(f(n.thangCapQAHan)||'-')+'</td>'+
+      '<td style="text-align:center;white-space:nowrap;">'+act+'</td>'+
     '</tr>';
   }).join('');
-  document.getElementById('cpns-tbody').innerHTML=body||'<tr><td colspan="13" style="text-align:center;padding:24px;color:var(--text-light);">Không có nhân viên phù hợp.</td></tr>';
+  document.getElementById('cpns-tbody').innerHTML=body||'<tr><td colspan="14" style="text-align:center;padding:24px;color:var(--text-light);">Không có nhân viên phù hợp.</td></tr>';
   document.getElementById('cpns-count').textContent='Tìm thấy '+list.length+' nhân viên';
 }
+// Sửa/Xoá từ bảng Tra cứu — đặt _currentUnit theo đơn vị của NV để phân quyền + form đúng
+function cpNsEdit(id){ var nv=daNhanVien.find(function(x){return x.id===id;}); if(!nv)return; _currentUnit=nv.boPhan||''; if(typeof editNV==='function')editNV(id); }
+function cpNsDelete(id){ var nv=daNhanVien.find(function(x){return x.id===id;}); if(!nv)return; _currentUnit=nv.boPhan||''; if(typeof deleteNV==='function')deleteNV(id); }
 // Hiện thẻ "Phê duyệt" cho admin + badge số mục đang chờ
 function cpUpdateApproveTile(){
   var tile=document.getElementById('cp-approve-tile'); if(!tile)return;
@@ -1573,6 +1581,9 @@ function onFilterBPChange(){
 
 function onSearchNV(val){_searchQuery=val;renderTableNV();}
 function renderTableNV(){
+  // Nếu đang mở bảng Tra cứu nhân sự → làm mới nó sau khi dữ liệu thay đổi
+  var _ns=document.getElementById('cp-nhansu');
+  if(_ns&&_ns.style.display!=='none'&&typeof cpRenderNhanSu==='function')setTimeout(cpRenderNhanSu,0);
   const q=_searchQuery.toLowerCase();
   const bp=_currentUnit||'';
   const btnAddNV=document.querySelector('#page-quan-ly-cap-phat .btn-primary');
