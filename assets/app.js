@@ -39,6 +39,100 @@
   // Callback để vẽ lại bảng Quản trị sau khi đồng bộ users từ Sheets xong
   var _onUsersSynced = null;
 
+  /* =========================================================
+     SUPABASE AUTH HELPERS (Phương án B)
+     Tài khoản = user thật trong Supabase Auth; profiles lưu role/perms.
+     Giữ cache localStorage (hse_users / hse_session) để UI đọc đồng bộ.
+     ========================================================= */
+  function _sbReady(){
+    if(window.HSE_SB) return Promise.resolve(window.HSE_SB);
+    return new Promise(function(resolve,reject){
+      var to=setTimeout(function(){ reject(new Error("Supabase client chưa sẵn sàng (thiếu supabase-config.js?)")); },12000);
+      window.addEventListener("hse-sb-ready", function(){ clearTimeout(to); resolve(window.HSE_SB); }, {once:true});
+    });
+  }
+  function emailOf(un){
+    var s = String(un||"").trim().toLowerCase();
+    if(!s) return s;
+    if(s.indexOf("@") >= 0) return s;          // đã là email đầy đủ → dùng nguyên
+    return s + "@" + (window.HSE_EMAIL_DOMAIN || "vietsov.com.vn");
+  }
+  function _profileToUser(p){
+    return { id:p.id, username:p.username, fullname:p.fullname||"", danhSo:p.danhSo||"",
+      role:p.role||"viewer", perms:p.perms||[], capPhatUnits:p.capPhatUnits||[],
+      active:p.active, pendingApproval:p.pendingApproval, created:p.created };
+  }
+  function _profilePayload(u){
+    var o={ username:u.username, fullname:u.fullname||"", danhSo:u.danhSo||"", role:u.role,
+      perms:u.perms||[], capPhatUnits:u.capPhatUnits||[], updated:new Date().toISOString() };
+    if(typeof u.active!=="undefined") o.active=(u.active!==false);
+    if(typeof u.pendingApproval!=="undefined") o.pendingApproval=!!u.pendingApproval;
+    return o;
+  }
+  function _loginErr(err){
+    var m=(err&&err.message||"").toLowerCase();
+    if(m.indexOf("invalid login")>=0||m.indexOf("credentials")>=0) return "Sai tài khoản hoặc mật khẩu.";
+    if(m.indexOf("email not confirmed")>=0) return "Tài khoản chưa được kích hoạt. Liên hệ Admin.";
+    return (err&&err.message)||"Đăng nhập thất bại.";
+  }
+  // Nạp hồ sơ người dùng hiện tại từ profiles → cache localStorage + đặt phiên (hse_session)
+  function refreshCurrentUser(authUser){
+    return _sbReady().then(function(sb){ return sb.from("profiles").select("*").eq("id", authUser.id).maybeSingle(); })
+      .then(function(res){
+        if(res.error||!res.data) return null;
+        var u=_profileToUser(res.data);
+        var arr=getUsers(); var i=arr.findIndex(function(x){return String(x.id)===String(u.id);});
+        if(i>=0) arr[i]=u; else arr.push(u); setUsers(arr);
+        save(K_SESS, u.username);
+        return u;
+      });
+  }
+  // Gửi email đặt lại mật khẩu (đọc email/username từ ô đăng nhập)
+  function requestPasswordReset(){
+    var uEl=document.getElementById("hse-lm-u");
+    var erEl=document.getElementById("hse-lm-err");
+    var un=(uEl && uEl.value || "").trim();
+    function msg(t, ok){ if(!erEl) return; erEl.textContent=t; erEl.style.color=ok?"#1a7a3c":""; erEl.style.display="block"; }
+    if(!un){ msg("Nhập email/username của bạn vào ô trên rồi bấm 'Quên mật khẩu?'."); if(uEl) uEl.focus(); return; }
+    _sbReady().then(function(sb){
+      return sb.auth.resetPasswordForEmail(emailOf(un), { redirectTo: location.origin + location.pathname });
+    }).then(function(r){
+      if(r && r.error){ msg("Không gửi được email: " + r.error.message); return; }
+      msg("✅ Đã gửi email đặt lại mật khẩu tới " + emailOf(un) + ". Vui lòng kiểm tra hộp thư.", true);
+    }).catch(function(e){ msg("Lỗi: " + (e && e.message || e)); });
+  }
+  // Modal đặt mật khẩu mới (mở khi người dùng bấm link khôi phục trong email)
+  function openSetNewPassword(){
+    var ex=document.getElementById("hse-recovery-modal");
+    if(ex){ ex.classList.add("open"); return; }
+    var bg=el("div","modal-bg"); bg.id="hse-recovery-modal";
+    bg.innerHTML='<div class="modal" style="max-width:420px;">'+
+      '<div class="modal-h"><h3>Đặt mật khẩu mới</h3></div>'+
+      '<div class="modal-b">'+
+        '<div class="login-err" id="rec-err"></div>'+
+        '<div id="rec-ok" style="display:none;background:#eafaf1;color:#1a7a3c;border:1px solid #a9dfbf;border-radius:8px;padding:10px 14px;font-size:13px;margin-bottom:12px;"></div>'+
+        '<div class="field"><label>Mật khẩu mới</label><input class="inp" id="rec-new" type="password" style="width:100%" placeholder="Tối thiểu 6 ký tự"></div>'+
+        '<div class="field"><label>Xác nhận mật khẩu mới</label><input class="inp" id="rec-new2" type="password" style="width:100%"></div>'+
+      '</div>'+
+      '<div class="modal-f"><button class="btn btn-accent" id="rec-save">Cập nhật mật khẩu</button></div>'+
+    '</div>';
+    document.body.appendChild(bg);
+    bg.classList.add("open");
+    document.getElementById("rec-save").addEventListener("click", function(){
+      var nw=document.getElementById("rec-new").value, nw2=document.getElementById("rec-new2").value;
+      var er=document.getElementById("rec-err"), ok=document.getElementById("rec-ok");
+      er.style.display="none";
+      if(!nw || nw.length<6){ er.textContent="Mật khẩu tối thiểu 6 ký tự."; er.style.display="block"; return; }
+      if(nw!==nw2){ er.textContent="Mật khẩu xác nhận không khớp."; er.style.display="block"; return; }
+      var btn=this; btn.disabled=true;
+      _sbReady().then(function(sb){ return sb.auth.updateUser({ password: nw }); }).then(function(r){
+        if(r.error){ er.textContent=r.error.message; er.style.display="block"; btn.disabled=false; return; }
+        ok.textContent="✅ Đã đặt mật khẩu mới. Đang chuyển về trang đăng nhập..."; ok.style.display="block";
+        setTimeout(function(){ location.href=location.pathname; }, 1600);
+      }).catch(function(e){ er.textContent=(e && e.message || e); er.style.display="block"; btn.disabled=false; });
+    });
+  }
+
   /* -------- TIỆN ÍCH -------- */
   function $(s, r){ return (r||document).querySelector(s); }
   function el(tag, cls, html){ var e=document.createElement(tag); if(cls)e.className=cls; if(html!=null)e.innerHTML=html; return e; }
@@ -118,35 +212,36 @@
 
   /* -------- KHỞI TẠO DB (Google Sheets) -------- */
   function initDB(){
-    if(typeof DB === "undefined") return;
-    DB.init(); // Đọc URL: localStorage → DEFAULT_URL trong db.js
-    var u = currentUser();
-    if(u) DB.setUser(u.username);
-    if(!DB.isReady()) return; // Chưa có URL thì thôi
-    // Pull từ Sheets sau 2s khi trang load xong
-    // (đủ để đồng bộ — không cần auto-sync định kỳ, tránh ghi đè tài khoản mới)
-    setTimeout(function(){
-      DB.syncUsersFromSheets(K_USERS).then(function(){
-        // Sau khi kéo danh sách người dùng đầy đủ về, vẽ lại bảng Quản trị
-        // (nếu đang mở) để không chỉ hiển thị mỗi tài khoản admin đã seed sẵn
-        if(typeof _onUsersSynced === "function") _onUsersSynced();
+    if(typeof DB !== "undefined") DB.init();
+    // Lắng nghe link đặt lại mật khẩu từ email (event PASSWORD_RECOVERY)
+    _sbReady().then(function(sb){
+      sb.auth.onAuthStateChange(function(event){
+        if(event === "PASSWORD_RECOVERY"){ openSetNewPassword(); }
       });
-    }, 2000);
+    }).catch(function(){});
+    // Khôi phục phiên Supabase (nếu có) → nạp hồ sơ vào cache để UI đọc đồng bộ
+    _sbReady().then(function(sb){
+      return sb.auth.getSession().then(function(r){
+        var sess = r && r.data && r.data.session;
+        if(!sess){ localStorage.removeItem(K_SESS); return; }
+        return refreshCurrentUser(sess.user).then(function(u){
+          if(!u) return;
+          if(typeof DB !== "undefined") DB.setUser(u.username);
+          if(u.role==="admin" && typeof DB !== "undefined"){
+            DB.syncUsersFromSheets(K_USERS).then(function(){
+              if(typeof _onUsersSynced === "function") _onUsersSynced();
+            });
+          }
+        });
+      });
+    }).catch(function(e){ console.warn("[HSE] init auth:", e && e.message || e); });
   }
 
   /* -------- KHỞI TẠO TÀI KHOẢN MẶC ĐỊNH -------- */
   function seedUsers(){
-    var u = load(K_USERS, null);
-    if(!u || !u.length){
-      u = [{
-        id: Date.now().toString(36),
-        username:"admin", password:"admin123", fullname:"Quản trị viên",
-        role:"admin", perms: allSlugs(), active:true,
-        created: new Date().toISOString()
-      }];
-      save(K_USERS, u);
-    }
-    return u;
+    // Phương án B: tài khoản nằm trong Supabase Auth. KHÔNG seed admin giả ở localStorage.
+    // (Admin đầu tiên được tạo trong Supabase Dashboard + bootstrap_admin — xem hướng dẫn.)
+    return getUsers();
   }
   function getUsers(){ return load(K_USERS, []); }
   function dedupUsers(u){
@@ -158,9 +253,9 @@
   }
   function setUsers(u){
     u = dedupUsers(u);
-    save(K_USERS, u);
-    // Sheet sync được thực hiện riêng tại từng thao tác qua _syncUserSheet()
-    // thay vì bulkWrite toàn bộ danh sách ở đây
+    // KHÔNG lưu mật khẩu thô vào localStorage — mật khẩu do Supabase Auth quản lý.
+    save(K_USERS, u.map(function(x){ var c=Object.assign({},x); delete c.password; delete c.pwHash; return c; }));
+    // Đồng bộ Auth/profiles được thực hiện riêng tại từng thao tác qua _syncUserSheet()
   }
 
   // Đồng bộ 1 user lên Sheet theo đúng loại thao tác: 'insert' | 'update' | 'delete'
@@ -168,59 +263,89 @@
   // update: userOrId là object user đầy đủ (cần có .id)
   // delete: userOrId là id string
   function _syncUserSheet(action, userOrId){
-    if(typeof DB === "undefined" || !DB.isReady()) return;
-    var p;
-    if(action === 'insert')      p = DB.insert("users", userOrId);
-    else if(action === 'update') p = DB.update("users", userOrId.id, userOrId);
-    else if(action === 'delete') p = DB.delete("users", userOrId);
+    var sb = window.HSE_SB;
+    if(!sb){ showToast("⚠️ Supabase chưa sẵn sàng — chưa đồng bộ tài khoản.", "warning"); return; }
+    var p, refresh = true;
+    if(action === 'insert'){
+      var me = currentUser();
+      if(me && me.role === 'admin'){
+        // Admin tạo tài khoản → Edge Function (service role)
+        p = sb.functions.invoke('admin-users', { body: {
+              action:'create', username:userOrId.username, password:userOrId.password,
+              fullname:userOrId.fullname, danhSo:userOrId.danhSo||"", role:userOrId.role,
+              perms:userOrId.perms||[], capPhatUnits:userOrId.capPhatUnits||[],
+              active: userOrId.active!==false
+            }}).then(_edgeCheck);
+      } else {
+        // Tự đăng ký → signUp (chờ Admin duyệt); KHÔNG giữ đăng nhập người mới
+        p = sb.auth.signUp({ email: emailOf(userOrId.username), password: userOrId.password,
+              options:{ data:{ username:userOrId.username, fullname:userOrId.fullname,
+                danhSo:userOrId.danhSo||"", role:'viewer', perms:[], capPhatUnits:[],
+                active:false, pendingApproval:true } } })
+            .then(function(r){ if(r.error) throw r.error; return sb.auth.signOut(); });
+        refresh = false;
+      }
+    } else if(action === 'update'){
+      var jobs = [ sb.from('profiles').update(_profilePayload(userOrId)).eq('id', userOrId.id) ];
+      if(userOrId.password){ // admin đặt mật khẩu mới trong modal
+        jobs.push( sb.functions.invoke('admin-users', { body:{ action:'resetPassword',
+          username:userOrId.username, password:userOrId.password } }).then(_edgeCheck) );
+      }
+      p = Promise.all(jobs).then(function(rs){ rs.forEach(function(r){ if(r && r.error) throw r.error; }); });
+    } else if(action === 'delete'){
+      var u = findUserById(userOrId);
+      p = sb.functions.invoke('admin-users', { body:{ action:'delete',
+            username: u ? u.username : userOrId } }).then(_edgeCheck);
+    }
     if(p) p.then(function(){
-      showToast("☁️ Đã đồng bộ tài khoản lên Sheets!", "success");
+      showToast("☁️ Đã đồng bộ tài khoản!", "success");
+      if(refresh && typeof DB !== "undefined"){
+        DB.syncUsersFromSheets(K_USERS).then(function(){ if(typeof _onUsersSynced === "function") _onUsersSynced(); });
+      }
     }).catch(function(e){
-      showToast("⚠️ Lưu local OK nhưng chưa sync Sheets: " + (e && e.message || e), "warning");
+      showToast("⚠️ Chưa đồng bộ được tài khoản: " + (e && e.message || e), "warning");
     });
+  }
+  // Chuẩn hoá lỗi trả về từ Edge Function
+  function _edgeCheck(r){
+    if(r && r.error) throw r.error;
+    if(r && r.data && r.data.ok === false) throw new Error(r.data.error || "Thao tác thất bại");
+    return r;
   }
   function findUser(un){ var u=getUsers(); for(var i=0;i<u.length;i++) if(u[i].username===un) return u[i]; return null; }
   function findUserById(id){ var u=getUsers(); for(var i=0;i<u.length;i++) if(String(u[i].id)===String(id)) return u[i]; return null; }
 
   /* -------- PHIÊN LÀM VIỆC -------- */
   function currentUser(){ var un=load(K_SESS,null); return un?findUser(un):null; }
-  /* -------- HASH MẬT KHẨU (SHA-256 + salt, async) -------- */
-  var PW_SALT = "vsp_hse_2024";
-  function hashPw(pw){
-    var data = new TextEncoder().encode(PW_SALT + pw);
-    return crypto.subtle.digest("SHA-256", data).then(function(buf){
-      return Array.from(new Uint8Array(buf)).map(function(b){ return b.toString(16).padStart(2,"0"); }).join("");
-    });
-  }
-  // Phát hiện mật khẩu đã hash chưa — SHA-256 luôn là đúng 64 ký tự hex
-  // Không dùng flag pwHash riêng vì field này bị mất khi sync qua Google Sheets
+  /* -------- MẬT KHẨU — do Supabase Auth quản lý -------- */
+  // hashPw giữ chữ ký cũ (Promise) nhưng KHÔNG hash nữa: mật khẩu được gửi thẳng
+  // tới Supabase Auth. Các luồng UI cũ gọi hashPw(pw).then(fn) vẫn chạy đúng.
+  function hashPw(pw){ return Promise.resolve(pw); }
   function isHashed(pw){ return !!pw && /^[0-9a-f]{64}$/.test(pw); }
 
   function login(un, pw, callback){
-    hashPw(pw).then(function(hashed){
-      var u=findUser((un||"").trim());
-      if(!u){ callback({ok:false,msg:"Tài khoản không tồn tại."}); return; }
-      if(u.pendingApproval && u.active===false){
-        callback({ok:false,msg:"⏳ Tài khoản đang chờ Admin phê duyệt. Vui lòng liên hệ quản trị viên."}); return;
-      }
-      if(u.active===false){ callback({ok:false,msg:"🔒 Tài khoản đã bị khoá. Liên hệ Admin để mở khoá."}); return; }
-      // Tự phát hiện: nếu stored password là 64-char hex → đã hash; ngược lại → plaintext cũ
-      var isMatch = isHashed(u.password) ? (u.password === hashed) : (u.password === pw);
-      if(!isMatch){ callback({ok:false,msg:"Sai mật khẩu."}); return; }
-      // Migrate plaintext → hash khi login thành công
-      if(!isHashed(u.password)){
-        var users=getUsers();
-        for(var i=0;i<users.length;i++){
-          if(users[i].username===u.username){ users[i].password=hashed; break; }
-        }
-        save(K_USERS, dedupUsers(users));
-      }
-      save(K_SESS, u.username);
-      if(typeof DB !== "undefined") DB.setUser(u.username);
-      callback({ok:true});
-    });
+    un=(un||"").trim();
+    _sbReady().then(function(sb){
+      return sb.auth.signInWithPassword({ email: emailOf(un), password: pw }).then(function(res){
+        if(res.error){ callback({ok:false, msg:_loginErr(res.error)}); return; }
+        return refreshCurrentUser(res.data.user).then(function(u){
+          if(!u){ sb.auth.signOut(); callback({ok:false,msg:"Không tải được hồ sơ tài khoản."}); return; }
+          if(u.pendingApproval && u.active===false){ sb.auth.signOut(); localStorage.removeItem(K_SESS);
+            callback({ok:false,msg:"⏳ Tài khoản đang chờ Admin phê duyệt. Vui lòng liên hệ quản trị viên."}); return; }
+          if(u.active===false){ sb.auth.signOut(); localStorage.removeItem(K_SESS);
+            callback({ok:false,msg:"🔒 Tài khoản đã bị khoá. Liên hệ Admin để mở khoá."}); return; }
+          if(typeof DB !== "undefined") DB.setUser(u.username);
+          if(u.role==="admin" && typeof DB !== "undefined") DB.syncUsersFromSheets(K_USERS);
+          callback({ok:true});
+        });
+      });
+    }).catch(function(e){ callback({ok:false, msg:(e && e.message)||"Lỗi kết nối máy chủ."}); });
   }
-  function logout(){ localStorage.removeItem(K_SESS); location.reload(); }
+  function logout(){
+    _sbReady().then(function(sb){ return sb.auth.signOut(); })
+      .catch(function(){})
+      .then(function(){ localStorage.removeItem(K_SESS); location.reload(); });
+  }
 
   /* -------- PHÂN QUYỀN -------- */
   function isAdmin(u){ return u && u.role==="admin"; }
@@ -269,6 +394,9 @@
             '<div class="field"><label>Mật khẩu</label><input id="hse-lm-p" type="password" class="inp" style="width:100%" autocomplete="current-password" placeholder="Nhập mật khẩu"></div>'+
             '<button class="btn btn-block" type="submit">Đăng nhập</button>'+
           '</form>'+
+          '<div style="text-align:right;margin-top:8px;">'+
+            '<a href="#" id="hse-lm-forgot" style="font-size:12px;color:var(--text-muted);">Quên mật khẩu?</a>'+
+          '</div>'+
           '<div style="text-align:center;margin-top:14px;">'+
             '<span style="font-size:12.5px;color:var(--text-muted);">Chưa có tài khoản? </span>'+
             '<a href="#" id="hse-lm-reg-link" style="font-size:12.5px;font-weight:600;color:var(--brand);">Đăng ký</a>'+
@@ -323,6 +451,8 @@
         else{ var er=$("#hse-lm-err"); er.textContent=r.msg; er.style.display="block"; }
       });
     });
+    var forgotLink = document.getElementById("hse-lm-forgot");
+    if(forgotLink) forgotLink.addEventListener("click", function(e){ e.preventDefault(); requestPasswordReset(); });
     document.getElementById("hse-lm-reg-link").addEventListener("click", function(e){ e.preventDefault(); showRegPanel(); });
     document.getElementById("hse-reg-back").addEventListener("click", function(e){ e.preventDefault(); showLoginPanel(); });
     document.getElementById("hse-reg-submit").addEventListener("click", function(){
@@ -1052,24 +1182,21 @@
       if(nw===cur){ showErr("Mật khẩu mới phải khác mật khẩu hiện tại."); return; }
       var saveBtn=document.getElementById("dmk-save");
       saveBtn.disabled=true;
-      // Kiểm tra mật khẩu hiện tại (hỗ trợ cả hash lẫn plaintext)
-      hashPw(cur).then(function(curHash){
-        var isOk = isHashed(me.password) ? (me.password===curHash) : (me.password===cur);
-        if(!isOk){ showErr("Mật khẩu hiện tại không đúng."); saveBtn.disabled=false; return; }
-        return hashPw(nw);
-      }).then(function(newHash){
-        if(!newHash) return;
-        var u=getUsers(); var changedUser=null;
-        for(var i=0;i<u.length;i++){
-          if(u[i].username===me.username){ u[i].password=newHash; u[i].updated=new Date().toISOString(); changedUser=u[i]; break; }
-        }
-        setUsers(u); if(changedUser) _syncUserSheet('update', changedUser);
+      // Xác thực mật khẩu hiện tại bằng cách đăng nhập lại, rồi đổi qua Supabase Auth
+      _sbReady().then(function(sb){
+        return sb.auth.signInWithPassword({ email: emailOf(me.username), password: cur }).then(function(res){
+          if(res.error){ showErr("Mật khẩu hiện tại không đúng."); saveBtn.disabled=false; return null; }
+          return sb.auth.updateUser({ password: nw });
+        });
+      }).then(function(r){
+        if(!r) return;
+        if(r.error){ showErr(r.error.message || "Đổi mật khẩu thất bại."); saveBtn.disabled=false; return; }
         saveBtn.disabled=false;
         showOk("✅ Đổi mật khẩu thành công!");
         document.getElementById("dmk-cur").value="";
         document.getElementById("dmk-new").value="";
         document.getElementById("dmk-new2").value="";
-      });
+      }).catch(function(e){ showErr((e && e.message) || "Lỗi kết nối."); saveBtn.disabled=false; });
     });
 
     bg.classList.add("open");

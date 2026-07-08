@@ -1,392 +1,232 @@
 /**
  * =========================================================
  *  DB.JS — Client-side database module cho HSE Webapp
- *  Kết nối Google Sheets qua Apps Script Web App
- * =========================================================
+ *  PHIÊN BẢN SUPABASE (thay Google Apps Script / Sheets)
  *
- *  Cách dùng:
- *    DB.init("https://script.google.com/macros/s/.../exec");
+ *  ⚠️  GIỮ NGUYÊN "hợp đồng" interface như bản Sheets cũ:
+ *      init, isReady, setUser, genId,
+ *      getAll, getById, insert, update, delete, bulkWrite,
+ *      cachedLoad, cachedSave, syncUsersFromSheets,
+ *      startAutoSync, stopAutoSync, testConnection, getCached, clearCache
+ *  → Các trang nghiệp vụ KHÔNG phải sửa.
  *
- *    // Lấy tất cả (async/await hoặc .then)
- *    var users = await DB.getAll("users");
- *
- *    // Lấy 1 record
- *    var u = await DB.getById("users", "id123");
- *
- *    // Thêm mới
- *    await DB.insert("nha_thau", { ten_nha_thau: "...", khu_vuc: "Cảng biển" });
- *
- *    // Cập nhật
- *    await DB.update("nha_thau", "id123", { trang_thai: "Đã duyệt" });
- *
- *    // Xóa
- *    await DB.delete("nha_thau", "id123");
- *
- *    // Ghi đè toàn bộ sheet (sync from localStorage)
- *    await DB.bulkWrite("users", arrayOfObjects);
- *
- *    // Cache-first: đọc từ localStorage, sync Sheets ngầm
- *    DB.cachedLoad("hse_users", "users", fallback);
- *    DB.cachedSave("hse_users", "users", data);
+ *  Yêu cầu: nạp assets/supabase-config.js (type=module) TRƯỚC file này.
  * =========================================================
  */
-
-var DB = (function() {
+var DB = (function () {
   "use strict";
 
-  // ═══════════════════════════════════════════════════
-  //  ⚙️  CẤU HÌNH — Dán URL Apps Script Web App vào đây
-  //  Sau khi đặt URL này, mọi người dùng đều tự kết nối
-  //  mà không cần nhập thủ công trong Quản trị hệ thống
-  // ═══════════════════════════════════════════════════
-  var DEFAULT_URL = "https://script.google.com/macros/s/AKfycbxwXyR3XJGaVd79Sq2csVzuXDFOCF78P00v3oam0oFILxuXLEpbeGynfjMCQZJRpkotnQ/exec";
-
-  var _url = "";
+  var DEFAULT_URL = ""; // (giữ để tương thích code cũ — không còn dùng)
   var _currentUser = "";
   var _cache = {};
-  var _syncing = false;
   var _autoSyncTimer = null;
 
-  /* ─── Lưu URL API vào localStorage ─── */
-  function init(url) {
-    if (url) {
-      _url = url.trim();
-      localStorage.setItem("hse_db_url", _url);
-    } else {
-      // Ưu tiên: localStorage → DEFAULT_URL trong code
-      _url = localStorage.getItem("hse_db_url") || DEFAULT_URL;
-      // Lưu lại DEFAULT_URL vào localStorage nếu chưa có
-      if (!localStorage.getItem("hse_db_url") && DEFAULT_URL) {
-        localStorage.setItem("hse_db_url", DEFAULT_URL);
-      }
-    }
-    return _url;
+  /* ─── Bảng không dùng cột "id" làm khoá chính ─── */
+  var PK = { hl_settings: "loai" };
+  function pkOf(t) { return PK[t] || "id"; }
+
+  /* ─── Ánh xạ "sheet" cũ → bảng Postgres ─── */
+  //  users được quản lý qua Supabase Auth + bảng profiles.
+  function tbl(sheet) { return sheet === "users" ? "profiles" : sheet; }
+
+  /* ─── Lấy supabase client (đợi supabase-config.js sẵn sàng) ─── */
+  function _ready() {
+    if (window.HSE_SB) return Promise.resolve(window.HSE_SB);
+    return new Promise(function (resolve, reject) {
+      var to = setTimeout(function () { reject(new Error("Supabase client chưa sẵn sàng (thiếu supabase-config.js?)")); }, 12000);
+      window.addEventListener("hse-sb-ready", function () { clearTimeout(to); resolve(window.HSE_SB); }, { once: true });
+    });
   }
 
-  /* ─── Kiểm tra đã cấu hình URL chưa ─── */
-  function isReady() { return !!_url; }
-
-  /* ─── Auto-sync định kỳ (mặc định mỗi 5 phút) ─── */
-  function startAutoSync(lsKey, intervalMinutes) {
-    if (_autoSyncTimer) clearInterval(_autoSyncTimer);
-    intervalMinutes = intervalMinutes || 5;
-    _autoSyncTimer = setInterval(function() {
-      if (!_url) return;
-      // Pull từ Sheets → cập nhật localStorage nếu có thay đổi
-      getAll("users").then(function(rows) {
-        if (rows && rows.length > 0) {
-          var current = JSON.stringify(JSON.parse(localStorage.getItem(lsKey) || "[]"));
-          var incoming = JSON.stringify(rows);
-          if (current !== incoming) {
-            localStorage.setItem(lsKey, incoming);
-            console.log("[DB Auto-sync] Cập nhật " + rows.length + " users từ Sheets");
-          }
-        }
-      }).catch(function(e) {
-        console.warn("[DB Auto-sync] Pull users thất bại:", e && e.message || e);
-      });
-    }, intervalMinutes * 60 * 1000);
-  }
-
-  function stopAutoSync() {
-    if (_autoSyncTimer) { clearInterval(_autoSyncTimer); _autoSyncTimer = null; }
-  }
-
-  /* ─── Đặt user hiện tại (dùng cho audit log) ─── */
+  /* ─── init / trạng thái ─── */
+  function init(url) { return url || DEFAULT_URL; } // no-op, giữ chữ ký cũ
+  function isReady() { return !!window.HSE_SB; }
   function setUser(username) { _currentUser = username || ""; }
 
-  /* ─── Helper: fetch với timeout ─── */
-  function _fetch(url, options, timeoutMs) {
-    timeoutMs = timeoutMs || 15000;
-    return new Promise(function(resolve, reject) {
-      var timer = setTimeout(function() {
-        reject(new Error("Request timeout"));
-      }, timeoutMs);
-      fetch(url, options)
-        .then(function(r) { clearTimeout(timer); return r.json(); })
-        .then(resolve)
-        .catch(function(e) { clearTimeout(timer); reject(e); });
-    });
-  }
-
-  /* ─── Gọi API (GET) ─── */
-  function _get(params) {
-    if (!_url) return Promise.reject(new Error("Chưa cấu hình DB URL. Vào Quản trị → Cài đặt DB."));
-    var qs = Object.keys(params).map(function(k) {
-      return encodeURIComponent(k) + "=" + encodeURIComponent(params[k]);
-    }).join("&");
-    return _fetch(_url + "?" + qs);
-  }
-
-  /* ─── Gọi API write (POST với Content-Type text/plain) ───
-     Dùng POST thật thay vì nhồi dữ liệu vào URL, để bỏ giới hạn độ dài
-     URL khi ghi nhiều bản ghi (vd: Sync toàn bộ users → "Failed to fetch").
-     "text/plain" là simple request nên KHÔNG kích hoạt CORS preflight;
-     server doPost đọc dữ liệu từ e.postData.contents.
-     Chỉ tham số ngắn (action/sheet/id) nằm trên URL. */
-  function _post(params, body) {
-    if (!_url) return Promise.reject(new Error("Chưa cấu hình DB URL."));
-    var bodyWithUser = Object.assign({}, body, { user: _currentUser });
-    var qs = Object.keys(params).map(function(k) {
-      return encodeURIComponent(k) + "=" + encodeURIComponent(params[k]);
-    }).join("&");
-    return _fetch(_url + (qs ? "?" + qs : ""), {
-      method: "POST",
-      headers: { "Content-Type": "text/plain;charset=utf-8" },
-      body: JSON.stringify(bodyWithUser),
-      redirect: "follow"
-    });
-  }
-
-  /* ─── ID generator (client-side) ─── */
   function genId() {
     return Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
   }
 
-  /* ─── OUTBOX: hàng đợi thao tác ghi CHƯA lên được Sheets ───
-     Mục đích: nếu ghi lên Google Sheets thất bại (mất mạng / quyền / CORS),
-     thao tác vẫn được nhớ lại để (1) KHÔNG bị "hồi sinh"/"quay lui" khi sync
-     lại từ Sheets, và (2) tự động thử ghi lại ở lần sync sau.
-     Mỗi sheet có outbox riêng, lưu trong localStorage. Mỗi id giữ 1 entry
-     mới nhất: {op:'insert'|'update'|'delete', id, data?, ts}. */
-  function _outboxKey(sheet){ return "hse_db_outbox_" + sheet; }
-  function _getOutbox(sheet){ try { return JSON.parse(localStorage.getItem(_outboxKey(sheet))) || []; } catch(e){ return []; } }
-  function _setOutbox(sheet, arr){
+  /* ─── OUTBOX: hàng đợi ghi chưa lên được server (giữ như bản cũ) ─── */
+  function _outboxKey(sheet) { return "hse_db_outbox_" + sheet; }
+  function _getOutbox(sheet) { try { return JSON.parse(localStorage.getItem(_outboxKey(sheet))) || []; } catch (e) { return []; } }
+  function _setOutbox(sheet, arr) {
     if (arr && arr.length) localStorage.setItem(_outboxKey(sheet), JSON.stringify(arr));
     else localStorage.removeItem(_outboxKey(sheet));
   }
-  function _outboxRemove(sheet, id){
-    _setOutbox(sheet, _getOutbox(sheet).filter(function(o){ return String(o.id) !== String(id); }));
+  function _outboxRemove(sheet, id) {
+    _setOutbox(sheet, _getOutbox(sheet).filter(function (o) { return String(o.id) !== String(id); }));
   }
-  function _outboxPush(sheet, entry){
-    // Thao tác mới cho cùng 1 id sẽ thay thế thao tác cũ (vd: delete đè insert)
-    var a = _getOutbox(sheet).filter(function(o){ return String(o.id) !== String(entry.id); });
+  function _outboxPush(sheet, entry) {
+    var a = _getOutbox(sheet).filter(function (o) { return String(o.id) !== String(entry.id); });
     a.push(entry);
     _setOutbox(sheet, a);
   }
 
   /* =========================================================
-     PUBLIC API
+     PUBLIC API — đọc
      ========================================================= */
-
-  /** Lấy tất cả records. where: object filter { col: value } */
   function getAll(sheet, where) {
-    var params = { action: "getAll", sheet: sheet };
-    if (where) params.where = JSON.stringify(where);
-    return _get(params).then(function(res) {
-      if (!res.ok) throw new Error(res.error);
-      _cache[sheet] = res.data;
-      return res.data;
+    return _ready().then(function (sb) {
+      var q = sb.from(tbl(sheet)).select("*");
+      if (where && typeof where === "object") q = q.match(where);
+      return q;
+    }).then(function (res) {
+      if (res.error) throw new Error(res.error.message);
+      _cache[sheet] = res.data || [];
+      return res.data || [];
     });
   }
 
-  /** Lấy 1 record theo id */
   function getById(sheet, id) {
-    return _get({ action: "getById", sheet: sheet, id: id }).then(function(res) {
-      if (!res.ok) throw new Error(res.error);
+    return _ready().then(function (sb) {
+      return sb.from(tbl(sheet)).select("*").eq(pkOf(sheet), id).maybeSingle();
+    }).then(function (res) {
+      if (res.error) throw new Error(res.error.message);
+      if (!res.data) throw new Error("Không tìm thấy record id=" + id);
       return res.data;
     });
   }
 
-  /** Thêm record mới */
+  /* =========================================================
+     PUBLIC API — ghi
+     ========================================================= */
   function insert(sheet, data) {
-    var obj = Object.assign({ id: genId(), created_at: new Date().toISOString() }, data);
-    return _post({ action: "insert", sheet: sheet }, { data: obj }).then(function(res) {
-      if (!res.ok) throw new Error(res.error);
-      // Cập nhật cache
+    var obj = Object.assign({}, data);
+    if (pkOf(sheet) === "id" && !obj.id) obj.id = genId();
+    var id = obj[pkOf(sheet)];
+    return _ready().then(function (sb) {
+      // upsert để idempotent (bấm Lưu 2 lần / retry không tạo trùng)
+      return sb.from(tbl(sheet)).upsert(obj, { onConflict: pkOf(sheet) }).select().maybeSingle();
+    }).then(function (res) {
+      if (res.error) throw new Error(res.error.message);
       if (_cache[sheet]) _cache[sheet].push(res.data);
-      _outboxRemove(sheet, obj.id);   // đã lên Sheets → xoá khỏi hàng đợi
+      _outboxRemove(sheet, id);
       return res.data;
-    }).catch(function(e) {
-      _outboxPush(sheet, { op: "insert", id: String(obj.id), data: obj, ts: Date.now() });
+    }).catch(function (e) {
+      _outboxPush(sheet, { op: "insert", id: String(id), data: obj, ts: Date.now() });
       throw e;
     });
   }
 
-  /** Cập nhật record theo id */
   function update(sheet, id, data) {
-    return _post({ action: "update", sheet: sheet, id: id }, { data: data }).then(function(res) {
-      if (!res.ok) throw new Error(res.error);
-      // Cập nhật cache
+    var patch = Object.assign({}, data);
+    delete patch[pkOf(sheet)]; // không update khoá chính
+    return _ready().then(function (sb) {
+      return sb.from(tbl(sheet)).update(patch).eq(pkOf(sheet), id).select().maybeSingle();
+    }).then(function (res) {
+      if (res.error) throw new Error(res.error.message);
       if (_cache[sheet]) {
-        var idx = _cache[sheet].findIndex(function(r) { return String(r.id) === String(id); });
+        var idx = _cache[sheet].findIndex(function (r) { return String(r[pkOf(sheet)]) === String(id); });
         if (idx >= 0) _cache[sheet][idx] = res.data;
       }
-      _outboxRemove(sheet, id);   // đã lên Sheets → xoá khỏi hàng đợi
+      _outboxRemove(sheet, id);
       return res.data;
-    }).catch(function(e) {
-      _outboxPush(sheet, { op: "update", id: String(id), data: data, ts: Date.now() });
+    }).catch(function (e) {
+      _outboxPush(sheet, { op: "update", id: String(id), data: patch, ts: Date.now() });
       throw e;
     });
   }
 
-  /** Xóa record theo id */
   function del(sheet, id) {
-    return _post({ action: "delete", sheet: sheet, id: id }, {}).then(function(res) {
-      if (!res.ok) throw new Error(res.error);
-      // Cập nhật cache
-      if (_cache[sheet]) {
-        _cache[sheet] = _cache[sheet].filter(function(r) { return String(r.id) !== String(id); });
-      }
-      _outboxRemove(sheet, id);   // đã xoá trên Sheets → gỡ tombstone
+    return _ready().then(function (sb) {
+      return sb.from(tbl(sheet)).delete().eq(pkOf(sheet), id);
+    }).then(function (res) {
+      if (res.error) throw new Error(res.error.message);
+      if (_cache[sheet]) _cache[sheet] = _cache[sheet].filter(function (r) { return String(r[pkOf(sheet)]) !== String(id); });
+      _outboxRemove(sheet, id);
       return true;
-    }).catch(function(e) {
-      // Ghi "tombstone" để lần sync sau KHÔNG hồi sinh bản ghi + sẽ thử xoá lại
+    }).catch(function (e) {
       _outboxPush(sheet, { op: "delete", id: String(id), ts: Date.now() });
       throw e;
     });
   }
 
-  /** Ghi đè toàn bộ sheet (dùng khi sync từ localStorage lên) */
+  /** Ghi đè TOÀN BỘ bảng: upsert các dòng mới + xoá dòng không còn (giữ ngữ nghĩa bulkWrite cũ) */
   function bulkWrite(sheet, rows) {
-    return _post({ action: "bulkWrite", sheet: sheet }, { data: rows }).then(function(res) {
-      if (!res.ok) throw new Error(res.error);
+    rows = (rows || []).map(function (r) {
+      var o = Object.assign({}, r);
+      if (pkOf(sheet) === "id" && !o.id) o.id = genId();
+      return o;
+    });
+    // An toàn: KHÔNG xoá sạch bảng khi danh sách rỗng (tránh mất dữ liệu ngoài ý muốn).
+    if (!rows.length) { _cache[sheet] = []; return Promise.resolve(0); }
+    var pk = pkOf(sheet);
+    var keepIds = rows.map(function (r) { return String(r[pk]); });
+    var sbRef;
+    return _ready().then(function (sb) {
+      sbRef = sb;
+      if (!rows.length) return { data: [], error: null };
+      return sb.from(tbl(sheet)).upsert(rows, { onConflict: pk }).select();
+    }).then(function (res) {
+      if (res.error) throw new Error(res.error.message);
+      // Xoá các dòng server không còn trong danh sách mới
+      var delQ = sbRef.from(tbl(sheet)).delete();
+      if (keepIds.length) delQ = delQ.not(pk, "in", "(" + keepIds.map(function (x) { return JSON.stringify(x); }).join(",") + ")");
+      return delQ.then(function () { return res; });
+    }).then(function () {
       _cache[sheet] = rows;
-      return res.count;
+      return rows.length;
     });
   }
 
   /* =========================================================
-     CACHE-FIRST PATTERN
-     Dùng cho các module đang chuyển từ localStorage sang Sheets.
-     Đọc từ cache/localStorage ngay, đồng bộ Sheets ngầm định.
+     CACHE-FIRST PATTERN (giữ nguyên như bản cũ)
      ========================================================= */
-
-  /**
-   * cachedLoad(lsKey, sheet, fallback)
-   * 1. Trả về localStorage ngay (synchronous)
-   * 2. Fetch Sheets ngầm → cập nhật localStorage
-   * callback(data) được gọi sau khi Sheets trả về
-   */
   function cachedLoad(lsKey, sheet, fallback, callback) {
     var cached;
-    try { cached = JSON.parse(localStorage.getItem(lsKey)); } catch(e) {}
+    try { cached = JSON.parse(localStorage.getItem(lsKey)); } catch (e) {}
     if (cached === null || cached === undefined) cached = fallback;
-
-    // Sync Sheets ngầm
-    if (_url) {
-      getAll(sheet).then(function(rows) {
-        if (rows && rows.length) {
-          localStorage.setItem(lsKey, JSON.stringify(rows));
-          if (callback) callback(rows);
-        }
-      }).catch(function() {}); // Không throw nếu offline
-    }
-
+    getAll(sheet).then(function (rows) {
+      if (rows) {
+        localStorage.setItem(lsKey, JSON.stringify(rows));
+        if (callback) callback(rows);
+      }
+    }).catch(function () {});
     return cached;
   }
 
-  /**
-   * cachedSave(lsKey, sheet, data)
-   * 1. Lưu localStorage ngay
-   * 2. Sync lên Sheets ngầm (bulkWrite)
-   */
   function cachedSave(lsKey, sheet, data) {
     localStorage.setItem(lsKey, JSON.stringify(data));
-    if (_url) {
-      bulkWrite(sheet, data).catch(function() {}); // Không throw nếu offline
-    }
+    bulkWrite(sheet, data).catch(function () {});
   }
 
   /* =========================================================
-     USERS — Quản lý người dùng qua Sheets
-     (thay thế localStorage trong app.js)
+     USERS / PROFILES — đồng bộ về localStorage cho UI đọc đồng bộ
      ========================================================= */
-
-  /**
-   * syncUsersFromSheets()
-   * Gọi khi khởi động app: kéo users từ Sheets về localStorage
-   * Nếu Sheets chưa có → đẩy localStorage lên Sheets
-   */
   function syncUsersFromSheets(lsKey) {
     lsKey = lsKey || "hse_users";
-    if (!_url) return Promise.resolve(null);
-    return getAll("users").then(function(rows) {
-      function keyOf(x){ return x && x.id != null ? String(x.id) : (x && x.username); }
-
-      // 0) Đọc hàng đợi thao tác chưa lên được Sheets (outbox) + tập id có trên Sheets
-      var pending = _getOutbox("users");
-      var pendById = {};
-      pending.forEach(function(o){ pendById[String(o.id)] = o; });
-      var sheetIds = {};
-      (rows || []).forEach(function(r){ var k = keyOf(r); if(k) sheetIds[k] = true; });
-
-      // 0b) Dọn tombstone "chết": id đang chờ xoá nhưng Sheets đã không còn
-      //     → server đã xoá xong ở lần trước, gỡ khỏi outbox để khỏi retry vô hạn.
-      pending.forEach(function(o){
-        if (o.op === "delete" && !sheetIds[String(o.id)]) _outboxRemove("users", o.id);
-      });
-      pending = _getOutbox("users");
-      pendById = {};
-      pending.forEach(function(o){ pendById[String(o.id)] = o; });
-
-      // 1) Danh sách từ Sheets (dedup theo id); áp outbox:
-      //    - đang chờ xoá  → bỏ qua (KHÔNG hồi sinh)
-      //    - đang chờ sửa  → dùng bản sửa ở máy (KHÔNG để bản Sheets cũ đè lên)
-      var seen = {}, sheetUsers = [];
-      (rows || []).forEach(function(r){
-        var k = keyOf(r); if(!k || seen[k]) return; seen[k] = true;
-        var p = pendById[k];
-        if (p && p.op === "delete") return;
-        if (p && p.op === "update" && p.data) { sheetUsers.push(p.data); return; }
-        sheetUsers.push(r);
-      });
-
-      // 2) Danh sách cục bộ
-      var local = [];
-      try { local = JSON.parse(localStorage.getItem(lsKey)) || []; } catch(e) {}
-
-      // 3) User CHỈ có ở máy (id chưa có trên Sheets), trừ những cái đang chờ xoá
-      var localOnly = local.filter(function(u){
-        var k = keyOf(u); if(!k || seen[k]) return false;
-        var p = pendById[k];
-        return !(p && p.op === "delete");
-      });
-
-      // 4) Hợp nhất và lưu lại
-      var merged = sheetUsers.concat(localOnly);
-      localStorage.setItem(lsKey, JSON.stringify(merged));
-
-      // 5) Thử lại các thao tác còn treo trong outbox (mỗi hàm tự gỡ outbox khi thành công)
-      pending.forEach(function(o){
-        if (o.op === "delete")      del("users", o.id).catch(function(){});
-        else if (o.op === "update") update("users", o.id, o.data || {}).catch(function(){});
-        else if (o.op === "insert") insert("users", o.data || {}).catch(function(){});
-      });
-
-      // 6) Đẩy các user chỉ-có-ở-máy chưa từng nằm trong outbox lên Sheets
-      //    (insert phía server là UPSERT theo id nên an toàn, không tạo trùng)
-      localOnly.forEach(function(u){
-        var k = keyOf(u); if (pendById[k]) return;   // đã retry ở bước 5
-        insert("users", u).catch(function(){});
-      });
-
-      return merged;
-    }).catch(function(e) {
-      console.warn("[DB] syncUsers failed:", e.message);
+    return getAll("users").then(function (rows) {
+      if (rows) localStorage.setItem(lsKey, JSON.stringify(rows));
+      return rows;
+    }).catch(function (e) {
+      console.warn("[DB] syncUsers (profiles) failed:", e.message);
       return null;
     });
   }
 
+  function startAutoSync(lsKey, intervalMinutes) {
+    if (_autoSyncTimer) clearInterval(_autoSyncTimer);
+    intervalMinutes = intervalMinutes || 5;
+    _autoSyncTimer = setInterval(function () {
+      syncUsersFromSheets(lsKey).catch(function () {});
+    }, intervalMinutes * 60 * 1000);
+  }
+  function stopAutoSync() { if (_autoSyncTimer) { clearInterval(_autoSyncTimer); _autoSyncTimer = null; } }
+
   /* ─── Kiểm tra kết nối ─── */
   function testConnection() {
-    if (!_url) return Promise.reject(new Error("Chưa nhập URL"));
-    return _get({ action: "schema" }).then(function(res) {
-      if (!res.ok) throw new Error(res.error || "API lỗi");
-      return { ok: true, sheets: Object.keys(res.data), count: Object.keys(res.data).length };
+    return _ready().then(function (sb) {
+      return sb.from("sop").select("id", { count: "exact", head: true });
+    }).then(function (res) {
+      if (res.error) throw new Error(res.error.message);
+      return { ok: true, count: res.count };
     });
   }
 
-  /* ─── Lấy cache in-memory ─── */
   function getCached(sheet) { return _cache[sheet] || null; }
+  function clearCache(sheet) { if (sheet) delete _cache[sheet]; else _cache = {}; }
 
-  /* ─── Xóa cache ─── */
-  function clearCache(sheet) {
-    if (sheet) delete _cache[sheet];
-    else _cache = {};
-  }
-
-  /* ─── Export public API ─── */
   return {
     init: init,
     isReady: isReady,
@@ -408,5 +248,4 @@ var DB = (function() {
     clearCache: clearCache,
     DEFAULT_URL: DEFAULT_URL
   };
-
 })();
