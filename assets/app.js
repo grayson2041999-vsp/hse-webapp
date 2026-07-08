@@ -15,7 +15,7 @@
   var MENU = [
     { slug:"tong-quan",          title:"Tổng quan",                   icon:"📊", licon:"layout-dashboard", group:"theo-doi", sub:["Số giờ làm việc an toàn","Tai nạn, sự cố gần nhất"] },
     { slug:"tai-nan-su-co",      title:"Tai nạn - Sự cố",             icon:"⚠️", licon:"triangle-alert",   group:"theo-doi", sub:["Giờ công lao động an toàn","Ghi nhận tai nạn - sự cố"] },
-    { slug:"pccc-cnch",          title:"PCCC & CNCH",                 icon:"🧯", licon:"flame",            group:"theo-doi", sub:["Hệ thống báo cháy tự động (BCTĐ)","Phương tiện CC & CNCH"] },
+    { slug:"pccc-cnch",          title:"PCCC & CNCH",                 icon:"🧯", licon:"flame",            group:"theo-doi", sub:["Phương tiện CC & CNCH"] },
     { slug:"sop",                title:"SOP",                         icon:"📑", licon:"file-text",        group:"theo-doi", sub:[], adminEditOnly:true },
     { slug:"kiem-tra-cac-cap",   title:"Kiểm tra các cấp",            icon:"🔍", licon:"list-checks",      group:"theo-doi", sub:["Số lượng kiểm tra các cấp","Ghi nhận các lỗi vào hệ thống","Ghi nhận hành động khắc phục, thời hạn"] },
     { slug:"quan-ly-thiet-bi",   title:"Quản lý thiết bị",            icon:"⚙️", licon:"wrench",           group:"theo-doi", sub:["Thiết bị nâng","Bình áp lực"] },
@@ -25,6 +25,7 @@
     { slug:"ke-hoach",           title:"Kế hoạch",                    icon:"🗓️", licon:"calendar-days",    group:"theo-doi", sub:["Lập kế hoạch (chọn các mục liên quan)","Báo cáo kế hoạch cụ thể"] },
     { slug:"cap-phat-bhld",      title:"Cấp phát BHLĐ",               icon:"🦺", licon:"shield-check",     group:"ung-dung", sub:["Quản lý cấp phát","Danh mục BHLĐ","Định mức cấp phát","Phiếu yêu cầu","Tồn kho","Nhu cầu mua sắm"] },
     { slug:"huan-luyen-dao-tao", title:"Huấn luyện - Đào tạo",        icon:"🎓", licon:"graduation-cap",   group:"ung-dung", sub:["Thống kê các loại đào tạo, huấn luyện","Kiểm tra kiến thức an toàn","Đào tạo nội bộ"] },
+    { slug:"bao-chay-tu-dong",   title:"Báo cáo hệ thống báo cháy tự động", icon:"🔔", licon:"bell",       group:"ung-dung", sub:["Danh sách thiết bị báo cháy","Ghi nhận lỗi & khắc phục"] },
     { slug:"quan-tri-he-thong",  title:"Quản trị hệ thống",           icon:"🛡️", licon:"settings",         group:"admin",    sub:[], adminOnly:true }
   ];
 
@@ -81,7 +82,7 @@
      Trang nhẹ (shell) render qua index.html#slug; trang nghiệp vụ lớn mở file .html riêng */
   var STANDALONE_PAGES = {
     "tai-nan-su-co":1, "pccc-cnch":1, "kiem-tra-cac-cap":1, "moi-truong":1,
-    "ke-hoach":1, "cap-phat-bhld":1, "kham-suc-khoe":1
+    "ke-hoach":1, "cap-phat-bhld":1, "kham-suc-khoe":1, "bao-chay-tu-dong":1
   };
   function pageHref(slug){
     return STANDALONE_PAGES[slug] ? (slug + ".html") : ("index.html#" + slug);

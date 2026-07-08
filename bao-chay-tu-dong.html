@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="description" content="Liên doanh Việt - Nga Vietsovpetro · Xí nghiệp Dịch vụ Cảng và CƯVTTB">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>PCCC & CNCH · Quản lý HSE</title>
+  <title>Báo cáo hệ thống báo cháy tự động · Quản lý HSE</title>
   <style>
     :root {
       --primary:       #003087;
@@ -216,16 +216,16 @@
   </header>
 
   <main class="main">
-    <div class="page-title"><svg class="lic-emoji" width="1.05em" height="1.05em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex-shrink:0" aria-hidden="true"><path d="M15 6.5V3a1 1 0 0 0-1-1h-2a1 1 0 0 0-1 1v3.5"/><path d="M9 18h8"/><path d="M18 3h-3"/><path d="M11 3a6 6 0 0 0-6 6v11"/><path d="M5 13h4"/><path d="M17 10a4 4 0 0 0-8 0v10a2 2 0 0 0 2 2h4a2 2 0 0 0 2-2Z"/></svg> Phòng cháy, chữa cháy & Cứu nạn, cứu hộ</div>
+    <div class="page-title"><svg class="lic-emoji" width="1.05em" height="1.05em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex-shrink:0" aria-hidden="true"><path d="M10.268 21a2 2 0 0 0 3.464 0"/><path d="M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326"/></svg> Báo cáo hệ thống báo cháy tự động</div>
     <div class="page-desc" id="pageDesc"></div>
 
     <div class="tab-bar" style="display:none">
-      <button class="tab-btn" onclick="switchTab('bctd')">Hệ thống báo cháy tự động</button>
-      <button class="tab-btn active" onclick="switchTab('phuongtien')">Phương tiện CC & CNCH</button>
+      <button class="tab-btn active" onclick="switchTab('bctd')"><svg class="lic-emoji" width="1.05em" height="1.05em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex-shrink:0" aria-hidden="true"><path d="M10.268 21a2 2 0 0 0 3.464 0"/><path d="M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326"/></svg> Hệ thống báo cháy tự động</button>
+      <button class="tab-btn" onclick="switchTab('phuongtien')"><svg class="lic-emoji" width="1.05em" height="1.05em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex-shrink:0" aria-hidden="true"><path d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2"/><path d="M15 18H9"/><path d="M19 18h2a1 1 0 0 0 1-1v-3.65a1 1 0 0 0-.22-.624l-3.48-4.35A1 1 0 0 0 17.52 8H14"/><circle cx="17" cy="18" r="2"/><circle cx="7" cy="18" r="2"/></svg> Phương tiện CC & CNCH</button>
     </div>
 
-    <!-- TAB 1: HỆ THỐNG BCTD (đã tách sang trang Báo cáo hệ thống báo cháy tự động) -->
-    <div class="tab-pane" id="tab-bctd">
+    <!-- TAB 1: HỆ THỐNG BCTD -->
+    <div class="tab-pane active" id="tab-bctd">
 
       <!-- ADMIN: QUẢN LÝ THIẾT BỊ -->
       <div id="adminDeviceSection" style="display:none">
@@ -297,7 +297,7 @@
     </div>
 
     <!-- TAB 2: PHƯƠNG TIỆN CC & CNCH -->
-    <div class="tab-pane active" id="tab-phuongtien">
+    <div class="tab-pane" id="tab-phuongtien">
 
       <!-- GRID 11 KHU VỰC -->
       <div id="zoneGrid">
