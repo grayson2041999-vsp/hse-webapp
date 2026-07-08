@@ -3699,6 +3699,7 @@ function cpwRender(){
   html+=_cpwStepCard(2,'Điền số lượng yêu cầu cấp phát','edit',s2,cpwStep2Body(s2,phieu));
   html+=_cpwStepCard(3,'Xuất phiếu & trình ký','file',s3,cpwStep3Body(s3,phieu));
   document.getElementById('cpw-steps').innerHTML=html;
+  if(s2==='chua'||s2==='tra_ve')cpwRenderQuantity(); // nhúng bảng nhập số lượng vào Bước 2
 }
 function cpwStep1Body(s1,pend,b2done){
   if(s1==='dat'){
@@ -3730,9 +3731,11 @@ function cpwStep1Body(s1,pend,b2done){
 function cpwStep2Body(s2,phieu){
   if(s2==='khoa')return '<div style="display:flex;align-items:center;gap:6px;font-size:13px;color:var(--text-light);">'+_ic('lock',15)+'Hoàn tất Bước 1 để mở bước này.</div>';
   if(s2==='dat')return '<div style="display:flex;align-items:center;gap:6px;color:var(--success);font-size:13.5px;">'+_ic('check',16)+'Phiếu số lượng đã được Admin duyệt.</div>';
-  if(s2==='cho_duyet')return '<div style="display:flex;align-items:center;gap:6px;color:var(--warning);font-size:13.5px;margin-bottom:10px;">'+_ic('hour',16)+'Phiếu đã gửi, đang chờ Admin duyệt.</div><button class="btn btn-outline btn-sm" onclick="cpwGoQuantity()">'+_ic('eye',15)+' Xem lại phiếu</button>';
-  if(s2==='tra_ve')return '<div style="display:flex;align-items:flex-start;gap:6px;color:var(--danger);font-size:13.5px;margin-bottom:10px;">'+_ic('x',16)+'<span>Phiếu bị Admin trả về'+(phieu&&phieu.rejectReason?': <b>'+_escH(phieu.rejectReason)+'</b>':'')+'. Vui lòng nhập lại số lượng và gửi duyệt lại.</span></div><button class="btn btn-primary btn-sm" onclick="cpwGoQuantity()">'+_ic('edit',15)+' Nhập lại số lượng</button>';
-  return '<p style="font-size:13.5px;color:var(--text-light);margin:0 0 12px;">Điền số lượng cấp phát theo thực tế rồi gửi Admin phê duyệt.</p><button class="btn btn-primary btn-sm" onclick="cpwGoQuantity()">'+_ic('edit',15)+' Nhập số lượng cấp phát</button>';
+  if(s2==='cho_duyet')return '<div style="display:flex;align-items:center;gap:6px;color:var(--warning);font-size:13.5px;">'+_ic('hour',16)+'Phiếu đã gửi, đang chờ Admin duyệt. Bước 3 sẽ mở khi được duyệt.</div>';
+  var head=(s2==='tra_ve')
+    ? '<div style="display:flex;align-items:flex-start;gap:6px;color:var(--danger);font-size:13.5px;margin-bottom:10px;">'+_ic('x',16)+'<span>Phiếu bị Admin trả về'+(phieu&&phieu.rejectReason?': <b>'+_escH(phieu.rejectReason)+'</b>':'')+'. Nhập lại số lượng rồi gửi duyệt lại.</span></div>'
+    : '<p style="font-size:13.5px;color:var(--text-light);margin:0 0 10px;">Điền số lượng cấp phát theo thực tế rồi gửi Admin phê duyệt.</p>';
+  return head+'<div id="cpw-b2-host"></div>';
 }
 function cpwStep3Body(s3,phieu){
   if(s3==='khoa')return '<div style="display:flex;align-items:center;gap:6px;font-size:13px;color:var(--text-light);">'+_ic('lock',15)+'Hoàn tất Bước 2 (phiếu được duyệt) để mở bước này.</div>';
@@ -3772,14 +3775,63 @@ function cpwResetStep1(){
   if(!confirm('Làm lại từ Bước 1? Bạn sẽ phải in và xác nhận lại danh sách.'))return;
   cpwSave({b1TrangThai:'chua',daInDanhSach:false,buoc:1}).then(function(){cpwRender();});
 }
-function cpwGoQuantity(){
-  var dv=_cpwDonVi,q=_cpwQuy;
-  showPage('phieu-yeu-cau');
-  setTimeout(function(){
-    var dvSel=document.getElementById('bc-don-vi');if(dvSel){dvSel.value=dv;}
-    var qSel=document.getElementById('bc-quy');if(qSel){qSel.value=q;}
-    if(typeof renderBaoCaoQuy==='function')renderBaoCaoQuy();
-  },80);
+// ── Bước 2 NHÚNG: bảng nhập số lượng ngay trong wizard ──
+function cpwRenderQuantity(){
+  var host=document.getElementById('cpw-b2-host'); if(!host)return;
+  var quyStr=_cpwQuy, dv=_cpwDonVi;
+  var res=(typeof computeQuyData==='function')?computeQuyData(quyStr,dv):{rows:[]};
+  var rows=res.rows||[]; _lastBcRows=rows;
+  var qData=phieuData[quyStr]||{};
+  if(!rows.length){ host.innerHTML='<div style="padding:14px;color:var(--text-light);font-size:13px;">Không có nhân viên cần cấp phát trong quý này cho đơn vị '+_escH(dv)+'. Hãy thêm nhân viên (có chức danh + định mức) rồi thử lại.</div>'; return; }
+  var b='';var stt=0;
+  rows.forEach(function(r){
+    r.items.forEach(function(it,idx){
+      stt++;var key=r.nv.id+'_'+it.tbId;var saved=qData[key]||{};
+      var tv=(saved.thucTe!==undefined&&saved.thucTe!=='')?saved.thucTe:'';
+      var gv=saved.ghiChu||'';
+      b+='<tr>'+
+        (idx===0?'<td rowspan="'+r.items.length+'" style="text-align:center;color:var(--text-light);">'+stt+'</td>'+
+          '<td rowspan="'+r.items.length+'"><strong>'+_escH(r.nv.ten)+'</strong><br><code style="font-size:11px;color:var(--text-light);">'+_escH(r.nv.danhSo)+'</code></td>'+
+          '<td rowspan="'+r.items.length+'" style="font-size:12px;">'+_escH(r.nv.chucDanh)+'</td>':'')+
+        '<td style="font-size:13px;">'+_escH(it.ten)+'</td>'+
+        '<td style="text-align:center;font-weight:600;">'+it.soLuong+'</td>'+
+        '<td style="text-align:center;"><input type="number" min="0" step="1" value="'+tv+'" '+_inputStyle+' onchange="savePhieuField(\''+quyStr+'\',\''+key+'\',\'thucTe\',this.value,'+it.soLuong+')"></td>'+
+        '<td><input type="text" value="'+_escH(gv)+'" '+_textStyle+' onchange="savePhieuField(\''+quyStr+'\',\''+key+'\',\'ghiChu\',this.value)" placeholder="Ghi chú..."></td>'+
+      '</tr>';
+    });
+  });
+  host.innerHTML=
+    '<div style="margin-bottom:10px;"><button class="btn btn-outline btn-sm" onclick="cpwFillDinhMuc()">'+_ic('zap',15)+' Điền theo định mức</button></div>'+
+    '<div class="table-wrap"><table><thead><tr>'+
+      '<th style="width:40px;text-align:center;">STT</th><th>Nhân viên</th><th>Chức danh</th><th>Trang bị</th>'+
+      '<th style="text-align:center;">Định mức</th><th style="text-align:center;">Thực tế</th><th style="min-width:150px;">Ghi chú</th>'+
+    '</tr></thead><tbody>'+b+'</tbody></table></div>'+
+    '<div style="margin-top:14px;"><button class="btn btn-success btn-sm" onclick="cpwSubmitQuantity()">'+_ic('check',15)+' Gửi phê duyệt &amp; tiếp tục</button></div>';
+}
+function cpwFillDinhMuc(){
+  var quyStr=_cpwQuy; if(!_lastBcRows.length)return;
+  var qData=phieuData[quyStr]||{};
+  var hasExisting=Object.keys(qData).some(function(k){return qData[k].thucTe!==''&&qData[k].thucTe!==undefined;});
+  if(hasExisting&&!confirm('Đã có số lượng thực tế. Ghi đè tất cả bằng số định mức?'))return;
+  if(!phieuData[quyStr])phieuData[quyStr]={};
+  _lastBcRows.forEach(function(r){r.items.forEach(function(it){var key=r.nv.id+'_'+it.tbId;if(!phieuData[quyStr][key])phieuData[quyStr][key]={};phieuData[quyStr][key].thucTe=it.soLuong;});});
+  if(typeof saveData==='function')saveData('phieu-data',phieuData);
+  cpwRenderQuantity();
+}
+function cpwSubmitQuantity(){
+  var quyStr=_cpwQuy, dv=_cpwDonVi;
+  if(!quyStr||!dv){showToast('Thiếu quý hoặc đơn vị.','warning');return;}
+  if(!_lastBcRows.length){showToast('Không có dữ liệu cần duyệt.','warning');return;}
+  var existing=BHLD.lsGet('phieu_requests').find(function(p){return p.type==='quy'&&p.quyStr===quyStr&&p.donVi===dv&&p.status==='pending';});
+  if(existing){showToast('Phiếu '+quyStr+' – '+dv+' đã gửi, đang chờ duyệt.','warning');cpwRender();return;}
+  if(!confirm('Gửi phiếu quý '+quyStr+' – '+dv+' để Admin phê duyệt?'))return;
+  var now=new Date().toISOString();var qData=phieuData[quyStr]||{};var itemsList=[];
+  _lastBcRows.forEach(function(r){r.items.forEach(function(it){var key=r.nv.id+'_'+it.tbId;var saved=qData[key]||{};itemsList.push({nvId:String(r.nv.id),nvTen:r.nv.ten,tbId:it.tbId,ten:it.ten,soLuongDinhMuc:it.soLuong,thucTe:saved.thucTe!==undefined?saved.thucTe:'',ghiChu:saved.ghiChu||''});});});
+  var phieu={type:'quy',quyStr:quyStr,donVi:dv,status:'pending',items:JSON.stringify(itemsList),submittedBy:_getCurrentUserLabel(),submittedByUsername:_getCurrentUsername(),submittedAt:now,createdAt:now};
+  BHLD.push.insert('phieu_requests',phieu).then(function(){
+    showToast('✅ Đã gửi phiếu quý – đang chờ Admin duyệt.');
+    cpwSave({buoc:2}).then(cpwRender);
+  }).catch(function(e){showToast('Gửi phiếu lỗi: '+(e&&e.message||e),'error');});
 }
 function cpwExport(){
   var p=_cpwPhieu(_cpwDonVi,_cpwQuy);
