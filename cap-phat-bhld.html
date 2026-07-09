@@ -3089,6 +3089,7 @@ const _inputStyle=`style="width:68px;padding:4px 6px;border:1px solid var(--bord
 const _textStyle=`style="width:100%;padding:4px 6px;border:1px solid var(--border);border-radius:4px;font-size:12px;"`;
 
 function savePhieuField(quyStr,key,field,value,maxVal){
+  if(field==='thucTe'&&value!==''){const num=parseFloat(value)||0;if(maxVal!==undefined&&num>maxVal){showToast(`⚠️ Không được vượt quá định mức (${maxVal})!`,'warning');value=String(maxVal);}}
   if(!phieuData[quyStr])phieuData[quyStr]={};if(!phieuData[quyStr][key])phieuData[quyStr][key]={};
   phieuData[quyStr][key][field]=(field==='thucTe')?(value===''?'':parseFloat(value)||0):value;
   saveData('phieu-data',phieuData);_updateSummaryTable(quyStr);
@@ -4762,7 +4763,7 @@ function cpwRenderQuantity(){
           nameLine+
           '<div style="display:flex;align-items:center;gap:6px;justify-content:center;">'+
             '<span style="font-size:10.5px;color:var(--text-light);white-space:nowrap;">ĐM '+it.soLuong+'</span>'+
-            '<input type="number" min="0" step="1" value="'+tv+'" style="width:50px;padding:3px 4px;border:1px solid var(--border);border-radius:4px;font-size:13.5px;font-weight:700;color:var(--primary);text-align:center;" onchange="cpwSaveField(\''+quyStr+'\',\''+key+'\',\'thucTe\',this.value,'+it.soLuong+');cpwMarkCell(this,'+it.soLuong+')">'+
+            '<input type="number" min="0" max="'+it.soLuong+'" step="1" value="'+tv+'" style="width:50px;padding:3px 4px;border:1px solid var(--border);border-radius:4px;font-size:13.5px;font-weight:700;color:var(--primary);text-align:center;" onchange="cpwOnQty(this,\''+quyStr+'\',\''+key+'\','+it.soLuong+')">'+
           '</div>'+
         '</div>';
       }).join('<div style="height:6px;"></div>');
@@ -4789,6 +4790,13 @@ function cpwRenderQuantity(){
 function cpwSaveField(quyStr,key,field,value,max){
   if(typeof savePhieuField==='function')savePhieuField(quyStr,key,field,value,max);
   cpwUpdateB2Summary();
+}
+// Nhập số thực tế ở Bước 2: chặn vượt định mức và kéo ô nhập về đúng định mức
+function cpwOnQty(el,quyStr,key,dm){
+  var v=el.value;
+  if(v!==''&&Number(v)>Number(dm)){ showToast('⚠️ Không được vượt quá định mức ('+dm+')!','warning'); v=String(dm); el.value=v; }
+  cpwSaveField(quyStr,key,'thucTe',v,dm);
+  cpwMarkCell(el,dm);
 }
 function cpwUpdateB2Summary(){
   var host=document.getElementById('cpw-b2-sum'); if(!host)return;
