@@ -4713,6 +4713,15 @@ function cpwSubmitStaged(){
   if(admin){ showToast('✅ Đã áp dụng '+(nEdit+nAdd)+' thay đổi.','success'); cpwRenderList(); }
   else { showToast('📨 Đã gửi '+(nEdit+nAdd)+' thay đổi để phê duyệt. Quy trình tạm dừng tới khi Admin duyệt.','success'); cpwRender(); }
 }
+// Rút gọn tên trang bị (CHỈ dùng ở bảng Bước 2). Không khớp quy ước → giữ nguyên tên gốc.
+function _cpwShortTB(ten){
+  if(!ten)return ten;
+  var map=[['Bộ áo liền quần','Liền'],['Bộ quần áo thợ hàn','Bộ đồ hàn'],['Bộ quần áo rời','Rời'],['Bộ quần áo nữ','Nữ'],['Giày thấp cổ','Thấp cổ'],['Giày cao cổ','Cao cổ'],['Ủng da','Ủng']];
+  for(var i=0;i<map.length;i++){
+    if(ten.indexOf(map[i][0])===0){ var m=ten.match(/cỡ\s*(\S+)/); return m?(map[i][1]+' - '+m[1]):map[i][1]; }
+  }
+  return ten;
+}
 // ── Bước 2 NHÚNG: bảng nhập số lượng ngay trong wizard ──
 function cpwRenderQuantity(){
   var host=document.getElementById('cpw-b2-host'); if(!host)return;
@@ -4727,7 +4736,7 @@ function cpwRenderQuantity(){
   if(_def&&typeof saveData==='function')saveData('phieu-data',phieuData);
   var qData=phieuData[quyStr]||{};
   var CATS=[['quanao','Quần áo'],['giay','Giày'],['mu','Mũ'],['kinh','Kính'],['aomua','Áo mưa'],['qahan','QA thợ hàn'],['gangtay','Găng tay'],['khautrang','Khẩu trang']];
-  var NO_NAME={kinh:1,aomua:1,gangtay:1,khautrang:1};
+  var NO_NAME={mu:1,kinh:1,aomua:1,gangtay:1,khautrang:1};
   var hasKhac=rows.some(function(r){return r.items.some(function(it){return (it.cat||'khac')==='khac';});});
   var cols=CATS.slice(); if(hasKhac)cols.push(['khac','Khác']);
   var thB='position:sticky;top:0;z-index:5;background:#f8fafc;font-size:11.5px;padding:6px 8px;text-align:center;border-bottom:2px solid #dbe4ee;';
@@ -4749,7 +4758,7 @@ function cpwRenderQuantity(){
         var key=r.nv.id+'_'+it.tbId;var saved=qData[key]||{};
         var tv=(saved.thucTe!==undefined&&saved.thucTe!=='')?saved.thucTe:'';
         var diff=(tv!==''&&Number(tv)!==Number(it.soLuong));
-        var nameLine=NO_NAME[c[0]]?'':'<div style="font-size:11px;color:var(--text-light);line-height:1.25;margin-bottom:4px;">'+_escH(it.ten)+'</div>';
+        var nameLine=NO_NAME[c[0]]?'':'<div style="font-size:11.5px;color:var(--text-light);line-height:1.25;margin-bottom:4px;">'+_escH(_cpwShortTB(it.ten))+'</div>';
         return '<div class="cpw-item" style="border:1px solid '+(diff?'var(--warning)':'var(--border)')+';border-radius:6px;padding:5px 7px;background:'+(diff?'#fff8e1':'#fff')+';">'+
           nameLine+
           '<div style="display:flex;align-items:center;gap:6px;justify-content:center;">'+
