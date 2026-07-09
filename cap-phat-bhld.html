@@ -4402,7 +4402,7 @@ function _computeNhuCauData(quyList){
 }
 function _renderNhuCauTable(data,quyList){
   const el=document.getElementById('nhucau-result');
-  const unitCols=NHUCAU_UNITS.map(u=>`<th style="min-width:80px;text-align:center;font-size:12px;white-space:normal;">${UNIT_ICONS[u]||''} ${u}</th>`).join('');
+  const unitCols=NHUCAU_UNITS.map(u=>`<th style="min-width:80px;text-align:center;font-size:12px;white-space:normal;">${u}</th>`).join('');
   const rows=data.map((row,idx)=>{
     const unitCells=NHUCAU_UNITS.map(u=>`<td style="text-align:center;">${row.perUnit[u]>0?row.perUnit[u]:'—'}</td>`).join('');
     const canMuaStyle=row.canMua>0?'color:#c0392b;font-weight:700;':'color:#27ae60;font-weight:600;';
