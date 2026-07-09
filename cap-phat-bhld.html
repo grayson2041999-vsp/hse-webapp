@@ -274,6 +274,7 @@
       </div>
       <div id="cpns-count" style="font-size:12.5px;color:var(--text-light);margin-bottom:8px;"></div>
       <div id="cpns-nhom-bar" style="margin-bottom:10px;"></div>
+      <div id="cpns-size-warn" style="margin-bottom:10px;"></div>
       <div class="table-wrap" id="cpns-wrap" style="max-height:66vh;"><table id="cpns-table"><thead>
         <tr>
           <th rowspan="2" style="width:44px;text-align:center;position:sticky;top:0;z-index:5;background:#f8fafc;">STT</th>
@@ -1696,6 +1697,17 @@ function _cpnsApplyDrop(srcId,newNhom,beforeId){
   ordered.forEach(function(n){ var o=daNhanVien.find(function(x){return String(x.id)===String(n.id);}); if(o)_bhldPush('update','nhanvien',o.id,{stt:o.stt,nhomId:o.nhomId,nhomNoiBo:o.nhomNoiBo}); });
   cpRenderNhanSu();
 }
+// Nhân viên thiếu cỡ: chỉ báo khi chức danh có định mức trang bị cần cỡ đó (quần áo / giày)
+function _nvMissingSizes(nv){
+  var out=[]; if(!nv)return out;
+  var _cd=(typeof getChucDanhByTen==='function')?getChucDanhByTen(nv.chucDanh):null;
+  var dmList=daDinhMuc.filter(function(d){return (_cd&&d.chucDanhId==_cd.id)||d.chucDanh===nv.chucDanh;});
+  var needQA=false,needGiay=false;
+  dmList.forEach(function(d){ var tb=getTB(d.trangBiId||d.nhomTBId); if(!tb)return; if(tb.loaiCo==='quan_ao')needQA=true; else if(tb.loaiCo==='giay')needGiay=true; });
+  if(needQA&&!nv.coQuanAo)out.push('Cỡ quần áo');
+  if(needGiay&&!nv.coGiay)out.push('Cỡ giày');
+  return out;
+}
 function cpRenderNhanSu(){
   var q=(document.getElementById('cpns-search').value||'').trim().toLowerCase();
   var dv=document.getElementById('cpns-donvi').value||'';
@@ -1833,6 +1845,13 @@ function cpRenderNhanSu(){
   var countTxt='Tìm thấy '+list.length+' nhân viên'+(pendList.length?' · '+pendList.length+' đang chờ phê duyệt':'');
   if(!canAddHere&&(typeof canEditUnit==='function')&&!(typeof isAdmin==='function'&&isAdmin())) countTxt+=' · Chọn đơn vị bạn quản lý để thêm nhân sự';
   document.getElementById('cpns-count').textContent=countTxt;
+  // Cảnh báo nhân viên thiếu cỡ (chỉ khi đã chọn 1 đơn vị) — cần bổ sung để tính cấp phát/nhu cầu
+  var _warnEl=document.getElementById('cpns-size-warn');
+  if(_warnEl){
+    var _miss=[];
+    if(dv){ daNhanVien.filter(function(n){return n.boPhan===dv;}).forEach(function(n){ var mm=_nvMissingSizes(n); if(mm.length)_miss.push({ten:n.ten,danhSo:n.danhSo,thieu:mm.join(', ')}); }); _miss.sort(function(a,b){return (a.ten||'').localeCompare(b.ten||'','vi');}); }
+    _warnEl.innerHTML=_miss.length?('<div style="background:#fff8e1;border:1px solid #ffe082;border-radius:8px;padding:10px 12px;font-size:12.5px;color:#7a5c00;"><div style="font-weight:600;margin-bottom:4px;">⚠️ '+_miss.length+' nhân viên chưa có cỡ (bổ sung để tính đủ cấp phát/nhu cầu):</div><ul style="margin:0;padding-left:18px;line-height:1.6;">'+_miss.map(function(x){return '<li>'+_escH(x.ten||'')+' <span style="color:#999;">('+_escH(x.danhSo||'—')+')</span> — thiếu <b>'+_escH(x.thieu)+'</b></li>';}).join('')+'</ul></div>'):'';
+  }
   // Thanh quản lý nhóm — hiện khi đã chọn 1 đơn vị mình quản lý
   var _bar=document.getElementById('cpns-nhom-bar');
   if(_bar){
