@@ -240,7 +240,7 @@
         <p>Tra cứu danh sách và thông tin nhân viên theo đơn vị.</p>
       </div>
       <div class="cp-tile" onclick="cpOpenSizeChart()">
-        <div class="cp-ic"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M7 6V4a1 1 0 0 1 1-1h8a1 1 0 0 1 1 1v2"/><path d="M6 6l1 14a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-14"/><path d="M10 11v5"/><path d="M14 11v5"/></svg></div>
+        <div class="cp-ic"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.38 3.46 16 2a4 4 0 0 1-8 0L3.62 3.46a2 2 0 0 0-1.34 2.23l.58 3.47a1 1 0 0 0 .99.84H6v10c0 1.1.9 2 2 2h8a2 2 0 0 0 2-2V10h2.15a1 1 0 0 0 .99-.84l.58-3.47a2 2 0 0 0-1.34-2.23z"/></svg></div>
         <h4>Tra cứu kích cỡ quần áo</h4>
         <p>Bảng thông số kích cỡ theo từng loại quần áo (kèm ảnh).</p>
       </div>
@@ -302,7 +302,7 @@
   <!-- ===== TRA CỨU KÍCH CỠ QUẦN ÁO ===== -->
   <div id="cp-sizechart" style="display:none;">
     <button class="btn btn-outline" onclick="cpShowHome()" style="padding:7px 16px;font-size:13px;margin-bottom:16px;">← Trang chủ</button>
-    <div class="page-title" style="font-size:19px;margin-bottom:14px;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;margin-right:6px" aria-hidden="true"><path d="M3 6h18"/><path d="M7 6V4a1 1 0 0 1 1-1h8a1 1 0 0 1 1 1v2"/><path d="M6 6l1 14a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-14"/></svg>Tra cứu kích cỡ quần áo</div>
+    <div class="page-title" style="font-size:19px;margin-bottom:14px;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;margin-right:6px" aria-hidden="true"><path d="M20.38 3.46 16 2a4 4 0 0 1-8 0L3.62 3.46a2 2 0 0 0-1.34 2.23l.58 3.47a1 1 0 0 0 .99.84H6v10c0 1.1.9 2 2 2h8a2 2 0 0 0 2-2V10h2.15a1 1 0 0 0 .99-.84l.58-3.47a2 2 0 0 0-1.34-2.23z"/></svg>Tra cứu kích cỡ quần áo</div>
     <div id="sc-admin-add" class="card" style="display:none;margin-bottom:16px;">
       <div style="font-weight:600;color:var(--primary);margin-bottom:10px;font-size:14px;">Thêm loại quần áo</div>
       <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;">
@@ -312,7 +312,7 @@
       </div>
       <div style="font-size:11.5px;color:var(--text-light);margin-top:8px;">Ảnh sẽ được nén nhẹ trước khi lưu để tiết kiệm dung lượng.</div>
     </div>
-    <div id="sc-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px;"></div>
+    <div id="sc-grid" style="display:flex;flex-direction:column;align-items:center;gap:22px;"></div>
   </div>
 
   <!-- Lightbox xem ảnh lớn -->
@@ -1404,13 +1404,13 @@ function scRender(){
   var admin=(typeof isAdmin==='function'&&isAdmin());
   var list=[]; try{ list=BHLD.lsGet('size_chart')||[]; }catch(e){}
   list=list.slice().sort(function(a,b){return (a.ten||'').localeCompare(b.ten||'','vi');});
-  if(!list.length){ host.innerHTML='<div style="grid-column:1/-1;text-align:center;color:var(--text-light);font-size:13px;padding:24px;">Chưa có loại quần áo nào.'+(admin?' Thêm ở khung phía trên.':'')+'</div>'; return; }
+  if(!list.length){ host.innerHTML='<div style="text-align:center;color:var(--text-light);font-size:13px;padding:24px;">Chưa có loại quần áo nào.'+(admin?' Thêm ở khung phía trên.':'')+'</div>'; return; }
   host.innerHTML=list.map(function(x){
-    var del=admin?'<button class="btn btn-danger btn-sm" style="padding:3px 8px;font-size:11.5px;" onclick="scDelete(\''+x.id+'\')">'+_ic('del',13)+' Xoá</button>':'';
-    var img=x.anh?'<img src="'+_escH(x.anh)+'" alt="'+_escH(x.ten||'')+'" style="width:100%;height:180px;object-fit:cover;cursor:zoom-in;background:#f2f4f7;" onclick="scOpenLightbox(\''+x.id+'\')">':'<div style="height:180px;display:flex;align-items:center;justify-content:center;color:var(--text-light);font-size:12px;background:#f2f4f7;">Không có ảnh</div>';
-    return '<div class="card" style="padding:0;overflow:hidden;">'+img+
-      '<div style="padding:10px 12px;display:flex;align-items:center;justify-content:space-between;gap:8px;">'+
-        '<strong style="font-size:13.5px;">'+_escH(x.ten||'')+'</strong>'+del+
+    var del=admin?'<button class="btn btn-danger btn-sm" style="padding:4px 12px;font-size:12px;" onclick="scDelete(\''+x.id+'\')">'+_ic('del',13)+' Xoá</button>':'';
+    var img=x.anh?'<img src="'+_escH(x.anh)+'" alt="'+_escH(x.ten||'')+'" style="width:100%;height:auto;display:block;cursor:zoom-in;background:#f2f4f7;" onclick="scOpenLightbox(\''+x.id+'\')">':'<div style="padding:40px;text-align:center;color:var(--text-light);font-size:12px;background:#f2f4f7;">Không có ảnh</div>';
+    return '<div class="card" style="padding:0;overflow:hidden;width:100%;max-width:1000px;text-align:center;">'+img+
+      '<div style="padding:14px;display:flex;flex-direction:column;align-items:center;gap:10px;">'+
+        '<strong style="font-size:16px;color:var(--primary);text-align:center;">'+_escH(x.ten||'')+'</strong>'+del+
       '</div></div>';
   }).join('');
 }
