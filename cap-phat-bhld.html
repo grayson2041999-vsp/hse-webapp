@@ -1888,38 +1888,141 @@ function cpnvOpen(){
   var v=document.getElementById('cp-nvmoi-wizard'); if(v)v.style.display='block';
   cpnvRender();
 }
-function cpnvAddEmployee(){
-  var units=(typeof UNIT_ORDER!=='undefined'?UNIT_ORDER:[]).filter(function(u){return typeof canEditUnit==='function'&&canEditUnit(u);});
-  if(units.length&&(!_currentUnit||!canEditUnit(_currentUnit)))_currentUnit=units[0];
-  if(typeof openModalNV==='function')openModalNV();
+function cpnvAddEmployee(){ cpnvAddDraft(); } // tương thích cũ → thêm hàng inline
+// ===== NHÂN VIÊN MỚI: nhập inline (staged) =====
+var _cpnvDrafts=[], _cpnvDraftSeq=0, _cpnvEditId=null, _cpnvUnit='';
+function _cpnvRowEl(kind,key){ return document.querySelector(kind==='edit'?'[data-cpnv-edit="'+key+'"]':'[data-cpnv-draft="'+key+'"]'); }
+function _cpnvSyncDrafts(){ _cpnvDrafts.forEach(function(d){ var tr=_cpnvRowEl('draft',d.tempId); if(tr)Object.assign(d,_cpnsReadRowEl(tr)); }); }
+function _cpnvValidate(raw){
+  var errs=[];
+  if(!raw.danhSo)errs.push('danhSo');
+  if(!raw.ten)errs.push('ten');
+  if(!raw.chucDanh||!(typeof daChucDanh!=='undefined'&&daChucDanh.find(function(x){return x.ten===raw.chucDanh;})))errs.push('chucDanh');
+  return {errs:errs};
+}
+// Ghi 1 nhân viên mới (loaiNV='moi', tháng vào làm = tháng hiện tại) vào hệ thống
+function _cpnvCommitNew(raw,unit){
+  var v=_cpnvValidate(raw); if(v.errs.length)return {ok:false,errs:v.errs};
+  var now=new Date(); var mm=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0');
+  var nvData={danhSo:raw.danhSo,ten:raw.ten,chucDanh:raw.chucDanh,boPhan:unit,coQuanAo:raw.coQuanAo||'',coGiay:raw.coGiay||'',gioiTinh:raw.gioiTinh==='nu'?'nu':'nam',loaiNV:'moi',thangCapQuanAo:'',thangCapGiay:'',thangCapMu:'',thangCapKinh:'',thangCapAoMua:'',thangCapQAHan:'',ngayVaoLam:mm};
+  var newNV=Object.assign({id:nextId(daNhanVien)},nvData);
+  daNhanVien.push(newNV); saveData('nhanvien',daNhanVien); BHLD.lsSet('nhanvien',daNhanVien); _bhldPush('insert','nhanvien',null,newNV);
+  return {ok:true,nv:newNV};
+}
+function _cpnvInputRow(kind,key,data){
+  var saveFn=kind==='edit'?("cpnvSaveEdit('"+key+"')"):("cpnvSaveDraft('"+key+"')");
+  var cancelFn=kind==='edit'?"cpnvCancelEdit()":("cpnvRemoveDraft('"+key+"')");
+  var attr=kind==='edit'?('data-cpnv-edit="'+key+'"'):('data-cpnv-draft="'+key+'"');
+  var mark=kind==='draft'?'＋':'✎';
+  var act='<div style="display:inline-flex;gap:4px;">'+
+    '<button class="btn btn-success btn-sm" style="padding:4px 8px;" title="Lưu" onclick="'+saveFn+'">'+_ic('check',13)+'</button>'+
+    '<button class="btn btn-ghost btn-sm" style="padding:4px 8px;" title="Huỷ" onclick="'+cancelFn+'">'+_ic('x',13)+'</button></div>';
+  return '<tr '+attr+' style="background:#eef5ff;">'+
+    '<td style="text-align:center;color:var(--primary-light,#4a90d9);font-weight:700;">'+mark+'</td>'+
+    '<td>'+_cpnsInp('danhSo',data.danhSo,'Danh số')+'</td>'+
+    '<td><div style="display:flex;align-items:center;gap:6px;">'+_cpnsInp('ten',data.ten,'Họ và tên')+
+      '<label style="display:inline-flex;align-items:center;gap:3px;font-size:11px;color:var(--text-light);white-space:nowrap;cursor:pointer;"><input data-f="gioiTinh" type="checkbox"'+(data.gioiTinh==='nu'?' checked':'')+' style="width:15px;height:15px;cursor:pointer;accent-color:var(--primary-light);">Nữ</label></div></td>'+
+    '<td><select data-f="chucDanh" style="width:100%;'+_CPNS_INP+'">'+_cpnsChucDanhOptions(data.chucDanh||'')+'</select></td>'+
+    '<td style="text-align:center;"><select data-f="coQuanAo" style="width:64px;'+_CPNS_INP+'">'+_cpnsSelOptions(_CPNS_QA_SIZES,data.coQuanAo)+'</select></td>'+
+    '<td style="text-align:center;"><select data-f="coGiay" style="width:74px;'+_CPNS_INP+'">'+_cpnsSelOptions(_CPNS_GIAY_SIZES,data.coGiay)+'</select></td>'+
+    '<td style="text-align:center;white-space:nowrap;">'+act+'</td></tr>';
+}
+function _cpnvViewRow(n,stt,pending){
+  var cells='<td><code style="font-size:12px;color:var(--text-light);">'+_escH(n.danhSo||'')+'</code></td>'+
+    '<td><strong>'+_escH(n.ten||'')+'</strong>'+(n.gioiTinh==='nu'?' <span style="font-size:10px;color:var(--text-light);">(Nữ)</span>':'')+'</td>'+
+    '<td style="font-size:12.5px;">'+_escH(n.chucDanh||'')+'</td>'+
+    '<td style="text-align:center;">'+_escH(n.coQuanAo||'')+'</td>'+
+    '<td style="text-align:center;">'+_escH(n.coGiay||'')+'</td>';
+  if(pending){
+    return '<tr style="opacity:.6;background:#f7f8fb;"><td style="text-align:center;">'+stt+'</td>'+cells+
+      '<td style="text-align:center;"><span style="display:inline-flex;align-items:center;gap:4px;background:#fff3cd;color:#856404;font-size:11px;font-weight:700;border-radius:20px;padding:3px 10px;white-space:nowrap;">⏳ Chờ duyệt</span></td></tr>';
+  }
+  var act='<button class="btn btn-ghost btn-sm" style="padding:4px 8px;" title="Sửa" onclick="cpnvEditRow(\''+n.id+'\')">'+_ic('edit',13)+'</button> <button class="btn btn-danger btn-sm" style="padding:4px 8px;" title="Xoá" onclick="cpnvDelRow(\''+n.id+'\')">'+_ic('del',13)+'</button>';
+  return '<tr><td style="text-align:center;color:var(--text-light);">'+stt+'</td>'+cells+'<td style="text-align:center;white-space:nowrap;">'+act+'</td></tr>';
+}
+function cpnvUnitChange(u){ _cpnvUnit=u; _cpnvEditId=null; _cpnvDrafts=[]; cpnvRender(); }
+function cpnvAddDraft(){
+  if(!(typeof canEditUnit==='function'&&canEditUnit(_cpnvUnit))){ showToast('Bạn không có quyền đơn vị này.','warning'); return; }
+  _cpnvSyncDrafts();
+  _cpnvDrafts.push({tempId:'m'+(++_cpnvDraftSeq),danhSo:'',ten:'',chucDanh:'',gioiTinh:'nam',coQuanAo:'',coGiay:''});
+  cpnvRender();
+  var key='m'+_cpnvDraftSeq;
+  setTimeout(function(){ var tr=_cpnvRowEl('draft',key); if(tr){ var i=tr.querySelector('[data-f="danhSo"]'); if(i)i.focus(); tr.scrollIntoView({block:'nearest'}); } },0);
+}
+function cpnvRemoveDraft(id){ _cpnvSyncDrafts(); _cpnvDrafts=_cpnvDrafts.filter(function(d){return d.tempId!==id;}); cpnvRender(); }
+function cpnvSaveDraft(id){
+  _cpnvSyncDrafts();
+  var d=_cpnvDrafts.find(function(x){return x.tempId===id;}); if(!d)return;
+  var res=_cpnvCommitNew(d,_cpnvUnit);
+  if(!res.ok){ _cpnsMarkErrors(_cpnvRowEl('draft',id),res.errs); showToast('Vui lòng kiểm tra các ô được tô đỏ.','error'); return; }
+  _cpnvDrafts=_cpnvDrafts.filter(function(x){return x.tempId!==id;});
+  cpnvRender(); showToast('✅ Đã lưu nhân viên mới.');
+}
+function cpnvEditRow(id){
+  var nv=daNhanVien.find(function(x){return String(x.id)===String(id);}); if(!nv)return;
+  if(_cpnvPendingIds().has(String(id))){ showToast('Nhân viên này đã gửi, đang chờ duyệt.','warning'); return; }
+  _cpnvSyncDrafts(); _cpnvEditId=String(id); cpnvRender();
+  setTimeout(function(){ var tr=_cpnvRowEl('edit',String(id)); if(tr){ var i=tr.querySelector('[data-f="danhSo"]'); if(i)i.focus(); } },0);
+}
+function cpnvCancelEdit(){ _cpnvEditId=null; cpnvRender(); }
+function cpnvSaveEdit(id){
+  var tr=_cpnvRowEl('edit',String(id)); if(!tr)return;
+  var raw=_cpnsReadRowEl(tr); var v=_cpnvValidate(raw);
+  if(v.errs.length){ _cpnsMarkErrors(tr,v.errs); showToast('Vui lòng kiểm tra các ô được tô đỏ.','error'); return; }
+  var idx=daNhanVien.findIndex(function(x){return String(x.id)===String(id);}); if(idx<0)return;
+  daNhanVien[idx]=Object.assign({},daNhanVien[idx],{danhSo:raw.danhSo,ten:raw.ten,chucDanh:raw.chucDanh,coQuanAo:raw.coQuanAo||'',coGiay:raw.coGiay||'',gioiTinh:raw.gioiTinh==='nu'?'nu':'nam'});
+  saveData('nhanvien',daNhanVien); BHLD.lsSet('nhanvien',daNhanVien); _bhldPush('update','nhanvien',id,daNhanVien[idx]);
+  _cpnvEditId=null; cpnvRender(); showToast('✅ Đã cập nhật.');
+}
+function cpnvDelRow(id){
+  var nv=daNhanVien.find(function(x){return String(x.id)===String(id);}); if(!nv)return;
+  if(_cpnvPendingIds().has(String(id))){ showToast('Nhân viên này đã gửi, không thể xoá.','warning'); return; }
+  if(!confirm('Xoá nhân viên mới "'+(nv.ten||'')+'"?'))return;
+  daNhanVien=daNhanVien.filter(function(x){return String(x.id)!==String(id);});
+  saveData('nhanvien',daNhanVien); BHLD.lsSet('nhanvien',daNhanVien);
+  if(BHLD&&BHLD.push&&BHLD.push.delete)BHLD.push.delete('nhanvien',id).catch(function(){});
+  cpnvRender();
 }
 function cpnvRender(){
   var host=document.getElementById('cpnv-steps'); if(!host)return;
-  var newEmps=_cpnvNewEmps();
-  var pendIds=_cpnvPendingIds();
-  var toSend=newEmps.filter(function(n){return !pendIds.has(String(n.id));});
-  var pendingEmps=newEmps.filter(function(n){return pendIds.has(String(n.id));});
+  var admin=(typeof isAdmin==='function'&&isAdmin());
+  var units=(typeof UNIT_ORDER!=='undefined'?UNIT_ORDER:[]).filter(function(u){return typeof canEditUnit==='function'&&canEditUnit(u);});
   var _meUser=(typeof _getCurrentUsername==='function')?_getCurrentUsername():'';
   var approved=BHLD.lsGet('phieu_requests').filter(function(p){return p.type==='nv_moi'&&p.status==='approved'&&String(p.submittedByUsername||'')===String(_meUser);})
     .sort(function(a,b){return new Date(b.reviewedAt||b.createdAt||0)-new Date(a.reviewedAt||a.createdAt||0);}).slice(0,20);
 
-  // Bước 1
-  var b1='<p style="font-size:12.5px;color:var(--text-light);margin:0 0 10px;">Thêm nhân viên mới (có thể nhiều người). Tháng vào làm tự lấy theo tháng hiện tại. Xong bấm Gửi phê duyệt.</p>'+
-    '<button class="btn btn-primary btn-sm" onclick="cpnvAddEmployee()">'+_ic('userplus',15)+' Thêm nhân viên</button>';
-  if(newEmps.length){
-    b1+='<div style="margin-top:12px;"><div style="font-size:12.5px;color:var(--text-light);margin-bottom:6px;">Danh sách nhân viên mới ('+newEmps.length+'):</div>'+
-      '<div class="table-wrap"><table><thead><tr><th style="width:40px;text-align:center;">STT</th><th>Danh số</th><th>Họ tên</th><th>Chức danh</th><th>Đơn vị</th><th style="text-align:center;">Trạng thái</th></tr></thead><tbody>'+
-      newEmps.map(function(n,i){var st=pendIds.has(String(n.id))?_cpwBadge('cho_duyet'):_cpwBadge('dang_lam');
-        return '<tr><td style="text-align:center;">'+(i+1)+'</td><td>'+_escH(n.danhSo||'')+'</td><td><strong>'+_escH(n.ten||'')+'</strong></td><td style="font-size:12.5px;">'+_escH(n.chucDanh||'')+'</td><td style="font-size:12.5px;">'+_escH(n.boPhan||'')+'</td><td style="text-align:center;">'+st+'</td></tr>';
-      }).join('')+'</tbody></table></div></div>';
+  // Bước 1 — nhập inline
+  var b1, s1;
+  if(admin||!units.length){
+    b1='<div style="display:flex;align-items:flex-start;gap:6px;color:var(--text-light);font-size:13px;">'+_ic('lock',15)+'<span>'+(admin?'Thêm nhân viên mới là thao tác của user đơn vị. Admin phê duyệt ở trang Phiếu yêu cầu, không nhập ở đây.':'Bạn không có đơn vị nào được phép nhập nhân viên mới.')+'</span></div>';
+    s1='khoa';
   } else {
-    b1+='<div style="margin-top:10px;font-size:13px;color:var(--text-light);">Chưa có nhân viên mới. Bấm "Thêm nhân viên" để nhập.</div>';
+    if(!_cpnvUnit||units.indexOf(_cpnvUnit)<0)_cpnvUnit=units[0];
+    var pendIds=_cpnvPendingIds();
+    var listU=daNhanVien.filter(function(n){return n.loaiNV==='moi'&&n.boPhan===_cpnvUnit;}).sort(function(a,b){return (a.ten||'').localeCompare(b.ten||'','vi');});
+    var toSend=listU.filter(function(n){return !pendIds.has(String(n.id));});
+    var pendCount=listU.length-toSend.length;
+    var sel = units.length>1
+      ? '<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;"><label style="font-size:12.5px;color:var(--text-light);">Đơn vị:</label><select onchange="cpnvUnitChange(this.value)" style="padding:6px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;">'+units.map(function(u){return '<option value="'+_escH(u)+'"'+(u===_cpnvUnit?' selected':'')+'>'+_escH(u)+'</option>';}).join('')+'</select></div>'
+      : '<div style="font-size:12.5px;color:var(--text-light);margin-bottom:10px;">Đơn vị: <b>'+_escH(_cpnvUnit)+'</b></div>';
+    var body='';var stt=0;
+    listU.forEach(function(n){
+      stt++;
+      if(String(n.id)===String(_cpnvEditId)) body+=_cpnvInputRow('edit',String(n.id),{danhSo:n.danhSo,ten:n.ten,chucDanh:n.chucDanh,gioiTinh:n.gioiTinh,coQuanAo:n.coQuanAo,coGiay:n.coGiay});
+      else body+=_cpnvViewRow(n,stt,pendIds.has(String(n.id)));
+    });
+    _cpnvDrafts.forEach(function(d){ body+=_cpnvInputRow('draft',d.tempId,d); });
+    if(!body) body='<tr><td colspan="7" style="text-align:center;color:var(--text-light);padding:16px;font-size:13px;">Chưa có nhân viên mới. Bấm “＋ Thêm nhân viên mới” để nhập.</td></tr>';
+    b1='<p style="font-size:12.5px;color:var(--text-light);margin:0 0 10px;">Nhập nhân viên mới cho đơn vị của bạn — tháng vào làm tự lấy tháng hiện tại. Lưu từng người rồi bấm <b>Gửi phê duyệt</b>.</p>'+
+      sel+
+      '<div class="table-wrap"><table><thead><tr><th style="width:34px;text-align:center;">STT</th><th>Danh số</th><th>Họ và tên</th><th>Chức danh</th><th style="text-align:center;">Cỡ QA</th><th style="text-align:center;">Cỡ giày</th><th style="text-align:center;">Thao tác</th></tr></thead><tbody>'+body+'</tbody></table></div>'+
+      '<div style="margin-top:10px;display:flex;gap:10px;flex-wrap:wrap;align-items:center;">'+
+        '<button class="btn btn-outline btn-sm" onclick="cpnvAddDraft()">'+_ic('userplus',14)+' Thêm nhân viên mới</button>'+
+        (toSend.length?'<button class="btn btn-success btn-sm" onclick="cpnvSubmit()">'+_ic('check',14)+' Gửi phê duyệt ('+toSend.length+')</button>':'')+
+        (pendCount?'<span style="font-size:12.5px;color:var(--warning);display:inline-flex;align-items:center;gap:4px;">'+_ic('hour',14)+pendCount+' đang chờ duyệt</span>':'')+
+      '</div>';
+    s1=(pendCount&&!toSend.length&&!_cpnvDrafts.length)?'cho_duyet':'dang_lam';
   }
-  if(newEmps.length){
-    if(pendingEmps.length) b1+='<div style="display:flex;align-items:center;gap:6px;color:var(--warning);font-size:13px;margin-top:10px;">'+_ic('hour',15)+pendingEmps.length+' nhân viên đã gửi, đang chờ Admin duyệt.</div>';
-    if(toSend.length) b1+='<div style="margin-top:12px;"><button class="btn btn-success btn-sm" onclick="cpnvSubmit()">'+_ic('check',15)+' Gửi phê duyệt ('+toSend.length+' NV)</button></div>';
-  }
-  var s1 = (newEmps.length===0) ? 'dang_lam' : (toSend.length ? 'dang_lam' : 'cho_duyet');
 
   // Bước 2 — Xuất phiếu & trình ký (sau khi Admin duyệt)
   var s2 = approved.length ? 'san_sang' : 'khoa';
@@ -2357,7 +2460,6 @@ function saveNVVaXuatPhieu(){
   if(!m||!y||y.length!==4){showToast('Vui lòng chọn tháng bắt đầu làm việc cho nhân viên mới.','error');return;}
   const ok=saveNV();
   if(ok===false)return;
-  showToast('✅ Đã lưu nhân viên mới. Vào trang Phiếu yêu cầu để lập phiếu xuất cho nhân viên mới.','success');
 }
 function deleteNV(id){
   if(isViewOnly()){showToast('Bạn không có quyền chỉnh sửa đơn vị này.','error');return;}
