@@ -1420,7 +1420,20 @@ var _CPNS_GIAY_SIZES=['38','39/40','41','42','43','44/45'];
 function _cpnsSelOptions(list,sel){ var o='<option value="">--</option>'; list.forEach(function(v){ o+='<option value="'+_escH(v)+'"'+(String(v)===String(sel||'')?' selected':'')+'>'+_escH(v)+'</option>'; }); return o; }
 var _CPNS_INP='padding:4px 6px;border:1px solid var(--primary-light,#4a90d9);border-radius:5px;font-size:12.5px;box-sizing:border-box;';
 function _cpnsInp(field,val,ph){ return '<input data-f="'+field+'" type="text" value="'+_escH(val||'')+'" placeholder="'+(ph||'')+'" style="width:100%;'+_CPNS_INP+'" onkeydown="_cpnsKey(event,this)">'; }
-function _cpnsInpMonth(field,mmYYYY){ return '<input data-f="'+field+'" type="text" value="'+_escH(mmYYYY||'')+'" placeholder="MM/YYYY" maxlength="7" oninput="_autoSlash(this)" onkeydown="_cpnsKey(event,this)" style="width:74px;text-align:center;'+_CPNS_INP+'">'; }
+function _cpnsInpMonth(field,mmYYYY,disabled){
+  var extra=disabled?' disabled title="Chỉ áp dụng cho chức danh Thợ hàn"':'';
+  var st=disabled?'background:#eceef1;color:#9aa0a8;cursor:not-allowed;':'';
+  return '<input data-f="'+field+'" type="text" value="'+_escH(disabled?'':(mmYYYY||''))+'" placeholder="'+(disabled?'N/A':'MM/YYYY')+'" maxlength="7" oninput="_autoSlash(this)" onkeydown="_cpnsKey(event,this)"'+extra+' style="width:74px;text-align:center;'+st+_CPNS_INP+'">';
+}
+// Bật/khoá ô tháng cấp QA thợ hàn theo chức danh của chính hàng đó
+function _cpnsToggleQA(sel){
+  var tr=sel.closest&&sel.closest('tr'); if(!tr)return;
+  var qa=tr.querySelector('[data-f="thangCapQAHan"]'); if(!qa)return;
+  var isW=(sel.value==='Thợ hàn');
+  qa.disabled=!isW;
+  if(isW){ qa.placeholder='MM/YYYY'; qa.style.background=''; qa.style.color=''; qa.style.cursor=''; }
+  else { qa.value=''; qa.placeholder='N/A'; qa.style.background='#eceef1'; qa.style.color='#9aa0a8'; qa.style.cursor='not-allowed'; }
+}
 // Enter = lưu hàng, Esc = huỷ hàng
 function _cpnsKey(ev,el){
   if(ev.key==='Enter'){ var tr=el.closest('tr'); if(!tr)return; if(tr.hasAttribute('data-cpns-edit'))cpnsSaveEdit(tr.getAttribute('data-cpns-edit')); else if(tr.hasAttribute('data-cpns-draft'))cpnsSaveDraft(tr.getAttribute('data-cpns-draft')); ev.preventDefault(); }
@@ -1463,7 +1476,7 @@ function _cpnsInputRow(kind,key,data,unitLabel){
     '<td><div style="display:flex;align-items:center;gap:6px;">'+_cpnsInp('ten',data.ten,'Họ và tên')+
       '<label style="display:inline-flex;align-items:center;gap:3px;font-size:11px;color:var(--text-light);white-space:nowrap;cursor:pointer;" title="Nhân viên nữ"><input data-f="gioiTinh" type="checkbox"'+(data.gioiTinh==='nu'?' checked':'')+' style="width:15px;height:15px;cursor:pointer;accent-color:var(--primary-light);">Nữ</label>'+
     '</div></td>'+
-    '<td><select data-f="chucDanh" style="width:100%;'+_CPNS_INP+'">'+_cpnsChucDanhOptions(data.chucDanh||'')+'</select></td>'+
+    '<td><select data-f="chucDanh" onchange="_cpnsToggleQA(this)" style="width:100%;'+_CPNS_INP+'">'+_cpnsChucDanhOptions(data.chucDanh||'')+'</select></td>'+
     '<td style="font-size:12px;color:var(--text-light);">'+_escH(unitLabel||'')+'</td>'+
     '<td style="text-align:center;"><select data-f="coQuanAo" style="width:64px;'+_CPNS_INP+'">'+_cpnsSelOptions(_CPNS_QA_SIZES,data.coQuanAo)+'</select></td>'+
     '<td style="text-align:center;"><select data-f="coGiay" style="width:74px;'+_CPNS_INP+'">'+_cpnsSelOptions(_CPNS_GIAY_SIZES,data.coGiay)+'</select></td>'+
@@ -1472,7 +1485,7 @@ function _cpnsInputRow(kind,key,data,unitLabel){
     '<td style="text-align:center;">'+_cpnsInpMonth('thangCapMu',data.thangCapMu)+'</td>'+
     '<td style="text-align:center;">'+_cpnsInpMonth('thangCapKinh',data.thangCapKinh)+'</td>'+
     '<td style="text-align:center;">'+_cpnsInpMonth('thangCapAoMua',data.thangCapAoMua)+'</td>'+
-    '<td style="text-align:center;">'+_cpnsInpMonth('thangCapQAHan',data.thangCapQAHan)+'</td>'+
+    '<td style="text-align:center;">'+_cpnsInpMonth('thangCapQAHan',data.thangCapQAHan,(data.chucDanh!=='Thợ hàn'))+'</td>'+
     '<td style="text-align:center;white-space:nowrap;">'+act+'</td>'+
   '</tr>';
 }
