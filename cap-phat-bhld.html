@@ -304,12 +304,15 @@
     <button class="btn btn-outline" onclick="cpShowHome()" style="padding:7px 16px;font-size:13px;margin-bottom:16px;">← Trang chủ</button>
     <div class="page-title" style="font-size:19px;margin-bottom:14px;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;margin-right:6px" aria-hidden="true"><path d="M20.38 3.46 16 2a4 4 0 0 1-8 0L3.62 3.46a2 2 0 0 0-1.34 2.23l.58 3.47a1 1 0 0 0 .99.84H6v10c0 1.1.9 2 2 2h8a2 2 0 0 0 2-2V10h2.15a1 1 0 0 0 .99-.84l.58-3.47a2 2 0 0 0-1.34-2.23z"/></svg>Tra cứu kích cỡ quần áo</div>
     <div id="sc-admin-add" class="card" style="display:none;margin-bottom:16px;">
-      <div style="font-weight:600;color:var(--primary);margin-bottom:10px;font-size:14px;">Thêm loại quần áo</div>
+      <div style="font-weight:600;color:var(--primary);margin-bottom:10px;font-size:14px;">Thêm / sửa loại quần áo</div>
       <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;">
-        <div style="flex:1;min-width:220px;"><label style="font-size:12.5px;color:var(--text-light);display:block;margin-bottom:4px;">Tên loại quần áo *</label><input id="sc-ten" type="text" placeholder="VD: Bộ áo liền quần nam" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;"></div>
-        <div style="min-width:220px;"><label style="font-size:12.5px;color:var(--text-light);display:block;margin-bottom:4px;">Ảnh thông số kích cỡ * (tối đa 2)</label><input id="sc-file" type="file" accept="image/*" multiple style="font-size:12.5px;"></div>
-        <button class="btn btn-primary btn-sm" onclick="scAdd()" style="padding:8px 16px;">＋ Thêm</button>
+        <div style="flex:1;min-width:200px;"><label style="font-size:12.5px;color:var(--text-light);display:block;margin-bottom:4px;">Tên loại quần áo *</label><input id="sc-ten" type="text" placeholder="VD: Bộ áo liền quần nam" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;"></div>
+        <div style="min-width:150px;"><label style="font-size:12.5px;color:var(--text-light);display:block;margin-bottom:4px;">Ảnh 1 *</label><input id="sc-file-1" type="file" accept="image/*" style="font-size:12.5px;"></div>
+        <div style="min-width:150px;"><label style="font-size:12.5px;color:var(--text-light);display:block;margin-bottom:4px;">Ảnh 2 (tuỳ chọn)</label><input id="sc-file-2" type="file" accept="image/*" style="font-size:12.5px;"></div>
+        <button id="sc-save-btn" class="btn btn-primary btn-sm" onclick="scSave()" style="padding:8px 16px;">＋ Thêm</button>
+        <button id="sc-cancel-btn" class="btn btn-outline btn-sm" onclick="scCancelEdit()" style="padding:8px 16px;display:none;">Huỷ</button>
       </div>
+      <div id="sc-edit-note" style="display:none;font-size:12px;color:#7a5c00;background:#fff8e1;border:1px solid #ffe082;border-radius:6px;padding:8px 10px;margin-top:8px;"></div>
       <div style="font-size:11.5px;color:var(--text-light);margin-top:8px;">Ảnh sẽ được nén nhẹ trước khi lưu để tiết kiệm dung lượng.</div>
     </div>
     <div id="sc-grid" style="display:flex;flex-direction:column;align-items:center;gap:22px;"></div>
@@ -1415,7 +1418,9 @@ function scRender(){
   list=list.slice().sort(function(a,b){return (a.ten||'').localeCompare(b.ten||'','vi');});
   if(!list.length){ host.innerHTML='<div style="text-align:center;color:var(--text-light);font-size:13px;padding:24px;">Chưa có loại quần áo nào.'+(admin?' Thêm ở khung phía trên.':'')+'</div>'; return; }
   host.innerHTML=list.map(function(x){
-    var del=admin?'<button class="btn btn-danger btn-sm" style="padding:4px 12px;font-size:12px;" onclick="scDelete(\''+x.id+'\')">'+_ic('del',13)+' Xoá</button>':'';
+    var del=admin?('<div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;">'+
+      '<button class="btn btn-outline btn-sm" style="padding:4px 12px;font-size:12px;" onclick="scStartEdit(\''+x.id+'\')">'+_ic('edit',13)+' Sửa</button>'+
+      '<button class="btn btn-danger btn-sm" style="padding:4px 12px;font-size:12px;" onclick="scDelete(\''+x.id+'\')">'+_ic('del',13)+' Xoá</button></div>'):'';
     var imgs=_scImgs(x);
     var imgHtml=imgs.length
       ? imgs.map(function(u,idx){return '<img src="'+_escH(u)+'" alt="'+_escH(x.ten||'')+'" style="width:100%;height:auto;display:block;cursor:zoom-in;background:#f2f4f7;'+(idx>0?'border-top:3px solid #fff;':'')+'" onclick="scOpenLightbox(\''+x.id+'\','+idx+')">';}).join('')
@@ -1446,20 +1451,59 @@ function _scCompressImage(file){
     reader.readAsDataURL(file);
   });
 }
-function scAdd(){
+var _scEditId=null;
+// Trả về dataURL cho 1 ô ảnh: có file mới → nén file; không có → giữ ảnh cũ
+function _scSlot(file,existing){ return file?_scCompressImage(file):Promise.resolve(existing||null); }
+function scStartEdit(id){
+  if(!(typeof isAdmin==='function'&&isAdmin())){ showToast('Chỉ quản trị viên.','error'); return; }
+  var list=[]; try{ list=BHLD.lsGet('size_chart')||[]; }catch(e){}
+  var rec=list.find(function(r){return String(r.id)===String(id);}); if(!rec)return;
+  _scEditId=String(id);
+  document.getElementById('sc-ten').value=rec.ten||'';
+  var f1=document.getElementById('sc-file-1'); if(f1)f1.value='';
+  var f2=document.getElementById('sc-file-2'); if(f2)f2.value='';
+  var imgs=_scImgs(rec);
+  var note=document.getElementById('sc-edit-note');
+  if(note){ note.style.display=''; note.innerHTML='Đang sửa: <b>'+_escH(rec.ten||'')+'</b>. Để trống ô ảnh nếu muốn giữ ảnh hiện tại.'+(imgs.length?('<div style="display:flex;gap:10px;margin-top:6px;flex-wrap:wrap;">'+imgs.map(function(u,i){return '<div style="text-align:center;font-size:11px;color:#8a6d00;">Ảnh '+(i+1)+'<br><img src="'+_escH(u)+'" style="height:56px;border:1px solid var(--border);border-radius:4px;margin-top:2px;"></div>';}).join('')+'</div>'):''); }
+  var btn=document.getElementById('sc-save-btn'); if(btn)btn.innerHTML='Lưu thay đổi';
+  var cb=document.getElementById('sc-cancel-btn'); if(cb)cb.style.display='';
+  var add=document.getElementById('sc-admin-add'); if(add)add.scrollIntoView({block:'nearest'});
+  document.getElementById('sc-ten').focus();
+}
+function scCancelEdit(){
+  _scEditId=null;
+  document.getElementById('sc-ten').value='';
+  var f1=document.getElementById('sc-file-1'); if(f1)f1.value='';
+  var f2=document.getElementById('sc-file-2'); if(f2)f2.value='';
+  var note=document.getElementById('sc-edit-note'); if(note){ note.style.display='none'; note.innerHTML=''; }
+  var btn=document.getElementById('sc-save-btn'); if(btn)btn.innerHTML='＋ Thêm';
+  var cb=document.getElementById('sc-cancel-btn'); if(cb)cb.style.display='none';
+}
+function scSave(){
   if(!(typeof isAdmin==='function'&&isAdmin())){ showToast('Chỉ quản trị viên.','error'); return; }
   var ten=(document.getElementById('sc-ten').value||'').trim();
-  var fileEl=document.getElementById('sc-file'); var files=(fileEl&&fileEl.files)?Array.prototype.slice.call(fileEl.files):[];
   if(!ten){ showToast('Vui lòng nhập tên loại quần áo.','error'); return; }
-  if(!files.length){ showToast('Vui lòng chọn ảnh thông số kích cỡ.','error'); return; }
-  if(files.length>2){ showToast('Mỗi loại tối đa 2 ảnh.','warning'); return; }
+  var f1el=document.getElementById('sc-file-1'), f2el=document.getElementById('sc-file-2');
+  var f1=f1el&&f1el.files&&f1el.files[0], f2=f2el&&f2el.files&&f2el.files[0];
+  var list=[]; try{ list=BHLD.lsGet('size_chart')||[]; }catch(e){}
+  var rec=_scEditId?list.find(function(r){return String(r.id)===String(_scEditId);}):null;
+  var existing=rec?_scImgs(rec):[];
+  if(!_scEditId&&!f1){ showToast('Vui lòng chọn Ảnh 1.','error'); return; }
   showToast('Đang xử lý ảnh…');
-  Promise.all(files.map(function(f){return _scCompressImage(f);})).then(function(urls){
-    urls=urls.filter(Boolean);
-    var rec={id:(BHLD.genId?BHLD.genId():(Date.now().toString(36)+Math.random().toString(36).slice(2,6))),ten:ten,anh:(urls.length>1?JSON.stringify(urls):urls[0])};
-    BHLD.push.insert('size_chart',rec).catch(function(e){ showToast('⚠️ Lưu lên database lỗi: '+(e&&e.message||e)+' (đã lưu tạm trên máy)','warning'); });
-    document.getElementById('sc-ten').value=''; if(fileEl)fileEl.value='';
-    scRender(); showToast('✅ Đã thêm loại quần áo.');
+  Promise.all([_scSlot(f1,existing[0]),_scSlot(f2,existing[1])]).then(function(res){
+    var urls=res.filter(Boolean);
+    if(!urls.length){ showToast('Cần ít nhất 1 ảnh.','error'); return; }
+    var anhVal=urls.length>1?JSON.stringify(urls):urls[0];
+    if(_scEditId){
+      var full={id:_scEditId,ten:ten,anh:anhVal}; if(rec&&rec.createdAt)full.createdAt=rec.createdAt;
+      BHLD.push.insert('size_chart',full).catch(function(e){ showToast('⚠️ Lưu lên database lỗi: '+(e&&e.message||e)+' (đã lưu tạm trên máy)','warning'); });
+      scCancelEdit(); scRender(); showToast('✅ Đã cập nhật.');
+    } else {
+      var newRec={id:(BHLD.genId?BHLD.genId():(Date.now().toString(36)+Math.random().toString(36).slice(2,6))),ten:ten,anh:anhVal};
+      BHLD.push.insert('size_chart',newRec).catch(function(e){ showToast('⚠️ Lưu lên database lỗi: '+(e&&e.message||e)+' (đã lưu tạm trên máy)','warning'); });
+      document.getElementById('sc-ten').value=''; if(f1el)f1el.value=''; if(f2el)f2el.value='';
+      scRender(); showToast('✅ Đã thêm loại quần áo.');
+    }
   }).catch(function(e){ showToast('Lỗi ảnh: '+(e&&e.message||e),'error'); });
 }
 function scDelete(id){
@@ -1467,6 +1511,7 @@ function scDelete(id){
   var list=[]; try{ list=BHLD.lsGet('size_chart')||[]; }catch(e){}
   var x=list.find(function(r){return String(r.id)===String(id);});
   if(!confirm('Xoá loại "'+(x?x.ten:'')+'"?'))return;
+  if(String(_scEditId)===String(id))scCancelEdit();
   BHLD.push.delete('size_chart',id).catch(function(){});
   scRender();
 }
