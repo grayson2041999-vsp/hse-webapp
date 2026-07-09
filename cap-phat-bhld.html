@@ -1978,6 +1978,7 @@ function cpGoQuarterly(){
   var pk=document.getElementById('nv-unit-picker'); if(pk)pk.style.display='none';
   var dt=document.getElementById('nv-unit-detail'); if(dt)dt.style.display='none';
   var wz=document.getElementById('cp-wizard'); if(wz)wz.style.display='block';
+  var mt=document.getElementById('cp-main-title'); if(mt)mt.style.display='none';
   cpwInit();
 }
 // Mở trang Phê duyệt (chỉ tab Chờ duyệt)
@@ -4340,6 +4341,7 @@ function cpwInit(){
 function cpwOnSelect(){
   _cpwDonVi=document.getElementById('cpw-donvi').value||'';
   _cpwQuy=document.getElementById('cpw-quy').value||'';
+  _cpwLstEditId=null; _cpwLstDrafts=[];
   var steps=document.getElementById('cpw-steps');
   if(!_cpwDonVi||!_cpwQuy){steps.innerHTML='<div class="card" style="color:var(--text-light);">Chọn đơn vị và quý để bắt đầu.</div>';return;}
   steps.innerHTML='<div class="card" style="color:var(--text-light);">Đang tải tiến trình…</div>';
@@ -4385,6 +4387,7 @@ function cpwRender(){
     html+='<div style="margin-top:6px;text-align:right;"><button class="btn btn-outline btn-sm" style="color:var(--danger);border-color:#eab7b2;" onclick="cpwResetTest()">'+_ic('undo',15)+' Reset đơn vị Test</button></div>';
   }
   document.getElementById('cpw-steps').innerHTML=html;
+  if(s1==='dang_lam')cpwRenderList(); // nhúng bảng kiểm tra danh sách vào Bước 1
   if(s2==='chua'||s2==='tra_ve')cpwRenderQuantity(); // nhúng bảng nhập số lượng vào Bước 2
 }
 function cpwStep1Body(s1,pend,b2done){
@@ -4396,23 +4399,14 @@ function cpwStep1Body(s1,pend,b2done){
     return '<div style="display:flex;align-items:flex-start;gap:6px;color:var(--warning);font-size:13.5px;margin-bottom:10px;">'+_ic('hour',16)+'<span>Bạn đã gửi <b>'+pend.length+'</b> thay đổi nhân sự, đang chờ Admin duyệt. Bước này tự mở lại khi được duyệt (hoặc quay về đầu nếu bị trả lại).</span></div>'+
       '<button class="btn btn-outline btn-sm" onclick="cpwEditList()">'+_ic('eye',15)+' Xem / chỉnh sửa danh sách</button>';
   }
-  // dang_lam — chia 2 bước nhỏ, ép đúng quy trình
-  var got=_cpwState.daInDanhSach;
-  var subA='<div style="margin-bottom:14px;">'+
-      '<div style="font-weight:600;font-size:13.5px;color:var(--text);margin-bottom:6px;">Bước 1.1 — Tải Excel danh sách để kiểm tra</div>'+
-      '<p style="font-size:12.5px;color:var(--text-light);margin:0 0 8px;">File Excel hiển thị đầy đủ: cỡ quần áo, cỡ giày và các tháng cấp của từng nhân viên.</p>'+
-      '<button class="btn btn-primary btn-sm" onclick="cpwExportExcel()">'+_ic('sheet',15)+' Tải Excel danh sách</button>'+
-      (got?' <span style="display:inline-flex;align-items:center;gap:4px;color:var(--success);font-size:12.5px;margin-left:6px;">'+_ic('check',14)+'Đã tải — hãy mở file kiểm tra</span>':'')+
-    '</div>'+
-    '<div style="border-top:1px dashed var(--border);padding-top:14px;'+(got?'':'opacity:.45;pointer-events:none;')+'">'+
-      '<div style="font-weight:600;font-size:13.5px;color:var(--text);margin-bottom:8px;">Bước 1.2 — Sau khi kiểm tra, chọn một</div>'+
-      '<div style="display:flex;gap:10px;flex-wrap:wrap;">'+
-        '<button class="btn btn-success btn-sm" onclick="cpwContinueStep1()">'+_ic('check',15)+' Danh sách đã đúng — Tiếp tục</button>'+
-        '<button class="btn btn-outline btn-sm" onclick="cpwEditList()">'+_ic('edit',15)+' Cần chỉnh sửa danh sách</button>'+
-      '</div>'+
-      (got?'':'<div style="font-size:12px;color:var(--text-light);margin-top:8px;">Hãy tải Excel ở Bước 1.1 để kiểm tra trước khi chọn.</div>')+
-    '</div>';
-  return subA;
+  // dang_lam — kiểm tra danh sách trực tiếp trên bảng, sửa inline nếu cần
+  var canEd=(typeof canEditUnit==='function'&&canEditUnit(_cpwDonVi));
+  return '<p style="font-size:13px;color:var(--text-light);margin:0 0 12px;">Kiểm tra trực tiếp danh sách nhân viên bên dưới. '+
+      (canEd?'Nếu cần chỉnh, bấm <b>Sửa</b> ở từng dòng hoặc <b>＋ Thêm nhân sự</b> — thay đổi sẽ gửi Admin duyệt và quy trình tạm dừng cho tới khi được duyệt. Nếu danh sách đã đúng, bấm <b>Danh sách đã đúng — Tiếp tục</b>.':'Bạn chỉ có quyền xem danh sách của đơn vị này.')+'</p>'+
+    '<div id="cpw-list-host"></div>'+
+    (canEd?'<div style="margin-top:16px;border-top:1px dashed var(--border);padding-top:14px;">'+
+      '<button class="btn btn-success btn-sm" onclick="cpwContinueStep1()">'+_ic('check',15)+' Danh sách đã đúng — Tiếp tục</button>'+
+    '</div>':'');
 }
 function cpwStep2Body(s2,phieu){
   if(s2==='khoa')return '<div style="display:flex;align-items:center;gap:6px;font-size:13px;color:var(--text-light);">'+_ic('lock',15)+'Hoàn tất Bước 1 để mở bước này.</div>';
@@ -4453,13 +4447,151 @@ function cpwEditList(){
   if(typeof selectUnit==='function')selectUnit(_cpwDonVi);
 }
 function cpwContinueStep1(){
-  if(!_cpwState.daInDanhSach){showToast('Hãy tải Excel danh sách để kiểm tra trước.','warning');return;}
+  if(_cpwLstEditId||(_cpwLstDrafts&&_cpwLstDrafts.length)){showToast('Bạn đang sửa dở một dòng. Lưu hoặc huỷ trước khi tiếp tục.','warning');return;}
   if(_cpwPendingChanges(_cpwDonVi).length){showToast('Còn thay đổi nhân sự đang chờ duyệt.','warning');return;}
   cpwSave({b1TrangThai:'dat',buoc:2}).then(function(){showToast('✅ Đã hoàn tất Bước 1.');cpwRender();});
 }
 function cpwResetStep1(){
-  if(!confirm('Làm lại từ Bước 1? Bạn sẽ phải in và xác nhận lại danh sách.'))return;
+  if(!confirm('Làm lại từ Bước 1? Bạn sẽ phải kiểm tra và xác nhận lại danh sách.'))return;
+  _cpwLstEditId=null; _cpwLstDrafts=[];
   cpwSave({b1TrangThai:'chua',daInDanhSach:false,buoc:1}).then(function(){cpwRender();});
+}
+// ===================== BƯỚC 1 NHÚNG: KIỂM TRA DANH SÁCH TRỰC TIẾP =====================
+var _cpwLstEditId=null, _cpwLstDrafts=[], _cpwLstDraftSeq=0;
+function _cpwRowEl(kind,key){ return document.querySelector(kind==='edit'?'[data-cpw-edit="'+key+'"]':'[data-cpw-draft="'+key+'"]'); }
+// Một hàng nhập (edit/draft) — 13 cột, không có cột Đơn vị (wizard chỉ 1 đơn vị)
+function _cpwInputRow(kind,key,data){
+  var saveFn=kind==='edit'?("cpwLstSaveEdit('"+key+"')"):("cpwLstSaveDraft('"+key+"')");
+  var cancelFn=kind==='edit'?"cpwLstCancelEdit()":("cpwLstRemoveDraft('"+key+"')");
+  var attr=kind==='edit'?('data-cpw-edit="'+key+'"'):('data-cpw-draft="'+key+'"');
+  var mark=kind==='draft'?'＋':'✎';
+  var act='<div style="display:inline-flex;gap:4px;">'+
+    '<button class="btn btn-success btn-sm" style="padding:4px 8px;" title="Lưu" onclick="'+saveFn+'">'+_ic('check',13)+'</button>'+
+    '<button class="btn btn-ghost btn-sm" style="padding:4px 8px;" title="Huỷ" onclick="'+cancelFn+'">'+_ic('x',13)+'</button>'+
+  '</div>';
+  return '<tr '+attr+' style="background:#eef5ff;">'+
+    '<td style="text-align:center;color:var(--primary-light,#4a90d9);font-weight:700;">'+mark+'</td>'+
+    '<td>'+_cpnsInp('danhSo',data.danhSo,'Danh số')+'</td>'+
+    '<td><div style="display:flex;align-items:center;gap:6px;">'+_cpnsInp('ten',data.ten,'Họ và tên')+
+      '<label style="display:inline-flex;align-items:center;gap:3px;font-size:11px;color:var(--text-light);white-space:nowrap;cursor:pointer;" title="Nhân viên nữ"><input data-f="gioiTinh" type="checkbox"'+(data.gioiTinh==='nu'?' checked':'')+' style="width:15px;height:15px;cursor:pointer;accent-color:var(--primary-light);">Nữ</label>'+
+    '</div></td>'+
+    '<td><select data-f="chucDanh" onchange="_cpnsToggleQA(this)" style="width:100%;'+_CPNS_INP+'">'+_cpnsChucDanhOptions(data.chucDanh||'')+'</select></td>'+
+    '<td style="text-align:center;"><select data-f="coQuanAo" style="width:64px;'+_CPNS_INP+'">'+_cpnsSelOptions(_CPNS_QA_SIZES,data.coQuanAo)+'</select></td>'+
+    '<td style="text-align:center;"><select data-f="coGiay" style="width:74px;'+_CPNS_INP+'">'+_cpnsSelOptions(_CPNS_GIAY_SIZES,data.coGiay)+'</select></td>'+
+    '<td style="text-align:center;">'+_cpnsInpMonth('thangCapQuanAo',data.thangCapQuanAo)+'</td>'+
+    '<td style="text-align:center;">'+_cpnsInpMonth('thangCapGiay',data.thangCapGiay)+'</td>'+
+    '<td style="text-align:center;">'+_cpnsInpMonth('thangCapMu',data.thangCapMu)+'</td>'+
+    '<td style="text-align:center;">'+_cpnsInpMonth('thangCapKinh',data.thangCapKinh)+'</td>'+
+    '<td style="text-align:center;">'+_cpnsInpMonth('thangCapAoMua',data.thangCapAoMua)+'</td>'+
+    '<td style="text-align:center;">'+_cpnsInpMonth('thangCapQAHan',data.thangCapQAHan,(data.chucDanh!=='Thợ hàn'))+'</td>'+
+    '<td style="text-align:center;white-space:nowrap;">'+act+'</td>'+
+  '</tr>';
+}
+function _cpwViewRow(n,stt,canEd,f){
+  var _pc=(typeof _nvPendingChange==='function')?_nvPendingChange(n.id):null;
+  var act=_pc
+    ? '<span style="display:inline-flex;align-items:center;gap:4px;background:#fff3cd;color:#856404;font-size:11px;font-weight:700;border-radius:20px;padding:3px 10px;white-space:nowrap;">⏳ Chờ duyệt</span>'
+    : ( canEd
+      ? '<button class="btn btn-ghost btn-sm" style="padding:4px 8px;" title="Sửa" onclick="cpwLstEdit(\''+n.id+'\')">'+_ic('edit',13)+'</button>'
+      : '<span style="color:var(--text-light);">—</span>' );
+  return '<tr>'+
+    '<td style="text-align:center;color:var(--text-light);">'+stt+'</td>'+
+    '<td><code style="font-size:12px;color:var(--text-light);">'+_escH(n.danhSo||'')+'</code></td>'+
+    '<td><strong>'+_escH(n.ten||'')+'</strong>'+(n.gioiTinh==='nu'?' <span style="font-size:10px;color:var(--text-light);">(Nữ)</span>':'')+'</td>'+
+    '<td style="font-size:12.5px;">'+_escH(n.chucDanh||'')+'</td>'+
+    '<td style="text-align:center;">'+_escH(n.coQuanAo||'')+'</td>'+
+    '<td style="text-align:center;">'+_escH(n.coGiay||'')+'</td>'+
+    '<td style="text-align:center;font-size:12px;">'+_escH(f(n.thangCapQuanAo)||'-')+'</td>'+
+    '<td style="text-align:center;font-size:12px;">'+_escH(f(n.thangCapGiay)||'-')+'</td>'+
+    '<td style="text-align:center;font-size:12px;">'+_escH(f(n.thangCapMu)||'-')+'</td>'+
+    '<td style="text-align:center;font-size:12px;">'+_escH(f(n.thangCapKinh)||'-')+'</td>'+
+    '<td style="text-align:center;font-size:12px;">'+_escH(f(n.thangCapAoMua)||'-')+'</td>'+
+    '<td style="text-align:center;font-size:12px;">'+_escH(f(n.thangCapQAHan)||'-')+'</td>'+
+    '<td style="text-align:center;white-space:nowrap;">'+act+'</td>'+
+  '</tr>';
+}
+function _cpwSyncDrafts(){ _cpwLstDrafts.forEach(function(d){ var tr=_cpwRowEl('draft',d.tempId); if(tr)Object.assign(d,_cpnsReadRowEl(tr)); }); }
+function cpwRenderList(){
+  var host=document.getElementById('cpw-list-host'); if(!host)return;
+  var dv=_cpwDonVi;
+  var canEd=(typeof canEditUnit==='function'&&canEditUnit(dv));
+  var f=function(x){if(!x)return'';var p=String(x).split('-');return p.length===2?(p[1]+'/'+p[0]):(x||'');};
+  var list=daNhanVien.filter(function(n){return n.boPhan===dv;}).sort(function(a,b){var sa=a.stt!=null?+a.stt:9999,sb=b.stt!=null?+b.stt:9999;if(sa!==sb)return sa-sb;return (a.ten||'').localeCompare(b.ten||'','vi');});
+  var thS='style="text-align:center;position:sticky;top:0;z-index:5;background:#f8fafc;font-size:11.5px;padding:6px 8px;"';
+  var thS2='style="text-align:center;position:sticky;top:32px;z-index:4;background:#f8fafc;font-size:11px;padding:5px 6px;"';
+  var body='';var stt=0;
+  list.forEach(function(n){
+    stt++;
+    if(String(n.id)===String(_cpwLstEditId)){
+      var ed={danhSo:n.danhSo,ten:n.ten,chucDanh:n.chucDanh,gioiTinh:n.gioiTinh,coQuanAo:n.coQuanAo,coGiay:n.coGiay};
+      ['thangCapQuanAo','thangCapGiay','thangCapMu','thangCapKinh','thangCapAoMua','thangCapQAHan'].forEach(function(fld){ ed[fld]=_cpnsToMMYYYY(n[fld]); });
+      body+=_cpwInputRow('edit',String(n.id),ed);
+    } else { body+=_cpwViewRow(n,stt,canEd,f); }
+  });
+  _cpwLstDrafts.forEach(function(d){ body+=_cpwInputRow('draft',d.tempId,d); });
+  if(!list.length&&!_cpwLstDrafts.length){ body='<tr><td colspan="13" style="text-align:center;color:var(--text-light);padding:16px;font-size:13px;">Đơn vị này chưa có nhân viên. '+(canEd?'Bấm “＋ Thêm nhân sự” để thêm.':'')+'</td></tr>'; }
+  var addBtn=canEd?'<div style="margin-top:10px;"><button class="btn btn-outline btn-sm" onclick="cpwLstAddDraft()">'+_ic('plus',14)+' Thêm nhân sự</button></div>':'';
+  host.innerHTML='<div class="table-wrap" style="max-height:52vh;"><table style="width:100%;border-collapse:collapse;font-size:12.5px;"><thead>'+
+    '<tr>'+
+      '<th rowspan="2" '+thS+'>STT</th>'+
+      '<th rowspan="2" '+thS+'>Danh số</th>'+
+      '<th rowspan="2" '+thS+' style="text-align:left;position:sticky;top:0;z-index:5;background:#f8fafc;">Họ và tên</th>'+
+      '<th rowspan="2" '+thS+' style="text-align:left;position:sticky;top:0;z-index:5;background:#f8fafc;">Chức danh</th>'+
+      '<th rowspan="2" '+thS+'>Cỡ QA</th>'+
+      '<th rowspan="2" '+thS+'>Cỡ giày</th>'+
+      '<th colspan="6" style="text-align:center;background:#d0e4f7;color:var(--primary);font-size:11px;position:sticky;top:0;z-index:5;padding:5px;">Tháng cấp gần nhất</th>'+
+      '<th rowspan="2" '+thS+'>Thao tác</th>'+
+    '</tr>'+
+    '<tr><th '+thS2+'>Quần áo</th><th '+thS2+'>Giày</th><th '+thS2+'>Mũ</th><th '+thS2+'>Kính</th><th '+thS2+'>Áo mưa</th><th '+thS2+'>QA thợ hàn</th></tr>'+
+    '</thead><tbody>'+body+'</tbody></table></div>'+addBtn;
+}
+function cpwLstAddDraft(){
+  if(!(typeof canEditUnit==='function'&&canEditUnit(_cpwDonVi))){ showToast('Bạn không có quyền sửa đơn vị này.','warning'); return; }
+  _cpwSyncDrafts();
+  _cpwLstDrafts.push({tempId:'w'+(++_cpwLstDraftSeq),danhSo:'',ten:'',chucDanh:'',gioiTinh:'nam',coQuanAo:'',coGiay:'',thangCapQuanAo:'',thangCapGiay:'',thangCapMu:'',thangCapKinh:'',thangCapAoMua:'',thangCapQAHan:''});
+  cpwRenderList();
+  var key='w'+_cpwLstDraftSeq;
+  setTimeout(function(){ var tr=_cpwRowEl('draft',key); if(tr){ var i=tr.querySelector('[data-f="danhSo"]'); if(i)i.focus(); tr.scrollIntoView({block:'nearest'}); } },0);
+}
+function cpwLstRemoveDraft(id){ _cpwSyncDrafts(); _cpwLstDrafts=_cpwLstDrafts.filter(function(d){return d.tempId!==id;}); cpwRenderList(); }
+function cpwLstSaveDraft(id){
+  _cpwSyncDrafts();
+  var d=_cpwLstDrafts.find(function(x){return x.tempId===id;}); if(!d)return;
+  var res=_cpnsCommitAdd(d,_cpwDonVi);
+  if(!res.ok){ _cpnsMarkErrors(_cpwRowEl('draft',id),res.errs); showToast('Vui lòng kiểm tra các ô được tô đỏ.','error'); return; }
+  _cpwLstDrafts=_cpwLstDrafts.filter(function(x){return x.tempId!==id;});
+  if(typeof isAdmin==='function'&&isAdmin()){ showToast('✅ Đã thêm nhân sự.','success'); cpwRenderList(); }
+  else { showToast('📨 Đã gửi nhân sự để phê duyệt. Quy trình tạm dừng tới khi Admin duyệt.','success'); cpwRender(); }
+}
+function cpwLstEdit(id){
+  var nv=daNhanVien.find(function(x){return String(x.id)===String(id);}); if(!nv)return;
+  if(!(typeof canEditUnit==='function'&&canEditUnit(nv.boPhan))){ showToast('Bạn không có quyền sửa đơn vị này.','error'); return; }
+  if(!(typeof isAdmin==='function'&&isAdmin())&&typeof _nvPendingChange==='function'&&_nvPendingChange(id)){ showToast('Nhân viên này đang có thay đổi chờ duyệt.','warning'); return; }
+  _cpwSyncDrafts();
+  _cpwLstEditId=String(id);
+  cpwRenderList();
+  setTimeout(function(){ var tr=_cpwRowEl('edit',String(id)); if(tr){ var i=tr.querySelector('[data-f="danhSo"]'); if(i)i.focus(); } },0);
+}
+function cpwLstCancelEdit(){ _cpwLstEditId=null; cpwRenderList(); }
+function cpwLstSaveEdit(id){
+  var tr=_cpwRowEl('edit',String(id)); if(!tr)return;
+  var raw=_cpnsReadRowEl(tr);
+  var v=_cpnsValidate(raw);
+  if(v.errs.length){ _cpnsMarkErrors(tr,v.errs); showToast('Vui lòng kiểm tra các ô được tô đỏ.','error'); return; }
+  var oldNv=daNhanVien.find(function(x){return String(x.id)===String(id);}); if(!oldNv)return;
+  var proposed=Object.assign({},oldNv,{danhSo:raw.danhSo,ten:raw.ten,chucDanh:raw.chucDanh,gioiTinh:raw.gioiTinh==='nu'?'nu':'nam',coQuanAo:raw.coQuanAo||'',coGiay:raw.coGiay||''});
+  ['thangCapQuanAo','thangCapGiay','thangCapMu','thangCapKinh','thangCapAoMua','thangCapQAHan'].forEach(function(fld){ proposed[fld]=v.parsed[fld]||''; });
+  if(typeof isAdmin==='function'&&isAdmin()){
+    var idx=daNhanVien.findIndex(function(x){return String(x.id)===String(id);});
+    daNhanVien[idx]=proposed; saveData('nhanvien',daNhanVien); BHLD.lsSet('nhanvien',daNhanVien); _bhldPush('update','nhanvien',id,proposed);
+    showToast('✅ Đã cập nhật nhân viên.'); _cpwLstEditId=null; cpwRenderList();
+  } else {
+    var diff=_buildNvDiff(oldNv,proposed);
+    if(!Object.keys(diff.changed).length){ showToast('Không có thay đổi nào.','warning'); _cpwLstEditId=null; cpwRenderList(); return; }
+    _submitPendingChange('edit',oldNv,proposed,diff);
+    showToast('📨 Đã gửi yêu cầu sửa tới Admin. Quy trình tạm dừng tới khi được duyệt.','success');
+    _cpwLstEditId=null; cpwRender();
+  }
 }
 // ── Bước 2 NHÚNG: bảng nhập số lượng ngay trong wizard ──
 function cpwRenderQuantity(){
