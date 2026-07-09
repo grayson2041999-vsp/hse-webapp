@@ -3089,7 +3089,6 @@ const _inputStyle=`style="width:68px;padding:4px 6px;border:1px solid var(--bord
 const _textStyle=`style="width:100%;padding:4px 6px;border:1px solid var(--border);border-radius:4px;font-size:12px;"`;
 
 function savePhieuField(quyStr,key,field,value,maxVal){
-  if(field==='thucTe'&&value!==''){const num=parseFloat(value)||0;if(maxVal!==undefined&&num>maxVal){showToast(`⚠️ Không được vượt quá định mức (${maxVal})!`,'warning');value=String(maxVal);}}
   if(!phieuData[quyStr])phieuData[quyStr]={};if(!phieuData[quyStr][key])phieuData[quyStr][key]={};
   phieuData[quyStr][key][field]=(field==='thucTe')?(value===''?'':parseFloat(value)||0):value;
   saveData('phieu-data',phieuData);_updateSummaryTable(quyStr);
