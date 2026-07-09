@@ -219,30 +219,30 @@
     </div>
     <div class="cp-sec-title">Tra cứu</div>
     <div class="cp-grid">
-      <div class="cp-tile" onclick="showPage('danh-muc')">
-        <div class="cp-ic"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 5h.01"/><path d="M3 12h.01"/><path d="M3 19h.01"/><path d="M8 5h13"/><path d="M8 12h13"/><path d="M8 19h13"/></svg></div>
-        <h4>Danh mục</h4>
-        <p>Nhóm trang bị và chi tiết vật tư BHLĐ.</p>
-      </div>
-      <div class="cp-tile" onclick="showPage('dinh-muc')">
-        <div class="cp-ic"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21.3 15.3a2.4 2.4 0 0 1 0 3.4l-2.6 2.6a2.4 2.4 0 0 1-3.4 0L2.7 8.7a2.4 2.4 0 0 1 0-3.4l2.6-2.6a2.4 2.4 0 0 1 3.4 0Z"/><path d="m14.5 12.5 2-2"/><path d="m11.5 9.5 2-2"/><path d="m8.5 6.5 2-2"/><path d="m17.5 15.5 2-2"/></svg></div>
-        <h4>Định mức cấp phát</h4>
-        <p>Định mức theo chức danh (VSP-000-ATMT-411).</p>
-      </div>
-      <div class="cp-tile" onclick="showPage('ton-kho')">
-        <div class="cp-ic"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 8.35V20a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V8.35A2 2 0 0 1 3.26 6.5l8-3.2a2 2 0 0 1 1.48 0l8 3.2A2 2 0 0 1 22 8.35Z"/><path d="M6 18h12"/><path d="M6 14h12"/><path d="M6 10h12"/></svg></div>
-        <h4>Tồn kho</h4>
-        <p>Số lượng tồn hiện tại và lịch sử nhập/xuất.</p>
-      </div>
-      <div class="cp-tile" onclick="cpOpenTraCuu()">
+      <div class="cp-tile" onclick="cpOpenTraCuu()" style="border:2px solid var(--primary);background:#eef5fd;box-shadow:0 2px 8px rgba(0,48,135,.10);">
         <div class="cp-ic"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
         <h4>Nhân sự</h4>
         <p>Tra cứu danh sách và thông tin nhân viên theo đơn vị.</p>
       </div>
-      <div class="cp-tile" onclick="cpOpenSizeChart()">
+      <div class="cp-tile" onclick="showPage('ton-kho')" style="border:2px solid var(--primary);background:#eef5fd;box-shadow:0 2px 8px rgba(0,48,135,.10);">
+        <div class="cp-ic"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 8.35V20a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V8.35A2 2 0 0 1 3.26 6.5l8-3.2a2 2 0 0 1 1.48 0l8 3.2A2 2 0 0 1 22 8.35Z"/><path d="M6 18h12"/><path d="M6 14h12"/><path d="M6 10h12"/></svg></div>
+        <h4>Tồn kho</h4>
+        <p>Số lượng tồn hiện tại và lịch sử nhập/xuất.</p>
+      </div>
+      <div class="cp-tile" onclick="cpOpenSizeChart()" style="border:2px solid var(--primary);background:#eef5fd;box-shadow:0 2px 8px rgba(0,48,135,.10);">
         <div class="cp-ic"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.38 3.46 16 2a4 4 0 0 1-8 0L3.62 3.46a2 2 0 0 0-1.34 2.23l.58 3.47a1 1 0 0 0 .99.84H6v10c0 1.1.9 2 2 2h8a2 2 0 0 0 2-2V10h2.15a1 1 0 0 0 .99-.84l.58-3.47a2 2 0 0 0-1.34-2.23z"/></svg></div>
         <h4>Tra cứu kích cỡ quần áo</h4>
         <p>Bảng thông số kích cỡ theo từng loại quần áo (kèm ảnh).</p>
+      </div>
+      <div class="cp-tile" onclick="showPage('dinh-muc')" style="opacity:.62;">
+        <div class="cp-ic"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21.3 15.3a2.4 2.4 0 0 1 0 3.4l-2.6 2.6a2.4 2.4 0 0 1-3.4 0L2.7 8.7a2.4 2.4 0 0 1 0-3.4l2.6-2.6a2.4 2.4 0 0 1 3.4 0Z"/><path d="m14.5 12.5 2-2"/><path d="m11.5 9.5 2-2"/><path d="m8.5 6.5 2-2"/><path d="m17.5 15.5 2-2"/></svg></div>
+        <h4>Định mức cấp phát</h4>
+        <p>Định mức theo chức danh (VSP-000-ATMT-411).</p>
+      </div>
+      <div class="cp-tile" onclick="showPage('danh-muc')" style="opacity:.62;">
+        <div class="cp-ic"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 5h.01"/><path d="M3 12h.01"/><path d="M3 19h.01"/><path d="M8 5h13"/><path d="M8 12h13"/><path d="M8 19h13"/></svg></div>
+        <h4>Danh mục</h4>
+        <p>Nhóm trang bị và chi tiết vật tư BHLĐ.</p>
       </div>
     </div>
   </div>
