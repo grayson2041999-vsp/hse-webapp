@@ -1357,7 +1357,7 @@ function cpOpenTraCuu(){
   document.getElementById('cp-home').style.display='none';
   ['nv-unit-picker','nv-unit-detail','cp-wizard'].forEach(function(i){var e=document.getElementById(i);if(e)e.style.display='none';});
   var v=document.getElementById('cp-nhansu'); if(v)v.style.display='block';
-  var units=[...new Set(daNhanVien.map(function(n){return n.boPhan;}).filter(Boolean))].sort(function(a,b){return a.localeCompare(b,'vi');});
+  var units=[...new Set(daNhanVien.map(function(n){return n.boPhan;}).filter(Boolean))].sort(function(a,b){var d=_cpUnitRank(a)-_cpUnitRank(b);return d!==0?d:a.localeCompare(b,'vi');});
   var dvSel=document.getElementById('cpns-donvi');
   dvSel.innerHTML='<option value="">— Tất cả đơn vị —</option>'+units.map(function(u){return '<option value="'+_escH(u)+'">'+_escH(u)+'</option>';}).join('');
   var cds=[...new Set(daNhanVien.map(function(n){return n.chucDanh;}).filter(Boolean))].sort(function(a,b){return a.localeCompare(b,'vi');});
@@ -1576,7 +1576,7 @@ function cpRenderNhanSu(){
     if(cd&&n.chucDanh!==cd)return false;
     if(q&&(((n.ten||'')+' '+(n.danhSo||'')).toLowerCase().indexOf(q)<0))return false;
     return true;
-  }).sort(function(a,b){var d=(a.boPhan||'').localeCompare(b.boPhan||'','vi');return d!==0?d:(a.ten||'').localeCompare(b.ten||'','vi');});
+  }).sort(function(a,b){var d=_cpUnitRank(a.boPhan)-_cpUnitRank(b.boPhan);return d!==0?d:(a.ten||'').localeCompare(b.ten||'','vi');});
   var body=list.map(function(n,i){
     // Đang sửa inline hàng này → render ô nhập
     if(String(n.id)===String(_cpnsEditId)){
@@ -1846,6 +1846,8 @@ function cpGoApprove(){
 // (Auth được xử lý qua hse_session — xem getCentralUser() / canEditUnit())
 // ========= NHÂN VIÊN - UNIT PICKER =========
 const UNIT_ORDER=['Cảng biển','Căn cứ Kho - Giao nhận','Xưởng sửa chữa','Đội xe VTHH&PTTBCD','Đội xe VCHK','Bộ máy điều hành','Test'];
+// Xếp hạng đơn vị theo UNIT_ORDER (đơn vị lạ đẩy xuống cuối)
+function _cpUnitRank(u){var i=UNIT_ORDER.indexOf(u);return i<0?999:i;}
 const UNIT_ICONS={'Cảng biển':'🚢','Căn cứ Kho - Giao nhận':'📦','Xưởng sửa chữa':'🔧','Đội xe VTHH&PTTBCD':'🚛','Đội xe VCHK':'🚗','Bộ máy điều hành':'🏛️','Test':'🧪'};
 // Icon Lucide (SVG path) cho thẻ chọn đơn vị — dùng currentColor để khớp màu navy
 const UNIT_LUCIDE={
