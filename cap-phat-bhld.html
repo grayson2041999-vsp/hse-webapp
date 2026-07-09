@@ -2273,7 +2273,8 @@ function _populateChucDanhSelect(selectedValue){
 
 // Nhóm nội bộ
 function nextGroupId(donVi){const existing=daGroups.filter(g=>g.donVi===donVi).map(g=>g.id);const letters='ABCDEFGHIJKLMNOPQRSTUVWXYZ';for(let i=0;i<letters.length;i++){if(!existing.includes(letters[i]))return letters[i];}return'G'+existing.length;}
-function canManageNhom(donVi){return isAdmin();}
+// User có quyền sửa đơn vị được tạo/sửa/xoá nhóm & gán nhân sự vào nhóm (phục vụ theo dõi nội bộ)
+function canManageNhom(donVi){return isAdmin()||(typeof canEditUnit==='function'&&canEditUnit(donVi));}
 let _nhomExpanded=false;
 function _applyNhomCollapse(){
   const c=document.getElementById('nhom-collapse');
