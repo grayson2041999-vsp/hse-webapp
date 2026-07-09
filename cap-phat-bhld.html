@@ -442,6 +442,7 @@
         <button class="btn btn-outline" onclick="fillTheoTinhMuc()" style="font-size:12.5px;border-color:var(--accent);color:var(--accent);"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px" aria-hidden="true"><path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z"/></svg>Điền theo định mức</button>
         <button class="btn btn-primary" onclick="exportPhieuWord()"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px" aria-hidden="true"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v5h5"/><path d="M16 13H8"/><path d="M16 17H8"/><path d="M10 9H8"/></svg>Xuất Word</button>
         <button class="btn btn-outline" onclick="exportChiTietExcel()"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px" aria-hidden="true"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v5h5"/><path d="M8 13h2"/><path d="M14 13h2"/><path d="M8 17h2"/><path d="M14 17h2"/></svg>Xuất Excel</button>
+        <button class="btn btn-outline" onclick="exportPhieuMatrixExcel()" title="Excel ma trận có cột ký nhận theo mẫu BM02"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px" aria-hidden="true"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v5h5"/><path d="M8 13h2"/><path d="M14 13h2"/><path d="M8 17h2"/><path d="M14 17h2"/></svg>Excel ký nhận</button>
         <button class="btn btn-success" onclick="submitPhieuQuy()" id="btn-submit-quy"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>Gửi phê duyệt</button>
       </div>
     </div>
@@ -3803,6 +3804,77 @@ function renderTonKho(){
     actEl.innerHTML=adminBtns+`<button class="btn btn-outline" onclick="exportTonKhoExcel()">${_ic('sheet',14)} Xuất Excel</button>`;
   }
   switchTonKhoTab('hientai');
+}
+// Mã hoá loại+cỡ cho Excel ma trận: Liền→L, Rời→R, Nữ→N, Thấp cổ→T, Cao cổ→C, Ủng→U, Bộ đồ hàn→H (ghép cỡ)
+function _matrixCode(ten){
+  if(!ten)return '';
+  var map=[['Bộ áo liền quần','L'],['Bộ quần áo thợ hàn','H'],['Bộ quần áo rời','R'],['Bộ quần áo nữ','N'],['Giày thấp cổ','T'],['Giày cao cổ','C'],['Ủng da','U']];
+  for(var i=0;i<map.length;i++){ if(ten.indexOf(map[i][0])===0){ var m=ten.match(/cỡ\s*(\S+)/); return m?(map[i][1]+m[1]):map[i][1]; } }
+  return ten;
+}
+// Xuất Excel ma trận cấp phát (mẫu BM02): STT, Danh số, Họ tên + 8 trang bị, mỗi trang bị kèm ô Ký tên
+function exportPhieuMatrixExcel(){
+  if(typeof XLSX==='undefined'){showToast('⚠️ Thư viện Excel chưa tải.','error');return;}
+  var sel=document.getElementById('bc-quy'); if(!sel||!sel.value){showToast('⚠️ Vui lòng chọn quý!','warning');return;}
+  var quyStr=sel.value; var dvEl=document.getElementById('bc-don-vi'); var dv=dvEl?dvEl.value:'';
+  if(!dv){showToast('⚠️ Vui lòng chọn đơn vị để xuất!','warning');return;}
+  var res=(typeof computeQuyData==='function')?computeQuyData(quyStr,dv):{rows:[]}; var rows=res.rows||[];
+  if(!rows.length){showToast('Không có nhân viên cần cấp phát trong quý này cho đơn vị đã chọn.','warning');return;}
+  var qData=phieuData[quyStr]||{};
+  var CATS=[['quanao','Quần áo'],['giay','Giày'],['mu','Mũ'],['kinh','Kính'],['aomua','Áo mưa'],['qahan','QA thợ hàn'],['gangtay','Găng tay'],['khautrang','Khẩu trang']];
+  var SIZED={quanao:1,giay:1,qahan:1};
+  var nCols=3+CATS.length*2; var lastC=nCols-1;
+  function pad(){var a=[];for(var i=0;i<nCols;i++)a.push('');return a;}
+  var aoa=[], merges=[];
+  var parts=quyStr.split('/'); var quyLabel='Quý '+parts[0].replace(/^Q/,'')+' năm '+parts[1];
+  var r0=pad(); r0[0]='XN DVC&CƯVTTB\nQUY TRÌNH\nDANH SÁCH CẤP PHÁT TRANG BỊ BẢO HỘ LAO ĐỘNG VÀ PHƯƠNG TIỆN CÁ NHÂN'; r0[lastC-2]='QT-KTVT-05/BM02'; aoa.push(r0);
+  var r1=pad(); r1[lastC-2]='Lần ban hành: 01'; aoa.push(r1);
+  var r2=pad(); r2[lastC-2]='Ngày hiệu lực: 01.02.2022'; aoa.push(r2);
+  merges.push({s:{r:0,c:0},e:{r:2,c:lastC-3}});
+  merges.push({s:{r:0,c:lastC-2},e:{r:0,c:lastC}});
+  merges.push({s:{r:1,c:lastC-2},e:{r:1,c:lastC}});
+  merges.push({s:{r:2,c:lastC-2},e:{r:2,c:lastC}});
+  aoa.push(pad());
+  var r4=pad(); r4[0]='XN DVC&CƯVTTB'; aoa.push(r4);
+  var r5=pad(); r5[0]='Đơn vị: '+dv; aoa.push(r5);
+  aoa.push(pad());
+  var r7=pad(); r7[0]='DANH SÁCH CẤP PHÁT TRANG BỊ BẢO HỘ LAO ĐỘNG VÀ PHƯƠNG TIỆN CÁ NHÂN'; aoa.push(r7); merges.push({s:{r:7,c:0},e:{r:7,c:lastC}});
+  var r8=pad(); r8[0]=quyLabel; aoa.push(r8); merges.push({s:{r:8,c:0},e:{r:8,c:lastC}});
+  aoa.push(pad());
+  var hTop=pad(), hSub=pad();
+  hTop[0]='STT'; hTop[1]='Danh số'; hTop[2]='Họ và tên';
+  merges.push({s:{r:10,c:0},e:{r:11,c:0}});
+  merges.push({s:{r:10,c:1},e:{r:11,c:1}});
+  merges.push({s:{r:10,c:2},e:{r:11,c:2}});
+  CATS.forEach(function(c,i){ var col=3+i*2; hTop[col]=c[1]; merges.push({s:{r:10,c:col},e:{r:10,c:col+1}}); hSub[col]='Cấp'; hSub[col+1]='Ký tên'; });
+  aoa.push(hTop); aoa.push(hSub);
+  var stt=0;
+  rows.forEach(function(rr){
+    stt++;
+    var byCat={};
+    rr.items.forEach(function(it){var k=it.cat||'khac';(byCat[k]=byCat[k]||[]).push(it);});
+    var row=pad(); row[0]=stt; row[1]=rr.nv.danhSo||''; row[2]=rr.nv.ten||'';
+    CATS.forEach(function(c,i){
+      var col=3+i*2; var arr=byCat[c[0]]||[]; var vals=[];
+      arr.forEach(function(it){
+        var key=rr.nv.id+'_'+it.tbId; var saved=qData[key]||{};
+        var tv=(saved.thucTe!==undefined&&saved.thucTe!=='')?Number(saved.thucTe):0;
+        if(!tv)return;
+        if(SIZED[c[0]]){ var code=_matrixCode(it.ten); vals.push(tv>1?(code+' ×'+tv):code); }
+        else { vals.push(String(tv)); }
+      });
+      row[col]=vals.join(', ');
+    });
+    aoa.push(row);
+  });
+  aoa.push(pad());
+  var lg=pad(); lg[0]='Ghi chú: Quần áo — L: Liền, R: Rời, N: Nữ. Giày — T: Thấp cổ, C: Cao cổ, U: Ủng da. QA thợ hàn — H: Bộ đồ hàn. Số sau chữ là cỡ (VD: L52 = Bộ liền quần cỡ 52). Các cột Mũ, Kính, Áo mưa, Găng tay, Khẩu trang ghi số lượng cấp.';
+  aoa.push(lg); merges.push({s:{r:aoa.length-1,c:0},e:{r:aoa.length-1,c:lastC}});
+  var ws=XLSX.utils.aoa_to_sheet(aoa); ws['!merges']=merges;
+  var cols=[{wch:5},{wch:12},{wch:24}]; CATS.forEach(function(){cols.push({wch:9});cols.push({wch:9});}); ws['!cols']=cols;
+  var wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,ws,'Cấp phát');
+  XLSX.writeFile(wb,'CapPhat_'+quyStr.replace('/','_')+'_'+dv.replace(/[\/\\?*\[\]:\s]+/g,'-')+'.xlsx');
+  showToast('✅ Đã xuất Excel cấp phát – '+quyStr+' – '+dv+'!');
 }
 function exportTonKhoExcel(){
   if(typeof XLSX==='undefined'){showToast('⚠️ Thư viện Excel chưa tải.','error');return;}
