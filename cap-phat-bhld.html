@@ -1503,7 +1503,8 @@ function cpnvRender(){
   var pendIds=_cpnvPendingIds();
   var toSend=newEmps.filter(function(n){return !pendIds.has(String(n.id));});
   var pendingEmps=newEmps.filter(function(n){return pendIds.has(String(n.id));});
-  var approved=BHLD.lsGet('phieu_requests').filter(function(p){return p.type==='nv_moi'&&p.status==='approved';})
+  var _meUser=(typeof _getCurrentUsername==='function')?_getCurrentUsername():'';
+  var approved=BHLD.lsGet('phieu_requests').filter(function(p){return p.type==='nv_moi'&&p.status==='approved'&&String(p.submittedByUsername||'')===String(_meUser);})
     .sort(function(a,b){return new Date(b.reviewedAt||b.createdAt||0)-new Date(a.reviewedAt||a.createdAt||0);}).slice(0,20);
 
   // Bước 1
@@ -1530,13 +1531,23 @@ function cpnvRender(){
   if(!approved.length){
     b2='<div style="display:flex;align-items:center;gap:6px;color:var(--text-light);font-size:13px;">'+_ic('lock',15)+'Sau khi Admin duyệt, phiếu sẽ hiện ở đây để xuất & trình ký. Nhân viên tự được đưa vào hệ thống (tính lịch cấp) khi Admin duyệt.</div>';
   } else {
-    b2='<div class="table-wrap"><table><thead><tr><th style="width:40px;text-align:center;">STT</th><th>Nhân viên</th><th>Chức danh</th><th>Đơn vị</th><th>Duyệt lúc</th><th style="text-align:center;">Xuất phiếu</th></tr></thead><tbody>'+
-      approved.map(function(p,i){return '<tr><td style="text-align:center;">'+(i+1)+'</td><td><strong>'+_escH(p.nvTen||'')+'</strong> <span style="color:var(--text-light);font-size:11px;">'+_escH(p.nvDanhSo||'')+'</span></td><td style="font-size:12.5px;">'+_escH(p.chucDanh||'')+'</td><td style="font-size:12.5px;">'+_escH(p.donVi||'')+'</td><td style="font-size:12px;color:var(--text-light);">'+(p.reviewedAt?new Date(p.reviewedAt).toLocaleDateString('vi-VN'):'')+'</td><td style="text-align:center;"><button class="btn btn-outline btn-sm" onclick="exportPhieuById(\''+p.id+'\',\'word\')">'+_ic('file',13)+' Word</button></td></tr>';}).join('')+
+    b2='<div class="table-wrap"><table><thead><tr><th style="width:40px;text-align:center;">STT</th><th>Nhân viên</th><th>Chức danh</th><th>Đơn vị</th><th>Duyệt lúc</th><th style="text-align:center;">Xuất phiếu</th><th style="text-align:center;">Hoàn thành</th></tr></thead><tbody>'+
+      approved.map(function(p,i){return '<tr><td style="text-align:center;">'+(i+1)+'</td><td><strong>'+_escH(p.nvTen||'')+'</strong> <span style="color:var(--text-light);font-size:11px;">'+_escH(p.nvDanhSo||'')+'</span></td><td style="font-size:12.5px;">'+_escH(p.chucDanh||'')+'</td><td style="font-size:12.5px;">'+_escH(p.donVi||'')+'</td><td style="font-size:12px;color:var(--text-light);">'+(p.reviewedAt?new Date(p.reviewedAt).toLocaleDateString('vi-VN'):'')+'</td><td style="text-align:center;"><button class="btn btn-outline btn-sm" onclick="exportPhieuById(\''+p.id+'\',\'word\')">'+_ic('file',13)+' Word</button></td><td style="text-align:center;"><button class="btn btn-success btn-sm" onclick="cpnvComplete(\''+p.id+'\')">'+_ic('check',13)+' Đã hoàn thành</button></td></tr>';}).join('')+
       '</tbody></table></div>';
   }
 
   host.innerHTML=_cpwStepCard(1,'Nhập thông tin & gửi phê duyệt','userplus',s1,b1)+
     _cpwStepCard(2,'Xuất phiếu & trình ký','file',s2,b2);
+}
+// Đánh dấu phiếu NV mới "Đã hoàn thành" → xác nhận rồi xoá phiếu khỏi danh sách
+function cpnvComplete(id){
+  var p=BHLD.lsGet('phieu_requests').find(function(x){return String(x.id)===String(id);});
+  if(!p){showToast('Không tìm thấy phiếu.','error');return;}
+  if(!confirm('Xác nhận phiếu cấp phát cho "'+(p.nvTen||'')+'" đã hoàn thành?\nPhiếu sẽ bị xoá khỏi danh sách và không thể khôi phục.'))return;
+  BHLD.push.delete('phieu_requests',id).then(function(){
+    showToast('✅ Đã đánh dấu hoàn thành và xoá phiếu.');
+    cpnvRender();
+  }).catch(function(e){showToast('⚠️ Xoá phiếu thất bại: '+e.message,'error');cpnvRender();});
 }
 function cpnvRenderQty(list){
   var host=document.getElementById('cpnv-qty'); if(!host)return;
