@@ -180,7 +180,7 @@
      TRANG: QUẢN LÝ CẤP PHÁT
      ============================ -->
 <div id="page-quan-ly-cap-phat" class="page active">
-  <div class="page-title"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0" aria-hidden="true"><path d="M11 21.73a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73z"/><path d="M12 22V12"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="m7.5 4.27 9 5.15"/></svg>Quản lý cấp phát</div>
+  <div class="page-title" id="cp-main-title"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0" aria-hidden="true"><path d="M11 21.73a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73z"/><path d="M12 22V12"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="m7.5 4.27 9 5.15"/></svg>Quản lý cấp phát</div>
 
   <!-- ===== TRANG CHỦ: THẺ TÁC VỤ + TRA CỨU ===== -->
   <style>
@@ -283,7 +283,7 @@
           <th rowspan="2" style="position:sticky;top:0;z-index:5;background:#f8fafc;">Đơn vị</th>
           <th rowspan="2" style="text-align:center;position:sticky;top:0;z-index:5;background:#f8fafc;">Cỡ QA</th>
           <th rowspan="2" style="text-align:center;position:sticky;top:0;z-index:5;background:#f8fafc;">Cỡ giày</th>
-          <th colspan="6" style="text-align:center;background:#d0e4f7;color:var(--primary);font-size:11px;position:sticky;top:0;z-index:5;">Lần cấp gần nhất</th>
+          <th colspan="6" style="text-align:center;background:#d0e4f7;color:var(--primary);font-size:11px;position:sticky;top:0;z-index:5;">Tháng cấp gần nhất</th>
           <th rowspan="2" style="text-align:center;position:sticky;top:0;z-index:5;background:#f8fafc;">Thao tác</th>
         </tr>
         <tr>
@@ -1351,6 +1351,7 @@ function cpShowHome(){
   var wz=document.getElementById('cp-wizard'); if(wz)wz.style.display='none';
   var ns=document.getElementById('cp-nhansu'); if(ns)ns.style.display='none';
   var nvw=document.getElementById('cp-nvmoi-wizard'); if(nvw)nvw.style.display='none';
+  var mt=document.getElementById('cp-main-title'); if(mt)mt.style.display='';
   cpUpdateApproveTile();
 }
 // ===== TRA CỨU NHÂN SỰ (bảng lớn) =====
@@ -1358,6 +1359,7 @@ function cpOpenTraCuu(){
   document.getElementById('cp-home').style.display='none';
   ['nv-unit-picker','nv-unit-detail','cp-wizard'].forEach(function(i){var e=document.getElementById(i);if(e)e.style.display='none';});
   var v=document.getElementById('cp-nhansu'); if(v)v.style.display='block';
+  var mt=document.getElementById('cp-main-title'); if(mt)mt.style.display='none';
   var units=[...new Set(daNhanVien.map(function(n){return n.boPhan;}).filter(Boolean))].sort(function(a,b){var d=_cpUnitRank(a)-_cpUnitRank(b);return d!==0?d:a.localeCompare(b,'vi');});
   var dvSel=document.getElementById('cpns-donvi');
   dvSel.innerHTML='<option value="">— Tất cả đơn vị —</option>'+units.map(function(u){return '<option value="'+_escH(u)+'">'+_escH(u)+'</option>';}).join('');
@@ -1582,7 +1584,7 @@ function cpnsSaveEdit(id){
 }
 // ── Render 1 dòng nhân viên đã lưu (dùng cho cả chế độ phẳng lẫn nhóm) ──
 function _cpnsLiveRow(n,stt,draggable,grpSelHtml){
-  var f=(typeof _fThangTxt==='function')?_fThangTxt:function(x){return x||'';};
+  var f=function(x){if(!x)return'';var p=String(x).split('-');return p.length===2?(p[1]+'/'+p[0]):(x||'');};
   if(String(n.id)===String(_cpnsEditId)){
     var ed={danhSo:n.danhSo,ten:n.ten,chucDanh:n.chucDanh,gioiTinh:n.gioiTinh,coQuanAo:n.coQuanAo,coGiay:n.coGiay};
     _CPNS_MONTHS.forEach(function(fld){ ed[fld]=_cpnsToMMYYYY(n[fld]); });
@@ -1699,7 +1701,7 @@ function cpRenderNhanSu(){
   var dv=document.getElementById('cpns-donvi').value||'';
   if(dv)_currentUnit=dv; // để openModalNhom/saveNhom/deleteNhom/setNhomNV dùng đúng đơn vị
   var cd=document.getElementById('cpns-chucdanh').value||'';
-  var f=(typeof _fThangTxt==='function')?_fThangTxt:function(x){return x||'';};
+  var f=function(x){if(!x)return'';var p=String(x).split('-');return p.length===2?(p[1]+'/'+p[0]):(x||'');};
   var list=daNhanVien.filter(function(n){
     if(dv&&n.boPhan!==dv)return false;
     if(cd&&n.chucDanh!==cd)return false;
