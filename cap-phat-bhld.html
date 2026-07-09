@@ -1390,6 +1390,14 @@ function cpOpenSizeChart(){
   var mt=document.getElementById('cp-main-title'); if(mt)mt.style.display='none';
   var add=document.getElementById('sc-admin-add'); if(add)add.style.display=(typeof isAdmin==='function'&&isAdmin())?'':'none';
   scRender();
+  // Tải lại từ server mỗi lần mở tab (để user/viewer thấy ngay dữ liệu admin đã thêm)
+  try{
+    if(window.HSE_SB){
+      window.HSE_SB.from('size_chart').select('*').then(function(res){
+        if(!res.error&&Array.isArray(res.data)){ BHLD.lsSet('size_chart',res.data); scRender(); }
+      });
+    }
+  }catch(e){}
 }
 function scRender(){
   var host=document.getElementById('sc-grid'); if(!host)return;
