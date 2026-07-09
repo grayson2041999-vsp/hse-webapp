@@ -3051,7 +3051,7 @@ function computeQuyData(quyStr,filterDonVi){
 
 function _computeSummaryFull(rows,quyStr){
   const qData=phieuData[quyStr]||{};const map={};
-  rows.forEach(r=>{r.items.forEach(it=>{if(!map[it.tbId])map[it.tbId]={ten:it.ten,ma:it.ma,donVi:it.donVi,dinhMuc:0,thucTe:0,hasThucTe:false};map[it.tbId].dinhMuc+=it.soLuong;const saved=qData[`${r.nv.id}_${it.tbId}`];if(saved&&saved.thucTe!==''&&saved.thucTe!==undefined){map[it.tbId].thucTe+=parseFloat(saved.thucTe)||0;map[it.tbId].hasThucTe=true;}});});
+  rows.forEach(r=>{r.items.forEach(it=>{if(!map[it.tbId])map[it.tbId]={ten:it.ten,ma:it.ma,donVi:it.donVi,dinhMuc:0,thucTe:0,hasThucTe:false};map[it.tbId].dinhMuc+=(parseFloat(it.soLuong)||0);const saved=qData[`${r.nv.id}_${it.tbId}`];if(saved&&saved.thucTe!==''&&saved.thucTe!==undefined){map[it.tbId].thucTe+=parseFloat(saved.thucTe)||0;map[it.tbId].hasThucTe=true;}});});
   return Object.values(map).sort((a,b)=>a.ten.localeCompare(b.ten,'vi'));
 }
 
