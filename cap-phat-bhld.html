@@ -3666,7 +3666,7 @@ function _buildNVMoiWordHtml(nvList,editsMap){
       return `<tr><td style="${td}text-align:center;">${i+1}</td><td style="${td}">${it.ma||''}</td><td style="${td}">${it.ten}</td><td style="${td}text-align:center;">${it.donVi}</td><td style="${td}text-align:center;">${thucTe}</td><td style="${td}"></td><td style="${td}"></td></tr>`;
     }).join('');
     const blankRow=`<tr>${'<td style="'+td+'">&nbsp;</td>'.repeat(7)}</tr>`;
-    const ngayStr=nv.ngayVaoLam?`T${nv.ngayVaoLam.split('-')[1]}/${nv.ngayVaoLam.split('-')[0]}`:'';
+    const ngayStr=nv.ngayVaoLam?`${nv.ngayVaoLam.split('-')[1]}/${nv.ngayVaoLam.split('-')[0]}`:'';
     sections+=`
 <p style="margin:8pt 0 2pt;"><strong>Nhân viên: ${nv.ten}</strong> &nbsp;|&nbsp; Danh số: ${nv.danhSo||'—'} &nbsp;|&nbsp; Chức danh: ${nv.chucDanh} &nbsp;|&nbsp; Đơn vị: ${nv.boPhan||'—'} &nbsp;|&nbsp; Tháng vào làm: ${ngayStr}</p>
 <table style="width:100%;margin-bottom:12pt;"><thead><tr>
