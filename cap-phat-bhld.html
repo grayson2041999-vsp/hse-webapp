@@ -4713,15 +4713,13 @@ function cpwRenderQuantity(){
     r.items.forEach(function(it){
       var key=r.nv.id+'_'+it.tbId;var saved=qData[key]||{};
       var tv=(saved.thucTe!==undefined&&saved.thucTe!=='')?saved.thucTe:'';
-      var gv=saved.ghiChu||'';
       var diff=(tv!==''&&Number(tv)!==Number(it.soLuong));
       cells+='<div class="cpw-item" style="border:1px solid '+(diff?'var(--warning)':'var(--border)')+';border-radius:8px;padding:8px 10px;background:'+(diff?'#fff8e1':'#fff')+';">'+
         '<div style="font-size:12.5px;margin-bottom:6px;line-height:1.35;">'+_escH(it.ten)+'</div>'+
-        '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">'+
+        '<div style="display:flex;align-items:center;gap:8px;">'+
           '<span style="font-size:11px;color:var(--text-light);white-space:nowrap;">ĐM '+it.soLuong+'</span>'+
           '<input type="number" min="0" step="1" value="'+tv+'" style="width:56px;padding:4px 6px;border:1px solid var(--border);border-radius:4px;font-size:12.5px;text-align:center;" onchange="cpwSaveField(\''+quyStr+'\',\''+key+'\',\'thucTe\',this.value,'+it.soLuong+');cpwMarkCell(this,'+it.soLuong+')">'+
         '</div>'+
-        '<input type="text" value="'+_escH(gv)+'" placeholder="Ghi chú..." style="width:100%;padding:4px 6px;border:1px solid var(--border);border-radius:4px;font-size:12px;box-sizing:border-box;" onchange="savePhieuField(\''+quyStr+'\',\''+key+'\',\'ghiChu\',this.value)">'+
       '</div>';
     });
     cards+='<div class="card" style="padding:12px 14px;margin-bottom:12px;">'+
@@ -4796,7 +4794,7 @@ function cpwSubmitQuantity(){
   if(existing){showToast('Phiếu '+quyStr+' – '+dv+' đã gửi, đang chờ duyệt.','warning');cpwRender();return;}
   if(!confirm('Gửi phiếu quý '+quyStr+' – '+dv+' để Admin phê duyệt?'))return;
   var now=new Date().toISOString();var qData=phieuData[quyStr]||{};var itemsList=[];
-  _lastBcRows.forEach(function(r){r.items.forEach(function(it){var key=r.nv.id+'_'+it.tbId;var saved=qData[key]||{};itemsList.push({nvId:String(r.nv.id),nvTen:r.nv.ten,tbId:it.tbId,ten:it.ten,soLuongDinhMuc:it.soLuong,thucTe:saved.thucTe!==undefined?saved.thucTe:'',ghiChu:saved.ghiChu||''});});});
+  _lastBcRows.forEach(function(r){r.items.forEach(function(it){var key=r.nv.id+'_'+it.tbId;var saved=qData[key]||{};itemsList.push({nvId:String(r.nv.id),nvTen:r.nv.ten,tbId:it.tbId,ten:it.ten,soLuongDinhMuc:it.soLuong,thucTe:saved.thucTe!==undefined?saved.thucTe:''});});});
   var phieu={type:'quy',quyStr:quyStr,donVi:dv,status:'pending',items:JSON.stringify(itemsList),submittedBy:_getCurrentUserLabel(),submittedByUsername:_getCurrentUsername(),submittedAt:now,createdAt:now};
   BHLD.push.insert('phieu_requests',phieu).then(function(){
     showToast('✅ Đã gửi phiếu quý – đang chờ Admin duyệt.');
