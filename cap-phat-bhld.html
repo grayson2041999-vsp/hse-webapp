@@ -3032,6 +3032,20 @@ function applyNVWarningFix(id,field,month){
   openNVWarning(id);
 }
 
+// Phân loại nhóm trang bị vào 1 trong các cột cố định của Bước 2
+function _tbCategory(tb){
+  if(!tb)return 'khac';
+  var ten=tb.ten||'';
+  if(ten==='Áo mưa')return 'aomua';
+  if(ten==='Bộ quần áo thợ hàn')return 'qahan';
+  if(tb.loaiCo==='quan_ao')return 'quanao';
+  if(tb.loaiCo==='giay')return 'giay';
+  if(ten.indexOf('Mũ')>=0)return 'mu';
+  if(ten.indexOf('Kính')>=0)return 'kinh';
+  if(ten.indexOf('Găng tay')>=0)return 'gangtay';
+  if(ten==='Khẩu trang')return 'khautrang';
+  return 'khac';
+}
 function computeQuyData(quyStr,filterDonVi){
   const qMonths=getQuarterMonths(quyStr);const nvList=daNhanVien.filter(n=>!filterDonVi||n.boPhan===filterDonVi);
   const rows=[];const summaryMap={};
@@ -3047,7 +3061,7 @@ function computeQuyData(quyStr,filterDonVi){
       const inQuarter=isQuarterly||(nextMonth&&nextMonth<=qEnd);if(!inQuarter)return;
       let soLuong=d.soLuong;if(isQuarterly){soLuong=Math.round((3/d.chuKy)*d.soLuong);if(soLuong<1)soLuong=1;}
       const tbSized=getTBSized(tb,nv);
-      items.push({ten:tbSized.ten,ma:tbSized.ma||'',soLuong,donVi:tbSized.donVi||tb.donVi,tbId:tbSized.id});
+      items.push({ten:tbSized.ten,ma:tbSized.ma||'',soLuong,donVi:tbSized.donVi||tb.donVi,tbId:tbSized.id,cat:_tbCategory(tb)});
       const key=tbSized.id;if(!summaryMap[key])summaryMap[key]={ten:tbSized.ten,ma:tbSized.ma||'',donVi:tbSized.donVi||tb.donVi,soLuong:0,tbId:key};summaryMap[key].soLuong+=soLuong;
     });
     if(items.length>0)rows.push({nv,items});
@@ -4707,36 +4721,49 @@ function cpwRenderQuantity(){
   var rows=res.rows||[]; _lastBcRows=rows;
   var qData=phieuData[quyStr]||{};
   if(!rows.length){ host.innerHTML='<div style="padding:14px;color:var(--text-light);font-size:13px;">Không có nhân viên cần cấp phát trong quý này cho đơn vị '+_escH(dv)+'. Hãy thêm nhân viên (có chức danh + định mức) rồi thử lại.</div>'; return; }
-  var cards='';var stt=0;
+  var CATS=[['quanao','Quần áo'],['giay','Giày'],['mu','Mũ'],['kinh','Kính'],['aomua','Áo mưa'],['qahan','QA thợ hàn'],['gangtay','Găng tay'],['khautrang','Khẩu trang']];
+  var hasKhac=rows.some(function(r){return r.items.some(function(it){return (it.cat||'khac')==='khac';});});
+  var cols=CATS.slice(); if(hasKhac)cols.push(['khac','Khác']);
+  var thB='position:sticky;top:0;z-index:5;background:#f8fafc;font-size:11.5px;padding:6px 8px;text-align:center;border-bottom:2px solid #dbe4ee;';
+  var head='<tr><th style="'+thB+'width:34px;">STT</th><th style="'+thB+'text-align:left;min-width:190px;">Nhân viên</th>'+
+    cols.map(function(c){return '<th style="'+thB+'min-width:118px;">'+c[1]+'</th>';}).join('')+'</tr>';
+  var body='';var stt=0;
   rows.forEach(function(r){
     stt++;
-    var cells='';
-    r.items.forEach(function(it){
-      var key=r.nv.id+'_'+it.tbId;var saved=qData[key]||{};
-      var tv=(saved.thucTe!==undefined&&saved.thucTe!=='')?saved.thucTe:'';
-      var diff=(tv!==''&&Number(tv)!==Number(it.soLuong));
-      cells+='<div class="cpw-item" style="border:1px solid '+(diff?'var(--warning)':'var(--border)')+';border-radius:8px;padding:8px 10px;background:'+(diff?'#fff8e1':'#fff')+';">'+
-        '<div style="font-size:12.5px;margin-bottom:6px;line-height:1.35;">'+_escH(it.ten)+'</div>'+
-        '<div style="display:flex;align-items:center;gap:8px;">'+
-          '<span style="font-size:11px;color:var(--text-light);white-space:nowrap;">ĐM '+it.soLuong+'</span>'+
-          '<input type="number" min="0" step="1" value="'+tv+'" style="width:56px;padding:4px 6px;border:1px solid var(--border);border-radius:4px;font-size:12.5px;text-align:center;" onchange="cpwSaveField(\''+quyStr+'\',\''+key+'\',\'thucTe\',this.value,'+it.soLuong+');cpwMarkCell(this,'+it.soLuong+')">'+
-        '</div>'+
-      '</div>';
+    var byCat={};
+    r.items.forEach(function(it){var k=it.cat||'khac';(byCat[k]=byCat[k]||[]).push(it);});
+    var tds='';
+    cols.forEach(function(c){
+      var arr=byCat[c[0]]||[];
+      if(!arr.length){
+        tds+='<td style="text-align:center;vertical-align:middle;opacity:.3;font-size:11px;color:var(--text-light);border-left:1px solid #eef1f5;">'+c[1]+'<div>—</div></td>';
+        return;
+      }
+      var inner=arr.map(function(it){
+        var key=r.nv.id+'_'+it.tbId;var saved=qData[key]||{};
+        var tv=(saved.thucTe!==undefined&&saved.thucTe!=='')?saved.thucTe:'';
+        var diff=(tv!==''&&Number(tv)!==Number(it.soLuong));
+        return '<div class="cpw-item" style="border:1px solid '+(diff?'var(--warning)':'var(--border)')+';border-radius:6px;padding:5px 7px;background:'+(diff?'#fff8e1':'#fff')+';">'+
+          '<div style="font-size:11px;color:var(--text-light);line-height:1.25;margin-bottom:4px;">'+_escH(it.ten)+'</div>'+
+          '<div style="display:flex;align-items:center;gap:6px;justify-content:center;">'+
+            '<span style="font-size:10.5px;color:var(--text-light);white-space:nowrap;">ĐM '+it.soLuong+'</span>'+
+            '<input type="number" min="0" step="1" value="'+tv+'" style="width:48px;padding:3px 4px;border:1px solid var(--border);border-radius:4px;font-size:12px;text-align:center;" onchange="cpwSaveField(\''+quyStr+'\',\''+key+'\',\'thucTe\',this.value,'+it.soLuong+');cpwMarkCell(this,'+it.soLuong+')">'+
+          '</div>'+
+        '</div>';
+      }).join('<div style="height:6px;"></div>');
+      tds+='<td style="vertical-align:top;padding:6px;border-left:1px solid #eef1f5;">'+inner+'</td>';
     });
-    cards+='<div class="card" style="padding:12px 14px;margin-bottom:12px;">'+
-      '<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap;">'+
-        '<span style="width:26px;height:26px;border-radius:50%;background:#e6f1fb;color:var(--primary);display:inline-flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex-shrink:0;">'+stt+'</span>'+
-        '<div style="flex:1;min-width:180px;"><strong>'+_escH(r.nv.ten)+'</strong>'+
-          '<code style="font-size:11.5px;color:var(--text-light);margin-left:6px;">'+_escH(r.nv.danhSo)+'</code>'+
-          '<span style="font-size:12.5px;color:var(--text-light);margin-left:8px;">'+_escH(r.nv.chucDanh)+'</span></div>'+
-        '<button class="btn btn-outline btn-sm" style="padding:4px 10px;font-size:12px;" onclick="cpwFillEmp(\''+r.nv.id+'\')">'+_ic('zap',13)+' Điền theo định mức</button>'+
-      '</div>'+
-      '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:8px;">'+cells+'</div>'+
-    '</div>';
+    body+='<tr style="border-bottom:1px solid #eef1f5;">'+
+      '<td style="text-align:center;color:var(--text-light);vertical-align:top;padding-top:10px;">'+stt+'</td>'+
+      '<td style="vertical-align:top;padding:8px;"><strong>'+_escH(r.nv.ten)+'</strong>'+
+        ' <code style="font-size:11px;color:var(--text-light);">'+_escH(r.nv.danhSo)+'</code>'+
+        '<div style="font-size:12px;color:var(--text-light);margin:2px 0 6px;">'+_escH(r.nv.chucDanh)+'</div>'+
+        '<button class="btn btn-outline btn-sm" style="padding:3px 8px;font-size:11.5px;" onclick="cpwFillEmp(\''+r.nv.id+'\')">'+_ic('zap',12)+' Điền theo định mức</button>'+
+      '</td>'+tds+'</tr>';
   });
   host.innerHTML=
-    '<div style="margin-bottom:12px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;"><button class="btn btn-outline btn-sm" onclick="cpwFillDinhMuc()">'+_ic('zap',15)+' Điền tất cả theo định mức</button><span style="font-size:12px;color:var(--text-light);">'+stt+' nhân viên · ô nền vàng = thực tế khác định mức</span></div>'+
-    cards+
+    '<div style="margin-bottom:12px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;"><button class="btn btn-outline btn-sm" onclick="cpwFillDinhMuc()">'+_ic('zap',15)+' Điền tất cả theo định mức</button><span style="font-size:12px;color:var(--text-light);">'+stt+' nhân viên · ô mờ = không cấp trong quý · ô nền vàng = thực tế khác định mức</span></div>'+
+    '<div class="table-wrap" style="max-height:68vh;"><table style="border-collapse:collapse;font-size:12.5px;"><thead>'+head+'</thead><tbody>'+body+'</tbody></table></div>'+
     '<div class="card-title" style="margin:18px 0 8px;display:flex;align-items:center;gap:7px;">'+_ic('pkg',16)+' Tổng hợp trang bị cấp phát trong quý</div>'+
     '<div class="table-wrap"><table><thead><tr>'+
       '<th style="width:40px;text-align:center;">STT</th><th>Tên trang bị</th><th>Mã vật tư</th><th style="text-align:center;">ĐVT</th>'+
