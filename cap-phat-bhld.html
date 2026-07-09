@@ -2903,7 +2903,12 @@ function getTBSized(tb,nv){
       if(nuNhom){if(size){const found=daDanhMuc.find(d=>d.nhomId===nuNhom.id&&d.ten.includes('cỡ '+size));if(found)return found;}const anyNu=daDanhMuc.find(d=>d.nhomId===nuNhom.id);if(anyNu)return anyNu;}
     }
   } else if(tb.loaiCo==='giay'){size=nv.coGiay;}
-  if(size){const found=daDanhMuc.find(d=>d.nhomId===tb.id&&d.ten.includes('cỡ '+size));if(found)return found;}return tb;
+  if(size){const found=daDanhMuc.find(d=>d.nhomId===tb.id&&d.ten.includes('cỡ '+size));if(found)return found;}
+  // Không cần size (áo mưa, mũ, kính, khẩu trang…) hoặc không khớp size:
+  // nếu nhóm chỉ có đúng 1 danh mục con → dùng con đó để lấy mã vật tư / ĐVT
+  const _children=daDanhMuc.filter(d=>d.nhomId===tb.id);
+  if(_children.length===1)return _children[0];
+  return tb;
 }
 
 function tinhThangCapTiepTheo(nv,dmEntry){
