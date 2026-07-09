@@ -4313,9 +4313,20 @@ function tinhNhuCau(){
   const quyList=[startQ];for(let i=1;i<4;i++)quyList.push(_nextQuy(quyList[i-1]));
   const labelEl=document.getElementById('nhucau-quy-label');labelEl.innerHTML=_ic('cal',15)+' 4 quý tính toán: '+_escH(quyList.join(' → '));labelEl.style.display='';
   const data=_computeNhuCauData(quyList);
-  if(!data.length){document.getElementById('nhucau-result').innerHTML='<div style="padding:20px;color:#888;text-align:center;">Không có nhu cầu trang bị nào.</div>';document.getElementById('btn-export-nhucau').style.display='none';return;}
-  _renderNhuCauTable(data,quyList);document.getElementById('btn-export-nhucau').style.display='';
+  const warnHtml=_nhucauMissingWarnHtml();
+  if(!data.length){document.getElementById('nhucau-result').innerHTML=warnHtml+'<div style="padding:20px;color:#888;text-align:center;">Không có nhu cầu trang bị nào.</div>';document.getElementById('btn-export-nhucau').style.display='none';return;}
+  _renderNhuCauTable(data,quyList);
+  var _res=document.getElementById('nhucau-result'); _res.innerHTML=warnHtml+_res.innerHTML;
+  document.getElementById('btn-export-nhucau').style.display='';
   window._nhucauData=data;window._nhucauQuyList=quyList;
+}
+function _nhucauMissingWarnHtml(){
+  var m=window._nhucauMissing||[]; if(!m.length)return '';
+  var rows=m.map(function(x){return '<li>'+_escH(x.ten||'')+' <span style="color:#999;font-size:12px;">('+_escH(x.danhSo||'—')+' · '+_escH(x.boPhan||'')+')</span> — thiếu <b>'+_escH(x.thieu)+'</b></li>';}).join('');
+  return '<div style="background:#fff8e1;border:1px solid #ffe082;border-radius:8px;padding:12px 14px;margin-bottom:14px;font-size:13px;color:#7a5c00;">'+
+    '<div style="font-weight:600;margin-bottom:6px;">⚠️ '+m.length+' nhân viên chưa có cỡ nên chưa được tính nhu cầu quần áo/giày:</div>'+
+    '<ul style="margin:0;padding-left:20px;line-height:1.7;">'+rows+'</ul>'+
+    '<div style="margin-top:6px;font-size:12px;">Bổ sung cỡ ở tab Nhân sự rồi bấm “Tính nhu cầu” lại để tính đủ.</div></div>';
 }
 function _computeNhuCauData(quyList){
   // Cửa sổ tính = từ tháng đầu của quý đầu tiên đến tháng cuối của quý cuối cùng
@@ -4324,6 +4335,7 @@ function _computeNhuCauData(quyList){
   const wEnd=lastQMonths[lastQMonths.length-1];
   const nQuarters=quyList.length;
   const map={};
+  const _missSet={}; // nhân viên thiếu cỡ → không tính được quần áo/giày
   function _row(tbSized,tb){
     const key=tbSized.id;
     if(!map[key]){map[key]={tbId:tbSized.id,ten:tbSized.ten,ma:tbSized.ma||'',dvUnit:tbSized.donVi||tb.donVi||'',perUnit:{}};NHUCAU_UNITS.forEach(u=>map[key].perUnit[u]=0);}
@@ -4340,6 +4352,13 @@ function _computeNhuCauData(quyList){
         // Trang bị không cỡ (áo mưa, mũ, kính, khẩu trang, găng tay, ghệt da): getTBSized trả về nhóm trang bị,
         // nhưng tồn kho lưu theo id danh mục → map sang danh mục để khớp mã vật tư & tồn kho
         if(tb.loaiCo===''){const _dm=daDanhMuc.find(d=>d.nhomId===tb.id);if(_dm)tbSized=_dm;}
+        // Chỉ tính khi phân giải được về 1 trang bị cụ thể (danh mục con có mã). Nếu chỉ ra tới NHÓM
+        // (nhân viên chưa có cỡ quần áo/giày, hoặc nhóm chưa có danh mục con) thì bỏ qua, không đưa nhóm vào bảng.
+        if(!tbSized||tbSized.nhomId==null){
+          if(tb.loaiCo==='quan_ao'&&!nv.coQuanAo){var _k1=nv.id+'|qa';if(!_missSet[_k1])_missSet[_k1]={ten:nv.ten,danhSo:nv.danhSo||'',boPhan:unit,thieu:'Cỡ quần áo'};}
+          else if(tb.loaiCo==='giay'&&!nv.coGiay){var _k2=nv.id+'|giay';if(!_missSet[_k2])_missSet[_k2]={ten:nv.ten,danhSo:nv.danhSo||'',boPhan:unit,thieu:'Cỡ giày'};}
+          return;
+        }
         // Găng tay & khẩu trang: cấp theo quý → mỗi quý 1 lượng, nhân với số quý trong cửa sổ
         if(tenTB.includes('Găng tay')||tenTB==='Khẩu trang'){
           let slQuy=Math.round((3/d.chuKy)*d.soLuong);if(slQuy<1)slQuy=1;
@@ -4359,6 +4378,7 @@ function _computeNhuCauData(quyList){
       });
     });
   });
+  window._nhucauMissing=Object.values(_missSet).sort((a,b)=>((a.boPhan||'').localeCompare(b.boPhan||'','vi'))||((a.ten||'').localeCompare(b.ten||'','vi')));
   return Object.values(map).map(row=>{const tongNhuCau=NHUCAU_UNITS.reduce((s,u)=>s+(row.perUnit[u]||0),0);const tonKho=daTonKho[row.tbId]||0;const canMua=Math.max(0,tongNhuCau-tonKho);return{...row,tongNhuCau,tonKho,canMua};}).filter(row=>row.tongNhuCau>0).sort((a,b)=>a.ten.localeCompare(b.ten,'vi'));
 }
 function _renderNhuCauTable(data,quyList){
