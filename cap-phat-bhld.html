@@ -4294,6 +4294,8 @@ function xacNhanKho(type){
 }
 
 // ========= NHU CẦU MUA SẮM =========
+// Đơn vị đưa vào tính nhu cầu — loại đơn vị "Test" (dữ liệu thử)
+const NHUCAU_UNITS=UNIT_ORDER.filter(u=>u!=='Test');
 function initNhuCauPage(){
   const qEl=document.getElementById('nhucau-q');const yEl=document.getElementById('nhucau-y');if(!qEl||!yEl)return;
   // Mặc định = quý + năm hiện tại
@@ -4324,10 +4326,10 @@ function _computeNhuCauData(quyList){
   const map={};
   function _row(tbSized,tb){
     const key=tbSized.id;
-    if(!map[key]){map[key]={tbId:tbSized.id,ten:tbSized.ten,ma:tbSized.ma||'',dvUnit:tbSized.donVi||tb.donVi||'',perUnit:{}};UNIT_ORDER.forEach(u=>map[key].perUnit[u]=0);}
+    if(!map[key]){map[key]={tbId:tbSized.id,ten:tbSized.ten,ma:tbSized.ma||'',dvUnit:tbSized.donVi||tb.donVi||'',perUnit:{}};NHUCAU_UNITS.forEach(u=>map[key].perUnit[u]=0);}
     return map[key];
   }
-  UNIT_ORDER.forEach(unit=>{
+  NHUCAU_UNITS.forEach(unit=>{
     daNhanVien.filter(n=>n.boPhan===unit).forEach(nv=>{
       const _cd=getChucDanhByTen(nv.chucDanh);
       const dmList=daDinhMuc.filter(d=>(_cd&&d.chucDanhId==_cd.id)||d.chucDanh===nv.chucDanh);
@@ -4357,13 +4359,13 @@ function _computeNhuCauData(quyList){
       });
     });
   });
-  return Object.values(map).map(row=>{const tongNhuCau=UNIT_ORDER.reduce((s,u)=>s+(row.perUnit[u]||0),0);const tonKho=daTonKho[row.tbId]||0;const canMua=Math.max(0,tongNhuCau-tonKho);return{...row,tongNhuCau,tonKho,canMua};}).filter(row=>row.tongNhuCau>0).sort((a,b)=>a.ten.localeCompare(b.ten,'vi'));
+  return Object.values(map).map(row=>{const tongNhuCau=NHUCAU_UNITS.reduce((s,u)=>s+(row.perUnit[u]||0),0);const tonKho=daTonKho[row.tbId]||0;const canMua=Math.max(0,tongNhuCau-tonKho);return{...row,tongNhuCau,tonKho,canMua};}).filter(row=>row.tongNhuCau>0).sort((a,b)=>a.ten.localeCompare(b.ten,'vi'));
 }
 function _renderNhuCauTable(data,quyList){
   const el=document.getElementById('nhucau-result');
-  const unitCols=UNIT_ORDER.map(u=>`<th style="min-width:80px;text-align:center;font-size:12px;white-space:normal;">${UNIT_ICONS[u]||''} ${u}</th>`).join('');
+  const unitCols=NHUCAU_UNITS.map(u=>`<th style="min-width:80px;text-align:center;font-size:12px;white-space:normal;">${UNIT_ICONS[u]||''} ${u}</th>`).join('');
   const rows=data.map((row,idx)=>{
-    const unitCells=UNIT_ORDER.map(u=>`<td style="text-align:center;">${row.perUnit[u]>0?row.perUnit[u]:'—'}</td>`).join('');
+    const unitCells=NHUCAU_UNITS.map(u=>`<td style="text-align:center;">${row.perUnit[u]>0?row.perUnit[u]:'—'}</td>`).join('');
     const canMuaStyle=row.canMua>0?'color:#c0392b;font-weight:700;':'color:#27ae60;font-weight:600;';
     return`<tr><td style="text-align:center;">${idx+1}</td><td style="font-size:12px;color:#666;">${row.ma||'—'}</td><td>${row.ten}</td><td style="text-align:center;font-size:12px;">${row.dvUnit||''}</td>${unitCells}<td style="text-align:center;font-weight:700;">${row.tongNhuCau}</td><td style="text-align:center;color:#2980b9;font-weight:600;">${row.tonKho}</td><td style="text-align:center;${canMuaStyle}">${row.canMua}</td></tr>`;
   }).join('');
@@ -4377,8 +4379,8 @@ function _renderNhuCauTable(data,quyList){
 function exportNhuCauExcel(){
   const data=window._nhucauData;const quyList=window._nhucauQuyList;if(!data||!data.length){showToast('Chưa có dữ liệu.','error');return;}
   if(typeof XLSX==='undefined'){showToast('⚠️ Thư viện Excel chưa tải.','error');return;}
-  const header=['STT','Mã vật tư','Tên trang bị','ĐVT',...UNIT_ORDER,'Tổng nhu cầu','Tồn kho','Cần mua thêm'];
-  const rows=data.map((row,idx)=>[idx+1,row.ma||'',row.ten,row.dvUnit||'',...UNIT_ORDER.map(u=>row.perUnit[u]||0),row.tongNhuCau,row.tonKho,row.canMua]);
+  const header=['STT','Mã vật tư','Tên trang bị','ĐVT',...NHUCAU_UNITS,'Tổng nhu cầu','Tồn kho','Cần mua thêm'];
+  const rows=data.map((row,idx)=>[idx+1,row.ma||'',row.ten,row.dvUnit||'',...NHUCAU_UNITS.map(u=>row.perUnit[u]||0),row.tongNhuCau,row.tonKho,row.canMua]);
   const ws=XLSX.utils.aoa_to_sheet([[`Nhu cầu mua sắm BHLĐ – ${quyList[0]} đến ${quyList[3]}`],[`Xuất ngày: ${new Date().toLocaleDateString('vi-VN')}`],[],header,...rows]);
   const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Nhu cầu');XLSX.writeFile(wb,`NhuCauMuaSam_${quyList[0]}_${quyList[3]}.xlsx`.replace(/\//g,'_'));showToast('📥 Đã tải file Excel!');
 }
