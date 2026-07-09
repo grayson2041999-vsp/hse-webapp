@@ -22,6 +22,16 @@ var BHLD = (function () {
     'nhom_nv', 'quy_list', 'nhom_tb', 'chuc_danh'
   ];
 
+  // Cột chỉ dùng ở client, KHÔNG tồn tại trên bảng server (loại bỏ trước khi gửi lên).
+  // 'nhomId' được dựng lại phía client từ 'nhomNoiBo', server không có cột này.
+  var CLIENT_ONLY = { nhanvien: ['nhomId'] };
+  function _stripClientOnly(sheet, obj) {
+    var extra = CLIENT_ONLY[sheet];
+    if (!extra || !obj || typeof obj !== 'object') return obj;
+    var copy = {}; for (var k in obj) { if (extra.indexOf(k) < 0) copy[k] = obj[k]; }
+    return copy;
+  }
+
   var LS_MAP = {
     'nhanvien':          'bhld_nhanvien',
     'phieu_requests':    'bhld_phieu_requests',
@@ -85,7 +95,7 @@ var BHLD = (function () {
     if (_i >= 0) local[_i] = obj; else local.push(obj);
     lsSet(sheet, local);
     return _ready().then(function (sb) {
-      return sb.from(sheet).upsert(obj, { onConflict: 'id' }).select();
+      return sb.from(sheet).upsert(_stripClientOnly(sheet, obj), { onConflict: 'id' }).select();
     }).then(function (res) {
       if (res.error) throw new Error(res.error.message);
       return { ok: true, data: obj };
@@ -99,7 +109,7 @@ var BHLD = (function () {
     var idx = local.findIndex(function (r) { return String(r.id) === String(id); });
     if (idx >= 0) { local[idx] = Object.assign({}, local[idx], changes, { id: id }); lsSet(sheet, local); }
     return _ready().then(function (sb) {
-      return sb.from(sheet).update(changes).eq('id', id).select();
+      return sb.from(sheet).update(_stripClientOnly(sheet, changes)).eq('id', id).select();
     }).then(function (res) {
       if (res.error) throw new Error(res.error.message);
       return { ok: true };

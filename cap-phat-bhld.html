@@ -2422,8 +2422,16 @@ function saveNhom(){
   const ten=document.getElementById('nhom-ten-input').value.trim();if(!ten){showToast('Vui lòng nhập tên nhóm!','error');return;}
   const donVi=_currentUnit||'';if(!donVi){showToast('Vui lòng chọn đơn vị trước.','error');return;}
   if(editingIds.nhom){
-    const idx=daGroups.findIndex(g=>g.id===editingIds.nhom);
-    if(idx>=0){daGroups[idx].ten=ten;_bhldPush('update','nhom_nv',daGroups[idx].id,daGroups[idx]);showToast(`Đã đổi tên nhóm thành "${ten}"!`);}
+    const idx=daGroups.findIndex(g=>String(g.id)===String(editingIds.nhom));
+    if(idx>=0){
+      const gid=daGroups[idx].id, oldTen=daGroups[idx].ten;
+      daGroups[idx].ten=ten;_bhldPush('update','nhom_nv',gid,daGroups[idx]);
+      // Server lưu thành viên theo TÊN nhóm (nhomNoiBo) → phải cập nhật lại cho các NV trong nhóm
+      const mem=daNhanVien.filter(n=>String(n.nhomId)===String(gid)||n.nhomNoiBo===oldTen);
+      mem.forEach(n=>{const j=daNhanVien.findIndex(x=>String(x.id)===String(n.id));if(j>=0){daNhanVien[j].nhomNoiBo=ten;_bhldPush('update','nhanvien',n.id,{nhomNoiBo:ten});}});
+      if(mem.length){saveData('nhanvien',daNhanVien);BHLD.lsSet('nhanvien',daNhanVien);}
+      showToast(`Đã đổi tên nhóm thành "${ten}"!`);
+    }
   } else {
     const trung=daGroups.find(g=>g.donVi===donVi&&g.ten===ten);if(trung){showToast(`Đã có nhóm tên "${ten}"!`,'error');return;}
     const newG={id:nextGroupId(donVi),ten,donVi};daGroups.push(newG);
@@ -2437,10 +2445,11 @@ function deleteNhom(id){
   const count=daNhanVien.filter(n=>n.nhomId===id).length;
   if(!confirm(`Xóa nhóm "${g.ten}"?${count>0?` ${count} nhân viên sẽ chuyển về "Chưa có nhóm".`:''}`))return;
   if(count>0){
-    daNhanVien=daNhanVien.map(n=>n.nhomId===id?{...n,nhomId:null}:n);
+    // Ghi nhận NV bị ảnh hưởng rồi gỡ cả nhomId (client) lẫn nhomNoiBo (server lưu theo tên)
+    const affected=daNhanVien.filter(n=>String(n.nhomId)===String(id)).map(n=>n.id);
+    daNhanVien=daNhanVien.map(n=>String(n.nhomId)===String(id)?{...n,nhomId:null,nhomNoiBo:''}:n);
     saveData('nhanvien',daNhanVien);BHLD.lsSet('nhanvien',daNhanVien);
-    // Update từng NV bị ảnh hưởng lên Sheet
-    daNhanVien.filter(n=>!n.nhomId).forEach(n=>_bhldPush('update','nhanvien',n.id,{nhomId:null}));
+    affected.forEach(aid=>_bhldPush('update','nhanvien',aid,{nhomNoiBo:''}));
   }
   daGroups=daGroups.filter(x=>x.id!==id);
   saveData('nhom-nv',daGroups);BHLD.lsSet('nhom_nv',daGroups);
