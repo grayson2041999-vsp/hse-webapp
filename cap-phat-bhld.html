@@ -273,6 +273,7 @@
         <select id="cpns-chucdanh" onchange="cpRenderNhanSu()" style="min-width:200px;"></select>
       </div>
       <div id="cpns-count" style="font-size:12.5px;color:var(--text-light);margin-bottom:8px;"></div>
+      <div id="cpns-nhom-bar" style="margin-bottom:10px;"></div>
       <div class="table-wrap" id="cpns-wrap" style="max-height:66vh;"><table id="cpns-table"><thead>
         <tr>
           <th rowspan="2" style="width:44px;text-align:center;position:sticky;top:0;z-index:5;background:#f8fafc;">STT</th>
@@ -1579,9 +1580,105 @@ function cpnsSaveEdit(id){
   }
   _cpnsEditId=null; cpRenderNhanSu();
 }
+// ── Render 1 dòng nhân viên đã lưu (dùng cho cả chế độ phẳng lẫn nhóm) ──
+function _cpnsLiveRow(n,stt,draggable,grpSelHtml){
+  var f=(typeof _fThangTxt==='function')?_fThangTxt:function(x){return x||'';};
+  if(String(n.id)===String(_cpnsEditId)){
+    var ed={danhSo:n.danhSo,ten:n.ten,chucDanh:n.chucDanh,gioiTinh:n.gioiTinh,coQuanAo:n.coQuanAo,coGiay:n.coGiay};
+    _CPNS_MONTHS.forEach(function(fld){ ed[fld]=_cpnsToMMYYYY(n[fld]); });
+    return _cpnsInputRow('edit',String(n.id),ed,n.boPhan||'');
+  }
+  var _pc=(typeof _nvPendingChange==='function')?_nvPendingChange(n.id):null;
+  var canEd=(typeof canEditUnit==='function'&&canEditUnit(n.boPhan));
+  var act=_pc
+    ? '<span style="display:inline-flex;align-items:center;gap:4px;background:#fff3cd;color:#856404;font-size:11px;font-weight:700;border-radius:20px;padding:3px 10px;white-space:nowrap;">⏳ Chờ duyệt</span>'
+    : ( canEd
+      ? (grpSelHtml||'')+'<button class="btn btn-ghost btn-sm" style="padding:4px 8px;" title="Sửa" onclick="cpNsEdit(\''+n.id+'\')">'+_ic('edit',13)+'</button> <button class="btn btn-danger btn-sm" style="padding:4px 8px;" title="Xoá" onclick="cpNsDelete(\''+n.id+'\')">'+_ic('del',13)+'</button>'
+      : '<span style="color:var(--text-light);">—</span>' );
+  var canDrag=draggable&&!_pc;
+  var dragAttr=canDrag?' draggable="true" data-nv-id="'+n.id+'"':'';
+  var sttCell=canDrag
+    ? '<td style="text-align:center;color:var(--text-light);cursor:grab;" title="Kéo để đổi vị trí / nhóm">⠿ '+stt+'</td>'
+    : '<td style="text-align:center;color:var(--text-light);">'+stt+'</td>';
+  return '<tr'+dragAttr+'>'+
+    sttCell+
+    '<td><code style="font-size:12px;color:var(--text-light);">'+_escH(n.danhSo||'')+'</code></td>'+
+    '<td><strong>'+_escH(n.ten||'')+'</strong>'+(n.gioiTinh==='nu'?' <span style="font-size:10px;color:var(--text-light);">(Nữ)</span>':'')+'</td>'+
+    '<td style="font-size:12.5px;">'+_escH(n.chucDanh||'')+'</td>'+
+    '<td style="font-size:12.5px;">'+_escH(n.boPhan||'—')+'</td>'+
+    '<td style="text-align:center;">'+_escH(n.coQuanAo||'')+'</td>'+
+    '<td style="text-align:center;">'+_escH(n.coGiay||'')+'</td>'+
+    '<td style="text-align:center;font-size:12px;">'+_escH(f(n.thangCapQuanAo)||'-')+'</td>'+
+    '<td style="text-align:center;font-size:12px;">'+_escH(f(n.thangCapGiay)||'-')+'</td>'+
+    '<td style="text-align:center;font-size:12px;">'+_escH(f(n.thangCapMu)||'-')+'</td>'+
+    '<td style="text-align:center;font-size:12px;">'+_escH(f(n.thangCapKinh)||'-')+'</td>'+
+    '<td style="text-align:center;font-size:12px;">'+_escH(f(n.thangCapAoMua)||'-')+'</td>'+
+    '<td style="text-align:center;font-size:12px;">'+_escH(f(n.thangCapQAHan)||'-')+'</td>'+
+    '<td style="text-align:center;white-space:nowrap;">'+act+'</td>'+
+  '</tr>';
+}
+// Dropdown chọn nhóm cho 1 nhân viên (chỉ khi có quyền quản lý nhóm & đơn vị có nhóm)
+function _cpnsGrpSelect(n,unitGroups,canManage){
+  if(!canManage||!unitGroups.length)return '';
+  var opts='<option value="">— Chưa nhóm —</option>'+unitGroups.map(function(g){return '<option value="'+_escH(String(g.id))+'"'+(String(n.nhomId)===String(g.id)?' selected':'')+'>['+_escH(String(g.id))+'] '+_escH(g.ten)+'</option>';}).join('');
+  return '<select title="Chuyển nhóm" onchange="setNhomNV(\''+n.id+'\',this.value)" onclick="event.stopPropagation();" style="font-size:11px;padding:2px 4px;border:1px solid var(--border);border-radius:5px;max-width:118px;margin-right:6px;vertical-align:middle;">'+opts+'</select>';
+}
+// Dòng tiêu đề nhóm (full width) — cho phép thả vào để chuyển nhóm
+function _cpnsGroupHeaderRow(g,count,canManage){
+  var badge=g?'<span style="display:inline-flex;align-items:center;justify-content:center;background:var(--primary);color:#fff;font-weight:800;font-size:11px;border-radius:50%;width:20px;height:20px;margin-right:6px;">'+_escH(String(g.id))+'</span>'+_escH(g.ten):'📂 Chưa xếp nhóm';
+  var manage=(g&&canManage)?(' <button onclick="openModalNhom(\''+_escH(String(g.id))+'\')" style="background:none;border:none;cursor:pointer;font-size:12.5px;padding:0 2px;" title="Đổi tên">✏️</button><button onclick="deleteNhom(\''+_escH(String(g.id))+'\')" style="background:none;border:none;cursor:pointer;font-size:12.5px;padding:0 2px;color:var(--danger);" title="Xoá nhóm">🗑️</button>'):'';
+  return '<tr class="cpns-grp" data-nhom-drop="'+(g?_escH(String(g.id)):'')+'" style="background:#eaf2fb;"><td colspan="14" style="padding:7px 12px;font-weight:700;color:var(--primary);font-size:13px;border-bottom:2px solid #b0cde8;">'+badge+' <span style="font-weight:400;color:var(--text-light);font-size:12px;">('+count+' người)</span>'+manage+'</td></tr>';
+}
+// Khởi tạo kéo-thả cho bảng Tra cứu (chỉ gắn 1 lần)
+var _cpnsDragId=null;
+function _cpnsInitDrag(){
+  var tb=document.getElementById('cpns-tbody'); if(!tb||tb._cpnsDragBound)return; tb._cpnsDragBound=true;
+  tb.addEventListener('dragstart',function(e){var tr=e.target.closest&&e.target.closest('tr[data-nv-id]');if(!tr){return;}_cpnsDragId=tr.getAttribute('data-nv-id');e.dataTransfer.effectAllowed='move';try{e.dataTransfer.setData('text/plain',_cpnsDragId);}catch(x){}requestAnimationFrame(function(){tr.style.opacity='.4';});});
+  tb.addEventListener('dragend',function(e){var tr=e.target.closest&&e.target.closest('tr[data-nv-id]');if(tr)tr.style.opacity='';tb.querySelectorAll('tr.cpns-drop-over').forEach(function(t){t.classList.remove('cpns-drop-over');t.style.outline='';});_cpnsDragId=null;});
+  tb.addEventListener('dragover',function(e){if(!_cpnsDragId)return;e.preventDefault();e.dataTransfer.dropEffect='move';var tr=e.target.closest&&e.target.closest('tr[data-nv-id],tr[data-nhom-drop]');tb.querySelectorAll('tr.cpns-drop-over').forEach(function(t){t.classList.remove('cpns-drop-over');t.style.outline='';});if(tr){tr.classList.add('cpns-drop-over');tr.style.outline='2px dashed var(--primary)';}});
+  tb.addEventListener('drop',function(e){
+    e.preventDefault();
+    tb.querySelectorAll('tr.cpns-drop-over').forEach(function(t){t.classList.remove('cpns-drop-over');t.style.outline='';});
+    if(!_cpnsDragId)return;
+    var rowT=e.target.closest&&e.target.closest('tr[data-nv-id]');
+    var hdrT=e.target.closest&&e.target.closest('tr[data-nhom-drop]');
+    var src=daNhanVien.find(function(n){return String(n.id)===String(_cpnsDragId);}); if(!src){_cpnsDragId=null;return;}
+    var newNhom=src.nhomId||null, beforeId=null;
+    if(rowT){
+      var tgt=daNhanVien.find(function(n){return String(n.id)===String(rowT.getAttribute('data-nv-id'));});
+      if(!tgt||String(tgt.id)===String(src.id)){_cpnsDragId=null;return;}
+      if(tgt.boPhan!==src.boPhan){showToast('Chỉ sắp xếp trong cùng đơn vị.','warning');_cpnsDragId=null;return;}
+      newNhom=tgt.nhomId||null; beforeId=tgt.id;
+    } else if(hdrT){
+      newNhom=hdrT.getAttribute('data-nhom-drop')||null; beforeId=null;
+    } else { _cpnsDragId=null; return; }
+    _cpnsApplyDrop(src.id,newNhom,beforeId);
+    _cpnsDragId=null;
+  });
+}
+// Áp dụng kéo-thả: đặt lại nhóm + thứ tự (stt) cho nhân viên, lưu & đồng bộ
+function _cpnsApplyDrop(srcId,newNhom,beforeId){
+  var src=daNhanVien.find(function(n){return String(n.id)===String(srcId);}); if(!src)return;
+  var unit=src.boPhan;
+  var grp=newNhom?daGroups.find(function(g){return String(g.id)===String(newNhom)&&g.donVi===unit;}):null;
+  src.nhomId=grp?grp.id:null; src.nhomNoiBo=grp?grp.ten:'';
+  var unitGroups=daGroups.filter(function(g){return g.donVi===unit;}).sort(function(a,b){return (a.thu_tu||0)-(b.thu_tu||0)||String(a.id).localeCompare(String(b.id));});
+  function ms(arr){return arr.sort(function(a,b){var sa=a.stt!=null?+a.stt:9999,sb=b.stt!=null?+b.stt:9999;if(sa!==sb)return sa-sb;return (a.ten||'').localeCompare(b.ten||'','vi');});}
+  var members=daNhanVien.filter(function(n){return n.boPhan===unit;});
+  var ordered=[];
+  unitGroups.forEach(function(g){ordered=ordered.concat(ms(members.filter(function(n){return String(n.nhomId)===String(g.id)&&String(n.id)!==String(srcId);})));});
+  ordered=ordered.concat(ms(members.filter(function(n){return (!n.nhomId||!unitGroups.find(function(g){return String(g.id)===String(n.nhomId);}))&&String(n.id)!==String(srcId);})));
+  if(beforeId){ var bi=ordered.findIndex(function(n){return String(n.id)===String(beforeId);}); if(bi<0)ordered.push(src); else ordered.splice(bi,0,src); }
+  else { var last=-1; for(var i=0;i<ordered.length;i++){ if(String(ordered[i].nhomId||'')===String(src.nhomId||''))last=i; } if(last>=0)ordered.splice(last+1,0,src); else ordered.push(src); }
+  ordered.forEach(function(n,idx){ var j=daNhanVien.findIndex(function(x){return String(x.id)===String(n.id);}); if(j>=0)daNhanVien[j].stt=idx; });
+  saveData('nhanvien',daNhanVien); BHLD.lsSet('nhanvien',daNhanVien);
+  ordered.forEach(function(n){ var o=daNhanVien.find(function(x){return String(x.id)===String(n.id);}); if(o)_bhldPush('update','nhanvien',o.id,{stt:o.stt,nhomId:o.nhomId,nhomNoiBo:o.nhomNoiBo}); });
+  cpRenderNhanSu();
+}
 function cpRenderNhanSu(){
   var q=(document.getElementById('cpns-search').value||'').trim().toLowerCase();
   var dv=document.getElementById('cpns-donvi').value||'';
+  if(dv)_currentUnit=dv; // để openModalNhom/saveNhom/deleteNhom/setNhomNV dùng đúng đơn vị
   var cd=document.getElementById('cpns-chucdanh').value||'';
   var f=(typeof _fThangTxt==='function')?_fThangTxt:function(x){return x||'';};
   var list=daNhanVien.filter(function(n){
@@ -1590,37 +1687,27 @@ function cpRenderNhanSu(){
     if(q&&(((n.ten||'')+' '+(n.danhSo||'')).toLowerCase().indexOf(q)<0))return false;
     return true;
   }).sort(function(a,b){var d=_cpUnitRank(a.boPhan)-_cpUnitRank(b.boPhan);return d!==0?d:(a.ten||'').localeCompare(b.ten||'','vi');});
-  var body=list.map(function(n,i){
-    // Đang sửa inline hàng này → render ô nhập
-    if(String(n.id)===String(_cpnsEditId)){
-      var ed={danhSo:n.danhSo,ten:n.ten,chucDanh:n.chucDanh,gioiTinh:n.gioiTinh,coQuanAo:n.coQuanAo,coGiay:n.coGiay};
-      _CPNS_MONTHS.forEach(function(fld){ ed[fld]=_cpnsToMMYYYY(n[fld]); });
-      return _cpnsInputRow('edit',String(n.id),ed,n.boPhan||'');
-    }
-    var _pc=(typeof _nvPendingChange==='function')?_nvPendingChange(n.id):null;
-    var canEd=(typeof canEditUnit==='function'&&canEditUnit(n.boPhan));
-    var act = _pc
-      ? '<span style="display:inline-flex;align-items:center;gap:4px;background:#fff3cd;color:#856404;font-size:11px;font-weight:700;border-radius:20px;padding:3px 10px;white-space:nowrap;">⏳ Chờ duyệt</span>'
-      : ( canEd
-        ? '<button class="btn btn-ghost btn-sm" style="padding:4px 8px;" title="Sửa" onclick="cpNsEdit(\''+n.id+'\')">'+_ic('edit',13)+'</button> <button class="btn btn-danger btn-sm" style="padding:4px 8px;" title="Xoá" onclick="cpNsDelete(\''+n.id+'\')">'+_ic('del',13)+'</button>'
-        : '<span style="color:var(--text-light);">—</span>' );
-    return '<tr>'+
-      '<td style="text-align:center;color:var(--text-light);">'+(i+1)+'</td>'+
-      '<td><code style="font-size:12px;color:var(--text-light);">'+_escH(n.danhSo||'')+'</code></td>'+
-      '<td><strong>'+_escH(n.ten||'')+'</strong></td>'+
-      '<td style="font-size:12.5px;">'+_escH(n.chucDanh||'')+'</td>'+
-      '<td style="font-size:12.5px;">'+_escH(n.boPhan||'—')+'</td>'+
-      '<td style="text-align:center;">'+_escH(n.coQuanAo||'')+'</td>'+
-      '<td style="text-align:center;">'+_escH(n.coGiay||'')+'</td>'+
-      '<td style="text-align:center;font-size:12px;">'+_escH(f(n.thangCapQuanAo)||'-')+'</td>'+
-      '<td style="text-align:center;font-size:12px;">'+_escH(f(n.thangCapGiay)||'-')+'</td>'+
-      '<td style="text-align:center;font-size:12px;">'+_escH(f(n.thangCapMu)||'-')+'</td>'+
-      '<td style="text-align:center;font-size:12px;">'+_escH(f(n.thangCapKinh)||'-')+'</td>'+
-      '<td style="text-align:center;font-size:12px;">'+_escH(f(n.thangCapAoMua)||'-')+'</td>'+
-      '<td style="text-align:center;font-size:12px;">'+_escH(f(n.thangCapQAHan)||'-')+'</td>'+
-      '<td style="text-align:center;white-space:nowrap;">'+act+'</td>'+
-    '</tr>';
-  }).join('');
+  var body='';
+  if(dv){
+    // ── Chế độ GOM NHÓM (khi chọn 1 đơn vị) ──
+    var _canMng=(typeof canManageNhom==='function')&&canManageNhom(dv);
+    var _dragOn=(typeof canEditUnit==='function')&&canEditUnit(dv);
+    var unitGroups=daGroups.filter(function(g){return g.donVi===dv;}).sort(function(a,b){return (a.thu_tu||0)-(b.thu_tu||0)||String(a.id).localeCompare(String(b.id));});
+    var _ms=function(arr){return arr.sort(function(a,b){var sa=a.stt!=null?+a.stt:9999,sb=b.stt!=null?+b.stt:9999;if(sa!==sb)return sa-sb;return (a.ten||'').localeCompare(b.ten||'','vi');});};
+    var _stt=1;
+    unitGroups.forEach(function(g){
+      var mem=_ms(list.filter(function(n){return String(n.nhomId)===String(g.id);}));
+      body+=_cpnsGroupHeaderRow(g,mem.length,_canMng);
+      body+=mem.map(function(n){return _cpnsLiveRow(n,_stt++,_dragOn,_cpnsGrpSelect(n,unitGroups,_canMng));}).join('');
+    });
+    var noG=_ms(list.filter(function(n){return !n.nhomId||!unitGroups.find(function(g){return String(g.id)===String(n.nhomId);});}));
+    // Chỉ hiện tiêu đề "Chưa xếp nhóm" khi đơn vị đã có nhóm (để không rối khi chưa dùng nhóm)
+    if(unitGroups.length)body+=_cpnsGroupHeaderRow(null,noG.length,_canMng);
+    body+=noG.map(function(n){return _cpnsLiveRow(n,_stt++,_dragOn,_cpnsGrpSelect(n,unitGroups,_canMng));}).join('');
+  } else {
+    // ── Chế độ PHẲNG (tất cả đơn vị) ──
+    body=list.map(function(n,i){return _cpnsLiveRow(n,i+1,false,'');}).join('');
+  }
   // ── Nhân sự đang CHỜ PHÊ DUYỆT (bản ghi pending_changes type='add') — hiển thị làm tối nền ──
   var pendList=[];
   try{
@@ -1725,6 +1812,19 @@ function cpRenderNhanSu(){
   var countTxt='Tìm thấy '+list.length+' nhân viên'+(pendList.length?' · '+pendList.length+' đang chờ phê duyệt':'');
   if(!canAddHere&&(typeof canEditUnit==='function')&&!(typeof isAdmin==='function'&&isAdmin())) countTxt+=' · Chọn đơn vị bạn quản lý để thêm nhân sự';
   document.getElementById('cpns-count').textContent=countTxt;
+  // Thanh quản lý nhóm — hiện khi đã chọn 1 đơn vị mình quản lý
+  var _bar=document.getElementById('cpns-nhom-bar');
+  if(_bar){
+    if(dv&&(typeof canManageNhom==='function')&&canManageNhom(dv)){
+      var _nG=daGroups.filter(function(g){return g.donVi===dv;}).length;
+      _bar.style.display='';
+      _bar.innerHTML='<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:#f3f7fc;border:1px solid #d6e3f2;border-radius:8px;padding:8px 12px;">'+
+        '<button class="btn btn-primary btn-sm" onclick="openModalNhom(null)">➕ Tạo nhóm</button>'+
+        '<span style="font-size:12px;color:var(--text-light);">Đơn vị <b style="color:var(--primary);">'+_escH(dv)+'</b> · '+_nG+' nhóm. Kéo biểu tượng ⠿ để đổi vị trí hoặc chuyển nhóm; hoặc dùng ô chọn nhóm ở cột Thao tác.</span>'+
+      '</div>';
+      if(typeof _cpnsInitDrag==='function')_cpnsInitDrag();
+    } else { _bar.style.display='none'; _bar.innerHTML=''; }
+  }
 }
 // Xoá từ bảng Tra cứu — đặt _currentUnit theo đơn vị của NV để phân quyền
 function cpNsDelete(id){ var nv=daNhanVien.find(function(x){return x.id===id;}); if(!nv)return; _currentUnit=nv.boPhan||''; if(typeof deleteNV==='function')deleteNV(id); }
@@ -2351,7 +2451,7 @@ function setNhomNV(nvId,nhomIdStr){
   const nhomId=nhomIdStr===''?null:nhomIdStr;
   const idx=daNhanVien.findIndex(n=>n.id===nvId);if(idx<0)return;
   const donViNV=daNhanVien[idx].boPhan||'';
-  const nhom=nhomId?daGroups.find(g=>g.id===nhomId&&g.donVi===donViNV):null;
+  const nhom=nhomId?daGroups.find(g=>String(g.id)===String(nhomId)&&g.donVi===donViNV):null;
   const nhomNoiBo=nhom?nhom.ten:'';
   daNhanVien[idx].nhomId=nhomId;
   daNhanVien[idx].nhomNoiBo=nhomNoiBo;
@@ -4460,6 +4560,7 @@ function _cpwSetupRealtime(){
       .on('postgres_changes',{event:'*',schema:'public',table:'phieu_requests'},function(p){_cpwOnRealtime('phieu_requests',p);})
       .on('postgres_changes',{event:'*',schema:'public',table:'pending_changes'},function(p){_cpwOnRealtime('pending_changes',p);})
       .on('postgres_changes',{event:'*',schema:'public',table:'notifications'},function(p){_cpwOnRealtime('notifications',p);})
+      .on('postgres_changes',{event:'*',schema:'public',table:'nhom_nv'},function(p){_cpwOnRealtime('nhom_nv',p);})
       .on('postgres_changes',{event:'*',schema:'public',table:'cap_phat_tien_trinh'},function(p){_cpwOnRealtime('cap_phat_tien_trinh',p);})
       .subscribe();
   }catch(e){ console.warn('[Realtime] setup lỗi:',e&&e.message||e); }
@@ -4507,6 +4608,12 @@ function _rtNotifToast(payload){
 function _cpwOnRealtime(table,payload){
   _rtMergeCache(table,payload);
   if(table==='nhanvien'){ _rtReloadNhanVien(); if(typeof cpUpdateApproveTile==='function')cpUpdateApproveTile(); return; }
+  if(table==='nhom_nv'){
+    try{ var g=BHLD.lsGet('nhom_nv'); if(Array.isArray(g)){ daGroups=g; if(typeof saveData==='function')saveData('nhom-nv',g); } }catch(e){}
+    var nsg=document.getElementById('cp-nhansu');
+    if(nsg&&nsg.style.display!=='none'&&typeof cpRenderNhanSu==='function'&&!(typeof _cpnsBusy==='function'&&_cpnsBusy()))cpRenderNhanSu();
+    return;
+  }
   if(table==='notifications'){
     if(typeof _updateNotifBadge==='function')_updateNotifBadge();
     var _np=document.getElementById('notif-panel');
