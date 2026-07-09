@@ -24,7 +24,8 @@ var BHLD = (function () {
 
   // Cột chỉ dùng ở client, KHÔNG tồn tại trên bảng server (loại bỏ trước khi gửi lên).
   // 'nhomId' được dựng lại phía client từ 'nhomNoiBo', server không có cột này.
-  var CLIENT_ONLY = { nhanvien: ['nhomId'] };
+  // 'donVi' (ĐVT) của danh_muc được suy ra từ nhóm ở client, bảng server không có cột này.
+  var CLIENT_ONLY = { nhanvien: ['nhomId'], danh_muc: ['donVi'] };
   function _stripClientOnly(sheet, obj) {
     var extra = CLIENT_ONLY[sheet];
     if (!extra || !obj || typeof obj !== 'object') return obj;
