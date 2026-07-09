@@ -307,7 +307,7 @@
       <div style="font-weight:600;color:var(--primary);margin-bottom:10px;font-size:14px;">Thêm loại quần áo</div>
       <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;">
         <div style="flex:1;min-width:220px;"><label style="font-size:12.5px;color:var(--text-light);display:block;margin-bottom:4px;">Tên loại quần áo *</label><input id="sc-ten" type="text" placeholder="VD: Bộ áo liền quần nam" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;"></div>
-        <div style="min-width:220px;"><label style="font-size:12.5px;color:var(--text-light);display:block;margin-bottom:4px;">Ảnh thông số kích cỡ *</label><input id="sc-file" type="file" accept="image/*" style="font-size:12.5px;"></div>
+        <div style="min-width:220px;"><label style="font-size:12.5px;color:var(--text-light);display:block;margin-bottom:4px;">Ảnh thông số kích cỡ * (tối đa 2)</label><input id="sc-file" type="file" accept="image/*" multiple style="font-size:12.5px;"></div>
         <button class="btn btn-primary btn-sm" onclick="scAdd()" style="padding:8px 16px;">＋ Thêm</button>
       </div>
       <div style="font-size:11.5px;color:var(--text-light);margin-top:8px;">Ảnh sẽ được nén nhẹ trước khi lưu để tiết kiệm dung lượng.</div>
@@ -1399,6 +1399,15 @@ function cpOpenSizeChart(){
     }
   }catch(e){}
 }
+// Lấy danh sách ảnh của 1 mục (tương thích: chuỗi dataURL đơn, hoặc chuỗi JSON mảng)
+function _scImgs(x){
+  if(!x)return [];
+  if(Array.isArray(x.anhs))return x.anhs.filter(Boolean);
+  var a=x.anh;
+  if(Array.isArray(a))return a.filter(Boolean);
+  if(typeof a==='string'&&a){ if(a.charAt(0)==='['){ try{var arr=JSON.parse(a);return Array.isArray(arr)?arr.filter(Boolean):[a];}catch(e){return [a];} } return [a]; }
+  return [];
+}
 function scRender(){
   var host=document.getElementById('sc-grid'); if(!host)return;
   var admin=(typeof isAdmin==='function'&&isAdmin());
@@ -1407,8 +1416,11 @@ function scRender(){
   if(!list.length){ host.innerHTML='<div style="text-align:center;color:var(--text-light);font-size:13px;padding:24px;">Chưa có loại quần áo nào.'+(admin?' Thêm ở khung phía trên.':'')+'</div>'; return; }
   host.innerHTML=list.map(function(x){
     var del=admin?'<button class="btn btn-danger btn-sm" style="padding:4px 12px;font-size:12px;" onclick="scDelete(\''+x.id+'\')">'+_ic('del',13)+' Xoá</button>':'';
-    var img=x.anh?'<img src="'+_escH(x.anh)+'" alt="'+_escH(x.ten||'')+'" style="width:100%;height:auto;display:block;cursor:zoom-in;background:#f2f4f7;" onclick="scOpenLightbox(\''+x.id+'\')">':'<div style="padding:40px;text-align:center;color:var(--text-light);font-size:12px;background:#f2f4f7;">Không có ảnh</div>';
-    return '<div class="card" style="padding:0;overflow:hidden;width:100%;max-width:1000px;text-align:center;">'+img+
+    var imgs=_scImgs(x);
+    var imgHtml=imgs.length
+      ? imgs.map(function(u,idx){return '<img src="'+_escH(u)+'" alt="'+_escH(x.ten||'')+'" style="width:100%;height:auto;display:block;cursor:zoom-in;background:#f2f4f7;'+(idx>0?'border-top:3px solid #fff;':'')+'" onclick="scOpenLightbox(\''+x.id+'\','+idx+')">';}).join('')
+      : '<div style="padding:40px;text-align:center;color:var(--text-light);font-size:12px;background:#f2f4f7;">Không có ảnh</div>';
+    return '<div class="card" style="padding:0;overflow:hidden;width:100%;max-width:1000px;text-align:center;">'+imgHtml+
       '<div style="padding:14px;display:flex;flex-direction:column;align-items:center;gap:10px;">'+
         '<strong style="font-size:16px;color:var(--primary);text-align:center;">'+_escH(x.ten||'')+'</strong>'+del+
       '</div></div>';
@@ -1437,12 +1449,14 @@ function _scCompressImage(file){
 function scAdd(){
   if(!(typeof isAdmin==='function'&&isAdmin())){ showToast('Chỉ quản trị viên.','error'); return; }
   var ten=(document.getElementById('sc-ten').value||'').trim();
-  var fileEl=document.getElementById('sc-file'); var file=fileEl&&fileEl.files&&fileEl.files[0];
+  var fileEl=document.getElementById('sc-file'); var files=(fileEl&&fileEl.files)?Array.prototype.slice.call(fileEl.files):[];
   if(!ten){ showToast('Vui lòng nhập tên loại quần áo.','error'); return; }
-  if(!file){ showToast('Vui lòng chọn ảnh thông số kích cỡ.','error'); return; }
+  if(!files.length){ showToast('Vui lòng chọn ảnh thông số kích cỡ.','error'); return; }
+  if(files.length>2){ showToast('Mỗi loại tối đa 2 ảnh.','warning'); return; }
   showToast('Đang xử lý ảnh…');
-  _scCompressImage(file).then(function(dataUrl){
-    var rec={id:(BHLD.genId?BHLD.genId():(Date.now().toString(36)+Math.random().toString(36).slice(2,6))),ten:ten,anh:dataUrl};
+  Promise.all(files.map(function(f){return _scCompressImage(f);})).then(function(urls){
+    urls=urls.filter(Boolean);
+    var rec={id:(BHLD.genId?BHLD.genId():(Date.now().toString(36)+Math.random().toString(36).slice(2,6))),ten:ten,anh:(urls.length>1?JSON.stringify(urls):urls[0])};
     BHLD.push.insert('size_chart',rec).catch(function(e){ showToast('⚠️ Lưu lên database lỗi: '+(e&&e.message||e)+' (đã lưu tạm trên máy)','warning'); });
     document.getElementById('sc-ten').value=''; if(fileEl)fileEl.value='';
     scRender(); showToast('✅ Đã thêm loại quần áo.');
@@ -1456,11 +1470,12 @@ function scDelete(id){
   BHLD.push.delete('size_chart',id).catch(function(){});
   scRender();
 }
-function scOpenLightbox(id){
+function scOpenLightbox(id,idx){
   var list=[]; try{ list=BHLD.lsGet('size_chart')||[]; }catch(e){}
-  var x=list.find(function(r){return String(r.id)===String(id);}); if(!x||!x.anh)return;
+  var x=list.find(function(r){return String(r.id)===String(id);}); if(!x)return;
+  var imgs=_scImgs(x); var src=imgs[idx||0]||imgs[0]; if(!src)return;
   var box=document.getElementById('sc-lightbox'); var im=document.getElementById('sc-lightbox-img');
-  if(im)im.src=x.anh; if(box)box.style.display='flex';
+  if(im)im.src=src; if(box)box.style.display='flex';
 }
 function scCloseLightbox(){ var box=document.getElementById('sc-lightbox'); if(box)box.style.display='none'; }
 // ===== TRA CỨU NHÂN SỰ (bảng lớn) =====
