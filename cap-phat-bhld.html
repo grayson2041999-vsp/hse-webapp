@@ -269,9 +269,8 @@
     <div class="card">
       <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px;">
         <input id="cpns-search" class="search-input" type="search" autocomplete="off" placeholder="Tìm theo họ tên, danh số..." oninput="cpRenderNhanSu()" style="flex:1;min-width:240px;">
-        <select id="cpns-donvi" onchange="cpRenderNhanSu()" style="min-width:180px;"></select>
+        <select id="cpns-donvi" onchange="cpnsOnUnitChange()" style="min-width:180px;"></select>
         <select id="cpns-chucdanh" onchange="cpRenderNhanSu()" style="min-width:200px;"></select>
-        <button id="cpns-add-btn" class="btn btn-primary" onclick="cpNsAddPerson()" style="display:none;white-space:nowrap;">+ Thêm nhân sự</button>
       </div>
       <div id="cpns-count" style="font-size:12.5px;color:var(--text-light);margin-bottom:8px;"></div>
       <div class="table-wrap"><table id="cpns-table"><thead>
@@ -1365,22 +1364,185 @@ function cpOpenTraCuu(){
   var cdSel=document.getElementById('cpns-chucdanh');
   cdSel.innerHTML='<option value="">— Tất cả chức danh —</option>'+cds.map(function(c){return '<option value="'+_escH(c)+'">'+_escH(c)+'</option>';}).join('');
   document.getElementById('cpns-search').value='';
-  // Nút "Thêm nhân sự" chỉ hiện cho user có quyền sửa ít nhất 1 đơn vị (Admin hoặc User được phân quyền)
-  var _addBtn=document.getElementById('cpns-add-btn');
-  if(_addBtn){
-    var _editable=(typeof UNIT_ORDER!=='undefined'?UNIT_ORDER:[]).filter(function(u){return typeof canEditUnit==='function'&&canEditUnit(u);});
-    _addBtn.style.display=_editable.length?'inline-flex':'none';
-  }
+  // Reset trạng thái nhập inline mỗi lần mở tab
+  _cpnsDrafts=[]; _cpnsEditId=null;
+  // User thường quản lý đúng 1 đơn vị → tự chọn để hiện ngay nút thêm (＋) ở cuối bảng
+  try{
+    if(!(typeof isAdmin==='function'&&isAdmin())){
+      var _ed=(typeof UNIT_ORDER!=='undefined'?UNIT_ORDER:[]).filter(function(u){return typeof canEditUnit==='function'&&canEditUnit(u);});
+      if(_ed.length===1)dvSel.value=_ed[0];
+    }
+  }catch(e){}
   cpRenderNhanSu();
 }
-// Thêm nhân sự đã có sẵn (đã có tháng cấp trước đó) — mở modal ở chế độ "NV cũ"
-function cpNsAddPerson(){
-  var editable=(typeof UNIT_ORDER!=='undefined'?UNIT_ORDER:[]).filter(function(u){return typeof canEditUnit==='function'&&canEditUnit(u);});
-  if(!editable.length){showToast('Bạn không có quyền thêm nhân sự.','error');return;}
-  // Ưu tiên đơn vị đang lọc (nếu user có quyền), nếu không thì lấy đơn vị đầu tiên user quản lý
-  var dv=document.getElementById('cpns-donvi').value||'';
-  _currentUnit=(dv&&canEditUnit(dv))?dv:editable[0];
-  if(typeof openModalNV==='function')openModalNV(true); // true = chế độ nhân viên cũ
+// Đổi bộ lọc đơn vị → xoá các hàng nhập dở, thoát chế độ sửa
+function cpnsOnUnitChange(){ _cpnsDrafts=[]; _cpnsEditId=null; cpRenderNhanSu(); }
+
+/* ===================== NHẬP INLINE (Tra cứu nhân sự) ===================== */
+var _cpnsEditId=null;      // id nhân viên đang sửa inline (hoặc null)
+var _cpnsDrafts=[];        // các hàng thêm mới đang nhập (chưa lưu)
+var _cpnsDraftSeq=0;
+var _CPNS_MONTHS=['thangCapQuanAo','thangCapGiay','thangCapMu','thangCapKinh','thangCapAoMua','thangCapQAHan'];
+
+// Có đang chọn đúng 1 đơn vị mà user được quyền sửa không? (điều kiện để hiện ＋ và nhập inline)
+function _cpnsCanEditSelectedUnit(){
+  var el=document.getElementById('cpns-donvi'); var dv=el?el.value:'';
+  return !!(dv&&typeof canEditUnit==='function'&&canEditUnit(dv));
+}
+// Đang nhập dở? → chặn realtime vẽ đè
+function _cpnsBusy(){
+  if(_cpnsEditId)return true;
+  if(_cpnsDrafts&&_cpnsDrafts.length)return true;
+  var ae=document.activeElement;
+  return !!(ae&&ae.closest&&ae.closest('#cpns-table'));
+}
+function _cpnsToMMYYYY(v){ if(!v)return''; var p=String(v).split('-'); return p.length===2?(p[1]+'/'+p[0]):''; }
+function _cpnsParseMM(v){ v=(v||'').trim(); if(!v)return''; var m=v.match(/^(\d{2})\/(\d{4})$/); if(!m)return null; var mm=+m[1]; if(mm<1||mm>12)return null; return m[2]+'-'+m[1]; }
+function _cpnsChucDanhOptions(sel){
+  var o='<option value="">-- Chức danh --</option>';
+  (typeof daChucDanh!=='undefined'?daChucDanh:[]).forEach(function(cd){ o+='<option value="'+_escH(cd.ten)+'"'+(cd.ten===sel?' selected':'')+'>'+_escH(cd.ten)+'</option>'; });
+  return o;
+}
+var _CPNS_INP='padding:4px 6px;border:1px solid var(--primary-light,#4a90d9);border-radius:5px;font-size:12.5px;box-sizing:border-box;';
+function _cpnsInp(field,val,ph){ return '<input data-f="'+field+'" type="text" value="'+_escH(val||'')+'" placeholder="'+(ph||'')+'" style="width:100%;'+_CPNS_INP+'" onkeydown="_cpnsKey(event,this)">'; }
+function _cpnsInpMonth(field,mmYYYY){ return '<input data-f="'+field+'" type="text" value="'+_escH(mmYYYY||'')+'" placeholder="MM/YYYY" maxlength="7" oninput="_autoSlash(this)" onkeydown="_cpnsKey(event,this)" style="width:74px;text-align:center;'+_CPNS_INP+'">'; }
+// Enter = lưu hàng, Esc = huỷ hàng
+function _cpnsKey(ev,el){
+  if(ev.key==='Enter'){ var tr=el.closest('tr'); if(!tr)return; if(tr.hasAttribute('data-cpns-edit'))cpnsSaveEdit(tr.getAttribute('data-cpns-edit')); else if(tr.hasAttribute('data-cpns-draft'))cpnsSaveDraft(tr.getAttribute('data-cpns-draft')); ev.preventDefault(); }
+  else if(ev.key==='Escape'){ var tr2=el.closest('tr'); if(!tr2)return; if(tr2.hasAttribute('data-cpns-edit'))cpnsCancelEdit(); else if(tr2.hasAttribute('data-cpns-draft'))cpnsRemoveDraft(tr2.getAttribute('data-cpns-draft')); ev.preventDefault(); }
+}
+function _cpnsRowEl(kind,key){ return document.querySelector(kind==='edit'?'[data-cpns-edit="'+key+'"]':'[data-cpns-draft="'+key+'"]'); }
+function _cpnsReadRowEl(tr){
+  var g=function(f){ var el=tr.querySelector('[data-f="'+f+'"]'); return el?el.value.trim():''; };
+  var r={danhSo:g('danhSo'),ten:g('ten'),chucDanh:g('chucDanh')};
+  _CPNS_MONTHS.forEach(function(f){ r[f]=g(f); });
+  return r;
+}
+// Đồng bộ dữ liệu đang gõ ở các hàng draft vào mảng _cpnsDrafts (trước khi re-render)
+function _cpnsSyncDrafts(){
+  _cpnsDrafts.forEach(function(d){ var tr=_cpnsRowEl('draft',d.tempId); if(tr)Object.assign(d,_cpnsReadRowEl(tr)); });
+}
+function _cpnsValidate(raw){
+  var errs=[]; var parsed={};
+  if(!raw.danhSo)errs.push('danhSo');
+  if(!raw.ten)errs.push('ten');
+  if(!raw.chucDanh||!(typeof daChucDanh!=='undefined'&&daChucDanh.find(function(x){return x.ten===raw.chucDanh;})))errs.push('chucDanh');
+  _CPNS_MONTHS.forEach(function(f){ var p=_cpnsParseMM(raw[f]); if(p===null)errs.push(f); else parsed[f]=p; });
+  return {errs:errs,parsed:parsed};
+}
+function _cpnsMarkErrors(tr,errs){ if(!tr)return; tr.querySelectorAll('[data-f]').forEach(function(el){ el.style.borderColor=(errs.indexOf(el.getAttribute('data-f'))>=0)?'#c0392b':''; }); }
+// HTML một hàng nhập (dùng cho cả 'edit' và 'draft'); data.thang* ở dạng MM/YYYY
+function _cpnsInputRow(kind,key,data,unitLabel){
+  var saveFn=kind==='edit'?("cpnsSaveEdit('"+key+"')"):("cpnsSaveDraft('"+key+"')");
+  var cancelFn=kind==='edit'?"cpnsCancelEdit()":("cpnsRemoveDraft('"+key+"')");
+  var attr=kind==='edit'?('data-cpns-edit="'+key+'"'):('data-cpns-draft="'+key+'"');
+  var mark=kind==='draft'?'＋':'✎';
+  var act='<div style="display:inline-flex;gap:4px;">'+
+    '<button class="btn btn-success btn-sm" style="padding:4px 8px;" title="Lưu (Enter)" onclick="'+saveFn+'">'+_ic('check',13)+'</button>'+
+    '<button class="btn btn-ghost btn-sm" style="padding:4px 8px;" title="Huỷ (Esc)" onclick="'+cancelFn+'">'+_ic('x',13)+'</button>'+
+  '</div>';
+  return '<tr '+attr+' style="background:#eef5ff;">'+
+    '<td style="text-align:center;color:var(--primary-light,#4a90d9);font-weight:700;">'+mark+'</td>'+
+    '<td>'+_cpnsInp('danhSo',data.danhSo,'Danh số')+'</td>'+
+    '<td>'+_cpnsInp('ten',data.ten,'Họ và tên')+'</td>'+
+    '<td><select data-f="chucDanh" style="width:100%;'+_CPNS_INP+'">'+_cpnsChucDanhOptions(data.chucDanh||'')+'</select></td>'+
+    '<td style="font-size:12px;color:var(--text-light);">'+_escH(unitLabel||'')+'</td>'+
+    '<td style="text-align:center;color:var(--text-light);font-size:11px;">'+_escH(data.coQuanAo||'—')+'</td>'+
+    '<td style="text-align:center;color:var(--text-light);font-size:11px;">'+_escH(data.coGiay||'—')+'</td>'+
+    '<td style="text-align:center;">'+_cpnsInpMonth('thangCapQuanAo',data.thangCapQuanAo)+'</td>'+
+    '<td style="text-align:center;">'+_cpnsInpMonth('thangCapGiay',data.thangCapGiay)+'</td>'+
+    '<td style="text-align:center;">'+_cpnsInpMonth('thangCapMu',data.thangCapMu)+'</td>'+
+    '<td style="text-align:center;">'+_cpnsInpMonth('thangCapKinh',data.thangCapKinh)+'</td>'+
+    '<td style="text-align:center;">'+_cpnsInpMonth('thangCapAoMua',data.thangCapAoMua)+'</td>'+
+    '<td style="text-align:center;">'+_cpnsInpMonth('thangCapQAHan',data.thangCapQAHan)+'</td>'+
+    '<td style="text-align:center;white-space:nowrap;">'+act+'</td>'+
+  '</tr>';
+}
+// ＋ Thêm 1 hàng nhập mới (cho phép nhiều hàng cùng lúc)
+function cpnsAddDraft(){
+  if(!_cpnsCanEditSelectedUnit()){ showToast('Hãy chọn đơn vị bạn quản lý trước khi thêm.','warning'); return; }
+  _cpnsSyncDrafts();
+  _cpnsDrafts.push({tempId:'d'+(++_cpnsDraftSeq),danhSo:'',ten:'',chucDanh:'',thangCapQuanAo:'',thangCapGiay:'',thangCapMu:'',thangCapKinh:'',thangCapAoMua:'',thangCapQAHan:''});
+  cpRenderNhanSu();
+  var key='d'+_cpnsDraftSeq;
+  setTimeout(function(){ var tr=_cpnsRowEl('draft',key); if(tr){ var i=tr.querySelector('[data-f="danhSo"]'); if(i)i.focus(); tr.scrollIntoView({block:'nearest'}); } },0);
+}
+function cpnsRemoveDraft(id){ _cpnsSyncDrafts(); _cpnsDrafts=_cpnsDrafts.filter(function(d){return d.tempId!==id;}); cpRenderNhanSu(); }
+// Ghi 1 bản ghi thêm mới: Admin → thêm thẳng; User → gửi phê duyệt (hiện dòng mờ Chờ phê duyệt)
+function _cpnsCommitAdd(raw,boPhan){
+  var v=_cpnsValidate(raw);
+  if(v.errs.length)return {ok:false,errs:v.errs};
+  var now=new Date(); var _mm=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0');
+  var nvData={danhSo:raw.danhSo,ten:raw.ten,chucDanh:raw.chucDanh,boPhan:boPhan,loaiNV:'cu',coQuanAo:'',coGiay:'',gioiTinh:'nam',ngayVaoLam:_mm};
+  _CPNS_MONTHS.forEach(function(f){ nvData[f]=v.parsed[f]||''; });
+  if(typeof isAdmin==='function'&&isAdmin()){
+    var newNV=Object.assign({id:nextId(daNhanVien)},nvData);
+    daNhanVien.push(newNV); saveData('nhanvien',daNhanVien); BHLD.lsSet('nhanvien',daNhanVien); _bhldPush('insert','nhanvien',null,newNV);
+  } else {
+    var diff=_buildNvDiff(null,nvData);
+    _submitPendingChange('add',null,nvData,diff);
+  }
+  return {ok:true};
+}
+function cpnsSaveDraft(id){
+  if(!_cpnsCanEditSelectedUnit())return;
+  _cpnsSyncDrafts();
+  var boPhan=document.getElementById('cpns-donvi').value;
+  var d=_cpnsDrafts.find(function(x){return x.tempId===id;}); if(!d)return;
+  var res=_cpnsCommitAdd(d,boPhan);
+  if(!res.ok){ _cpnsMarkErrors(_cpnsRowEl('draft',id),res.errs); showToast('Vui lòng kiểm tra các ô được tô đỏ.','error'); return; }
+  _cpnsDrafts=_cpnsDrafts.filter(function(x){return x.tempId!==id;});
+  cpRenderNhanSu();
+  showToast((typeof isAdmin==='function'&&isAdmin())?'✅ Đã thêm nhân sự.':'📨 Đã gửi nhân sự để phê duyệt.','success');
+}
+function cpnsSaveAllDrafts(){
+  if(!_cpnsCanEditSelectedUnit())return;
+  _cpnsSyncDrafts();
+  var boPhan=document.getElementById('cpns-donvi').value;
+  var remaining=[], ok=0, bad=0;
+  _cpnsDrafts.forEach(function(d){
+    if(!d.danhSo&&!d.ten&&!d.chucDanh&&_CPNS_MONTHS.every(function(f){return !d[f];}))return; // bỏ hàng rỗng
+    var res=_cpnsCommitAdd(d,boPhan);
+    if(res.ok)ok++; else { bad++; remaining.push(d); }
+  });
+  _cpnsDrafts=remaining;
+  cpRenderNhanSu();
+  remaining.forEach(function(d){ var tr=_cpnsRowEl('draft',d.tempId); if(tr)_cpnsMarkErrors(tr,_cpnsValidate(d).errs); });
+  if(ok)showToast((typeof isAdmin==='function'&&isAdmin())?('✅ Đã thêm '+ok+' nhân sự.'):('📨 Đã gửi '+ok+' nhân sự để phê duyệt.'),'success');
+  if(bad)showToast('Còn '+bad+' hàng chưa hợp lệ (đã tô đỏ).','warning');
+}
+// Bắt đầu sửa inline một hàng đang có
+function cpNsEdit(id){
+  var nv=daNhanVien.find(function(x){return String(x.id)===String(id);}); if(!nv)return;
+  if(!(typeof canEditUnit==='function'&&canEditUnit(nv.boPhan))){ showToast('Bạn không có quyền sửa đơn vị này.','error'); return; }
+  if(!(typeof isAdmin==='function'&&isAdmin())&&typeof _nvPendingChange==='function'&&_nvPendingChange(id)){ showToast('Nhân viên này đang có thay đổi chờ duyệt.','warning'); return; }
+  _currentUnit=nv.boPhan||'';
+  _cpnsSyncDrafts();
+  _cpnsEditId=String(id);
+  cpRenderNhanSu();
+  setTimeout(function(){ var tr=_cpnsRowEl('edit',String(id)); if(tr){ var i=tr.querySelector('[data-f="danhSo"]'); if(i)i.focus(); } },0);
+}
+function cpnsCancelEdit(){ _cpnsEditId=null; cpRenderNhanSu(); }
+function cpnsSaveEdit(id){
+  var tr=_cpnsRowEl('edit',String(id)); if(!tr)return;
+  var raw=_cpnsReadRowEl(tr);
+  var v=_cpnsValidate(raw);
+  if(v.errs.length){ _cpnsMarkErrors(tr,v.errs); showToast('Vui lòng kiểm tra các ô được tô đỏ.','error'); return; }
+  var oldNv=daNhanVien.find(function(x){return String(x.id)===String(id);}); if(!oldNv)return;
+  var proposed=Object.assign({},oldNv,{danhSo:raw.danhSo,ten:raw.ten,chucDanh:raw.chucDanh});
+  _CPNS_MONTHS.forEach(function(f){ proposed[f]=v.parsed[f]||''; });
+  if(typeof isAdmin==='function'&&isAdmin()){
+    var idx=daNhanVien.findIndex(function(x){return String(x.id)===String(id);});
+    daNhanVien[idx]=proposed; saveData('nhanvien',daNhanVien); BHLD.lsSet('nhanvien',daNhanVien); _bhldPush('update','nhanvien',id,proposed);
+    showToast('✅ Đã cập nhật nhân viên.');
+  } else {
+    if(typeof _nvPendingChange==='function'&&_nvPendingChange(id)){ showToast('Nhân viên này đang có thay đổi chờ duyệt.','warning'); return; }
+    var diff=_buildNvDiff(oldNv,proposed);
+    if(!Object.keys(diff.changed).length){ showToast('Không có thay đổi nào.','warning'); _cpnsEditId=null; cpRenderNhanSu(); return; }
+    _submitPendingChange('edit',oldNv,proposed,diff);
+    showToast('📨 Đã gửi yêu cầu sửa tới Admin để phê duyệt.','success');
+  }
+  _cpnsEditId=null; cpRenderNhanSu();
 }
 function cpRenderNhanSu(){
   var q=(document.getElementById('cpns-search').value||'').trim().toLowerCase();
@@ -1394,9 +1556,19 @@ function cpRenderNhanSu(){
     return true;
   }).sort(function(a,b){var d=(a.boPhan||'').localeCompare(b.boPhan||'','vi');return d!==0?d:(a.ten||'').localeCompare(b.ten||'','vi');});
   var body=list.map(function(n,i){
-    var act=(typeof canEditUnit==='function'&&canEditUnit(n.boPhan))
-      ? '<button class="btn btn-ghost btn-sm" style="padding:4px 8px;" title="Sửa" onclick="cpNsEdit(\''+n.id+'\')">'+_ic('edit',13)+'</button> <button class="btn btn-danger btn-sm" style="padding:4px 8px;" title="Xoá" onclick="cpNsDelete(\''+n.id+'\')">'+_ic('del',13)+'</button>'
-      : '<span style="color:var(--text-light);">—</span>';
+    // Đang sửa inline hàng này → render ô nhập
+    if(String(n.id)===String(_cpnsEditId)){
+      var ed={danhSo:n.danhSo,ten:n.ten,chucDanh:n.chucDanh,coQuanAo:n.coQuanAo,coGiay:n.coGiay};
+      _CPNS_MONTHS.forEach(function(fld){ ed[fld]=_cpnsToMMYYYY(n[fld]); });
+      return _cpnsInputRow('edit',String(n.id),ed,n.boPhan||'');
+    }
+    var _pc=(typeof _nvPendingChange==='function')?_nvPendingChange(n.id):null;
+    var canEd=(typeof canEditUnit==='function'&&canEditUnit(n.boPhan));
+    var act = _pc
+      ? '<span style="display:inline-flex;align-items:center;gap:4px;background:#fff3cd;color:#856404;font-size:11px;font-weight:700;border-radius:20px;padding:3px 10px;white-space:nowrap;">⏳ Chờ duyệt</span>'
+      : ( canEd
+        ? '<button class="btn btn-ghost btn-sm" style="padding:4px 8px;" title="Sửa" onclick="cpNsEdit(\''+n.id+'\')">'+_ic('edit',13)+'</button> <button class="btn btn-danger btn-sm" style="padding:4px 8px;" title="Xoá" onclick="cpNsDelete(\''+n.id+'\')">'+_ic('del',13)+'</button>'
+        : '<span style="color:var(--text-light);">—</span>' );
     return '<tr>'+
       '<td style="text-align:center;color:var(--text-light);">'+(i+1)+'</td>'+
       '<td><code style="font-size:12px;color:var(--text-light);">'+_escH(n.danhSo||'')+'</code></td>'+
@@ -1456,12 +1628,30 @@ function cpRenderNhanSu(){
       '<td style="text-align:center;white-space:nowrap;">'+act+'</td>'+
     '</tr>';
   }).join('');
-  var allBody=pendBody+body;
-  document.getElementById('cpns-tbody').innerHTML=allBody||'<tr><td colspan="14" style="text-align:center;padding:24px;color:var(--text-light);">Không có nhân viên phù hợp.</td></tr>';
-  document.getElementById('cpns-count').textContent='Tìm thấy '+list.length+' nhân viên'+(pendList.length?' · '+pendList.length+' đang chờ phê duyệt':'');
+  // ── Các hàng THÊM MỚI đang nhập (draft) ──
+  var canAddHere=_cpnsCanEditSelectedUnit();
+  var draftBody='';
+  if(canAddHere){
+    draftBody=_cpnsDrafts.map(function(d){ return _cpnsInputRow('draft',d.tempId,d,dv); }).join('');
+  }
+  // ── Hàng footer: nút ＋ thêm nhân sự (chỉ khi đã chọn đúng đơn vị mình quản lý) ──
+  var footer='';
+  if(canAddHere){
+    var nDraft=_cpnsDrafts.length;
+    var saveAllLbl=(typeof isAdmin==='function'&&isAdmin())?('Lưu tất cả ('+nDraft+')'):('Lưu & gửi duyệt ('+nDraft+')');
+    footer='<tr><td colspan="14" style="padding:10px;text-align:center;background:#fafbfe;border-top:1px dashed var(--border,#dfe3eb);">'+
+      '<button class="btn btn-outline btn-sm" onclick="cpnsAddDraft()" title="Thêm một hàng nhập">'+_ic('userplus',14)+' Thêm nhân sự</button>'+
+      (nDraft?(' <button class="btn btn-primary btn-sm" style="margin-left:8px;" onclick="cpnsSaveAllDrafts()">'+_ic('check',14)+' '+saveAllLbl+'</button>'):'')+
+      '</td></tr>';
+  }
+  var rows=pendBody+body+draftBody;
+  var tbodyHtml = (rows||footer) ? (rows+footer) : '<tr><td colspan="14" style="text-align:center;padding:24px;color:var(--text-light);">Không có nhân viên phù hợp.</td></tr>';
+  document.getElementById('cpns-tbody').innerHTML=tbodyHtml;
+  var countTxt='Tìm thấy '+list.length+' nhân viên'+(pendList.length?' · '+pendList.length+' đang chờ phê duyệt':'');
+  if(!canAddHere&&(typeof canEditUnit==='function')&&!(typeof isAdmin==='function'&&isAdmin())) countTxt+=' · Chọn đơn vị bạn quản lý để thêm nhân sự';
+  document.getElementById('cpns-count').textContent=countTxt;
 }
-// Sửa/Xoá từ bảng Tra cứu — đặt _currentUnit theo đơn vị của NV để phân quyền + form đúng
-function cpNsEdit(id){ var nv=daNhanVien.find(function(x){return x.id===id;}); if(!nv)return; _currentUnit=nv.boPhan||''; if(typeof editNV==='function')editNV(id); }
+// Xoá từ bảng Tra cứu — đặt _currentUnit theo đơn vị của NV để phân quyền
 function cpNsDelete(id){ var nv=daNhanVien.find(function(x){return x.id===id;}); if(!nv)return; _currentUnit=nv.boPhan||''; if(typeof deleteNV==='function')deleteNV(id); }
 // Hiện thẻ "Phê duyệt" cho admin + badge số mục đang chờ
 function cpUpdateApproveTile(){
@@ -1743,7 +1933,7 @@ function onSearchNV(val){_searchQuery=val;renderTableNV();}
 function renderTableNV(){
   // Nếu đang mở bảng Tra cứu nhân sự → làm mới nó sau khi dữ liệu thay đổi
   var _ns=document.getElementById('cp-nhansu');
-  if(_ns&&_ns.style.display!=='none'&&typeof cpRenderNhanSu==='function')setTimeout(cpRenderNhanSu,0);
+  if(_ns&&_ns.style.display!=='none'&&typeof cpRenderNhanSu==='function'&&!(typeof _cpnsBusy==='function'&&_cpnsBusy()))setTimeout(cpRenderNhanSu,0);
   const q=_searchQuery.toLowerCase();
   const bp=_currentUnit||'';
   const btnAddNV=document.querySelector('#page-quan-ly-cap-phat .btn-primary');
@@ -4220,7 +4410,7 @@ function _rtReloadNhanVien(){
   if(typeof renderUnitPicker==='function')renderUnitPicker();
   if(typeof _currentUnit!=='undefined'&&_currentUnit&&typeof renderTableNV==='function')renderTableNV();
   var ns=document.getElementById('cp-nhansu');
-  if(ns&&ns.style.display!=='none'&&typeof cpRenderNhanSu==='function')cpRenderNhanSu();
+  if(ns&&ns.style.display!=='none'&&typeof cpRenderNhanSu==='function'&&!(typeof _cpnsBusy==='function'&&_cpnsBusy()))cpRenderNhanSu();
 }
 // Toast khi có thông báo MỚI gửi tới đúng user đang đăng nhập
 function _rtNotifToast(payload){
@@ -4267,7 +4457,7 @@ function _cpwOnRealtime(table,payload){
   // Bảng Tra cứu nhân sự: cập nhật dòng "Chờ phê duyệt" khi có thay đổi phê duyệt
   if(table==='pending_changes'){
     var ns3=document.getElementById('cp-nhansu');
-    if(ns3&&ns3.style.display!=='none'&&typeof cpRenderNhanSu==='function')cpRenderNhanSu();
+    if(ns3&&ns3.style.display!=='none'&&typeof cpRenderNhanSu==='function'&&!(typeof _cpnsBusy==='function'&&_cpnsBusy()))cpRenderNhanSu();
   }
 }
 </script>
