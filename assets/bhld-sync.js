@@ -78,7 +78,12 @@ var BHLD = (function () {
   function insert(sheet, obj) {
     if (!obj.id) obj.id = genId();
     if (!obj.createdAt) obj.createdAt = new Date().toISOString();
-    var local = lsGet(sheet); local.push(obj); lsSet(sheet, local);
+    // Idempotent theo id: nếu đã có trong cache thì THAY THẾ, tránh nhân đôi
+    // (nhiều nơi gọi đã tự lsSet trước rồi mới gọi insert).
+    var local = lsGet(sheet);
+    var _i = local.findIndex(function (r) { return String(r.id) === String(obj.id); });
+    if (_i >= 0) local[_i] = obj; else local.push(obj);
+    lsSet(sheet, local);
     return _ready().then(function (sb) {
       return sb.from(sheet).upsert(obj, { onConflict: 'id' }).select();
     }).then(function (res) {

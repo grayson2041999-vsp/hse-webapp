@@ -1391,10 +1391,12 @@ function _cpnsCanEditSelectedUnit(){
 }
 // Đang nhập dở? → chặn realtime vẽ đè
 function _cpnsBusy(){
+  // Chỉ coi là "đang nhập dở" khi có hàng sửa/thêm chưa lưu, hoặc con trỏ đang ở đúng 1 Ô NHẬP (data-f).
+  // KHÔNG chặn khi con trỏ chỉ đang ở nút bấm (duyệt/xoá...) trong bảng — nếu chặn sẽ không vẽ lại được sau khi duyệt.
   if(_cpnsEditId)return true;
   if(_cpnsDrafts&&_cpnsDrafts.length)return true;
   var ae=document.activeElement;
-  return !!(ae&&ae.closest&&ae.closest('#cpns-table'));
+  return !!(ae&&ae.matches&&ae.matches('#cpns-table [data-f]'));
 }
 function _cpnsToMMYYYY(v){ if(!v)return''; var p=String(v).split('-'); return p.length===2?(p[1]+'/'+p[0]):''; }
 function _cpnsParseMM(v){ v=(v||'').trim(); if(!v)return''; var m=v.match(/^(\d{2})\/(\d{4})$/); if(!m)return null; var mm=+m[1]; if(mm<1||mm>12)return null; return m[2]+'-'+m[1]; }
