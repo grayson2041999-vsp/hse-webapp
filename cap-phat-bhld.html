@@ -4352,7 +4352,7 @@ function _computeNhuCauData(quyList){
         if(!due||due==='quarterly')return;
         let guard=0;
         while(due<=wEnd && guard<240){
-          if(due>=wStart) _row(tbSized,tb).perUnit[unit]+=d.soLuong;
+          if(due>=wStart) _row(tbSized,tb).perUnit[unit]+=(parseFloat(d.soLuong)||0);
           due=_addMonths(due,chuKy);
           guard++;
         }
