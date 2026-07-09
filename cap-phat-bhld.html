@@ -4706,29 +4706,38 @@ function cpwRenderQuantity(){
   var rows=res.rows||[]; _lastBcRows=rows;
   var qData=phieuData[quyStr]||{};
   if(!rows.length){ host.innerHTML='<div style="padding:14px;color:var(--text-light);font-size:13px;">Không có nhân viên cần cấp phát trong quý này cho đơn vị '+_escH(dv)+'. Hãy thêm nhân viên (có chức danh + định mức) rồi thử lại.</div>'; return; }
-  var b='';var stt=0;
+  var cards='';var stt=0;
   rows.forEach(function(r){
-    r.items.forEach(function(it,idx){
-      stt++;var key=r.nv.id+'_'+it.tbId;var saved=qData[key]||{};
+    stt++;
+    var cells='';
+    r.items.forEach(function(it){
+      var key=r.nv.id+'_'+it.tbId;var saved=qData[key]||{};
       var tv=(saved.thucTe!==undefined&&saved.thucTe!=='')?saved.thucTe:'';
       var gv=saved.ghiChu||'';
-      b+='<tr>'+
-        (idx===0?'<td rowspan="'+r.items.length+'" style="text-align:center;color:var(--text-light);">'+stt+'</td>'+
-          '<td rowspan="'+r.items.length+'"><strong>'+_escH(r.nv.ten)+'</strong><br><code style="font-size:11px;color:var(--text-light);">'+_escH(r.nv.danhSo)+'</code></td>'+
-          '<td rowspan="'+r.items.length+'" style="font-size:12px;">'+_escH(r.nv.chucDanh)+'</td>':'')+
-        '<td style="font-size:13px;">'+_escH(it.ten)+'</td>'+
-        '<td style="text-align:center;font-weight:600;">'+it.soLuong+'</td>'+
-        '<td style="text-align:center;"><input type="number" min="0" step="1" value="'+tv+'" '+_inputStyle+' onchange="cpwSaveField(\''+quyStr+'\',\''+key+'\',\'thucTe\',this.value,'+it.soLuong+')"></td>'+
-        '<td><input type="text" value="'+_escH(gv)+'" '+_textStyle+' onchange="savePhieuField(\''+quyStr+'\',\''+key+'\',\'ghiChu\',this.value)" placeholder="Ghi chú..."></td>'+
-      '</tr>';
+      var diff=(tv!==''&&Number(tv)!==Number(it.soLuong));
+      cells+='<div class="cpw-item" style="border:1px solid '+(diff?'var(--warning)':'var(--border)')+';border-radius:8px;padding:8px 10px;background:'+(diff?'#fff8e1':'#fff')+';">'+
+        '<div style="font-size:12.5px;margin-bottom:6px;line-height:1.35;">'+_escH(it.ten)+'</div>'+
+        '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">'+
+          '<span style="font-size:11px;color:var(--text-light);white-space:nowrap;">ĐM '+it.soLuong+'</span>'+
+          '<input type="number" min="0" step="1" value="'+tv+'" style="width:56px;padding:4px 6px;border:1px solid var(--border);border-radius:4px;font-size:12.5px;text-align:center;" onchange="cpwSaveField(\''+quyStr+'\',\''+key+'\',\'thucTe\',this.value,'+it.soLuong+');cpwMarkCell(this,'+it.soLuong+')">'+
+        '</div>'+
+        '<input type="text" value="'+_escH(gv)+'" placeholder="Ghi chú..." style="width:100%;padding:4px 6px;border:1px solid var(--border);border-radius:4px;font-size:12px;box-sizing:border-box;" onchange="savePhieuField(\''+quyStr+'\',\''+key+'\',\'ghiChu\',this.value)">'+
+      '</div>';
     });
+    cards+='<div class="card" style="padding:12px 14px;margin-bottom:12px;">'+
+      '<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap;">'+
+        '<span style="width:26px;height:26px;border-radius:50%;background:#e6f1fb;color:var(--primary);display:inline-flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex-shrink:0;">'+stt+'</span>'+
+        '<div style="flex:1;min-width:180px;"><strong>'+_escH(r.nv.ten)+'</strong>'+
+          '<code style="font-size:11.5px;color:var(--text-light);margin-left:6px;">'+_escH(r.nv.danhSo)+'</code>'+
+          '<span style="font-size:12.5px;color:var(--text-light);margin-left:8px;">'+_escH(r.nv.chucDanh)+'</span></div>'+
+        '<button class="btn btn-outline btn-sm" style="padding:4px 10px;font-size:12px;" onclick="cpwFillEmp(\''+r.nv.id+'\')">'+_ic('zap',13)+' Điền = ĐM</button>'+
+      '</div>'+
+      '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:8px;">'+cells+'</div>'+
+    '</div>';
   });
   host.innerHTML=
-    '<div style="margin-bottom:10px;"><button class="btn btn-outline btn-sm" onclick="cpwFillDinhMuc()">'+_ic('zap',15)+' Điền theo định mức</button></div>'+
-    '<div class="table-wrap"><table><thead><tr>'+
-      '<th style="width:40px;text-align:center;">STT</th><th>Nhân viên</th><th>Chức danh</th><th>Trang bị</th>'+
-      '<th style="text-align:center;">Định mức</th><th style="text-align:center;">Yêu cầu thực tế</th><th style="min-width:150px;">Ghi chú</th>'+
-    '</tr></thead><tbody>'+b+'</tbody></table></div>'+
+    '<div style="margin-bottom:12px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;"><button class="btn btn-outline btn-sm" onclick="cpwFillDinhMuc()">'+_ic('zap',15)+' Điền tất cả theo định mức</button><span style="font-size:12px;color:var(--text-light);">'+stt+' nhân viên · ô nền vàng = thực tế khác định mức</span></div>'+
+    cards+
     '<div class="card-title" style="margin:18px 0 8px;display:flex;align-items:center;gap:7px;">'+_ic('pkg',16)+' Tổng hợp trang bị cấp phát trong quý</div>'+
     '<div class="table-wrap"><table><thead><tr>'+
       '<th style="width:40px;text-align:center;">STT</th><th>Tên trang bị</th><th>Mã vật tư</th><th style="text-align:center;">ĐVT</th>'+
@@ -4761,6 +4770,21 @@ function cpwFillDinhMuc(){
   if(hasExisting&&!confirm('Đã có số lượng thực tế. Ghi đè tất cả bằng số định mức?'))return;
   if(!phieuData[quyStr])phieuData[quyStr]={};
   _lastBcRows.forEach(function(r){r.items.forEach(function(it){var key=r.nv.id+'_'+it.tbId;if(!phieuData[quyStr][key])phieuData[quyStr][key]={};phieuData[quyStr][key].thucTe=it.soLuong;});});
+  if(typeof saveData==='function')saveData('phieu-data',phieuData);
+  cpwRenderQuantity();
+}
+// Tô nền cảnh báo khi thực tế khác định mức (cập nhật ngay, không re-render cả trang)
+function cpwMarkCell(inp,dm){
+  var cell=inp&&inp.closest?inp.closest('.cpw-item'):null; if(!cell)return;
+  var v=inp.value; var diff=(v!==''&&Number(v)!==Number(dm));
+  cell.style.borderColor=diff?'var(--warning)':'var(--border)';
+  cell.style.background=diff?'#fff8e1':'#fff';
+}
+// Điền số thực tế = định mức cho riêng 1 nhân viên
+function cpwFillEmp(nvId){
+  var quyStr=_cpwQuy; var r=_lastBcRows.find(function(x){return String(x.nv.id)===String(nvId);}); if(!r)return;
+  if(!phieuData[quyStr])phieuData[quyStr]={};
+  r.items.forEach(function(it){var key=nvId+'_'+it.tbId;if(!phieuData[quyStr][key])phieuData[quyStr][key]={};phieuData[quyStr][key].thucTe=it.soLuong;});
   if(typeof saveData==='function')saveData('phieu-data',phieuData);
   cpwRenderQuantity();
 }
