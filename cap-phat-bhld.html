@@ -4341,7 +4341,7 @@ function cpwInit(){
 function cpwOnSelect(){
   _cpwDonVi=document.getElementById('cpw-donvi').value||'';
   _cpwQuy=document.getElementById('cpw-quy').value||'';
-  _cpwLstEditId=null; _cpwLstDrafts=[];
+  _cpwLstEditId=null; _cpwLstDrafts=[]; _cpwStagedEdits={}; _cpwStagedAdds=[];
   var steps=document.getElementById('cpw-steps');
   if(!_cpwDonVi||!_cpwQuy){steps.innerHTML='<div class="card" style="color:var(--text-light);">Chọn đơn vị và quý để bắt đầu.</div>';return;}
   steps.innerHTML='<div class="card" style="color:var(--text-light);">Đang tải tiến trình…</div>';
@@ -4387,7 +4387,8 @@ function cpwRender(){
     html+='<div style="margin-top:6px;text-align:right;"><button class="btn btn-outline btn-sm" style="color:var(--danger);border-color:#eab7b2;" onclick="cpwResetTest()">'+_ic('undo',15)+' Reset đơn vị Test</button></div>';
   }
   document.getElementById('cpw-steps').innerHTML=html;
-  if(s1==='dang_lam')cpwRenderList(); // nhúng bảng kiểm tra danh sách vào Bước 1
+  if(s1==='dang_lam'){ _cpwListReadOnly=false; cpwRenderList(); } // nhúng bảng kiểm tra/sửa vào Bước 1
+  else if(s1==='cho_duyet'){ _cpwListReadOnly=true; cpwRenderList(); } // xem read-only trong lúc chờ duyệt
   if(s2==='chua'||s2==='tra_ve')cpwRenderQuantity(); // nhúng bảng nhập số lượng vào Bước 2
 }
 function cpwStep1Body(s1,pend,b2done){
@@ -4396,13 +4397,13 @@ function cpwStep1Body(s1,pend,b2done){
     return '<div style="display:flex;align-items:center;gap:6px;color:var(--success);font-size:13.5px;">'+_ic('check',16)+'<span>Danh sách nhân viên đã được xác nhận đúng.'+extra+'</span></div>';
   }
   if(s1==='cho_duyet'){
-    return '<div style="display:flex;align-items:flex-start;gap:6px;color:var(--warning);font-size:13.5px;margin-bottom:10px;">'+_ic('hour',16)+'<span>Bạn đã gửi <b>'+pend.length+'</b> thay đổi nhân sự, đang chờ Admin duyệt. Bước này tự mở lại khi được duyệt (hoặc quay về đầu nếu bị trả lại).</span></div>'+
-      '<button class="btn btn-outline btn-sm" onclick="cpwEditList()">'+_ic('eye',15)+' Xem / chỉnh sửa danh sách</button>';
+    return '<div style="display:flex;align-items:flex-start;gap:6px;color:var(--warning);font-size:13.5px;margin-bottom:12px;">'+_ic('hour',16)+'<span>Bạn đã gửi <b>'+pend.length+'</b> thay đổi nhân sự, đang chờ Admin duyệt. Các dòng liên quan được làm mờ và gắn nhãn “Chờ phê duyệt” bên dưới. Bước này tự mở lại khi được duyệt (hoặc quay về đầu nếu bị trả lại).</span></div>'+
+      '<div id="cpw-list-host"></div>';
   }
-  // dang_lam — kiểm tra danh sách trực tiếp trên bảng, sửa inline nếu cần
+  // dang_lam — kiểm tra danh sách trực tiếp; sửa nhiều dòng → lưu tạm → gửi phê duyệt
   var canEd=(typeof canEditUnit==='function'&&canEditUnit(_cpwDonVi));
   return '<p style="font-size:13px;color:var(--text-light);margin:0 0 12px;">Kiểm tra trực tiếp danh sách nhân viên bên dưới. '+
-      (canEd?'Nếu cần chỉnh, bấm <b>Sửa</b> ở từng dòng hoặc <b>＋ Thêm nhân sự</b> — thay đổi sẽ gửi Admin duyệt và quy trình tạm dừng cho tới khi được duyệt. Nếu danh sách đã đúng, bấm <b>Danh sách đã đúng — Tiếp tục</b>.':'Bạn chỉ có quyền xem danh sách của đơn vị này.')+'</p>'+
+      (canEd?'Có thể <b>Sửa</b> nhiều dòng hoặc <b>＋ Thêm nhân sự</b> — mỗi dòng bấm <b>lưu tạm</b> trước, xong bấm <b>Gửi phê duyệt</b> để gửi Admin một lượt (quy trình tạm dừng tới khi được duyệt). Nếu danh sách đã đúng, bấm <b>Danh sách đã đúng — Tiếp tục</b>.':'Bạn chỉ có quyền xem danh sách của đơn vị này.')+'</p>'+
     '<div id="cpw-list-host"></div>'+
     (canEd?'<div style="margin-top:16px;border-top:1px dashed var(--border);padding-top:14px;">'+
       '<button class="btn btn-success btn-sm" onclick="cpwContinueStep1()">'+_ic('check',15)+' Danh sách đã đúng — Tiếp tục</button>'+
@@ -4447,18 +4448,23 @@ function cpwEditList(){
   if(typeof selectUnit==='function')selectUnit(_cpwDonVi);
 }
 function cpwContinueStep1(){
-  if(_cpwLstEditId||(_cpwLstDrafts&&_cpwLstDrafts.length)){showToast('Bạn đang sửa dở một dòng. Lưu hoặc huỷ trước khi tiếp tục.','warning');return;}
+  if(_cpwLstEditId||(_cpwLstDrafts&&_cpwLstDrafts.length)){showToast('Bạn đang nhập dở một dòng. Lưu tạm hoặc huỷ trước khi tiếp tục.','warning');return;}
+  if(typeof _cpwStagedCount==='function'&&_cpwStagedCount()>0){showToast('Còn '+_cpwStagedCount()+' thay đổi chưa gửi. Hãy “Gửi phê duyệt” hoặc “Huỷ tất cả” trước.','warning');return;}
   if(_cpwPendingChanges(_cpwDonVi).length){showToast('Còn thay đổi nhân sự đang chờ duyệt.','warning');return;}
   cpwSave({b1TrangThai:'dat',buoc:2}).then(function(){showToast('✅ Đã hoàn tất Bước 1.');cpwRender();});
 }
 function cpwResetStep1(){
   if(!confirm('Làm lại từ Bước 1? Bạn sẽ phải kiểm tra và xác nhận lại danh sách.'))return;
-  _cpwLstEditId=null; _cpwLstDrafts=[];
+  _cpwLstEditId=null; _cpwLstDrafts=[]; _cpwStagedEdits={}; _cpwStagedAdds=[];
   cpwSave({b1TrangThai:'chua',daInDanhSach:false,buoc:1}).then(function(){cpwRender();});
 }
-// ===================== BƯỚC 1 NHÚNG: KIỂM TRA DANH SÁCH TRỰC TIẾP =====================
+// ===================== BƯỚC 1 NHÚNG: KIỂM TRA / SỬA DANH SÁCH (STAGED) =====================
 var _cpwLstEditId=null, _cpwLstDrafts=[], _cpwLstDraftSeq=0;
+var _cpwStagedEdits={}, _cpwStagedAdds=[], _cpwListReadOnly=false;
+var _CPW_MONTHS=['thangCapQuanAo','thangCapGiay','thangCapMu','thangCapKinh','thangCapAoMua','thangCapQAHan'];
+function _cpwStagedCount(){ return Object.keys(_cpwStagedEdits).length+_cpwStagedAdds.length; }
 function _cpwRowEl(kind,key){ return document.querySelector(kind==='edit'?'[data-cpw-edit="'+key+'"]':'[data-cpw-draft="'+key+'"]'); }
+function _cpwFmtThang(x){ if(!x)return''; var p=String(x).split('-'); return p.length===2?(p[1]+'/'+p[0]):(x||''); }
 // Một hàng nhập (edit/draft) — 13 cột, không có cột Đơn vị (wizard chỉ 1 đơn vị)
 function _cpwInputRow(kind,key,data){
   var saveFn=kind==='edit'?("cpwLstSaveEdit('"+key+"')"):("cpwLstSaveDraft('"+key+"')");
@@ -4466,7 +4472,7 @@ function _cpwInputRow(kind,key,data){
   var attr=kind==='edit'?('data-cpw-edit="'+key+'"'):('data-cpw-draft="'+key+'"');
   var mark=kind==='draft'?'＋':'✎';
   var act='<div style="display:inline-flex;gap:4px;">'+
-    '<button class="btn btn-success btn-sm" style="padding:4px 8px;" title="Lưu" onclick="'+saveFn+'">'+_ic('check',13)+'</button>'+
+    '<button class="btn btn-success btn-sm" style="padding:4px 8px;" title="Lưu tạm" onclick="'+saveFn+'">'+_ic('check',13)+'</button>'+
     '<button class="btn btn-ghost btn-sm" style="padding:4px 8px;" title="Huỷ" onclick="'+cancelFn+'">'+_ic('x',13)+'</button>'+
   '</div>';
   return '<tr '+attr+' style="background:#eef5ff;">'+
@@ -4487,50 +4493,104 @@ function _cpwInputRow(kind,key,data){
     '<td style="text-align:center;white-space:nowrap;">'+act+'</td>'+
   '</tr>';
 }
-function _cpwViewRow(n,stt,canEd,f){
-  var _pc=(typeof _nvPendingChange==='function')?_nvPendingChange(n.id):null;
-  var act=_pc
-    ? '<span style="display:inline-flex;align-items:center;gap:4px;background:#fff3cd;color:#856404;font-size:11px;font-weight:700;border-radius:20px;padding:3px 10px;white-space:nowrap;">⏳ Chờ duyệt</span>'
-    : ( canEd
-      ? '<button class="btn btn-ghost btn-sm" style="padding:4px 8px;" title="Sửa" onclick="cpwLstEdit(\''+n.id+'\')">'+_ic('edit',13)+'</button>'
-      : '<span style="color:var(--text-light);">—</span>' );
-  return '<tr>'+
-    '<td style="text-align:center;color:var(--text-light);">'+stt+'</td>'+
-    '<td><code style="font-size:12px;color:var(--text-light);">'+_escH(n.danhSo||'')+'</code></td>'+
-    '<td><strong>'+_escH(n.ten||'')+'</strong>'+(n.gioiTinh==='nu'?' <span style="font-size:10px;color:var(--text-light);">(Nữ)</span>':'')+'</td>'+
+// 11 ô dữ liệu (Danh số → QA thợ hàn); nameExtra: badge nhỏ cạnh Họ tên
+function _cpwDataCells(n,nameExtra){
+  var g=_cpwFmtThang;
+  return '<td><code style="font-size:12px;color:var(--text-light);">'+_escH(n.danhSo||'')+'</code></td>'+
+    '<td><strong>'+_escH(n.ten||'')+'</strong>'+(n.gioiTinh==='nu'?' <span style="font-size:10px;color:var(--text-light);">(Nữ)</span>':'')+(nameExtra||'')+'</td>'+
     '<td style="font-size:12.5px;">'+_escH(n.chucDanh||'')+'</td>'+
     '<td style="text-align:center;">'+_escH(n.coQuanAo||'')+'</td>'+
     '<td style="text-align:center;">'+_escH(n.coGiay||'')+'</td>'+
-    '<td style="text-align:center;font-size:12px;">'+_escH(f(n.thangCapQuanAo)||'-')+'</td>'+
-    '<td style="text-align:center;font-size:12px;">'+_escH(f(n.thangCapGiay)||'-')+'</td>'+
-    '<td style="text-align:center;font-size:12px;">'+_escH(f(n.thangCapMu)||'-')+'</td>'+
-    '<td style="text-align:center;font-size:12px;">'+_escH(f(n.thangCapKinh)||'-')+'</td>'+
-    '<td style="text-align:center;font-size:12px;">'+_escH(f(n.thangCapAoMua)||'-')+'</td>'+
-    '<td style="text-align:center;font-size:12px;">'+_escH(f(n.thangCapQAHan)||'-')+'</td>'+
-    '<td style="text-align:center;white-space:nowrap;">'+act+'</td>'+
-  '</tr>';
+    '<td style="text-align:center;font-size:12px;">'+_escH(g(n.thangCapQuanAo)||'-')+'</td>'+
+    '<td style="text-align:center;font-size:12px;">'+_escH(g(n.thangCapGiay)||'-')+'</td>'+
+    '<td style="text-align:center;font-size:12px;">'+_escH(g(n.thangCapMu)||'-')+'</td>'+
+    '<td style="text-align:center;font-size:12px;">'+_escH(g(n.thangCapKinh)||'-')+'</td>'+
+    '<td style="text-align:center;font-size:12px;">'+_escH(g(n.thangCapAoMua)||'-')+'</td>'+
+    '<td style="text-align:center;font-size:12px;">'+_escH(g(n.thangCapQAHan)||'-')+'</td>';
+}
+function _cpwViewRowExisting(n,stt){
+  var readonly=_cpwListReadOnly;
+  var pc=(typeof _nvPendingChange==='function')?_nvPendingChange(n.id):null;
+  if(pc){
+    return '<tr style="opacity:.55;background:#f7f8fb;" title="Đang chờ Admin phê duyệt">'+
+      '<td style="text-align:center;color:var(--text-light);">'+stt+'</td>'+
+      _cpwDataCells(n,' <span style="background:#fff3cd;color:#856404;font-size:10px;font-weight:700;border-radius:20px;padding:1px 8px;white-space:nowrap;">⏳ Chờ phê duyệt</span>')+
+      '<td style="text-align:center;"><span style="font-size:12px;">⏳</span></td></tr>';
+  }
+  var staged=_cpwStagedEdits[n.id];
+  var canEd=(typeof canEditUnit==='function'&&canEditUnit(n.boPhan));
+  if(staged&&!readonly){
+    var act='<div style="display:inline-flex;gap:4px;">'+
+      '<button class="btn btn-ghost btn-sm" style="padding:4px 8px;" title="Sửa tiếp" onclick="cpwLstEdit(\''+n.id+'\')">'+_ic('edit',13)+'</button>'+
+      '<button class="btn btn-ghost btn-sm" style="padding:4px 8px;color:var(--danger);" title="Hoàn tác" onclick="cpwLstRevertEdit(\''+n.id+'\')">'+_ic('undo',13)+'</button></div>';
+    return '<tr style="background:#fff8e1;">'+
+      '<td style="text-align:center;color:var(--text-light);">'+stt+'</td>'+
+      _cpwDataCells(staged.proposed,' <span style="background:#ffe08a;color:#7a5c00;font-size:10px;font-weight:700;border-radius:20px;padding:1px 8px;white-space:nowrap;">✎ Đã sửa (chưa gửi)</span>')+
+      '<td style="text-align:center;white-space:nowrap;">'+act+'</td></tr>';
+  }
+  var act2=(!readonly&&canEd)
+    ? '<button class="btn btn-ghost btn-sm" style="padding:4px 8px;" title="Sửa" onclick="cpwLstEdit(\''+n.id+'\')">'+_ic('edit',13)+'</button>'
+    : '<span style="color:var(--text-light);">—</span>';
+  return '<tr><td style="text-align:center;color:var(--text-light);">'+stt+'</td>'+_cpwDataCells(n,'')+'<td style="text-align:center;white-space:nowrap;">'+act2+'</td></tr>';
+}
+function _cpwStagedAddRow(a,stt){
+  var act='<div style="display:inline-flex;gap:4px;">'+
+    '<button class="btn btn-ghost btn-sm" style="padding:4px 8px;" title="Sửa" onclick="cpwLstEditStagedAdd(\''+a.tempId+'\')">'+_ic('edit',13)+'</button>'+
+    '<button class="btn btn-ghost btn-sm" style="padding:4px 8px;color:var(--danger);" title="Xoá" onclick="cpwLstRemoveStagedAdd(\''+a.tempId+'\')">'+_ic('del',13)+'</button></div>';
+  return '<tr style="background:#eafaf1;">'+
+    '<td style="text-align:center;color:var(--success);font-weight:700;">＋</td>'+
+    _cpwDataCells(a.data,' <span style="background:#bfead0;color:#1a7a3c;font-size:10px;font-weight:700;border-radius:20px;padding:1px 8px;white-space:nowrap;">Mới (chưa gửi)</span>')+
+    '<td style="text-align:center;white-space:nowrap;">'+act+'</td></tr>';
+}
+function _cpwPendingAddRows(dv){
+  var out='';
+  try{
+    BHLD.lsGet('pending_changes').filter(function(c){return c.status==='pending'&&c.type==='add'&&c.donVi===dv;}).forEach(function(c){
+      var n=((typeof _pcPayload==='function'?_pcPayload(c):{}).proposed)||{}; if(!n.boPhan)n.boPhan=c.donVi; if(!n.ten)n.ten=c.nvTen;
+      out+='<tr style="opacity:.55;background:#f7f8fb;" title="Nhân sự mới đang chờ Admin phê duyệt">'+
+        '<td style="text-align:center;">⏳</td>'+
+        _cpwDataCells(n,' <span style="background:#fff3cd;color:#856404;font-size:10px;font-weight:700;border-radius:20px;padding:1px 8px;white-space:nowrap;">⏳ Chờ phê duyệt</span>')+
+        '<td style="text-align:center;"><span style="font-size:12px;">⏳</span></td></tr>';
+    });
+  }catch(e){}
+  return out;
 }
 function _cpwSyncDrafts(){ _cpwLstDrafts.forEach(function(d){ var tr=_cpwRowEl('draft',d.tempId); if(tr)Object.assign(d,_cpnsReadRowEl(tr)); }); }
 function cpwRenderList(){
   var host=document.getElementById('cpw-list-host'); if(!host)return;
   var dv=_cpwDonVi;
+  var readonly=_cpwListReadOnly;
   var canEd=(typeof canEditUnit==='function'&&canEditUnit(dv));
-  var f=function(x){if(!x)return'';var p=String(x).split('-');return p.length===2?(p[1]+'/'+p[0]):(x||'');};
   var list=daNhanVien.filter(function(n){return n.boPhan===dv;}).sort(function(a,b){var sa=a.stt!=null?+a.stt:9999,sb=b.stt!=null?+b.stt:9999;if(sa!==sb)return sa-sb;return (a.ten||'').localeCompare(b.ten||'','vi');});
   var thS='style="text-align:center;position:sticky;top:0;z-index:5;background:#f8fafc;font-size:11.5px;padding:6px 8px;"';
   var thS2='style="text-align:center;position:sticky;top:32px;z-index:4;background:#f8fafc;font-size:11px;padding:5px 6px;"';
   var body='';var stt=0;
   list.forEach(function(n){
-    stt++;
-    if(String(n.id)===String(_cpwLstEditId)){
-      var ed={danhSo:n.danhSo,ten:n.ten,chucDanh:n.chucDanh,gioiTinh:n.gioiTinh,coQuanAo:n.coQuanAo,coGiay:n.coGiay};
-      ['thangCapQuanAo','thangCapGiay','thangCapMu','thangCapKinh','thangCapAoMua','thangCapQAHan'].forEach(function(fld){ ed[fld]=_cpnsToMMYYYY(n[fld]); });
+    if(!readonly&&String(n.id)===String(_cpwLstEditId)){
+      var src=_cpwStagedEdits[n.id]?_cpwStagedEdits[n.id].proposed:n;
+      var ed={danhSo:src.danhSo,ten:src.ten,chucDanh:src.chucDanh,gioiTinh:src.gioiTinh,coQuanAo:src.coQuanAo,coGiay:src.coGiay};
+      _CPW_MONTHS.forEach(function(fld){ ed[fld]=_cpnsToMMYYYY(src[fld]); });
       body+=_cpwInputRow('edit',String(n.id),ed);
-    } else { body+=_cpwViewRow(n,stt,canEd,f); }
+    } else { stt++; body+=_cpwViewRowExisting(n,stt); }
   });
-  _cpwLstDrafts.forEach(function(d){ body+=_cpwInputRow('draft',d.tempId,d); });
-  if(!list.length&&!_cpwLstDrafts.length){ body='<tr><td colspan="13" style="text-align:center;color:var(--text-light);padding:16px;font-size:13px;">Đơn vị này chưa có nhân viên. '+(canEd?'Bấm “＋ Thêm nhân sự” để thêm.':'')+'</td></tr>'; }
-  var addBtn=canEd?'<div style="margin-top:10px;"><button class="btn btn-outline btn-sm" onclick="cpwLstAddDraft()">'+_ic('plus',14)+' Thêm nhân sự</button></div>':'';
+  if(!readonly){
+    _cpwStagedAdds.forEach(function(a){ stt++; body+=_cpwStagedAddRow(a,stt); });
+    _cpwLstDrafts.forEach(function(d){ body+=_cpwInputRow('draft',d.tempId,d); });
+  }
+  body+=_cpwPendingAddRows(dv);
+  if(!body){ body='<tr><td colspan="13" style="text-align:center;color:var(--text-light);padding:16px;font-size:13px;">Đơn vị này chưa có nhân viên.'+((canEd&&!readonly)?' Bấm “＋ Thêm nhân sự” để thêm.':'')+'</td></tr>'; }
+  var footer='';
+  if(!readonly&&canEd){
+    footer='<div style="margin-top:12px;display:flex;gap:10px;flex-wrap:wrap;align-items:center;">'+
+      '<button class="btn btn-outline btn-sm" onclick="cpwLstAddDraft()">'+_ic('plus',14)+' Thêm nhân sự</button>';
+    var nc=_cpwStagedCount();
+    if(nc>0){
+      footer+='<span style="font-size:12.5px;color:#7a5c00;background:#fff8e1;border:1px solid #ffe08a;border-radius:20px;padding:4px 12px;font-weight:600;">'+nc+' thay đổi chưa gửi</span>'+
+        '<button class="btn btn-primary btn-sm" onclick="cpwSubmitStaged()">'+_ic('check',14)+' Gửi phê duyệt</button>'+
+        '<button class="btn btn-ghost btn-sm" style="color:var(--danger);" onclick="cpwDiscardStaged()">'+_ic('undo',14)+' Huỷ tất cả</button>';
+    }
+    footer+='</div>';
+  }
   host.innerHTML='<div class="table-wrap" style="max-height:52vh;"><table style="width:100%;border-collapse:collapse;font-size:12.5px;"><thead>'+
     '<tr>'+
       '<th rowspan="2" '+thS+'>STT</th>'+
@@ -4543,7 +4603,7 @@ function cpwRenderList(){
       '<th rowspan="2" '+thS+'>Thao tác</th>'+
     '</tr>'+
     '<tr><th '+thS2+'>Quần áo</th><th '+thS2+'>Giày</th><th '+thS2+'>Mũ</th><th '+thS2+'>Kính</th><th '+thS2+'>Áo mưa</th><th '+thS2+'>QA thợ hàn</th></tr>'+
-    '</thead><tbody>'+body+'</tbody></table></div>'+addBtn;
+    '</thead><tbody>'+body+'</tbody></table></div>'+footer;
 }
 function cpwLstAddDraft(){
   if(!(typeof canEditUnit==='function'&&canEditUnit(_cpwDonVi))){ showToast('Bạn không có quyền sửa đơn vị này.','warning'); return; }
@@ -4554,25 +4614,42 @@ function cpwLstAddDraft(){
   setTimeout(function(){ var tr=_cpwRowEl('draft',key); if(tr){ var i=tr.querySelector('[data-f="danhSo"]'); if(i)i.focus(); tr.scrollIntoView({block:'nearest'}); } },0);
 }
 function cpwLstRemoveDraft(id){ _cpwSyncDrafts(); _cpwLstDrafts=_cpwLstDrafts.filter(function(d){return d.tempId!==id;}); cpwRenderList(); }
+// Lưu tạm 1 dòng thêm mới → chuyển sang danh sách "chờ gửi" (chưa gửi Admin)
 function cpwLstSaveDraft(id){
   _cpwSyncDrafts();
   var d=_cpwLstDrafts.find(function(x){return x.tempId===id;}); if(!d)return;
-  var res=_cpnsCommitAdd(d,_cpwDonVi);
-  if(!res.ok){ _cpnsMarkErrors(_cpwRowEl('draft',id),res.errs); showToast('Vui lòng kiểm tra các ô được tô đỏ.','error'); return; }
+  var v=_cpnsValidate(d);
+  if(v.errs.length){ _cpnsMarkErrors(_cpwRowEl('draft',id),v.errs); showToast('Vui lòng kiểm tra các ô được tô đỏ.','error'); return; }
+  var now=new Date(); var _mm=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0');
+  var nvData={danhSo:d.danhSo,ten:d.ten,chucDanh:d.chucDanh,boPhan:_cpwDonVi,loaiNV:'cu',coQuanAo:d.coQuanAo||'',coGiay:d.coGiay||'',gioiTinh:d.gioiTinh==='nu'?'nu':'nam',ngayVaoLam:_mm};
+  _CPW_MONTHS.forEach(function(fld){ nvData[fld]=v.parsed[fld]||''; });
+  _cpwStagedAdds.push({tempId:d.tempId,data:nvData});
   _cpwLstDrafts=_cpwLstDrafts.filter(function(x){return x.tempId!==id;});
-  if(typeof isAdmin==='function'&&isAdmin()){ showToast('✅ Đã thêm nhân sự.','success'); cpwRenderList(); }
-  else { showToast('📨 Đã gửi nhân sự để phê duyệt. Quy trình tạm dừng tới khi Admin duyệt.','success'); cpwRender(); }
+  cpwRenderList();
 }
+function cpwLstEditStagedAdd(tempId){
+  var i=_cpwStagedAdds.findIndex(function(a){return a.tempId===tempId;}); if(i<0)return;
+  var a=_cpwStagedAdds[i];
+  var d={tempId:a.tempId,danhSo:a.data.danhSo,ten:a.data.ten,chucDanh:a.data.chucDanh,gioiTinh:a.data.gioiTinh,coQuanAo:a.data.coQuanAo,coGiay:a.data.coGiay};
+  _CPW_MONTHS.forEach(function(fld){ d[fld]=_cpnsToMMYYYY(a.data[fld]); });
+  _cpwStagedAdds.splice(i,1);
+  _cpwSyncDrafts(); _cpwLstDrafts.push(d);
+  cpwRenderList();
+  setTimeout(function(){ var tr=_cpwRowEl('draft',tempId); if(tr){ var inp=tr.querySelector('[data-f="danhSo"]'); if(inp)inp.focus(); tr.scrollIntoView({block:'nearest'}); } },0);
+}
+function cpwLstRemoveStagedAdd(tempId){ _cpwStagedAdds=_cpwStagedAdds.filter(function(a){return a.tempId!==tempId;}); cpwRenderList(); }
 function cpwLstEdit(id){
   var nv=daNhanVien.find(function(x){return String(x.id)===String(id);}); if(!nv)return;
   if(!(typeof canEditUnit==='function'&&canEditUnit(nv.boPhan))){ showToast('Bạn không có quyền sửa đơn vị này.','error'); return; }
-  if(!(typeof isAdmin==='function'&&isAdmin())&&typeof _nvPendingChange==='function'&&_nvPendingChange(id)){ showToast('Nhân viên này đang có thay đổi chờ duyệt.','warning'); return; }
+  if(typeof _nvPendingChange==='function'&&_nvPendingChange(id)){ showToast('Nhân viên này đang có thay đổi chờ duyệt.','warning'); return; }
+  if(_cpwLstEditId&&String(_cpwLstEditId)!==String(id)){ showToast('Hãy lưu tạm hoặc huỷ dòng đang sửa trước.','warning'); return; }
   _cpwSyncDrafts();
   _cpwLstEditId=String(id);
   cpwRenderList();
   setTimeout(function(){ var tr=_cpwRowEl('edit',String(id)); if(tr){ var i=tr.querySelector('[data-f="danhSo"]'); if(i)i.focus(); } },0);
 }
 function cpwLstCancelEdit(){ _cpwLstEditId=null; cpwRenderList(); }
+// Lưu tạm 1 dòng sửa → staged (chưa gửi Admin)
 function cpwLstSaveEdit(id){
   var tr=_cpwRowEl('edit',String(id)); if(!tr)return;
   var raw=_cpnsReadRowEl(tr);
@@ -4580,18 +4657,38 @@ function cpwLstSaveEdit(id){
   if(v.errs.length){ _cpnsMarkErrors(tr,v.errs); showToast('Vui lòng kiểm tra các ô được tô đỏ.','error'); return; }
   var oldNv=daNhanVien.find(function(x){return String(x.id)===String(id);}); if(!oldNv)return;
   var proposed=Object.assign({},oldNv,{danhSo:raw.danhSo,ten:raw.ten,chucDanh:raw.chucDanh,gioiTinh:raw.gioiTinh==='nu'?'nu':'nam',coQuanAo:raw.coQuanAo||'',coGiay:raw.coGiay||''});
-  ['thangCapQuanAo','thangCapGiay','thangCapMu','thangCapKinh','thangCapAoMua','thangCapQAHan'].forEach(function(fld){ proposed[fld]=v.parsed[fld]||''; });
-  if(typeof isAdmin==='function'&&isAdmin()){
-    var idx=daNhanVien.findIndex(function(x){return String(x.id)===String(id);});
-    daNhanVien[idx]=proposed; saveData('nhanvien',daNhanVien); BHLD.lsSet('nhanvien',daNhanVien); _bhldPush('update','nhanvien',id,proposed);
-    showToast('✅ Đã cập nhật nhân viên.'); _cpwLstEditId=null; cpwRenderList();
-  } else {
-    var diff=_buildNvDiff(oldNv,proposed);
-    if(!Object.keys(diff.changed).length){ showToast('Không có thay đổi nào.','warning'); _cpwLstEditId=null; cpwRenderList(); return; }
-    _submitPendingChange('edit',oldNv,proposed,diff);
-    showToast('📨 Đã gửi yêu cầu sửa tới Admin. Quy trình tạm dừng tới khi được duyệt.','success');
-    _cpwLstEditId=null; cpwRender();
-  }
+  _CPW_MONTHS.forEach(function(fld){ proposed[fld]=v.parsed[fld]||''; });
+  var diff=_buildNvDiff(oldNv,proposed);
+  if(!Object.keys(diff.changed).length){ delete _cpwStagedEdits[id]; showToast('Không có thay đổi nào.','warning'); _cpwLstEditId=null; cpwRenderList(); return; }
+  _cpwStagedEdits[id]={proposed:proposed,diff:diff};
+  _cpwLstEditId=null; cpwRenderList();
+}
+function cpwLstRevertEdit(id){ delete _cpwStagedEdits[id]; cpwRenderList(); }
+function cpwDiscardStaged(){
+  if(!_cpwStagedCount()){ return; }
+  if(!confirm('Huỷ tất cả '+_cpwStagedCount()+' thay đổi chưa gửi?'))return;
+  _cpwStagedEdits={}; _cpwStagedAdds=[]; _cpwLstDrafts=[]; _cpwLstEditId=null;
+  cpwRenderList();
+}
+// Gửi phê duyệt toàn bộ thay đổi đã lưu tạm
+function cpwSubmitStaged(){
+  if(_cpwLstEditId||(_cpwLstDrafts&&_cpwLstDrafts.length)){ showToast('Còn dòng đang nhập dở. Lưu tạm hoặc huỷ trước khi gửi.','warning'); return; }
+  var nEdit=Object.keys(_cpwStagedEdits).length, nAdd=_cpwStagedAdds.length;
+  if(!nEdit&&!nAdd){ showToast('Chưa có thay đổi nào để gửi.','warning'); return; }
+  var admin=(typeof isAdmin==='function'&&isAdmin());
+  if(!confirm('Gửi '+(nEdit+nAdd)+' thay đổi'+(admin?' và áp dụng ngay':' để Admin phê duyệt')+'?'))return;
+  Object.keys(_cpwStagedEdits).forEach(function(nvId){
+    var s=_cpwStagedEdits[nvId]; var oldNv=daNhanVien.find(function(x){return String(x.id)===String(nvId);}); if(!oldNv)return;
+    if(admin){ var idx=daNhanVien.findIndex(function(x){return String(x.id)===String(nvId);}); daNhanVien[idx]=s.proposed; saveData('nhanvien',daNhanVien); BHLD.lsSet('nhanvien',daNhanVien); _bhldPush('update','nhanvien',nvId,s.proposed); }
+    else { _submitPendingChange('edit',oldNv,s.proposed,s.diff); }
+  });
+  _cpwStagedAdds.forEach(function(a){
+    if(admin){ var newNV=Object.assign({id:nextId(daNhanVien)},a.data); daNhanVien.push(newNV); saveData('nhanvien',daNhanVien); BHLD.lsSet('nhanvien',daNhanVien); _bhldPush('insert','nhanvien',null,newNV); }
+    else { var diff=_buildNvDiff(null,a.data); _submitPendingChange('add',null,a.data,diff); }
+  });
+  _cpwStagedEdits={}; _cpwStagedAdds=[]; _cpwLstEditId=null; _cpwLstDrafts=[];
+  if(admin){ showToast('✅ Đã áp dụng '+(nEdit+nAdd)+' thay đổi.','success'); cpwRenderList(); }
+  else { showToast('📨 Đã gửi '+(nEdit+nAdd)+' thay đổi để phê duyệt. Quy trình tạm dừng tới khi Admin duyệt.','success'); cpwRender(); }
 }
 // ── Bước 2 NHÚNG: bảng nhập số lượng ngay trong wizard ──
 function cpwRenderQuantity(){
