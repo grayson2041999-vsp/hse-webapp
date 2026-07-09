@@ -2616,8 +2616,9 @@ function moveDanhMuc(id,dir){
   const swapIdx=idx+dir;
   if(swapIdx<0||swapIdx>=group.length)return;
   const tmp=group[idx].thuTu;group[idx].thuTu=group[swapIdx].thuTu;group[swapIdx].thuTu=tmp;
-  BHLD.push.update('danh_muc',group[idx].id,{thuTu:group[idx].thuTu});
-  BHLD.push.update('danh_muc',group[swapIdx].id,{thuTu:group[swapIdx].thuTu});
+  // Upsert cả dòng (trang bị mặc định có thể chưa có trên DB nên update theo id không khớp)
+  BHLD.push.insert('danh_muc',group[idx]).catch(function(){});
+  BHLD.push.insert('danh_muc',group[swapIdx]).catch(function(){});
   saveData('danhmuc',daDanhMuc);BHLD.lsSet('danh_muc',daDanhMuc);
   renderDanhMuc();
 }
@@ -2687,12 +2688,14 @@ function saveDM(){
   if(editingIds.dm){
     const idx=daDanhMuc.findIndex(x=>x.id===editingIds.dm);
     daDanhMuc[idx]={...daDanhMuc[idx],...obj};
-    BHLD.push.update('danh_muc',editingIds.dm,obj);
+    // Upsert cả dòng (không chỉ update): trang bị mặc định có thể chưa tồn tại trên DB
+    // → update theo id sẽ không khớp dòng nào; upsert sẽ tạo mới nếu thiếu.
+    BHLD.push.insert('danh_muc',daDanhMuc[idx]).catch(function(e){showToast('⚠️ Lưu lên database lỗi: '+(e&&e.message||e),'error');});
     showToast('Đã cập nhật trang bị!');
   } else {
     const newItem={id:nextId(daDanhMuc),...obj};
     daDanhMuc.push(newItem);
-    BHLD.push.insert('danh_muc',newItem);
+    BHLD.push.insert('danh_muc',newItem).catch(function(e){showToast('⚠️ Lưu lên database lỗi: '+(e&&e.message||e),'error');});
     showToast('Đã thêm trang bị mới!');
   }
   saveData('danhmuc',daDanhMuc);BHLD.lsSet('danh_muc',daDanhMuc);
