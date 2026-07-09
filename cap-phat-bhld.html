@@ -1620,12 +1620,31 @@ function _cpnsLiveRow(n,stt,draggable,grpSelHtml){
 // Dropdown chọn nhóm cho 1 nhân viên (chỉ khi có quyền quản lý nhóm & đơn vị có nhóm)
 function _cpnsGrpSelect(n,unitGroups,canManage){
   if(!canManage||!unitGroups.length)return '';
-  var opts='<option value="">— Chưa nhóm —</option>'+unitGroups.map(function(g){return '<option value="'+_escH(String(g.id))+'"'+(String(n.nhomId)===String(g.id)?' selected':'')+'>['+_escH(String(g.id))+'] '+_escH(g.ten)+'</option>';}).join('');
+  var opts='<option value="">— Chưa nhóm —</option>'+unitGroups.map(function(g,gi){return '<option value="'+_escH(String(g.id))+'"'+(String(n.nhomId)===String(g.id)?' selected':'')+'>'+_roman(gi+1)+'. '+_escH(g.ten)+'</option>';}).join('');
   return '<select title="Chuyển nhóm" onchange="setNhomNV(\''+n.id+'\',this.value)" onclick="event.stopPropagation();" style="font-size:11px;padding:2px 4px;border:1px solid var(--border);border-radius:5px;max-width:118px;margin-right:6px;vertical-align:middle;">'+opts+'</select>';
 }
-// Dòng tiêu đề nhóm (full width) — cho phép thả vào để chuyển nhóm
-function _cpnsGroupHeaderRow(g,count,canManage){
-  var badge=g?'<span style="display:inline-flex;align-items:center;justify-content:center;background:var(--primary);color:#fff;font-weight:800;font-size:11px;border-radius:50%;width:20px;height:20px;margin-right:6px;">'+_escH(String(g.id))+'</span>'+_escH(g.ten):'📂 Chưa xếp nhóm';
+// Số La Mã (1 → I, 2 → II ...)
+function _roman(num){var n=Math.max(1,parseInt(num)||1);var map=[[1000,'M'],[900,'CM'],[500,'D'],[400,'CD'],[100,'C'],[90,'XC'],[50,'L'],[40,'XL'],[10,'X'],[9,'IX'],[5,'V'],[4,'IV'],[1,'I']];var s='';map.forEach(function(p){while(n>=p[0]){s+=p[1];n-=p[0];}});return s;}
+// Sinh id nhóm nội bộ (đồng nhất kiểu mã với các bảng khác — không hiển thị cho user)
+function _genGroupId(){return Date.now().toString(36)+Math.random().toString(36).slice(2,5);}
+// Danh sách nhóm 1 đơn vị đã sắp theo thứ tự
+function _cpnsUnitGroups(dv){return daGroups.filter(function(g){return g.donVi===dv;}).sort(function(a,b){var d=(a.thu_tu!=null?a.thu_tu:9999)-(b.thu_tu!=null?b.thu_tu:9999);return d!==0?d:String(a.id).localeCompare(String(b.id));});}
+var _cpnsReorderOpen=false;
+function _cpnsToggleReorder(){ _cpnsReorderOpen=!_cpnsReorderOpen; cpRenderNhanSu(); }
+// Di chuyển thứ tự 1 nhóm lên/xuống (dir=-1 lên, +1 xuống)
+function _cpnsMoveNhom(gid,dir){
+  var dv=document.getElementById('cpns-donvi').value||''; if(!dv||!(typeof canManageNhom==='function'&&canManageNhom(dv)))return;
+  var gs=_cpnsUnitGroups(dv);
+  var i=gs.findIndex(function(g){return String(g.id)===String(gid);}); if(i<0)return;
+  var j=i+dir; if(j<0||j>=gs.length)return;
+  var t=gs[i]; gs[i]=gs[j]; gs[j]=t;
+  gs.forEach(function(g,idx){var k=daGroups.findIndex(function(x){return String(x.id)===String(g.id);});if(k>=0){daGroups[k].thu_tu=idx;_bhldPush('update','nhom_nv',daGroups[k].id,{thu_tu:idx});}});
+  saveData('nhom-nv',daGroups);BHLD.lsSet('nhom_nv',daGroups);
+  cpRenderNhanSu();
+}
+// Dòng tiêu đề nhóm (full width) — cho phép thả vào để chuyển nhóm; nhãn = số La Mã theo thứ tự
+function _cpnsGroupHeaderRow(g,count,canManage,roman){
+  var badge=g?'<span style="display:inline-flex;align-items:center;justify-content:center;background:var(--primary);color:#fff;font-weight:800;font-size:11px;border-radius:50%;min-width:24px;height:20px;padding:0 5px;margin-right:6px;">'+_escH(roman||'')+'</span>'+_escH(g.ten):'📂 Chưa xếp nhóm';
   var manage=(g&&canManage)?(' <button onclick="openModalNhom(\''+_escH(String(g.id))+'\')" style="background:none;border:none;cursor:pointer;font-size:12.5px;padding:0 2px;" title="Đổi tên">✏️</button><button onclick="deleteNhom(\''+_escH(String(g.id))+'\')" style="background:none;border:none;cursor:pointer;font-size:12.5px;padding:0 2px;color:var(--danger);" title="Xoá nhóm">🗑️</button>'):'';
   return '<tr class="cpns-grp" data-nhom-drop="'+(g?_escH(String(g.id)):'')+'" style="background:#eaf2fb;"><td colspan="14" style="padding:7px 12px;font-weight:700;color:var(--primary);font-size:13px;border-bottom:2px solid #b0cde8;">'+badge+' <span style="font-weight:400;color:var(--text-light);font-size:12px;">('+count+' người)</span>'+manage+'</td></tr>';
 }
@@ -1692,12 +1711,12 @@ function cpRenderNhanSu(){
     // ── Chế độ GOM NHÓM (khi chọn 1 đơn vị) ──
     var _canMng=(typeof canManageNhom==='function')&&canManageNhom(dv);
     var _dragOn=(typeof canEditUnit==='function')&&canEditUnit(dv);
-    var unitGroups=daGroups.filter(function(g){return g.donVi===dv;}).sort(function(a,b){return (a.thu_tu||0)-(b.thu_tu||0)||String(a.id).localeCompare(String(b.id));});
+    var unitGroups=_cpnsUnitGroups(dv);
     var _ms=function(arr){return arr.sort(function(a,b){var sa=a.stt!=null?+a.stt:9999,sb=b.stt!=null?+b.stt:9999;if(sa!==sb)return sa-sb;return (a.ten||'').localeCompare(b.ten||'','vi');});};
     var _stt=1;
-    unitGroups.forEach(function(g){
+    unitGroups.forEach(function(g,gi){
       var mem=_ms(list.filter(function(n){return String(n.nhomId)===String(g.id);}));
-      body+=_cpnsGroupHeaderRow(g,mem.length,_canMng);
+      body+=_cpnsGroupHeaderRow(g,mem.length,_canMng,_roman(gi+1));
       body+=mem.map(function(n){return _cpnsLiveRow(n,_stt++,_dragOn,_cpnsGrpSelect(n,unitGroups,_canMng));}).join('');
     });
     var noG=_ms(list.filter(function(n){return !n.nhomId||!unitGroups.find(function(g){return String(g.id)===String(n.nhomId);});}));
@@ -1816,14 +1835,24 @@ function cpRenderNhanSu(){
   var _bar=document.getElementById('cpns-nhom-bar');
   if(_bar){
     if(dv&&(typeof canManageNhom==='function')&&canManageNhom(dv)){
-      var _nG=daGroups.filter(function(g){return g.donVi===dv;}).length;
+      var _ug=_cpnsUnitGroups(dv);
       _bar.style.display='';
+      var reorderPanel='';
+      if(_cpnsReorderOpen){
+        var rows=_ug.length? _ug.map(function(g,gi){
+          var up=gi>0?'<button title="Lên" onclick="_cpnsMoveNhom(\''+_escH(String(g.id))+'\',-1)" style="border:1px solid var(--border);background:#fff;border-radius:5px;cursor:pointer;padding:1px 7px;">▲</button>':'<span style="display:inline-block;width:26px;"></span>';
+          var dn=gi<_ug.length-1?'<button title="Xuống" onclick="_cpnsMoveNhom(\''+_escH(String(g.id))+'\',1)" style="border:1px solid var(--border);background:#fff;border-radius:5px;cursor:pointer;padding:1px 7px;">▼</button>':'<span style="display:inline-block;width:26px;"></span>';
+          return '<div style="display:flex;align-items:center;gap:8px;padding:5px 4px;border-bottom:1px solid #eef2f7;"><span style="display:inline-flex;align-items:center;justify-content:center;background:var(--primary);color:#fff;font-weight:800;font-size:11px;border-radius:50%;min-width:24px;height:20px;padding:0 5px;">'+_roman(gi+1)+'</span><span style="flex:1;font-size:13px;color:var(--primary);font-weight:600;">'+_escH(g.ten)+'</span>'+up+dn+'</div>';
+        }).join('') : '<div style="font-size:12.5px;color:var(--text-light);padding:6px 2px;">Chưa có nhóm nào để sắp xếp.</div>';
+        reorderPanel='<div style="margin-top:8px;background:#fff;border:1px solid #d6e3f2;border-radius:8px;padding:8px 12px;"><div style="font-size:12px;color:var(--text-light);margin-bottom:4px;">Dùng ▲ ▼ để đổi thứ tự nhóm (số La Mã cập nhật theo thứ tự):</div>'+rows+'</div>';
+      }
       _bar.innerHTML='<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:#f3f7fc;border:1px solid #d6e3f2;border-radius:8px;padding:8px 12px;">'+
         '<button class="btn btn-primary btn-sm" onclick="openModalNhom(null)">➕ Tạo nhóm</button>'+
-        '<span style="font-size:12px;color:var(--text-light);">Đơn vị <b style="color:var(--primary);">'+_escH(dv)+'</b> · '+_nG+' nhóm. Kéo biểu tượng ⠿ để đổi vị trí hoặc chuyển nhóm; hoặc dùng ô chọn nhóm ở cột Thao tác.</span>'+
-      '</div>';
+        '<button class="btn btn-outline btn-sm" onclick="_cpnsToggleReorder()">↕ Sắp xếp nhóm'+(_cpnsReorderOpen?' ▲':' ▼')+'</button>'+
+        '<span style="font-size:12px;color:var(--text-light);">Đơn vị <b style="color:var(--primary);">'+_escH(dv)+'</b> · '+_ug.length+' nhóm. Kéo ⠿ để đổi vị trí / chuyển nhóm; hoặc dùng ô chọn nhóm ở cột Thao tác.</span>'+
+      '</div>'+reorderPanel;
       if(typeof _cpnsInitDrag==='function')_cpnsInitDrag();
-    } else { _bar.style.display='none'; _bar.innerHTML=''; }
+    } else { _bar.style.display='none'; _bar.innerHTML=''; _cpnsReorderOpen=false; }
   }
 }
 // Xoá từ bảng Tra cứu — đặt _currentUnit theo đơn vị của NV để phân quyền
@@ -2434,7 +2463,10 @@ function saveNhom(){
     }
   } else {
     const trung=daGroups.find(g=>g.donVi===donVi&&g.ten===ten);if(trung){showToast(`Đã có nhóm tên "${ten}"!`,'error');return;}
-    const newG={id:nextGroupId(donVi),ten,donVi};daGroups.push(newG);
+    const _ex=(typeof _cpnsUnitGroups==='function')?_cpnsUnitGroups(donVi):daGroups.filter(g=>g.donVi===donVi);
+    // Chuẩn hoá thu_tu cho các nhóm cũ (nếu thiếu) để thứ tự & số La Mã nhất quán
+    _ex.forEach((g,idx)=>{ if(g.thu_tu!==idx){ const k=daGroups.findIndex(x=>String(x.id)===String(g.id)); if(k>=0){daGroups[k].thu_tu=idx;_bhldPush('update','nhom_nv',daGroups[k].id,{thu_tu:idx});} } });
+    const newG={id:_genGroupId(),ten,donVi,thu_tu:_ex.length};daGroups.push(newG);
     _bhldPush('insert','nhom_nv',null,newG);showToast(`Đã tạo nhóm "${ten}"!`);
   }
   saveData('nhom-nv',daGroups);BHLD.lsSet('nhom_nv',daGroups);
