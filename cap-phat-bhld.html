@@ -442,7 +442,6 @@
         <button class="btn btn-outline" onclick="fillTheoTinhMuc()" style="font-size:12.5px;border-color:var(--accent);color:var(--accent);"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px" aria-hidden="true"><path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z"/></svg>Điền theo định mức</button>
         <button class="btn btn-primary" onclick="exportPhieuWord()"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px" aria-hidden="true"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v5h5"/><path d="M16 13H8"/><path d="M16 17H8"/><path d="M10 9H8"/></svg>Xuất Word</button>
         <button class="btn btn-outline" onclick="exportChiTietExcel()"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px" aria-hidden="true"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v5h5"/><path d="M8 13h2"/><path d="M14 13h2"/><path d="M8 17h2"/><path d="M14 17h2"/></svg>Xuất Excel</button>
-        <button class="btn btn-outline" onclick="exportPhieuMatrixExcel()" title="Excel ma trận có cột ký nhận theo mẫu BM02"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px" aria-hidden="true"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v5h5"/><path d="M8 13h2"/><path d="M14 13h2"/><path d="M8 17h2"/><path d="M14 17h2"/></svg>Excel ký nhận</button>
         <button class="btn btn-success" onclick="submitPhieuQuy()" id="btn-submit-quy"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>Gửi phê duyệt</button>
       </div>
     </div>
@@ -3813,10 +3812,12 @@ function _matrixCode(ten){
   return ten;
 }
 // Xuất Excel ma trận cấp phát (mẫu BM02): STT, Danh số, Họ tên + 8 trang bị, mỗi trang bị kèm ô Ký tên
-function exportPhieuMatrixExcel(){
+function exportPhieuMatrixExcel(quyArg,dvArg){
   if(typeof XLSX==='undefined'){showToast('⚠️ Thư viện Excel chưa tải.','error');return;}
-  var sel=document.getElementById('bc-quy'); if(!sel||!sel.value){showToast('⚠️ Vui lòng chọn quý!','warning');return;}
-  var quyStr=sel.value; var dvEl=document.getElementById('bc-don-vi'); var dv=dvEl?dvEl.value:'';
+  var quyStr=quyArg, dv=dvArg;
+  if(!quyStr){var sel=document.getElementById('bc-quy'); quyStr=sel?sel.value:'';}
+  if(dv===undefined||dv===null){var dvEl=document.getElementById('bc-don-vi'); dv=dvEl?dvEl.value:'';}
+  if(!quyStr){showToast('⚠️ Vui lòng chọn quý!','warning');return;}
   if(!dv){showToast('⚠️ Vui lòng chọn đơn vị để xuất!','warning');return;}
   var res=(typeof computeQuyData==='function')?computeQuyData(quyStr,dv):{rows:[]}; var rows=res.rows||[];
   if(!rows.length){showToast('Không có nhân viên cần cấp phát trong quý này cho đơn vị đã chọn.','warning');return;}
@@ -4519,7 +4520,8 @@ function cpwStep3Body(s3,phieu){
   return '<p style="font-size:13.5px;color:var(--text-light);margin:0 0 12px;">Xuất phiếu để trình ký. Sau khi trình ký, xác nhận để hệ thống cập nhật thời hạn cấp phát mới cho nhân viên.</p>'+
     '<div style="display:flex;gap:8px;flex-wrap:wrap;">'+
       '<button class="btn btn-outline btn-sm" onclick="cpwExport()">'+_ic('file',15)+' Xuất phiếu (Word)</button>'+
-      '<button class="btn btn-success btn-sm" onclick="cpwFinalize()">'+_ic('check',15)+' Xác nhận trình ký & cập nhật thời hạn</button>'+
+      '<button class="btn btn-outline btn-sm" onclick="exportPhieuMatrixExcel(_cpwQuy,_cpwDonVi)">'+_ic('sheet',15)+' Excel ký nhận</button>'+
+      '<button class="btn btn-success btn-sm" onclick="cpwFinalize()">'+_ic('check',15)+' Xác nhận đã trình ký & Cập nhật thời hạn</button>'+
     '</div>';
 }
 function cpwExportExcel(){
