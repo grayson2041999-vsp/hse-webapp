@@ -1886,6 +1886,7 @@ function cpnvOpen(){
   document.getElementById('cp-home').style.display='none';
   ['nv-unit-picker','nv-unit-detail','cp-wizard','cp-nhansu'].forEach(function(i){var e=document.getElementById(i);if(e)e.style.display='none';});
   var v=document.getElementById('cp-nvmoi-wizard'); if(v)v.style.display='block';
+  var mt=document.getElementById('cp-main-title'); if(mt)mt.style.display='none';
   cpnvRender();
 }
 function cpnvAddEmployee(){ cpnvAddDraft(); } // tương thích cũ → thêm hàng inline
