@@ -71,6 +71,14 @@
     tr.total-row:hover td{background:#cdd6e8;}
     .no-data{color:#bcc6d8;font-size:12px;}
     .group-header th{background:var(--primary);color:#fff;border-color:rgba(255,255,255,0.15);}
+    /* Inline edit */
+    tr.editing td{background:#fff8e6;}
+    tr.editing:hover td{background:#fff8e6;}
+    .inline-input{width:100%;min-width:58px;max-width:88px;border:1.5px solid var(--primary-light);border-radius:5px;padding:4px 5px;font-size:12px;text-align:right;outline:none;background:#fff;}
+    .inline-input:focus{border-color:var(--accent);box-shadow:0 0 0 2px rgba(200,16,46,0.12);}
+    td.editing-cell{padding:4px 5px;}
+    .inline-actions{display:flex;gap:4px;justify-content:center;}
+    .inline-actions .btn{padding:4px 8px;font-size:11px;}
     /* Modal */
     .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:200;align-items:center;justify-content:center;}
     .modal-overlay.open{display:flex;}
@@ -261,6 +269,10 @@ var MONTHS = ["Tháng 1","Tháng 2","Tháng 3","Tháng 4","Tháng 5","Tháng 6",
 var MT_FIELDS = ["rac_nh_long","rac_nh_ran","rac_knh","thung_suc_rua",
                  "phuy_sat","phuy_nhua","can","thung_nhua_1m3",
                  "pin_ac_quy","amiang","dau_nhot","nuoc_thai"];
+var FIELD_STEP = {rac_nh_long:"0.01",rac_nh_ran:"0.01",rac_knh:"0.01",thung_suc_rua:"0.01",
+                  phuy_sat:"1",phuy_nhua:"1",can:"1",thung_nhua_1m3:"1",
+                  pin_ac_quy:"0.01",amiang:"0.01",dau_nhot:"0.001",nuoc_thai:"0.001"};
+var editingKey = null; // "nam-thang" của dòng đang chỉnh sửa inline
 
 // ── Helpers ──
 function lsLoad(k,d){try{var v=localStorage.getItem(k);return v?JSON.parse(v):d;}catch(e){return d;}}
@@ -405,12 +417,37 @@ function renderTable(){
     MT_FIELDS.forEach(function(f){totals[f]+=num(d[f]);});
     var totalVoThung=num(d.phuy_sat)+num(d.phuy_nhua)+num(d.can)+num(d.thung_nhua_1m3);
 
+    // ── Dòng đang chỉnh sửa inline ──
+    if(canEdit(u) && editingKey===nam+"-"+m){
+      rows+='<tr class="editing" id="editRow_'+m+'">'+
+        '<td class="month-col">'+MONTHS[m-1]+'</td>'+
+        cellInput('rac_nh_long',d)+
+        cellInput('rac_nh_ran',d)+
+        cellInput('rac_knh',d)+
+        cellInput('thung_suc_rua',d)+
+        cellInput('phuy_sat',d)+
+        cellInput('phuy_nhua',d)+
+        cellInput('can',d)+
+        cellInput('thung_nhua_1m3',d)+
+        '<td id="inlineTotalVT">'+num(totalVoThung).toLocaleString('vi-VN')+'</td>'+
+        cellInput('pin_ac_quy',d)+
+        cellInput('amiang',d)+
+        cellInput('dau_nhot',d)+
+        cellInput('nuoc_thai',d)+
+        '<td class="action-col editing-cell"><div class="inline-actions">'+
+          '<button class="btn btn-primary btn-sm" onclick="saveInlineEdit('+nam+','+m+')">Lưu</button>'+
+          '<button class="btn btn-outline btn-sm" onclick="cancelInlineEdit()">Huỷ</button>'+
+        '</div></td>'+
+      '</tr>';
+      continue;
+    }
+
     var actionCell="";
     if(canEdit(u)){
       if(hasData){
-        actionCell='<button class="btn btn-edit btn-sm" onclick="openEdit('+nam+','+m+')"><svg class="lic-emoji" width="1.05em" height="1.05em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex-shrink:0" aria-hidden="true"><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"/><path d="m15 5 4 4"/></svg> Sửa</button>';
+        actionCell='<button class="btn btn-edit btn-sm" onclick="startInlineEdit('+nam+','+m+')"><svg class="lic-emoji" width="1.05em" height="1.05em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex-shrink:0" aria-hidden="true"><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"/><path d="m15 5 4 4"/></svg> Sửa</button>';
       } else {
-        actionCell='<button class="btn btn-primary btn-sm" onclick="openEdit('+nam+','+m+')">+ Nhập</button>';
+        actionCell='<button class="btn btn-primary btn-sm" onclick="startInlineEdit('+nam+','+m+')">+ Nhập</button>';
       }
     }
 
@@ -480,7 +517,96 @@ function renderStatCards(t){
   }).join('');
 }
 
-// ── Edit Modal ──
+// ── Inline edit (chỉnh trực tiếp trên bảng) ──
+function cellInput(f,d){
+  var v=(d[f]!==undefined&&d[f]!==null&&d[f]!=='')?d[f]:'';
+  return '<td class="editing-cell"><input class="inline-input" data-field="'+f+'" type="number" min="0" step="'+
+    (FIELD_STEP[f]||'0.01')+'" value="'+v+'" oninput="updateInlineTotal()" placeholder="0"></td>';
+}
+function updateInlineTotal(){
+  var row=document.querySelector('tr.editing');
+  var cell=document.getElementById('inlineTotalVT');
+  if(!row||!cell)return;
+  var sum=0;
+  ['phuy_sat','phuy_nhua','can','thung_nhua_1m3'].forEach(function(f){
+    var el=row.querySelector('.inline-input[data-field="'+f+'"]');
+    if(el)sum+=num(el.value);
+  });
+  cell.textContent=sum.toLocaleString('vi-VN');
+}
+function startInlineEdit(nam,thang){
+  var u=currentUser();
+  if(!canEdit(u)){alert("Bạn không có quyền nhập liệu.");return;}
+  editingKey=nam+"-"+thang;
+  renderTable();
+  // focus ô đầu tiên
+  var row=document.querySelector('tr.editing .inline-input');
+  if(row)row.focus();
+}
+function cancelInlineEdit(){
+  editingKey=null;
+  renderTable();
+}
+function saveInlineEdit(nam,thang){
+  var u=currentUser();
+  if(!canEdit(u)){alert("Bạn không có quyền nhập liệu.");return;}
+  var row=document.querySelector('tr.editing');
+  if(!row)return;
+  var vals={};
+  MT_FIELDS.forEach(function(f){
+    var el=row.querySelector('.inline-input[data-field="'+f+'"]');
+    vals[f]=el?el.value:0;
+  });
+  persistRecord(nam,thang,vals);
+  editingKey=null;
+  renderTable();
+}
+// Lưu 1 bản ghi (dùng chung cho inline). id lấy từ bản ghi hiện có nếu có.
+function persistRecord(nam,thang,vals){
+  var u=currentUser();
+  var existing=getRecord(nam,thang);
+  var data={nam:nam,thang:thang};
+  MT_FIELDS.forEach(function(f){data[f]=num(vals[f]);});
+  data.createdBy=u?u.username:'';
+  data.updatedAt=new Date().toISOString();
+
+  if(typeof DB!=="undefined"){DB.init();if(u)DB.setUser(u.username);}
+
+  var all=getAllRecords();
+  var id=existing?existing.id:'';
+  if(id){
+    data.id=id;
+    var idx=all.findIndex(function(r){return r.id===id;});
+    if(idx>=0)all[idx]=Object.assign(all[idx],data); else all.push(data);
+    saveAllRecords(all);
+    if(typeof DB!=="undefined"){
+      setSyncStatus("syncing","Đang lưu...");
+      DB.update(SH_MT,id,data)
+        .then(function(){setSyncStatus("ok","Đã lưu vào Sheets ✓");})
+        .catch(function(e){
+          var msg=e&&e.message||"";
+          if(msg.indexOf("Không tìm thấy")>=0||msg.indexOf("id=")>=0){
+            DB.insert(SH_MT,data)
+              .then(function(){setSyncStatus("ok","Đã lưu vào Sheets ✓");})
+              .catch(function(e2){setSyncStatus("err","Lỗi Sheets: "+(e2&&e2.message||"unknown"));});
+          } else {setSyncStatus("err","Lỗi Sheets: "+msg);}
+        });
+    }
+  } else {
+    data.id=Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+    data.createdAt=new Date().toISOString();
+    all.push(data);
+    saveAllRecords(all);
+    if(typeof DB!=="undefined"){
+      setSyncStatus("syncing","Đang lưu...");
+      DB.insert(SH_MT,data)
+        .then(function(){setSyncStatus("ok","Đã lưu vào Sheets ✓");})
+        .catch(function(e){setSyncStatus("err","Lỗi Sheets: "+(e&&e.message||"unknown"));});
+    }
+  }
+}
+
+// ── Edit Modal (giữ lại, không còn dùng trực tiếp) ──
 function openEdit(nam,thang){
   var rec=getRecord(nam,thang)||{};
   document.getElementById("editRecordId").value=rec.id||'';
