@@ -3052,7 +3052,8 @@ function computeQuyData(quyStr,filterDonVi){
     });
     if(items.length>0)rows.push({nv,items});
   });
-  rows.sort((a,b)=>a.nv.ten.localeCompare(b.nv.ten,'vi'));
+  // Sắp xếp theo stt (thứ tự thủ công như Bước 1) rồi đến tên — đồng bộ Bước 2, báo cáo, phiếu in, Excel
+  rows.sort((a,b)=>{const sa=a.nv.stt!=null?Number(a.nv.stt):9999,sb=b.nv.stt!=null?Number(b.nv.stt):9999;return sa!==sb?sa-sb:a.nv.ten.localeCompare(b.nv.ten,'vi');});
   const summary=Object.values(summaryMap).sort((a,b)=>a.ten.localeCompare(b.ten,'vi'));
   return{rows,summary};
 }
@@ -4728,7 +4729,7 @@ function cpwRenderQuantity(){
         '<div style="flex:1;min-width:180px;"><strong>'+_escH(r.nv.ten)+'</strong>'+
           '<code style="font-size:11.5px;color:var(--text-light);margin-left:6px;">'+_escH(r.nv.danhSo)+'</code>'+
           '<span style="font-size:12.5px;color:var(--text-light);margin-left:8px;">'+_escH(r.nv.chucDanh)+'</span></div>'+
-        '<button class="btn btn-outline btn-sm" style="padding:4px 10px;font-size:12px;" onclick="cpwFillEmp(\''+r.nv.id+'\')">'+_ic('zap',13)+' Điền = ĐM</button>'+
+        '<button class="btn btn-outline btn-sm" style="padding:4px 10px;font-size:12px;" onclick="cpwFillEmp(\''+r.nv.id+'\')">'+_ic('zap',13)+' Điền theo định mức</button>'+
       '</div>'+
       '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:8px;">'+cells+'</div>'+
     '</div>';
