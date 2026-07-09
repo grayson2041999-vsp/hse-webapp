@@ -1400,8 +1400,16 @@ function _cpnsBusy(){
 }
 function _cpnsToMMYYYY(v){ if(!v)return''; var p=String(v).split('-'); return p.length===2?(p[1]+'/'+p[0]):''; }
 function _cpnsParseMM(v){ v=(v||'').trim(); if(!v)return''; var m=v.match(/^(\d{2})\/(\d{4})$/); if(!m)return null; var mm=+m[1]; if(mm<1||mm>12)return null; return m[2]+'-'+m[1]; }
-// Đọc payload của pending_changes — chấp nhận CẢ chuỗi JSON lẫn object (jsonb/realtime)
-function _pcPayload(c){ var p=c&&c.payload; if(p&&typeof p==='object')return p; try{ return JSON.parse(p||'{}'); }catch(e){ return {}; } }
+// Đọc payload của pending_changes — chấp nhận object (jsonb), chuỗi JSON, hoặc chuỗi bị mã hoá 2 lần
+function _pcPayload(c){
+  var p=c&&c.payload;
+  if(p&&typeof p==='object')return p;
+  try{
+    var o=JSON.parse(p||'{}');
+    if(typeof o==='string'){ try{ o=JSON.parse(o); }catch(e){} } // trường hợp jsonb lưu chuỗi (double-encoded)
+    return (o&&typeof o==='object')?o:{};
+  }catch(e){ return {}; }
+}
 function _cpnsChucDanhOptions(sel){
   var o='<option value="">-- Chức danh --</option>';
   (typeof daChucDanh!=='undefined'?daChucDanh:[]).forEach(function(cd){ o+='<option value="'+_escH(cd.ten)+'"'+(cd.ten===sel?' selected':'')+'>'+_escH(cd.ten)+'</option>'; });
@@ -3309,6 +3317,10 @@ function approveChange(id){
   const now=new Date().toISOString();const reviewer=_getCurrentUserLabel();
   if(c.type==='add'){
     const prop=payload.proposed||{};const {id:_x,...rest}=prop;
+    // Dự phòng: nếu payload thiếu đơn vị/tên (do đồng bộ) thì lấy từ bản ghi để nhân viên không bị lọc mất
+    if(!rest.boPhan&&c.donVi)rest.boPhan=c.donVi;
+    if(!rest.ten&&c.nvTen)rest.ten=c.nvTen;
+    if(!rest.loaiNV)rest.loaiNV='cu';
     const newNV={id:nextId(daNhanVien),...rest};
     daNhanVien.push(newNV);saveData('nhanvien',daNhanVien);BHLD.lsSet('nhanvien',daNhanVien);
     _bhldPush('insert','nhanvien',null,newNV);
@@ -4510,9 +4522,27 @@ function _cpwOnRealtime(table,payload){
   }
   // Bảng Tra cứu nhân sự: cập nhật dòng "Chờ phê duyệt" khi có thay đổi phê duyệt
   if(table==='pending_changes'){
+    // Khi một yêu cầu được DUYỆT: tải lại danh sách nhân viên từ server để nhân viên mới hiện ra
+    // (phòng trường hợp bảng 'nhanvien' chưa được bật realtime publication).
+    var _st=(payload&&payload.new&&payload.new.status)||'';
+    if(_st==='approved'&&typeof _rtRefreshNhanVien==='function')_rtRefreshNhanVien();
     var ns3=document.getElementById('cp-nhansu');
     if(ns3&&ns3.style.display!=='none'&&typeof cpRenderNhanSu==='function'&&!(typeof _cpnsBusy==='function'&&_cpnsBusy()))cpRenderNhanSu();
   }
+}
+// Tải lại riêng bảng nhanvien từ server rồi vẽ lại (dùng khi realtime nhanvien có thể chưa bật)
+function _rtRefreshNhanVien(){
+  var sb=window.HSE_SB; if(!sb)return;
+  function _do(){
+    try{
+      sb.from('nhanvien').select('*').then(function(res){
+        if(res&&!res.error&&Array.isArray(res.data)){ BHLD.lsSet('nhanvien',res.data); if(typeof _rtReloadNhanVien==='function')_rtReloadNhanVien(); }
+      });
+    }catch(e){ console.warn('[Realtime] refresh nhanvien lỗi:',e&&e.message||e); }
+  }
+  _do();
+  // Chạy lại sau 1.2s phòng khi bản ghi nhân viên commit chậm hơn sự kiện duyệt
+  setTimeout(_do,1200);
 }
 </script>
 </body>
