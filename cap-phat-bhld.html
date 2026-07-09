@@ -273,20 +273,20 @@
         <select id="cpns-chucdanh" onchange="cpRenderNhanSu()" style="min-width:200px;"></select>
       </div>
       <div id="cpns-count" style="font-size:12.5px;color:var(--text-light);margin-bottom:8px;"></div>
-      <div class="table-wrap"><table id="cpns-table"><thead>
+      <div class="table-wrap" id="cpns-wrap" style="max-height:66vh;"><table id="cpns-table"><thead>
         <tr>
-          <th rowspan="2" style="width:44px;text-align:center;">STT</th>
-          <th rowspan="2">Danh số</th>
-          <th rowspan="2" style="min-width:180px;">Họ và tên</th>
-          <th rowspan="2" style="min-width:160px;">Chức danh</th>
-          <th rowspan="2">Đơn vị</th>
-          <th rowspan="2" style="text-align:center;">Cỡ QA</th>
-          <th rowspan="2" style="text-align:center;">Cỡ giày</th>
-          <th colspan="6" style="text-align:center;background:#d0e4f7;color:var(--primary);font-size:11px;">Lần cấp gần nhất</th>
-          <th rowspan="2" style="text-align:center;">Thao tác</th>
+          <th rowspan="2" style="width:44px;text-align:center;position:sticky;top:0;z-index:5;background:#f8fafc;">STT</th>
+          <th rowspan="2" style="position:sticky;top:0;z-index:5;background:#f8fafc;">Danh số</th>
+          <th rowspan="2" style="min-width:200px;position:sticky;top:0;z-index:5;background:#f8fafc;">Họ và tên</th>
+          <th rowspan="2" style="min-width:160px;position:sticky;top:0;z-index:5;background:#f8fafc;">Chức danh</th>
+          <th rowspan="2" style="position:sticky;top:0;z-index:5;background:#f8fafc;">Đơn vị</th>
+          <th rowspan="2" style="text-align:center;position:sticky;top:0;z-index:5;background:#f8fafc;">Cỡ QA</th>
+          <th rowspan="2" style="text-align:center;position:sticky;top:0;z-index:5;background:#f8fafc;">Cỡ giày</th>
+          <th colspan="6" style="text-align:center;background:#d0e4f7;color:var(--primary);font-size:11px;position:sticky;top:0;z-index:5;">Lần cấp gần nhất</th>
+          <th rowspan="2" style="text-align:center;position:sticky;top:0;z-index:5;background:#f8fafc;">Thao tác</th>
         </tr>
         <tr>
-          <th style="text-align:center;">Quần áo</th><th style="text-align:center;">Giày</th><th style="text-align:center;">Mũ</th><th style="text-align:center;">Kính</th><th style="text-align:center;">Áo mưa</th><th style="text-align:center;">QA thợ hàn</th>
+          <th style="text-align:center;position:sticky;top:39px;z-index:4;background:#f8fafc;">Quần áo</th><th style="text-align:center;position:sticky;top:39px;z-index:4;background:#f8fafc;">Giày</th><th style="text-align:center;position:sticky;top:39px;z-index:4;background:#f8fafc;">Mũ</th><th style="text-align:center;position:sticky;top:39px;z-index:4;background:#f8fafc;">Kính</th><th style="text-align:center;position:sticky;top:39px;z-index:4;background:#f8fafc;">Áo mưa</th><th style="text-align:center;position:sticky;top:39px;z-index:4;background:#f8fafc;">QA thợ hàn</th>
         </tr>
       </thead><tbody id="cpns-tbody"></tbody></table></div>
     </div>
@@ -1403,6 +1403,9 @@ function _cpnsChucDanhOptions(sel){
   (typeof daChucDanh!=='undefined'?daChucDanh:[]).forEach(function(cd){ o+='<option value="'+_escH(cd.ten)+'"'+(cd.ten===sel?' selected':'')+'>'+_escH(cd.ten)+'</option>'; });
   return o;
 }
+var _CPNS_QA_SIZES=['46','48','50','52','54','56'];
+var _CPNS_GIAY_SIZES=['38','39/40','41','42','43','44/45'];
+function _cpnsSelOptions(list,sel){ var o='<option value="">--</option>'; list.forEach(function(v){ o+='<option value="'+_escH(v)+'"'+(String(v)===String(sel||'')?' selected':'')+'>'+_escH(v)+'</option>'; }); return o; }
 var _CPNS_INP='padding:4px 6px;border:1px solid var(--primary-light,#4a90d9);border-radius:5px;font-size:12.5px;box-sizing:border-box;';
 function _cpnsInp(field,val,ph){ return '<input data-f="'+field+'" type="text" value="'+_escH(val||'')+'" placeholder="'+(ph||'')+'" style="width:100%;'+_CPNS_INP+'" onkeydown="_cpnsKey(event,this)">'; }
 function _cpnsInpMonth(field,mmYYYY){ return '<input data-f="'+field+'" type="text" value="'+_escH(mmYYYY||'')+'" placeholder="MM/YYYY" maxlength="7" oninput="_autoSlash(this)" onkeydown="_cpnsKey(event,this)" style="width:74px;text-align:center;'+_CPNS_INP+'">'; }
@@ -1414,7 +1417,8 @@ function _cpnsKey(ev,el){
 function _cpnsRowEl(kind,key){ return document.querySelector(kind==='edit'?'[data-cpns-edit="'+key+'"]':'[data-cpns-draft="'+key+'"]'); }
 function _cpnsReadRowEl(tr){
   var g=function(f){ var el=tr.querySelector('[data-f="'+f+'"]'); return el?el.value.trim():''; };
-  var r={danhSo:g('danhSo'),ten:g('ten'),chucDanh:g('chucDanh')};
+  var r={danhSo:g('danhSo'),ten:g('ten'),chucDanh:g('chucDanh'),coQuanAo:g('coQuanAo'),coGiay:g('coGiay')};
+  var gt=tr.querySelector('[data-f="gioiTinh"]'); r.gioiTinh=(gt&&gt.checked)?'nu':'nam';
   _CPNS_MONTHS.forEach(function(f){ r[f]=g(f); });
   return r;
 }
@@ -1444,11 +1448,13 @@ function _cpnsInputRow(kind,key,data,unitLabel){
   return '<tr '+attr+' style="background:#eef5ff;">'+
     '<td style="text-align:center;color:var(--primary-light,#4a90d9);font-weight:700;">'+mark+'</td>'+
     '<td>'+_cpnsInp('danhSo',data.danhSo,'Danh số')+'</td>'+
-    '<td>'+_cpnsInp('ten',data.ten,'Họ và tên')+'</td>'+
+    '<td><div style="display:flex;align-items:center;gap:6px;">'+_cpnsInp('ten',data.ten,'Họ và tên')+
+      '<label style="display:inline-flex;align-items:center;gap:3px;font-size:11px;color:var(--text-light);white-space:nowrap;cursor:pointer;" title="Nhân viên nữ"><input data-f="gioiTinh" type="checkbox"'+(data.gioiTinh==='nu'?' checked':'')+' style="width:15px;height:15px;cursor:pointer;accent-color:var(--primary-light);">Nữ</label>'+
+    '</div></td>'+
     '<td><select data-f="chucDanh" style="width:100%;'+_CPNS_INP+'">'+_cpnsChucDanhOptions(data.chucDanh||'')+'</select></td>'+
     '<td style="font-size:12px;color:var(--text-light);">'+_escH(unitLabel||'')+'</td>'+
-    '<td style="text-align:center;color:var(--text-light);font-size:11px;">'+_escH(data.coQuanAo||'—')+'</td>'+
-    '<td style="text-align:center;color:var(--text-light);font-size:11px;">'+_escH(data.coGiay||'—')+'</td>'+
+    '<td style="text-align:center;"><select data-f="coQuanAo" style="width:64px;'+_CPNS_INP+'">'+_cpnsSelOptions(_CPNS_QA_SIZES,data.coQuanAo)+'</select></td>'+
+    '<td style="text-align:center;"><select data-f="coGiay" style="width:74px;'+_CPNS_INP+'">'+_cpnsSelOptions(_CPNS_GIAY_SIZES,data.coGiay)+'</select></td>'+
     '<td style="text-align:center;">'+_cpnsInpMonth('thangCapQuanAo',data.thangCapQuanAo)+'</td>'+
     '<td style="text-align:center;">'+_cpnsInpMonth('thangCapGiay',data.thangCapGiay)+'</td>'+
     '<td style="text-align:center;">'+_cpnsInpMonth('thangCapMu',data.thangCapMu)+'</td>'+
@@ -1462,7 +1468,7 @@ function _cpnsInputRow(kind,key,data,unitLabel){
 function cpnsAddDraft(){
   if(!_cpnsCanEditSelectedUnit()){ showToast('Hãy chọn đơn vị bạn quản lý trước khi thêm.','warning'); return; }
   _cpnsSyncDrafts();
-  _cpnsDrafts.push({tempId:'d'+(++_cpnsDraftSeq),danhSo:'',ten:'',chucDanh:'',thangCapQuanAo:'',thangCapGiay:'',thangCapMu:'',thangCapKinh:'',thangCapAoMua:'',thangCapQAHan:''});
+  _cpnsDrafts.push({tempId:'d'+(++_cpnsDraftSeq),danhSo:'',ten:'',chucDanh:'',gioiTinh:'nam',coQuanAo:'',coGiay:'',thangCapQuanAo:'',thangCapGiay:'',thangCapMu:'',thangCapKinh:'',thangCapAoMua:'',thangCapQAHan:''});
   cpRenderNhanSu();
   var key='d'+_cpnsDraftSeq;
   setTimeout(function(){ var tr=_cpnsRowEl('draft',key); if(tr){ var i=tr.querySelector('[data-f="danhSo"]'); if(i)i.focus(); tr.scrollIntoView({block:'nearest'}); } },0);
@@ -1473,7 +1479,7 @@ function _cpnsCommitAdd(raw,boPhan){
   var v=_cpnsValidate(raw);
   if(v.errs.length)return {ok:false,errs:v.errs};
   var now=new Date(); var _mm=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0');
-  var nvData={danhSo:raw.danhSo,ten:raw.ten,chucDanh:raw.chucDanh,boPhan:boPhan,loaiNV:'cu',coQuanAo:'',coGiay:'',gioiTinh:'nam',ngayVaoLam:_mm};
+  var nvData={danhSo:raw.danhSo,ten:raw.ten,chucDanh:raw.chucDanh,boPhan:boPhan,loaiNV:'cu',coQuanAo:raw.coQuanAo||'',coGiay:raw.coGiay||'',gioiTinh:raw.gioiTinh==='nu'?'nu':'nam',ngayVaoLam:_mm};
   _CPNS_MONTHS.forEach(function(f){ nvData[f]=v.parsed[f]||''; });
   if(typeof isAdmin==='function'&&isAdmin()){
     var newNV=Object.assign({id:nextId(daNhanVien)},nvData);
@@ -1523,13 +1529,17 @@ function cpNsEdit(id){
   setTimeout(function(){ var tr=_cpnsRowEl('edit',String(id)); if(tr){ var i=tr.querySelector('[data-f="danhSo"]'); if(i)i.focus(); } },0);
 }
 function cpnsCancelEdit(){ _cpnsEditId=null; cpRenderNhanSu(); }
+// Bấm OK ở hàng "Đã bị trả lại" → xoá bản ghi yêu cầu (nhân sự biến mất khỏi bảng)
+function cpnsDismissRejected(id){
+  BHLD.push.delete('pending_changes',id).then(function(){ cpRenderNhanSu(); }).catch(function(){ cpRenderNhanSu(); });
+}
 function cpnsSaveEdit(id){
   var tr=_cpnsRowEl('edit',String(id)); if(!tr)return;
   var raw=_cpnsReadRowEl(tr);
   var v=_cpnsValidate(raw);
   if(v.errs.length){ _cpnsMarkErrors(tr,v.errs); showToast('Vui lòng kiểm tra các ô được tô đỏ.','error'); return; }
   var oldNv=daNhanVien.find(function(x){return String(x.id)===String(id);}); if(!oldNv)return;
-  var proposed=Object.assign({},oldNv,{danhSo:raw.danhSo,ten:raw.ten,chucDanh:raw.chucDanh});
+  var proposed=Object.assign({},oldNv,{danhSo:raw.danhSo,ten:raw.ten,chucDanh:raw.chucDanh,gioiTinh:raw.gioiTinh==='nu'?'nu':'nam',coQuanAo:raw.coQuanAo||'',coGiay:raw.coGiay||''});
   _CPNS_MONTHS.forEach(function(f){ proposed[f]=v.parsed[f]||''; });
   if(typeof isAdmin==='function'&&isAdmin()){
     var idx=daNhanVien.findIndex(function(x){return String(x.id)===String(id);});
@@ -1558,7 +1568,7 @@ function cpRenderNhanSu(){
   var body=list.map(function(n,i){
     // Đang sửa inline hàng này → render ô nhập
     if(String(n.id)===String(_cpnsEditId)){
-      var ed={danhSo:n.danhSo,ten:n.ten,chucDanh:n.chucDanh,coQuanAo:n.coQuanAo,coGiay:n.coGiay};
+      var ed={danhSo:n.danhSo,ten:n.ten,chucDanh:n.chucDanh,gioiTinh:n.gioiTinh,coQuanAo:n.coQuanAo,coGiay:n.coGiay};
       _CPNS_MONTHS.forEach(function(fld){ ed[fld]=_cpnsToMMYYYY(n[fld]); });
       return _cpnsInputRow('edit',String(n.id),ed,n.boPhan||'');
     }
@@ -1603,18 +1613,10 @@ function cpRenderNhanSu(){
     }).sort(function(a,b){return (a.nv.ten||'').localeCompare(b.nv.ten||'','vi');});
   }catch(e){}
   var admin=(typeof isAdmin==='function'&&isAdmin());
-  var pendBody=pendList.map(function(o){
-    var n=o.nv, id=o.pc.id;
-    var act= admin
-      ? '<div style="display:inline-flex;gap:4px;">'+
-          '<button class="btn btn-success btn-sm" style="padding:4px 8px;" title="Duyệt" onclick="approveChange(\''+id+'\')">'+_ic('check',13)+'</button>'+
-          '<button class="btn btn-danger btn-sm" style="padding:4px 8px;" title="Từ chối (xoá)" onclick="rejectChange(\''+id+'\')">'+_ic('x',13)+'</button>'+
-        '</div>'
-      : '<span style="display:inline-flex;align-items:center;gap:4px;background:#fff3cd;color:#856404;font-size:11px;font-weight:700;border-radius:20px;padding:3px 10px;white-space:nowrap;">⏳ Chờ phê duyệt</span>';
-    return '<tr style="background:#e2e5ea;color:#5b626e;" title="Nhân sự đang chờ Admin phê duyệt">'+
-      '<td style="text-align:center;">⏳</td>'+
-      '<td><code style="font-size:12px;color:#5b626e;">'+_escH(n.danhSo||'')+'</code></td>'+
-      '<td><strong>'+_escH(n.ten||'')+'</strong> <span style="display:inline-block;background:#fff3cd;color:#856404;font-size:10px;font-weight:700;border-radius:10px;padding:1px 7px;margin-left:4px;">Chờ phê duyệt</span></td>'+
+  // Ô dữ liệu chung (danh số → QA thợ hàn) cho hàng chờ duyệt / bị trả lại
+  function _cpnsPRCells(n){
+    return '<td><code style="font-size:12px;">'+_escH(n.danhSo||'')+'</code></td>'+
+      '<td><strong>'+_escH(n.ten||'')+'</strong>'+(n.gioiTinh==='nu'?' <span style="font-size:10px;color:var(--text-light);">(Nữ)</span>':'')+'</td>'+
       '<td style="font-size:12.5px;">'+_escH(n.chucDanh||'')+'</td>'+
       '<td style="font-size:12.5px;">'+_escH(n.boPhan||'—')+'</td>'+
       '<td style="text-align:center;">'+_escH(n.coQuanAo||'')+'</td>'+
@@ -1624,8 +1626,45 @@ function cpRenderNhanSu(){
       '<td style="text-align:center;font-size:12px;">'+_escH(f(n.thangCapMu)||'-')+'</td>'+
       '<td style="text-align:center;font-size:12px;">'+_escH(f(n.thangCapKinh)||'-')+'</td>'+
       '<td style="text-align:center;font-size:12px;">'+_escH(f(n.thangCapAoMua)||'-')+'</td>'+
-      '<td style="text-align:center;font-size:12px;">'+_escH(f(n.thangCapQAHan)||'-')+'</td>'+
+      '<td style="text-align:center;font-size:12px;">'+_escH(f(n.thangCapQAHan)||'-')+'</td>';
+  }
+  var pendBody=pendList.map(function(o){
+    var n=o.nv, id=o.pc.id;
+    var act= admin
+      ? '<div style="display:inline-flex;gap:4px;">'+
+          '<button class="btn btn-success btn-sm" style="padding:4px 8px;" title="Duyệt" onclick="approveChange(\''+id+'\')">'+_ic('check',13)+'</button>'+
+          '<button class="btn btn-danger btn-sm" style="padding:4px 8px;" title="Trả lại" onclick="rejectChange(\''+id+'\')">'+_ic('x',13)+'</button>'+
+        '</div>'
+      : '<span style="display:inline-flex;align-items:center;gap:4px;background:#fff3cd;color:#856404;font-size:11px;font-weight:700;border-radius:20px;padding:3px 10px;white-space:nowrap;">⏳ Đang chờ duyệt</span>';
+    return '<tr style="opacity:.5;" title="Nhân sự đang chờ Admin phê duyệt">'+
+      '<td style="text-align:center;">⏳</td>'+
+      _cpnsPRCells(n)+
       '<td style="text-align:center;white-space:nowrap;">'+act+'</td>'+
+    '</tr>';
+  }).join('');
+  // ── Nhân sự BỊ TRẢ LẠI (yêu cầu thêm bị từ chối) — chỉ hiện cho người đã gửi, cần bấm OK để xoá ──
+  var _meU=(typeof _getCurrentUsername==='function')?_getCurrentUsername():'';
+  var rejList=[];
+  try{
+    rejList=BHLD.lsGet('pending_changes').filter(function(c){return c.status==='rejected'&&c.type==='add'&&String(c.submittedByUsername||'')===String(_meU);}).map(function(c){
+      var prop={};try{prop=(JSON.parse(c.payload||'{}').proposed)||{};}catch(e){}
+      return {pc:c,nv:prop};
+    }).filter(function(o){
+      var n=o.nv; if(!n)return false;
+      if(dv&&n.boPhan!==dv)return false;
+      if(cd&&n.chucDanh!==cd)return false;
+      if(q&&(((n.ten||'')+' '+(n.danhSo||'')).toLowerCase().indexOf(q)<0))return false;
+      return true;
+    });
+  }catch(e){}
+  var rejBody=rejList.map(function(o){
+    var n=o.nv, id=o.pc.id, reason=o.pc.rejectReason||'';
+    var badge='<span style="display:inline-flex;align-items:center;gap:4px;background:#fdecea;color:#c0392b;font-size:11px;font-weight:700;border-radius:20px;padding:3px 10px;white-space:nowrap;"'+(reason?(' title="Lý do: '+_escH(reason)+'"'):'')+'>❌ Đã bị trả lại</span>';
+    var okBtn=' <button class="btn btn-outline btn-sm" style="padding:4px 12px;" title="Đã hiểu, bỏ khỏi bảng" onclick="cpnsDismissRejected(\''+id+'\')">OK</button>';
+    return '<tr style="background:#fdf0ef;color:#7d3a34;" title="'+(reason?('Lý do trả lại: '+_escH(reason)):'Yêu cầu thêm đã bị trả lại')+'">'+
+      '<td style="text-align:center;">❌</td>'+
+      _cpnsPRCells(n)+
+      '<td style="text-align:center;white-space:nowrap;">'+badge+okBtn+'</td>'+
     '</tr>';
   }).join('');
   // ── Các hàng THÊM MỚI đang nhập (draft) ──
@@ -1644,7 +1683,7 @@ function cpRenderNhanSu(){
       (nDraft?(' <button class="btn btn-primary btn-sm" style="margin-left:8px;" onclick="cpnsSaveAllDrafts()">'+_ic('check',14)+' '+saveAllLbl+'</button>'):'')+
       '</td></tr>';
   }
-  var rows=pendBody+body+draftBody;
+  var rows=rejBody+pendBody+body+draftBody;
   var tbodyHtml = (rows||footer) ? (rows+footer) : '<tr><td colspan="14" style="text-align:center;padding:24px;color:var(--text-light);">Không có nhân viên phù hợp.</td></tr>';
   document.getElementById('cpns-tbody').innerHTML=tbodyHtml;
   var countTxt='Tìm thấy '+list.length+' nhân viên'+(pendList.length?' · '+pendList.length+' đang chờ phê duyệt':'');
