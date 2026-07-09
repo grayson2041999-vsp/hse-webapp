@@ -4184,8 +4184,10 @@ function _cpwSetupRealtime(){
   var sb=window.HSE_SB; if(!sb||_cpwRtChannel)return;
   try{
     _cpwRtChannel=sb.channel('cap-phat-rt')
+      .on('postgres_changes',{event:'*',schema:'public',table:'nhanvien'},function(p){_cpwOnRealtime('nhanvien',p);})
       .on('postgres_changes',{event:'*',schema:'public',table:'phieu_requests'},function(p){_cpwOnRealtime('phieu_requests',p);})
       .on('postgres_changes',{event:'*',schema:'public',table:'pending_changes'},function(p){_cpwOnRealtime('pending_changes',p);})
+      .on('postgres_changes',{event:'*',schema:'public',table:'notifications'},function(p){_cpwOnRealtime('notifications',p);})
       .on('postgres_changes',{event:'*',schema:'public',table:'cap_phat_tien_trinh'},function(p){_cpwOnRealtime('cap_phat_tien_trinh',p);})
       .subscribe();
   }catch(e){ console.warn('[Realtime] setup lỗi:',e&&e.message||e); }
@@ -4200,8 +4202,46 @@ function _rtMergeCache(table,payload){
   else{var i=arr.findIndex(function(r){return String(r.id)===String(id);});if(i>=0)arr[i]=payload.new;else arr.push(payload.new);}
   BHLD.lsSet(table,arr);
 }
+// Reload daNhanVien từ cache localStorage (sau khi realtime merge) + re-render các view liên quan
+function _rtReloadNhanVien(){
+  try{
+    var nv=BHLD.lsGet('nhanvien')||[];
+    if(typeof _normalizeNV==='function')nv=_normalizeNV(nv);
+    if(typeof _sortNVByStt==='function')nv=_sortNVByStt(nv);
+    if(typeof _rebuildNhomId==='function'&&typeof daGroups!=='undefined'&&daGroups&&daGroups.length)nv=_rebuildNhomId(nv,daGroups);
+    daNhanVien=nv;
+    if(typeof saveData==='function')saveData('nhanvien',nv);
+    BHLD.lsSet('nhanvien',nv);
+  }catch(e){ console.warn('[Realtime] reload nhanvien lỗi:',e&&e.message||e); return; }
+  // Đang nhập trong modal nhân viên → không vẽ đè (tránh mất dữ liệu đang gõ)
+  var ae=document.activeElement;
+  if(ae&&ae.closest&&ae.closest('#modal-nv'))return;
+  if(typeof _populateChucDanhSelect==='function')_populateChucDanhSelect();
+  if(typeof renderUnitPicker==='function')renderUnitPicker();
+  if(typeof _currentUnit!=='undefined'&&_currentUnit&&typeof renderTableNV==='function')renderTableNV();
+  var ns=document.getElementById('cp-nhansu');
+  if(ns&&ns.style.display!=='none'&&typeof cpRenderNhanSu==='function')cpRenderNhanSu();
+}
+// Toast khi có thông báo MỚI gửi tới đúng user đang đăng nhập
+function _rtNotifToast(payload){
+  try{
+    var ev=payload.eventType||payload.event;
+    if(ev!=='INSERT'||!payload.new)return;
+    var me=(typeof _getCurrentUsername==='function')?_getCurrentUsername():'';
+    if(!me||String(payload.new.toUsername)!==String(me))return;
+    if(typeof showToast==='function')showToast((payload.new.title||'🔔 Bạn có thông báo mới'),'success');
+  }catch(e){}
+}
 function _cpwOnRealtime(table,payload){
   _rtMergeCache(table,payload);
+  if(table==='nhanvien'){ _rtReloadNhanVien(); if(typeof cpUpdateApproveTile==='function')cpUpdateApproveTile(); return; }
+  if(table==='notifications'){
+    if(typeof _updateNotifBadge==='function')_updateNotifBadge();
+    var _np=document.getElementById('notif-panel');
+    if(_np&&_np.style.display!=='none'&&typeof renderNotifPanel==='function')renderNotifPanel();
+    _rtNotifToast(payload);
+    return;
+  }
   var ae=document.activeElement;
   var typingQty=ae&&ae.closest&&ae.closest('#cpw-b2-host'); // đừng vẽ đè khi đang gõ số lượng
   var wz=document.getElementById('cp-wizard');
@@ -4223,6 +4263,11 @@ function _cpwOnRealtime(table,payload){
   if(table==='phieu_requests'&&typeof _renderQuyStatusBar==='function'){
     var q=document.getElementById('bc-quy'),d=document.getElementById('bc-don-vi');
     if(q&&q.value)_renderQuyStatusBar(q.value,d?d.value:'');
+  }
+  // Bảng Tra cứu nhân sự: cập nhật dòng "Chờ phê duyệt" khi có thay đổi phê duyệt
+  if(table==='pending_changes'){
+    var ns3=document.getElementById('cp-nhansu');
+    if(ns3&&ns3.style.display!=='none'&&typeof cpRenderNhanSu==='function')cpRenderNhanSu();
   }
 }
 </script>
