@@ -4536,7 +4536,7 @@ function cpwStep3Body(s3,phieu){
   return '<p style="font-size:13.5px;color:var(--text-light);margin:0 0 12px;">Xuất phiếu để trình ký. Sau khi trình ký, xác nhận để hệ thống cập nhật thời hạn cấp phát mới cho nhân viên.</p>'+
     '<div style="display:flex;gap:8px;flex-wrap:wrap;">'+
       '<button class="btn btn-outline btn-sm" onclick="cpwExport()">'+_ic('file',15)+' Xuất phiếu (Word)</button>'+
-      '<button class="btn btn-outline btn-sm" onclick="exportPhieuMatrixExcel(_cpwQuy,_cpwDonVi)">'+_ic('sheet',15)+' Excel ký nhận</button>'+
+      '<button class="btn btn-outline btn-sm" style="color:#217346;border-color:#217346;" onclick="exportPhieuMatrixExcel(_cpwQuy,_cpwDonVi)">'+_ic('sheet',15)+' Excel ký nhận</button>'+
       '<button class="btn btn-success btn-sm" onclick="cpwFinalize()">'+_ic('check',15)+' Xác nhận đã trình ký & Cập nhật thời hạn</button>'+
     '</div>';
 }
