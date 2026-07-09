@@ -271,6 +271,7 @@
         <input id="cpns-search" class="search-input" type="search" autocomplete="off" placeholder="Tìm theo họ tên, danh số..." oninput="cpRenderNhanSu()" style="flex:1;min-width:240px;">
         <select id="cpns-donvi" onchange="cpRenderNhanSu()" style="min-width:180px;"></select>
         <select id="cpns-chucdanh" onchange="cpRenderNhanSu()" style="min-width:200px;"></select>
+        <button id="cpns-add-btn" class="btn btn-primary" onclick="cpNsAddPerson()" style="display:none;white-space:nowrap;">+ Thêm nhân sự</button>
       </div>
       <div id="cpns-count" style="font-size:12.5px;color:var(--text-light);margin-bottom:8px;"></div>
       <div class="table-wrap"><table id="cpns-table"><thead>
@@ -1364,7 +1365,22 @@ function cpOpenTraCuu(){
   var cdSel=document.getElementById('cpns-chucdanh');
   cdSel.innerHTML='<option value="">— Tất cả chức danh —</option>'+cds.map(function(c){return '<option value="'+_escH(c)+'">'+_escH(c)+'</option>';}).join('');
   document.getElementById('cpns-search').value='';
+  // Nút "Thêm nhân sự" chỉ hiện cho user có quyền sửa ít nhất 1 đơn vị (Admin hoặc User được phân quyền)
+  var _addBtn=document.getElementById('cpns-add-btn');
+  if(_addBtn){
+    var _editable=(typeof UNIT_ORDER!=='undefined'?UNIT_ORDER:[]).filter(function(u){return typeof canEditUnit==='function'&&canEditUnit(u);});
+    _addBtn.style.display=_editable.length?'inline-flex':'none';
+  }
   cpRenderNhanSu();
+}
+// Thêm nhân sự đã có sẵn (đã có tháng cấp trước đó) — mở modal ở chế độ "NV cũ"
+function cpNsAddPerson(){
+  var editable=(typeof UNIT_ORDER!=='undefined'?UNIT_ORDER:[]).filter(function(u){return typeof canEditUnit==='function'&&canEditUnit(u);});
+  if(!editable.length){showToast('Bạn không có quyền thêm nhân sự.','error');return;}
+  // Ưu tiên đơn vị đang lọc (nếu user có quyền), nếu không thì lấy đơn vị đầu tiên user quản lý
+  var dv=document.getElementById('cpns-donvi').value||'';
+  _currentUnit=(dv&&canEditUnit(dv))?dv:editable[0];
+  if(typeof openModalNV==='function')openModalNV(true); // true = chế độ nhân viên cũ
 }
 function cpRenderNhanSu(){
   var q=(document.getElementById('cpns-search').value||'').trim().toLowerCase();
@@ -1398,8 +1414,51 @@ function cpRenderNhanSu(){
       '<td style="text-align:center;white-space:nowrap;">'+act+'</td>'+
     '</tr>';
   }).join('');
-  document.getElementById('cpns-tbody').innerHTML=body||'<tr><td colspan="14" style="text-align:center;padding:24px;color:var(--text-light);">Không có nhân viên phù hợp.</td></tr>';
-  document.getElementById('cpns-count').textContent='Tìm thấy '+list.length+' nhân viên';
+  // ── Nhân sự đang CHỜ PHÊ DUYỆT (bản ghi pending_changes type='add') — hiển thị làm tối nền ──
+  var pendList=[];
+  try{
+    pendList=BHLD.lsGet('pending_changes').filter(function(c){return c.status==='pending'&&c.type==='add';}).map(function(c){
+      var prop={};try{prop=(JSON.parse(c.payload||'{}').proposed)||{};}catch(e){}
+      return {pc:c,nv:prop};
+    }).filter(function(o){
+      var n=o.nv; if(!n)return false;
+      // Chỉ hiện cho Admin hoặc user có quyền đơn vị của NV đó
+      if(!(typeof isAdmin==='function'&&isAdmin())&&!(typeof canEditUnit==='function'&&canEditUnit(n.boPhan)))return false;
+      if(dv&&n.boPhan!==dv)return false;
+      if(cd&&n.chucDanh!==cd)return false;
+      if(q&&(((n.ten||'')+' '+(n.danhSo||'')).toLowerCase().indexOf(q)<0))return false;
+      return true;
+    }).sort(function(a,b){return (a.nv.ten||'').localeCompare(b.nv.ten||'','vi');});
+  }catch(e){}
+  var admin=(typeof isAdmin==='function'&&isAdmin());
+  var pendBody=pendList.map(function(o){
+    var n=o.nv, id=o.pc.id;
+    var act= admin
+      ? '<div style="display:inline-flex;gap:4px;">'+
+          '<button class="btn btn-success btn-sm" style="padding:4px 8px;" title="Duyệt" onclick="approveChange(\''+id+'\')">'+_ic('check',13)+'</button>'+
+          '<button class="btn btn-danger btn-sm" style="padding:4px 8px;" title="Từ chối (xoá)" onclick="rejectChange(\''+id+'\')">'+_ic('x',13)+'</button>'+
+        '</div>'
+      : '<span style="display:inline-flex;align-items:center;gap:4px;background:#fff3cd;color:#856404;font-size:11px;font-weight:700;border-radius:20px;padding:3px 10px;white-space:nowrap;">⏳ Chờ phê duyệt</span>';
+    return '<tr style="background:#e2e5ea;color:#5b626e;" title="Nhân sự đang chờ Admin phê duyệt">'+
+      '<td style="text-align:center;">⏳</td>'+
+      '<td><code style="font-size:12px;color:#5b626e;">'+_escH(n.danhSo||'')+'</code></td>'+
+      '<td><strong>'+_escH(n.ten||'')+'</strong> <span style="display:inline-block;background:#fff3cd;color:#856404;font-size:10px;font-weight:700;border-radius:10px;padding:1px 7px;margin-left:4px;">Chờ phê duyệt</span></td>'+
+      '<td style="font-size:12.5px;">'+_escH(n.chucDanh||'')+'</td>'+
+      '<td style="font-size:12.5px;">'+_escH(n.boPhan||'—')+'</td>'+
+      '<td style="text-align:center;">'+_escH(n.coQuanAo||'')+'</td>'+
+      '<td style="text-align:center;">'+_escH(n.coGiay||'')+'</td>'+
+      '<td style="text-align:center;font-size:12px;">'+_escH(f(n.thangCapQuanAo)||'-')+'</td>'+
+      '<td style="text-align:center;font-size:12px;">'+_escH(f(n.thangCapGiay)||'-')+'</td>'+
+      '<td style="text-align:center;font-size:12px;">'+_escH(f(n.thangCapMu)||'-')+'</td>'+
+      '<td style="text-align:center;font-size:12px;">'+_escH(f(n.thangCapKinh)||'-')+'</td>'+
+      '<td style="text-align:center;font-size:12px;">'+_escH(f(n.thangCapAoMua)||'-')+'</td>'+
+      '<td style="text-align:center;font-size:12px;">'+_escH(f(n.thangCapQAHan)||'-')+'</td>'+
+      '<td style="text-align:center;white-space:nowrap;">'+act+'</td>'+
+    '</tr>';
+  }).join('');
+  var allBody=pendBody+body;
+  document.getElementById('cpns-tbody').innerHTML=allBody||'<tr><td colspan="14" style="text-align:center;padding:24px;color:var(--text-light);">Không có nhân viên phù hợp.</td></tr>';
+  document.getElementById('cpns-count').textContent='Tìm thấy '+list.length+' nhân viên'+(pendList.length?' · '+pendList.length+' đang chờ phê duyệt':'');
 }
 // Sửa/Xoá từ bảng Tra cứu — đặt _currentUnit theo đơn vị của NV để phân quyền + form đúng
 function cpNsEdit(id){ var nv=daNhanVien.find(function(x){return x.id===id;}); if(!nv)return; _currentUnit=nv.boPhan||''; if(typeof editNV==='function')editNV(id); }
@@ -1748,10 +1807,10 @@ function _populateBoPhanSelect(selectedValue){
   if(selectedValue)sel.value=selectedValue;
 }
 
-function openModalNV(){
+function openModalNV(existingMode){
   if(isViewOnly()){showToast('Bạn không có quyền chỉnh sửa đơn vị này.','error');return;}
   editingIds.nv=null;
-  document.getElementById('modal-nv-title').textContent='Thêm nhân viên mới';
+  document.getElementById('modal-nv-title').textContent = existingMode ? 'Thêm nhân sự (đã có tháng cấp)' : 'Thêm nhân viên mới';
   ['nv-ma','nv-ten'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('nv-chucdanh').value='';
   // Tự điền đơn vị đang xem (nếu có), lọc theo quyền user
@@ -1760,7 +1819,8 @@ function openModalNV(){
   document.getElementById('nv-co-quanao').value='';
   document.getElementById('nv-co-giay').value='';
   document.getElementById('nv-nu').checked=false;
-  document.getElementById('nv-loai-moi').checked=true; // Thêm mới → luôn là nhân viên mới
+  // existingMode = nhân sự cũ (đã có tháng cấp) → không tích "nhân viên mới"
+  document.getElementById('nv-loai-moi').checked = existingMode ? false : true;
   document.getElementById('nv-moi-thang-m').value='';
   document.getElementById('nv-moi-thang-y').value='';
   clearMonthYear('nv-thang-quanao');clearMonthYear('nv-thang-giay');clearMonthYear('nv-thang-non');
@@ -1773,6 +1833,9 @@ function openModalNV(){
   document.getElementById('nv-moi-thang-y').value=String(_now.getFullYear());
   var _lbl=document.getElementById('nv-moi-thang-label'); if(_lbl)_lbl.style.display='none';
   var _pk=document.getElementById('nv-moi-thang-pick'); if(_pk)_pk.style.display='none';
+  // Nhãn nút Lưu: user thường thêm NV cũ → "Lưu và chuyển phê duyệt"; Admin lưu trực tiếp
+  var _btnLuu=document.getElementById('btn-nv-luu');
+  if(_btnLuu) _btnLuu.innerHTML = (existingMode && typeof isAdmin==='function' && !isAdmin()) ? '📨 Lưu và chuyển phê duyệt' : '💾 Lưu';
   openModal('modal-nv');
 }
 function editNV(id){
@@ -1780,6 +1843,7 @@ function editNV(id){
   if(!isAdmin()&&_nvPendingChange(id)){showToast('Nhân viên này đang có thay đổi chờ Admin duyệt. Vui lòng đợi xử lý xong.','warning');return;}
   const n=daNhanVien.find(x=>x.id===id);if(!n)return;
   editingIds.nv=id;
+  var _btnLuu=document.getElementById('btn-nv-luu'); if(_btnLuu)_btnLuu.innerHTML='💾 Lưu';
   document.getElementById('modal-nv-title').textContent='Chỉnh sửa nhân viên';
   document.getElementById('nv-ma').value=n.danhSo||'';document.getElementById('nv-ten').value=n.ten;
   _populateChucDanhSelect(n.chucDanh);
@@ -3014,6 +3078,7 @@ function rejectChange(id){
   BHLD.push.update('pending_changes',id,{status:'rejected',reviewedBy:reviewer,reviewedAt:now,rejectReason:reason});
   if(c.submittedByUsername)_pushNotif(c.submittedByUsername,'change_reject','❌ Thay đổi nhân sự bị từ chối',`Yêu cầu ${_changeTypeLabel(c.type)} cho "${c.nvTen||''}" đã bị ${reviewer} từ chối.\nLý do: ${reason}\nThông tin giữ nguyên như ban đầu.`,c.id);
   showToast('Đã từ chối yêu cầu thay đổi.','warning');
+  if(typeof renderTableNV==='function')renderTableNV(); // làm mới bảng NV + Tra cứu (dòng "Chờ phê duyệt" biến mất)
   renderChoduyetTab();
 }
 
