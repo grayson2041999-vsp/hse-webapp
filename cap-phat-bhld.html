@@ -740,8 +740,8 @@
         <input id="nhomtb-ten" type="text" placeholder="VD: Bộ áo liền quần">
       </div>
       <div class="form-group">
-        <label>Đơn vị tính *</label>
-        <input id="nhomtb-donvi" type="text" placeholder="VD: bộ, đôi, cái">
+        <label>ĐVT mặc định (tuỳ chọn)</label>
+        <input id="nhomtb-donvi" type="text" placeholder="Gợi ý cho chi tiết, có thể để trống">
       </div>
       <div class="form-group">
         <label>Cần chọn cỡ</label>
@@ -777,6 +777,10 @@
       <div class="form-group">
         <label>Tên trang bị *</label>
         <input id="dm-ten" type="text" placeholder="VD: Bộ áo liền quần cỡ 50">
+      </div>
+      <div class="form-group">
+        <label>Đơn vị tính *</label>
+        <input id="dm-donvi" type="text" placeholder="VD: bộ, đôi, cái">
       </div>
     </div>
     <div class="modal-footer">
@@ -2978,7 +2982,8 @@ function openModalNhomTB(id){
 function saveNhomTB(){
   if(!isAdmin()){showToast('Chỉ quản trị viên.','error');return;}
   const ten=document.getElementById('nhomtb-ten').value.trim();if(!ten){showToast('Vui lòng nhập tên nhóm!','error');return;}
-  const donVi=document.getElementById('nhomtb-donvi').value.trim();if(!donVi){showToast('Vui lòng nhập đơn vị tính!','error');return;}
+  // ĐVT ở nhóm giờ là tuỳ chọn (chỉ làm gợi ý mặc định) — ĐVT thật lấy ở từng chi tiết.
+  const donVi=document.getElementById('nhomtb-donvi').value.trim();
   const obj={ten,donVi,loaiCo:document.getElementById('nhomtb-loaico').value};
   if(editingIds.nhomtb){
     const idx=daNhomTB.findIndex(x=>x.id==editingIds.nhomtb);
@@ -3015,15 +3020,15 @@ function openModalDM(nhomId,id){
   const nhom=daNhomTB.find(x=>x.id==nhomId);
   document.getElementById('dm-nhom-label').textContent=nhom?nhom.ten:'—';
   document.getElementById('modal-dm-title').textContent=id?'Chỉnh sửa trang bị':'Thêm trang bị chi tiết';
-  if(id){const dm=daDanhMuc.find(x=>x.id===id);if(dm){document.getElementById('dm-ma').value=dm.ma||'';document.getElementById('dm-ten').value=dm.ten;}}
-  else{document.getElementById('dm-ma').value='';document.getElementById('dm-ten').value='';}
+  if(id){const dm=daDanhMuc.find(x=>x.id===id);if(dm){document.getElementById('dm-ma').value=dm.ma||'';document.getElementById('dm-ten').value=dm.ten;document.getElementById('dm-donvi').value=dm.donVi||(nhom?nhom.donVi:'')||'';}}
+  else{document.getElementById('dm-ma').value='';document.getElementById('dm-ten').value='';document.getElementById('dm-donvi').value=(nhom?nhom.donVi:'')||'';}
   openModal('modal-dm');
 }
 function saveDM(){
   if(!isAdmin()){showToast('Chỉ quản trị viên.','error');return;}
   const ten=document.getElementById('dm-ten').value.trim();if(!ten){showToast('Vui lòng nhập tên trang bị!','error');return;}
-  const nhom=daNhomTB.find(x=>x.id==_currentDmNhomId);
-  const obj={ma:document.getElementById('dm-ma').value.trim(),ten,nhomId:_currentDmNhomId,donVi:nhom?nhom.donVi:''};
+  const donVi=document.getElementById('dm-donvi').value.trim();if(!donVi){showToast('Vui lòng nhập đơn vị tính!','error');return;}
+  const obj={ma:document.getElementById('dm-ma').value.trim(),ten,nhomId:_currentDmNhomId,donVi};
   if(editingIds.dm){
     const idx=daDanhMuc.findIndex(x=>x.id===editingIds.dm);
     daDanhMuc[idx]={...daDanhMuc[idx],...obj};

@@ -19,13 +19,15 @@ var BHLD = (function () {
   var PULL_SHEETS = [
     'nhanvien', 'phieu_requests', 'pending_changes', 'notifications',
     'danh_muc', 'dinh_muc', 'ton_kho', 'lich_su_nhap_xuat',
-    'nhom_nv', 'quy_list', 'nhom_tb', 'chuc_danh'
+    'nhom_nv', 'quy_list', 'nhom_tb', 'chuc_danh', 'size_chart'
   ];
 
   // Cột chỉ dùng ở client, KHÔNG tồn tại trên bảng server (loại bỏ trước khi gửi lên).
   // 'nhomId' được dựng lại phía client từ 'nhomNoiBo', server không có cột này.
   // 'donVi' (ĐVT) của danh_muc được suy ra từ nhóm ở client, bảng server không có cột này.
-  var CLIENT_ONLY = { nhanvien: ['nhomId'], danh_muc: ['donVi'] };
+  // LƯU Ý: 'donVi' của danh_muc NAY đã đồng bộ (cột "donVi" trên bảng danh_muc) — không strip nữa.
+  //        → Cần chạy supabase/danh_muc_add_donvi.sql để tạo cột trước khi dùng.
+  var CLIENT_ONLY = { nhanvien: ['nhomId'] };
   function _stripClientOnly(sheet, obj) {
     var extra = CLIENT_ONLY[sheet];
     if (!extra || !obj || typeof obj !== 'object') return obj;
@@ -45,7 +47,8 @@ var BHLD = (function () {
     'nhom_nv':           'bhld_nhom_nv',
     'quy_list':          'bhld_quy_list',
     'nhom_tb':           'bhld_nhom_tb',
-    'chuc_danh':         'bhld_chuc_danh'
+    'chuc_danh':         'bhld_chuc_danh',
+    'size_chart':        'bhld_size_chart'
   };
 
   // Tương thích: các trang cũ gọi getUrl()/setUrl() — giờ không cần URL nữa.
