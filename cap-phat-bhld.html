@@ -136,9 +136,9 @@
         <span id="notif-badge" style="display:none;position:absolute;top:-6px;right:-6px;background:var(--accent,#C8102E);color:#fff;font-size:10px;font-weight:700;min-width:18px;height:18px;line-height:18px;border-radius:9px;padding:0 4px;">0</span>
       </button>
       <div id="notif-panel" style="display:none;position:absolute;right:0;top:46px;width:360px;max-height:460px;overflow-y:auto;background:#fff;border:1px solid var(--border,#dfe3eb);border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,0.18);z-index:1200;">
-        <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 14px;border-bottom:1px solid var(--border,#eee);position:sticky;top:0;background:#fff;border-radius:12px 12px 0 0;">
-          <strong style="font-size:14px;color:var(--primary,#003087);">🔔 Thông báo</strong>
-          <button onclick="markAllNotifRead()" style="background:none;border:none;color:var(--primary,#003087);font-size:12px;cursor:pointer;text-decoration:underline;">Đánh dấu đã đọc tất cả</button>
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:13px 15px;border-bottom:1px solid var(--border,#eef0f4);position:sticky;top:0;background:#fff;border-radius:12px 12px 0 0;z-index:1;">
+          <span style="display:inline-flex;align-items:center;gap:7px;font-size:14.5px;font-weight:700;color:var(--primary,#003087);"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.268 21a2 2 0 0 0 3.464 0"/><path d="M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326"/></svg>Thông báo</span>
+          <button onclick="markAllNotifRead()" style="background:none;border:none;color:var(--primary-light,#4a90d9);font-size:12px;font-weight:600;cursor:pointer;padding:4px 6px;border-radius:6px;">Đánh dấu tất cả đã đọc</button>
         </div>
         <div id="notif-list"></div>
       </div>
@@ -1162,6 +1162,19 @@ function _updateNotifBadge(){
   if(badge){badge.textContent=unread>99?'99+':unread;badge.style.display=unread?'inline-block':'none';}
 }
 function _notifIcon(t){return({nv_approve:'✅',nv_reject:'❌',phieu_approve:'✅',phieu_reject:'❌',change_approve:'✅',change_reject:'❌'})[t]||'🔔';}
+// Kiểu hiển thị chuyên nghiệp cho từng loại thông báo: {icon, bg, fg, label}
+function _notifStyle(t){
+  var M={
+    nv_approve:['check','#eafaf1','#1a7a3c','Đã duyệt'],
+    phieu_approve:['check','#eafaf1','#1a7a3c','Đã duyệt'],
+    change_approve:['check','#eafaf1','#1a7a3c','Đã duyệt'],
+    nv_reject:['x','#fdecea','#c0392b','Bị trả lại'],
+    phieu_reject:['x','#fdecea','#c0392b','Bị trả lại'],
+    change_reject:['x','#fdecea','#c0392b','Bị trả lại']
+  };
+  var s=M[t]||['clip','#e8f0fb','#003087',''];
+  return {icon:s[0],bg:s[1],fg:s[2],label:s[3]};
+}
 // Thời gian tương đối kiểu Facebook (mốc "Hôm qua" tính theo ngày lịch)
 function _timeAgo(iso){
   if(!iso)return'';
@@ -1190,15 +1203,20 @@ function renderNotifPanel(){
     const unread=!n.read||n.read==='';
     const dt=_timeAgo(n.createdAt);
     const hasSnap=n.snapshot&&(n.type==='nv_reject');
-    return `<div onclick="markNotifRead('${n.id}')" style="display:flex;gap:10px;padding:12px 14px;border-bottom:1px solid var(--border,#f0f0f0);cursor:pointer;background:${unread?'#f3f8ff':'#fff'};">
-      <div style="font-size:18px;line-height:1.2;">${_notifIcon(n.type)}</div>
+    const st=_notifStyle(n.type);
+    const cleanTitle=String(n.title||'').replace(/^[^\p{L}\p{N}]+/u,'');
+    return `<div onclick="markNotifRead('${n.id}')" style="display:flex;gap:12px;padding:13px 15px;border-bottom:0.5px solid var(--border,#eef0f4);cursor:pointer;background:${unread?'#f5f9ff':'#fff'};align-items:flex-start;">
+      <div style="width:36px;height:36px;border-radius:50%;background:${st.bg};color:${st.fg};display:flex;align-items:center;justify-content:center;flex-shrink:0;">${_ic(st.icon,18)}</div>
       <div style="flex:1;min-width:0;">
-        <div style="font-size:13px;font-weight:${unread?'700':'500'};color:var(--text,#222);">${_escH(n.title||'')}</div>
-        <div style="font-size:12.5px;color:var(--text-light,#666);margin-top:2px;white-space:pre-wrap;">${_escH(n.message||'')}</div>
-        ${hasSnap?`<button onclick="event.stopPropagation();restoreNvFromNotif('${n.id}')" class="btn btn-outline btn-sm" style="margin-top:7px;">↩️ Tạo lại nhân viên này</button>`:''}
-        <div style="font-size:11px;color:var(--text-light,#999);margin-top:5px;">${dt}</div>
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+          <span style="font-size:13px;font-weight:${unread?'700':'600'};color:var(--text,#222);">${_escH(cleanTitle)}</span>
+          ${st.label?`<span style="font-size:11px;background:${st.bg};color:${st.fg};padding:1px 8px;border-radius:20px;white-space:nowrap;">${st.label}</span>`:''}
+        </div>
+        <div style="font-size:12.5px;color:var(--text-light,#666);margin-top:3px;white-space:pre-wrap;line-height:1.45;">${_escH(n.message||'')}</div>
+        ${hasSnap?`<button onclick="event.stopPropagation();restoreNvFromNotif('${n.id}')" class="btn btn-outline btn-sm" style="margin-top:8px;">↩️ Tạo lại nhân viên này</button>`:''}
+        <div style="font-size:11px;color:var(--text-light,#999);margin-top:6px;">${dt}</div>
       </div>
-      ${unread?'<span style="width:8px;height:8px;border-radius:50%;background:var(--accent,#C8102E);flex-shrink:0;margin-top:5px;"></span>':''}
+      ${unread?'<span style="width:8px;height:8px;border-radius:50%;background:var(--accent,#C8102E);flex-shrink:0;margin-top:6px;"></span>':''}
     </div>`;
   }).join('');
 }
