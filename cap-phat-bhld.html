@@ -1162,13 +1162,33 @@ function _updateNotifBadge(){
   if(badge){badge.textContent=unread>99?'99+':unread;badge.style.display=unread?'inline-block':'none';}
 }
 function _notifIcon(t){return({nv_approve:'✅',nv_reject:'❌',phieu_approve:'✅',phieu_reject:'❌',change_approve:'✅',change_reject:'❌'})[t]||'🔔';}
+// Thời gian tương đối kiểu Facebook (mốc "Hôm qua" tính theo ngày lịch)
+function _timeAgo(iso){
+  if(!iso)return'';
+  var d=new Date(iso); if(isNaN(d.getTime()))return'';
+  var now=new Date();
+  var pad=function(x){return x<10?'0'+x:''+x;};
+  var hhmm=pad(d.getHours())+':'+pad(d.getMinutes());
+  var diffMs=now.getTime()-d.getTime();
+  if(diffMs<60000)return 'Vừa xong';
+  var startToday=new Date(now.getFullYear(),now.getMonth(),now.getDate()).getTime();
+  var startDay=new Date(d.getFullYear(),d.getMonth(),d.getDate()).getTime();
+  var dayDiff=Math.round((startToday-startDay)/86400000);
+  if(dayDiff<=0){ // cùng ngày lịch (hoặc tương lai do lệch giờ)
+    var mins=Math.floor(diffMs/60000);
+    if(mins<60)return mins+' phút trước';
+    return Math.floor(mins/60)+' giờ trước';
+  }
+  if(dayDiff===1)return 'Hôm qua lúc '+hhmm;
+  return pad(d.getDate())+'/'+pad(d.getMonth()+1)+'/'+d.getFullYear()+' '+hhmm;
+}
 function renderNotifPanel(){
   const list=document.getElementById('notif-list');if(!list)return;
   const items=_myNotifs();
   if(!items.length){list.innerHTML='<div style="padding:26px 14px;text-align:center;color:var(--text-light,#888);font-size:13px;">Chưa có thông báo nào.</div>';return;}
   list.innerHTML=items.map(n=>{
     const unread=!n.read||n.read==='';
-    const dt=n.createdAt?new Date(n.createdAt).toLocaleString('vi-VN'):'';
+    const dt=_timeAgo(n.createdAt);
     const hasSnap=n.snapshot&&(n.type==='nv_reject');
     return `<div onclick="markNotifRead('${n.id}')" style="display:flex;gap:10px;padding:12px 14px;border-bottom:1px solid var(--border,#f0f0f0);cursor:pointer;background:${unread?'#f3f8ff':'#fff'};">
       <div style="font-size:18px;line-height:1.2;">${_notifIcon(n.type)}</div>
@@ -1182,12 +1202,20 @@ function renderNotifPanel(){
     </div>`;
   }).join('');
 }
+var _notifTimer=null;
 function toggleNotifPanel(e){
   if(e)e.stopPropagation();
   const panel=document.getElementById('notif-panel');if(!panel)return;
   const show=panel.style.display==='none'||!panel.style.display;
   panel.style.display=show?'block':'none';
-  if(show)renderNotifPanel();
+  if(show){
+    renderNotifPanel();
+    if(!_notifTimer)_notifTimer=setInterval(function(){
+      var p=document.getElementById('notif-panel');
+      if(p&&p.style.display!=='none')renderNotifPanel();
+      else{clearInterval(_notifTimer);_notifTimer=null;}
+    },60000);
+  } else if(_notifTimer){clearInterval(_notifTimer);_notifTimer=null;}
 }
 document.addEventListener('click',function(e){
   const wrap=document.getElementById('notif-bell-wrap');const panel=document.getElementById('notif-panel');
@@ -3614,7 +3642,7 @@ function renderChoduyetTab(){
       return `<div style="border:1.5px solid #f9c74f;border-radius:10px;padding:16px;margin-bottom:16px;background:#fffdf5;">
         <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:8px;">
           <div><strong style="color:var(--primary);">${tLabel}: ${_escH(c.nvTen||'')}</strong> <span style="font-size:12px;color:var(--text-light);">${_escH(c.donVi||'')}</span>
-            <div style="font-size:12px;color:var(--text-light);margin-top:3px;">Gửi bởi: ${_escH(c.submittedBy||'—')} · ${c.submittedAt?new Date(c.submittedAt).toLocaleDateString('vi-VN'):''}</div></div>
+            <div style="font-size:12px;color:var(--text-light);margin-top:3px;">Gửi bởi: ${_escH(c.submittedBy||'—')} · ${_timeAgo(c.submittedAt)}</div></div>
           <div style="display:flex;gap:8px;flex-wrap:wrap;">
             <button class="btn btn-success btn-sm" onclick="approveChange('${c.id}')">${_ic('check',14)} Đồng ý</button>
             <button class="btn btn-danger btn-sm" onclick="rejectChange('${c.id}')">${_ic('x',14)} Từ chối</button>
@@ -3642,7 +3670,7 @@ function renderChoduyetTab(){
       }
       return `<div style="border:1.5px solid var(--border);border-radius:10px;padding:16px;margin-bottom:16px;">
         <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:10px;">
-          <div><strong style="color:var(--primary);">${label}</strong><div style="font-size:12px;color:var(--text-light);margin-top:3px;">Gửi bởi: ${_escH(p.submittedBy||'—')} · ${p.submittedAt?new Date(p.submittedAt).toLocaleDateString('vi-VN'):''}</div></div>
+          <div><strong style="color:var(--primary);">${label}</strong><div style="font-size:12px;color:var(--text-light);margin-top:3px;">Gửi bởi: ${_escH(p.submittedBy||'—')} · ${_timeAgo(p.submittedAt)}</div></div>
           <div style="display:flex;gap:8px;flex-wrap:wrap;">
             <button class="btn btn-outline btn-sm" onclick="exportPhieuById('${p.id}','word')">${_ic('file',14)} Xuất Word</button>
             <button class="btn btn-success btn-sm" onclick="approvePhieu('${p.id}')">${_ic('check',14)} Duyệt</button>
@@ -3672,7 +3700,7 @@ function renderChoduyetTab(){
         <span>${label}</span>
         <div style="display:flex;align-items:center;gap:12px;">
           <span class="badge ${isApproved?'badge-green':'badge-red'}">${isApproved?_ic('check',13)+' Đã duyệt':_ic('x',13)+' Từ chối'}</span>
-          <span style="font-size:12px;color:var(--text-light);">${r.reviewedBy||''} · ${r.reviewedAt?new Date(r.reviewedAt).toLocaleDateString('vi-VN'):''}</span>
+          <span style="font-size:12px;color:var(--text-light);">${r.reviewedBy||''} · ${_timeAgo(r.reviewedAt)}</span>
         </div>
       </div>`;
     }).join('');
