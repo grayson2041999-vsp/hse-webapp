@@ -356,61 +356,23 @@
         <div class="cap-selector" id="capSelector"></div>
         <div id="noPermMsg" class="warn-box" style="display:none;"><svg class="lic-emoji" width="1.05em" height="1.05em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex-shrink:0" aria-hidden="true"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg> Bạn không có quyền nhập loại kiểm tra này.</div>
 
-        <!-- FORM CẤP 1/2 -->
+        <!-- FORM CẤP 1/2 (nhập theo QUÝ) -->
         <div id="formCap12" style="display:none;">
-          <div class="sec-div">Thông tin chung</div>
+          <div class="sec-div">Chọn kỳ kiểm tra</div>
           <div class="form-row" style="grid-template-columns:1fr 1fr;">
             <div class="form-group">
-              <label>Tháng kiểm tra <span class="req">*</span></label>
-              <div style="display:flex;gap:6px;">
-                <select class="inp" id="c12ThangSel" style="flex:1;"></select>
-                <select class="inp" id="c12NamSel"   style="width:90px;"></select>
-              </div>
+              <label>Quý <span class="req">*</span></label>
+              <select class="inp" id="c12QuySel" onchange="renderQuarterBlocks()"></select>
             </div>
             <div class="form-group">
-              <label>Đơn vị <span class="req">*</span></label>
-              <select class="inp" id="c12DonVi" onchange="toggleDonViKhac()">
-                <option value="">-- Chọn đơn vị --</option>
-                <option>Cảng biển</option>
-                <option>Căn cứ Kho - Giao nhận</option>
-                <option>Xưởng sửa chữa</option>
-                <option>Đội xe VTHH&amp;PTTBCD</option>
-                <option>Đội xe VCHK</option>
-                <option value="__khac__">Khác</option>
-              </select>
-              <input type="text" class="inp" id="c12DonViKhac" placeholder="Nhập tên đơn vị..." style="display:none;margin-top:6px;">
+              <label>Năm <span class="req">*</span></label>
+              <select class="inp" id="c12NamSel" onchange="renderQuarterBlocks()"></select>
             </div>
           </div>
-          <div class="form-row cols3">
-            <div class="form-group">
-              <label>Số lần kiểm tra trong tháng <span class="req">*</span></label>
-              <input type="number" class="inp" id="c12SoLan" min="0" placeholder="0">
-            </div>
-            <div class="form-group">
-              <label>Số vi phạm / ghi nhận <span class="req">*</span></label>
-              <input type="number" class="inp" id="c12SoVP" min="0" placeholder="0" oninput="renderVP12()">
-            </div>
+          <div style="margin:2px 0 6px;color:#64748b;font-size:12.5px;font-style:italic;">
+            Chọn quý sẽ hiện 3 bảng nhập cho 3 tháng trong quý. Mỗi bảng nhập cho một đơn vị và được lưu riêng.
           </div>
-          <div id="c12VPWrap" style="display:none;">
-            <div class="sec-div">Chi tiết vi phạm / ghi nhận</div>
-            <div class="table-wrap">
-              <table>
-                <thead><tr>
-                  <th class="stt-col">STT</th>
-                  <th style="min-width:200px;">Nội dung vi phạm <span style="color:var(--danger)">*</span></th>
-                  <th style="min-width:140px;">Vị trí ghi nhận <span style="color:var(--danger)">*</span></th>
-                  <th style="min-width:170px;">Biện pháp khắc phục <span style="color:var(--danger)">*</span></th>
-                  <th style="min-width:150px;">Tình trạng khắc phục <span style="color:var(--danger)">*</span></th>
-                  <th style="min-width:230px;">Phân loại vi phạm <span style="color:var(--danger)">*</span></th>
-                </tr></thead>
-                <tbody id="c12VPBody"></tbody>
-              </table>
-            </div>
-          </div>
-          <div style="display:flex;gap:10px;margin-top:16px;">
-            <button class="btn btn-success" onclick="saveCap12()"><svg class="lic-emoji" width="1.05em" height="1.05em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex-shrink:0" aria-hidden="true"><path d="M15.2 3a2 2 0 0 1 1.4.6l3.8 3.8a2 2 0 0 1 .6 1.4V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/><path d="M17 21v-7a1 1 0 0 0-1-1H8a1 1 0 0 0-1 1v7"/><path d="M7 3v4a1 1 0 0 0 1 1h7"/></svg> Lưu kiểm tra</button>
-            <button class="btn btn-outline" onclick="resetForm()">↺ Làm mới</button>
-          </div>
+          <div id="c12QuarterWrap"></div>
         </div>
 
         <!-- FORM CẤP 3/4/KHÁC -->
@@ -525,7 +487,7 @@
               <option value="cap4">cấp 4</option>
               <option value="khac">Khác</option>
             </select>
-            <select class="inp" id="filterThangSel" onchange="renderList()" style="width:110px;padding:5px 26px 5px 8px;font-size:12.5px;"></select>
+            <select class="inp" id="filterQuySel" onchange="renderList()" style="width:110px;padding:5px 26px 5px 8px;font-size:12.5px;"></select>
             <select class="inp" id="filterNamSel"   onchange="renderList()" style="width:94px;padding:5px 26px 5px 8px;font-size:12.5px;"></select>
             <button class="btn btn-outline btn-sm" onclick="loadData()"><svg class="lic-emoji" width="1.05em" height="1.05em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex-shrink:0" aria-hidden="true"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg> Tải lại</button>
           </div>
@@ -644,81 +606,178 @@ var editId12   = null;
 var editId34   = null;
 var vp34Cnt    = 0;
 
-/* ── BUILD THÁNG/NĂM SELECTS ── */
+/* ── CẤU HÌNH QUÝ ── */
+var QUY_MONTHS={1:[1,2,3],2:[4,5,6],3:[7,8,9],4:[10,11,12]};
+var DON_VI_FIXED=["Cảng biển","Căn cứ Kho - Giao nhận","Xưởng sửa chữa","Đội xe VTHH&PTTBCD","Đội xe VCHK"];
+
+function quyCuaThang(m){return Math.floor((parseInt(m,10)-1)/3)+1;}
+
+/* ── BUILD QUÝ/NĂM SELECTS (form nhập + bộ lọc) ── */
 function buildThangNamSelects(){
   var today=new Date();
   var curY=today.getFullYear();
-  var curM=today.getMonth()+1; // 1-12
+  var curQ=Math.floor(today.getMonth()/3)+1;
 
-  var thangNames=["Tháng 1","Tháng 2","Tháng 3","Tháng 4","Tháng 5","Tháng 6",
-                  "Tháng 7","Tháng 8","Tháng 9","Tháng 10","Tháng 11","Tháng 12"];
-
-  // Hàm tạo options tháng
-  function makeThangOpts(selId, selectedM){
-    var el=document.getElementById(selId); if(!el) return;
-    el.innerHTML=thangNames.map(function(t,i){
-      return'<option value="'+(i+1)+'"'+(i+1===selectedM?" selected":"")+'>'+t+'</option>';
+  function quyOpts(selectedQ){
+    return [1,2,3,4].map(function(q){
+      return'<option value="'+q+'"'+(q===selectedQ?" selected":"")+'>Quý '+q+'</option>';
     }).join("");
   }
-  // Hàm tạo options năm (5 năm trước → 2 năm sau)
-  function makeNamOpts(selId, selectedY){
-    var el=document.getElementById(selId); if(!el) return;
-    var opts="";
-    for(var y=curY-5;y<=curY+2;y++) opts+='<option value="'+y+'"'+(y===selectedY?" selected":"")+'>'+y+'</option>';
-    el.innerHTML=opts;
+  function namOpts(selectedY,withAll){
+    var o=withAll?'<option value="">Tất cả năm</option>':"";
+    for(var y=curY-5;y<=curY+2;y++) o+='<option value="'+y+'"'+(y===selectedY?" selected":"")+'>'+y+'</option>';
+    return o;
   }
 
   // Form nhập
-  makeThangOpts("c12ThangSel", curM);
-  makeNamOpts("c12NamSel", curY);
+  var qEl=document.getElementById("c12QuySel"); if(qEl) qEl.innerHTML=quyOpts(curQ);
+  var nEl=document.getElementById("c12NamSel"); if(nEl) nEl.innerHTML=namOpts(curY,false);
 
-  // Bộ lọc danh sách — thêm option "Tất cả"
-  var ftEl=document.getElementById("filterThangSel"); if(ftEl){
-    ftEl.innerHTML='<option value="">Tất cả tháng</option>'+
-      thangNames.map(function(t,i){return'<option value="'+(i+1)+'">'+t+'</option>';}).join("");
+  // Bộ lọc danh sách
+  var fqEl=document.getElementById("filterQuySel"); if(fqEl){
+    fqEl.innerHTML='<option value="">Tất cả quý</option>'+
+      [1,2,3,4].map(function(q){return'<option value="'+q+'">Quý '+q+'</option>';}).join("");
   }
-  var fnEl=document.getElementById("filterNamSel"); if(fnEl){
-    var opts2='<option value="">Tất cả năm</option>';
-    for(var y=curY-5;y<=curY+2;y++) opts2+='<option value="'+y+'"'+(y===curY?" selected":"")+'>'+y+'</option>';
-    fnEl.innerHTML=opts2;
-  }
+  var fnEl=document.getElementById("filterNamSel"); if(fnEl) fnEl.innerHTML=namOpts(curY,true);
 }
 
-function toggleDonViKhac(){
-  var sel=document.getElementById("c12DonVi");
-  var inp=document.getElementById("c12DonViKhac");
+/* ── ĐƠN VỊ (per-block helpers) ── */
+function isKhacDonVi(val){return !!val && DON_VI_FIXED.indexOf(val)<0;}
+function donViOptions(sel){
+  var html='<option value="">-- Chọn đơn vị --</option>';
+  DON_VI_FIXED.forEach(function(dv){html+='<option'+(dv===sel?" selected":"")+'>'+dv+'</option>';});
+  html+='<option value="__khac__"'+(isKhacDonVi(sel)?" selected":"")+'>Khác</option>';
+  return html;
+}
+function toggleDonViKhacM(sel){
+  var block=sel.closest(".qm-block");
+  var inp=block.querySelector(".qm-donvi-khac");
   inp.style.display=sel.value==="__khac__"?"block":"none";
   if(sel.value!=="__khac__") inp.value="";
 }
-// Lấy tên đơn vị thực (xử lý trường hợp "Khác")
-function getDonVi(){
-  var sel=document.getElementById("c12DonVi");
-  if(sel.value==="__khac__") return document.getElementById("c12DonViKhac").value.trim();
+function getDonViM(block){
+  var sel=block.querySelector(".qm-donvi");
+  if(sel.value==="__khac__") return block.querySelector(".qm-donvi-khac").value.trim();
   return sel.value;
 }
-// Set lại dropdown đơn vị từ giá trị đã lưu
-function setDonVi(val){
-  var sel=document.getElementById("c12DonVi");
-  var fixed=["Cảng biển","Căn cứ Kho - Giao nhận","Xưởng sửa chữa","Đội xe VTHH&PTTBCD","Đội xe VCHK"];
-  if(!val){sel.value="";return;}
-  if(fixed.indexOf(val)>=0){sel.value=val;}
-  else{sel.value="__khac__";document.getElementById("c12DonViKhac").value=val;document.getElementById("c12DonViKhac").style.display="block";}
+
+/* ── RENDER 3 KHỐI THÁNG THEO QUÝ ── */
+function renderQuarterBlocks(focusRec){
+  var wrap=document.getElementById("c12QuarterWrap");
+  if(!wrap) return;
+  var qEl=document.getElementById("c12QuySel"), nEl=document.getElementById("c12NamSel");
+  if(!qEl||!nEl){wrap.innerHTML="";return;}
+  var q=parseInt(qEl.value,10), y=parseInt(nEl.value,10);
+  if(!q||!y||(currentCap!=="cap1"&&currentCap!=="cap2")){wrap.innerHTML="";return;}
+
+  var today=new Date(), curY=today.getFullYear(), curM=today.getMonth()+1;
+  var existing=load(LS_KEY12,[]);
+  wrap.innerHTML="";
+
+  QUY_MONTHS[q].forEach(function(m){
+    var ym=y+"-"+(m<10?"0":"")+m;
+    var reached=(y<curY)||(y===curY&&m<=curM);
+    // các bản ghi đã có cho (cap hiện tại, tháng này)
+    var recs=existing.filter(function(r){return r.type===currentCap && r.thang===ym;});
+    if(focusRec && focusRec.thang===ym && !recs.some(function(r){return r.id===focusRec.id;})) recs.push(focusRec);
+    wrap.appendChild(makeMonthSection(m,y,ym,reached,recs));
+  });
+
+  if(focusRec){
+    setTimeout(function(){
+      var blk=wrap.querySelector('.qm-block[data-edit-id="'+focusRec.id+'"]');
+      if(blk) blk.scrollIntoView({behavior:"smooth",block:"center"});
+    },60);
+  }
 }
 
-// Helper: lấy giá trị "YYYY-MM" từ 2 selects form nhập
-function getThang12(){
-  var m=document.getElementById("c12ThangSel").value;
-  var y=document.getElementById("c12NamSel").value;
-  if(!m||!y) return "";
-  return y+"-"+(m.length===1?"0":"")+m;
+function makeMonthSection(m,y,ym,reached,recs){
+  var sec=document.createElement("div");
+  sec.className="qm-section"; sec.dataset.ym=ym; sec.dataset.month=m;
+  sec.style.cssText="border:1px solid #d5deed;border-radius:10px;padding:14px 16px;margin-bottom:16px;background:#fafcff;";
+  var head='<div style="font-weight:700;color:var(--primary);font-size:14px;margin-bottom:'+(reached?"12px":"6px")+';display:flex;align-items:center;gap:10px;">Tháng '+m+"/"+y;
+  if(!reached){
+    head+='<span style="font-weight:500;font-size:11.5px;background:#f1f5f9;color:#64748b;border:1px solid #e2e8f0;padding:2px 8px;border-radius:20px;">Chưa đến kỳ nhập</span></div>';
+    sec.innerHTML=head+'<div style="color:#64748b;font-style:italic;font-size:13px;">Chưa đến kỳ nhập của tháng này. Bạn có thể nhập khi đã bước sang tháng '+m+"/"+y+'.</div>';
+    return sec;
+  }
+  head+='</div>';
+  sec.innerHTML=head+'<div class="qm-blocks"></div>'+
+    '<div class="add-row-btn" style="margin-top:6px;" onclick="addDonViBlock(this)">＋ Thêm đơn vị cho tháng này</div>';
+  var blocksWrap=sec.querySelector(".qm-blocks");
+  if(recs.length){ recs.forEach(function(r){blocksWrap.appendChild(makeDonViBlock(ym,r));}); }
+  else { blocksWrap.appendChild(makeDonViBlock(ym,null)); }
+  return sec;
 }
-// Helper: set lại 2 selects từ chuỗi "YYYY-MM"
-function setThang12(ym){
-  if(!ym) return;
-  var parts=ym.split("-"); if(parts.length<2) return;
-  var y=parseInt(parts[0]); var m=parseInt(parts[1]);
-  document.getElementById("c12NamSel").value=y;
-  document.getElementById("c12ThangSel").value=m;
+
+function makeDonViBlock(ym,rec){
+  var block=document.createElement("div");
+  block.className="qm-block"; block.dataset.ym=ym; block.dataset.editId=rec?rec.id:"";
+  if(rec) block.style.cssText="border-left:3px solid var(--primary);padding:10px 12px 4px;margin-bottom:12px;background:#fff;border-radius:6px;";
+  else    block.style.cssText="padding:10px 12px 4px;margin-bottom:12px;";
+  var donViVal=rec?(rec.donVi||""):"";
+  var soLan=rec?(rec.soLanKiemTra!=null?rec.soLanKiemTra:0):"";
+  var vps=rec?(typeof rec.violations==="string"?JSON.parse(rec.violations||"[]"):(rec.violations||[])):[];
+  var soVP=rec?vps.length:"";
+  block.innerHTML=
+    (rec?'<div style="font-size:11.5px;color:#c2410c;margin-bottom:8px;font-weight:600;">● Đã có dữ liệu — đang sửa</div>':'')+
+    '<div class="form-row" style="grid-template-columns:1fr 1fr;">'+
+      '<div class="form-group"><label>Đơn vị <span class="req">*</span></label>'+
+        '<select class="inp qm-donvi" onchange="toggleDonViKhacM(this)">'+donViOptions(donViVal)+'</select>'+
+        '<input type="text" class="inp qm-donvi-khac" placeholder="Nhập tên đơn vị..." style="display:'+(isKhacDonVi(donViVal)?"block":"none")+';margin-top:6px;" value="'+(isKhacDonVi(donViVal)?esc(donViVal):"")+'"></div>'+
+      '<div class="form-group"><label>Số lần kiểm tra trong tháng <span class="req">*</span></label>'+
+        '<input type="number" class="inp qm-solan" min="0" placeholder="0" value="'+soLan+'"></div>'+
+    '</div>'+
+    '<div class="form-row" style="grid-template-columns:1fr 1fr;">'+
+      '<div class="form-group"><label>Số vi phạm / ghi nhận <span class="req">*</span></label>'+
+        '<input type="number" class="inp qm-sovp" min="0" placeholder="0" value="'+soVP+'"></div>'+
+    '</div>'+
+    '<div class="qm-vpwrap" style="display:none;">'+
+      '<div class="sec-div">Chi tiết vi phạm / ghi nhận</div>'+
+      '<div class="table-wrap"><table><thead><tr>'+
+        '<th class="stt-col">STT</th>'+
+        '<th style="min-width:200px;">Nội dung vi phạm <span style="color:var(--danger)">*</span></th>'+
+        '<th style="min-width:140px;">Vị trí ghi nhận <span style="color:var(--danger)">*</span></th>'+
+        '<th style="min-width:170px;">Biện pháp khắc phục <span style="color:var(--danger)">*</span></th>'+
+        '<th style="min-width:150px;">Tình trạng khắc phục <span style="color:var(--danger)">*</span></th>'+
+        '<th style="min-width:230px;">Phân loại vi phạm <span style="color:var(--danger)">*</span></th>'+
+      '</tr></thead><tbody class="qm-vpbody"></tbody></table></div>'+
+    '</div>'+
+    '<div style="display:flex;gap:10px;margin-top:12px;">'+
+      '<button class="btn btn-success btn-sm" onclick="saveMonth(this)">💾 Lưu tháng này</button>'+
+      '<button class="btn btn-outline btn-sm" onclick="clearOrRemoveBlock(this)">↺ Xoá nhập</button>'+
+    '</div>';
+  // gắn sự kiện cho ô "số vi phạm" + render sẵn vi phạm nếu đang sửa
+  var sovpInp=block.querySelector(".qm-sovp");
+  sovpInp.addEventListener("input",function(){renderVPM(block);});
+  if(rec && vps.length){ setTimeout(function(){renderVPM(block,vps);},0); }
+  return block;
+}
+
+function addDonViBlock(btn){
+  var sec=btn.closest(".qm-section");
+  var ym=sec.dataset.ym;
+  sec.querySelector(".qm-blocks").appendChild(makeDonViBlock(ym,null));
+}
+
+function clearOrRemoveBlock(btn){
+  var block=btn.closest(".qm-block");
+  var blocksWrap=block.parentNode;
+  // Nếu là block đã lưu (đang sửa) hoặc là block duy nhất → chỉ xoá nội dung nhập
+  var isOnly=blocksWrap.querySelectorAll(".qm-block").length<=1;
+  if(block.dataset.editId){
+    toast("Đây là bản ghi đã lưu. Để xoá hẳn, dùng nút Xoá ở tab Danh sách.",false);
+  }
+  if(block.dataset.editId || isOnly){
+    block.querySelector(".qm-donvi").value="";
+    var dk=block.querySelector(".qm-donvi-khac"); dk.value=""; dk.style.display="none";
+    block.querySelector(".qm-solan").value="";
+    block.querySelector(".qm-sovp").value="";
+    block.querySelector(".qm-vpwrap").style.display="none";
+    block.querySelector(".qm-vpbody").innerHTML="";
+  } else {
+    blocksWrap.removeChild(block);
+  }
 }
 
 /* ═══════════════════════════════════════════════════
@@ -865,7 +924,7 @@ function selectCap(cap, forceShow){
   document.getElementById("formCap34").style.display="none";
   // forceShow=true khi admin đang sửa bản ghi cap1/2 (bypass kiểm tra quyền nhập mới)
   if(!forceShow && !canInputCap(currentUser(),cap)){document.getElementById("noPermMsg").style.display="block";return;}
-  if(cap==="cap1"||cap==="cap2") document.getElementById("formCap12").style.display="block";
+  if(cap==="cap1"||cap==="cap2"){document.getElementById("formCap12").style.display="block"; renderQuarterBlocks();}
   else{
     document.getElementById("formCap34").style.display="block";
     document.getElementById("c34TenKhacWrap").style.display=cap==="khac"?"flex":"none";
@@ -875,30 +934,39 @@ function selectCap(cap, forceShow){
 /* ═══════════════════════════════════════════════════
    FORM CẤP 1/2
 ═══════════════════════════════════════════════════ */
-function renderVP12(){
-  var n=parseInt(document.getElementById("c12SoVP").value)||0;
-  var wrap=document.getElementById("c12VPWrap");
-  var tbody=document.getElementById("c12VPBody");
-  if(n<=0){wrap.style.display="none";return;}
+// Render bảng chi tiết vi phạm cho MỘT khối đơn vị (block).
+// preset (tuỳ chọn): mảng vi phạm đã lưu để nạp sẵn khi đang sửa.
+var _msSeq=0;
+function renderVPM(block, preset){
+  var n=parseInt(block.querySelector(".qm-sovp").value)||0;
+  var wrap=block.querySelector(".qm-vpwrap");
+  var tbody=block.querySelector(".qm-vpbody");
+  if(n<=0){wrap.style.display="none"; if(!preset) tbody.innerHTML=""; return;}
   wrap.style.display="block";
 
-  // Lưu lại dữ liệu đã nhập
-  var saved=[];
-  tbody.querySelectorAll("tr").forEach(function(tr,i){
-    var msEl=tr.querySelector(".ms-trigger");
-    saved[i]={
-      nd:  (tr.querySelector(".vp-nd")  ||{}).value||"",
-      vt:  (tr.querySelector(".vp-vt")  ||{}).value||"",
-      bpkp:(tr.querySelector(".vp-bpkp")||{}).value||"",
-      ttkp:(tr.querySelector(".vp-ttkp")||{}).value||"",
-      loai: msEl?(msEl._sel||[]||[]):[]
-    };
-  });
+  var saved;
+  if(preset){
+    // chuẩn hoá từ dữ liệu đã lưu (field: nd, viTri, bienPhapKP, tinhTrangKP, loaiVP)
+    saved=preset.map(function(v){return {nd:v.nd||"",vt:v.viTri||"",bpkp:v.bienPhapKP||"",ttkp:v.tinhTrangKP||"",loai:Array.isArray(v.loaiVP)?v.loaiVP:[]};});
+  } else {
+    // giữ lại nội dung đang nhập dở
+    saved=[];
+    tbody.querySelectorAll("tr").forEach(function(tr,i){
+      var msEl=tr.querySelector(".ms-trigger");
+      saved[i]={
+        nd:  (tr.querySelector(".vp-nd")  ||{}).value||"",
+        vt:  (tr.querySelector(".vp-vt")  ||{}).value||"",
+        bpkp:(tr.querySelector(".vp-bpkp")||{}).value||"",
+        ttkp:(tr.querySelector(".vp-ttkp")||{}).value||"",
+        loai: msEl?(msEl._sel||[]):[]
+      };
+    });
+  }
 
   tbody.innerHTML="";
   for(var i=0;i<n;i++){
     var s=saved[i]||{};
-    var msId="ms12-"+i;
+    var msId="ms12-"+(_msSeq++);
     var tr=document.createElement("tr");
     tr.innerHTML='<td class="stt-col">'+(i+1)+'</td>'+
       '<td><input class="inp vp-nd"   type="text" placeholder="Mô tả vi phạm..."     value="'+esc(s.nd||"")+'"></td>'+
@@ -1088,17 +1156,20 @@ function delRow(btn){
 /* ═══════════════════════════════════════════════════
    SAVE CẤP 1/2
 ═══════════════════════════════════════════════════ */
-function saveCap12(){
+// Lưu MỘT khối đơn vị (tương ứng 1 tháng, 1 đơn vị) — mỗi tháng lưu riêng.
+function saveMonth(btn){
+  var block=btn.closest(".qm-block");
   var u=currentUser();
-  var thang=getThang12();
-  var donVi=getDonVi();
-  var soLan=parseInt(document.getElementById("c12SoLan").value)||0;
-  var soVP=parseInt(document.getElementById("c12SoVP").value)||0;
-  if(!thang){toast("Vui lòng chọn tháng kiểm tra.",false);return;}
-  if(!donVi){toast("Vui lòng chọn hoặc nhập Đơn vị.",false);document.getElementById("c12DonVi").focus();return;}
+  var thang=block.dataset.ym;
+  var editId=block.dataset.editId||"";
+  var donVi=getDonViM(block);
+  var soLan=parseInt(block.querySelector(".qm-solan").value)||0;
+  var soVP=parseInt(block.querySelector(".qm-sovp").value)||0;
+  if(!thang){toast("Không xác định được tháng.",false);return;}
+  if(!donVi){toast("Tháng "+thang+": Vui lòng chọn hoặc nhập Đơn vị.",false);block.querySelector(".qm-donvi").focus();return;}
 
   var violations=[];
-  var rows=document.querySelectorAll("#c12VPBody tr");
+  var rows=block.querySelectorAll(".qm-vpbody tr");
   for(var ri=0;ri<rows.length;ri++){
     var tr=rows[ri];
     var nd=  (tr.querySelector(".vp-nd")  ||{}).value||"";
@@ -1106,7 +1177,7 @@ function saveCap12(){
     var bpkp=(tr.querySelector(".vp-bpkp")||{}).value||"";
     var ttkp=(tr.querySelector(".vp-ttkp")||{}).value||"";
     var msEl=tr.querySelector(".ms-trigger");
-    var loai=msEl?(msEl._sel||[]||[]):[];
+    var loai=msEl?(msEl._sel||[]):[];
     var rowNum=ri+1;
     if(!nd.trim())  {toast("Hàng "+rowNum+": Vui lòng nhập Nội dung vi phạm.",false);tr.querySelector(".vp-nd").focus();return;}
     if(!vt.trim())  {toast("Hàng "+rowNum+": Vui lòng nhập Vị trí ghi nhận.",false);tr.querySelector(".vp-vt").focus();return;}
@@ -1116,20 +1187,22 @@ function saveCap12(){
     violations.push({nd:nd.trim(),viTri:vt.trim(),bienPhapKP:bpkp.trim(),tinhTrangKP:ttkp,loaiVP:loai});
   }
 
-  var item={id:editId12||genId(),type:currentCap,thang:thang,donVi:donVi,soLanKiemTra:soLan,soViPham:soVP,violations:violations,createdBy:u?u.username:"?",createdAt:new Date().toISOString()};
+  var item={id:editId||genId(),type:currentCap,thang:thang,donVi:donVi,soLanKiemTra:soLan,soViPham:soVP,violations:violations,createdBy:u?u.username:"?",createdAt:new Date().toISOString()};
   var list=load(LS_KEY12,[]);
-  if(editId12) list=list.map(function(r){return r.id===editId12?item:r;}); else list.push(item);
+  if(editId) list=list.map(function(r){return r.id===editId?item:r;}); else list.push(item);
   save(LS_KEY12,list);
 
   if(typeof DB!=="undefined"){
     var flat=Object.assign({},item,{violations:JSON.stringify(item.violations)});
-    (editId12?DB.update(SHEET12,item.id,flat):DB.insert(SHEET12,flat)).catch(function(e){
+    (editId?DB.update(SHEET12,item.id,flat):DB.insert(SHEET12,flat)).catch(function(e){
       if(e.message&&e.message.indexOf("tìm thấy")>=0)return DB.insert(SHEET12,flat);
       console.warn(e);
     });
   }
-  toast("✅ Đã lưu "+CAP_LABELS[currentCap]+" tháng "+thang);
-  resetForm(); switchTab("danhsach");
+  // đánh dấu block đã lưu → lần lưu sau sẽ cập nhật thay vì tạo mới
+  block.dataset.editId=item.id;
+  renderList();
+  toast("✅ Đã lưu "+CAP_LABELS[currentCap]+" tháng "+thang+" — "+donVi);
 }
 
 /* ═══════════════════════════════════════════════════
@@ -1201,11 +1274,7 @@ function resetForm(){
   document.getElementById("noPermMsg").style.display="none";
   document.getElementById("formCap12").style.display="none";
   document.getElementById("formCap34").style.display="none";
-  document.getElementById("c12DonVi").value="";
-  document.getElementById("c12DonViKhac").value="";
-  document.getElementById("c12DonViKhac").style.display="none";
-  document.getElementById("c12SoLan").value=""; document.getElementById("c12SoVP").value="";
-  document.getElementById("c12VPWrap").style.display="none"; document.getElementById("c12VPBody").innerHTML="";
+  var qWrap=document.getElementById("c12QuarterWrap"); if(qWrap) qWrap.innerHTML="";
   document.getElementById("c34Noi").value=""; document.getElementById("c34TenKhac").value="";
   document.getElementById("doanBody").innerHTML=""; document.getElementById("c34VPBody").innerHTML="";
   addDoanRow(); addVPRow34();
@@ -1494,17 +1563,17 @@ function renderBaoCao(){
 function renderList(){
   var u=currentUser();
   var capF=document.getElementById("filterCap").value;
-  var thangF=document.getElementById("filterThangSel").value; // số tháng "1"-"12" hoặc ""
+  var quyF=document.getElementById("filterQuySel").value;   // "1"-"4" hoặc ""
   var namF=document.getElementById("filterNamSel").value;     // năm "2026" hoặc ""
   var all=load(LS_KEY12,[]).concat(load(LS_KEY34,[]));
   if(capF) all=all.filter(function(r){return r.type===capF;});
-  if(namF||thangF) all=all.filter(function(r){
+  if(namF||quyF) all=all.filter(function(r){
     var ym=r.thang||(r.ngayKT?r.ngayKT.slice(0,7):""); // "YYYY-MM"
     if(!ym) return false;
     var parts=ym.split("-");
-    var y=parts[0]; var m=String(parseInt(parts[1]||"0"));
+    var y=parts[0]; var q=String(quyCuaThang(parts[1]||"0"));
     if(namF&&y!==namF) return false;
-    if(thangF&&m!==thangF) return false;
+    if(quyF&&q!==quyF) return false;
     return true;
   });
   all.sort(function(a,b){
@@ -1810,28 +1879,14 @@ function editRecord(id,sheet){
   selectCap(r.type, true);
 
   if(sheet==="12"){
-    editId12=id;
-    setThang12(r.thang||"");
-    setDonVi(r.donVi||"");
-    document.getElementById("c12SoLan").value=r.soLanKiemTra||0;
-    var vps=r.violations?(typeof r.violations==="string"?JSON.parse(r.violations):r.violations):[];
-    document.getElementById("c12SoVP").value=vps.length;
-    renderVP12();
-    // Điền dữ liệu vào từng hàng sau khi render
-    setTimeout(function(){
-      document.querySelectorAll("#c12VPBody tr").forEach(function(tr,i){
-        var v=vps[i]; if(!v) return;
-        var nd=tr.querySelector(".vp-nd");     if(nd)   nd.value=v.nd||"";
-        var vt=tr.querySelector(".vp-vt");     if(vt)   vt.value=v.viTri||"";
-        var bp=tr.querySelector(".vp-bpkp");   if(bp)   bp.value=v.bienPhapKP||"";
-        var tt=tr.querySelector(".vp-ttkp");   if(tt)   tt.value=v.tinhTrangKP||"";
-        var msWrap=tr.querySelector(".ms-wrap");
-        if(msWrap&&v.loaiVP){
-          var msId=msWrap.id; msWrap.innerHTML="";
-          buildMS(msId, Array.isArray(v.loaiVP)?v.loaiVP:[]);
-        }
-      });
-    },50);
+    // Mở đúng quý + năm chứa tháng của bản ghi, rồi cuộn tới & nạp sẵn dữ liệu
+    var parts=(r.thang||"").split("-");
+    var y=parseInt(parts[0],10), m=parseInt(parts[1],10);
+    if(y&&m){
+      document.getElementById("c12NamSel").value=y;
+      document.getElementById("c12QuySel").value=quyCuaThang(m);
+    }
+    renderQuarterBlocks(r);
   } else {
     editId34=id;
     document.getElementById("c34Ngay").value=r.ngayKT||"";
