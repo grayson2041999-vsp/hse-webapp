@@ -277,6 +277,7 @@
         <input id="cpns-search" class="search-input" type="search" autocomplete="off" placeholder="Tìm theo họ tên, danh số..." oninput="cpRenderNhanSu()" style="flex:1;min-width:240px;">
         <select id="cpns-donvi" onchange="cpnsOnUnitChange()" style="min-width:180px;"></select>
         <select id="cpns-chucdanh" onchange="cpRenderNhanSu()" style="min-width:200px;"></select>
+        <button class="btn btn-outline" id="cpns-export-btn" onclick="cpnsExportExcel()" disabled title="Chọn đơn vị để xuất Excel">⬇️ Xuất Excel</button>
       </div>
       <div id="cpns-count" style="font-size:12.5px;color:var(--text-light);margin-bottom:8px;"></div>
       <div id="cpns-nhom-bar" style="margin-bottom:10px;"></div>
@@ -1598,10 +1599,57 @@ function cpOpenTraCuu(){
       if(_ed.length===1)dvSel.value=_ed[0];
     }
   }catch(e){}
+  _cpnsUpdateExportBtn();
   cpRenderNhanSu();
 }
 // Đổi bộ lọc đơn vị → xoá các hàng nhập dở, thoát chế độ sửa
-function cpnsOnUnitChange(){ _cpnsDrafts=[]; _cpnsEditId=null; cpRenderNhanSu(); }
+function cpnsOnUnitChange(){ _cpnsDrafts=[]; _cpnsEditId=null; _cpnsUpdateExportBtn(); cpRenderNhanSu(); }
+// Bật/tắt nút Xuất Excel theo đơn vị đang chọn ở bộ lọc
+function _cpnsUpdateExportBtn(){
+  var dv=document.getElementById('cpns-donvi').value||'';
+  var btn=document.getElementById('cpns-export-btn');
+  if(!btn)return;
+  btn.disabled=!dv;
+  btn.title=dv?('Xuất danh sách nhân viên đơn vị "'+dv+'" ra Excel'):'Chọn đơn vị để xuất Excel';
+}
+// Xuất Excel danh sách nhân viên của đơn vị đang chọn (tôn trọng bộ lọc chức danh / tìm kiếm hiện tại)
+function cpnsExportExcel(){
+  var dv=document.getElementById('cpns-donvi').value||'';
+  if(!dv){showToast('Vui lòng chọn đơn vị trước khi xuất Excel.','error');return;}
+  if(typeof XLSX==='undefined'){showToast('⚠️ Thư viện Excel chưa tải xong.','error');return;}
+  var cd=document.getElementById('cpns-chucdanh').value||'';
+  var q=(document.getElementById('cpns-search').value||'').trim().toLowerCase();
+  var list=daNhanVien.filter(function(n){
+    if(n.boPhan!==dv)return false;
+    if(cd&&n.chucDanh!==cd)return false;
+    if(q&&(((n.ten||'')+' '+(n.danhSo||'')).toLowerCase().indexOf(q)<0))return false;
+    return true;
+  }).sort(function(a,b){return (a.ten||'').localeCompare(b.ten||'','vi');});
+  if(!list.length){showToast('Không có nhân viên nào để xuất.','warning');return;}
+  var groups=_cpnsUnitGroups(dv);
+  var headers=['STT','Danh số','Họ và Tên','Chức danh','Cỡ QA','Cỡ Giày','T.cấp Quần áo','T.cấp Giày','T.cấp Mũ BH','T.cấp Kính BH','T.cấp Áo mưa','T.cấp QA thợ hàn'];
+  var sub='Xuất ngày: '+new Date().toLocaleDateString('vi-VN')+(cd?' · Chức danh: '+cd:'')+(q?' · Tìm kiếm: "'+q+'"':'');
+  var rows=[['DANH SÁCH NHÂN VIÊN – '+dv.toUpperCase()],[sub],[],headers];
+  var stt=1;
+  if(groups.length){
+    groups.forEach(function(g){
+      var mem=list.filter(function(n){return String(n.nhomId)===String(g.id);});
+      if(!mem.length)return;
+      rows.push(['[Nhóm] '+g.ten]);
+      mem.forEach(function(n){rows.push(_nvToExcelRow(n,stt++));});
+    });
+    var noG=list.filter(function(n){return !n.nhomId||!groups.find(function(g){return String(g.id)===String(n.nhomId);});});
+    if(noG.length){rows.push(['[Chưa xếp nhóm]']);noG.forEach(function(n){rows.push(_nvToExcelRow(n,stt++));});}
+  } else {
+    list.forEach(function(n){rows.push(_nvToExcelRow(n,stt++));});
+  }
+  var ws=XLSX.utils.aoa_to_sheet(rows);
+  ws['!cols']=[{wch:5},{wch:13},{wch:26},{wch:22},{wch:8},{wch:8},{wch:15},{wch:13},{wch:13},{wch:13},{wch:15},{wch:20}];
+  var wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,ws,'Nhân viên');
+  XLSX.writeFile(wb,'NhanVien_'+dv.replace(/[\/\\?*[\]:]/g,'_')+'.xlsx');
+  showToast('✅ Đã xuất Excel — '+dv+' ('+list.length+' người)!');
+}
 
 /* ===================== NHẬP INLINE (Tra cứu nhân sự) ===================== */
 var _cpnsEditId=null;      // id nhân viên đang sửa inline (hoặc null)
