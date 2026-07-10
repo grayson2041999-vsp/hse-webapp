@@ -639,7 +639,7 @@ function buildTopbar(){
   }
   var u2=currentUser();
   var desc=document.getElementById("pageDesc");
-  if(!u2) desc.innerHTML='<span style="color:var(--text-light)">Bạn đang xem ở chế độ khách. </span><a href="#" onclick="openLoginModal();return false;" style="color:var(--primary);font-weight:600">Đăng nhập</a><span style="color:var(--text-light)"> để thao tác.</span>';
+  if(!u2) desc.textContent='';
   else if(canEdit(u2)) desc.textContent='Bạn có quyền thao tác trên trang này.';
   else desc.textContent='Bạn chỉ có quyền xem trang này.';
 }
