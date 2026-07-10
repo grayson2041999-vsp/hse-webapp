@@ -1774,7 +1774,7 @@ function _cpnsLiveRow(n,stt,draggable,grpSelHtml){
   return '<tr'+dragAttr+'>'+
     sttCell+
     '<td><code style="font-size:12px;color:var(--text-light);">'+_escH(n.danhSo||'')+'</code></td>'+
-    '<td><strong>'+_escH(n.ten||'')+'</strong>'+(n.gioiTinh==='nu'?' <span style="font-size:10px;color:var(--text-light);">(Nữ)</span>':'')+'</td>'+
+    '<td><strong>'+_escH(n.ten||'')+'</strong>'+(n.gioiTinh==='nu'?' <span style="display:inline-block;margin-left:4px;font-size:10px;font-weight:600;line-height:1.4;color:#c2185b;background:#fde4ef;border:1px solid #f8bbd0;padding:0 7px;border-radius:9px;vertical-align:1px;">Nữ</span>':'')+'</td>'+
     '<td style="font-size:12.5px;">'+_escH(n.chucDanh||'')+'</td>'+
     '<td style="font-size:12.5px;">'+_escH(n.boPhan||'—')+'</td>'+
     '<td style="text-align:center;">'+_escH(n.coQuanAo||'')+'</td>'+
@@ -1931,7 +1931,7 @@ function cpRenderNhanSu(){
   var admin=(typeof isAdmin==='function'&&isAdmin());
   // Ô dữ liệu chung (danh số → QA thợ hàn) cho hàng chờ duyệt / bị trả lại; overlayHtml = chữ đè lên ô Họ tên
   function _cpnsPRCells(n,overlayHtml){
-    var genderTag=(n.gioiTinh==='nu'?' <span style="font-size:10px;color:var(--text-light);">(Nữ)</span>':'');
+    var genderTag=(n.gioiTinh==='nu'?' <span style="display:inline-block;margin-left:4px;font-size:10px;font-weight:600;line-height:1.4;color:#c2185b;background:#fde4ef;border:1px solid #f8bbd0;padding:0 7px;border-radius:9px;vertical-align:1px;">Nữ</span>':'');
     var nameCell=overlayHtml
       ? '<td style="position:relative;"><strong>'+_escH(n.ten||'')+'</strong>'+genderTag+'<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;">'+overlayHtml+'</div></td>'
       : '<td><strong>'+_escH(n.ten||'')+'</strong>'+genderTag+'</td>';
@@ -2117,7 +2117,7 @@ function _cpnvInputRow(kind,key,data){
 }
 function _cpnvViewRow(n,stt,pending){
   var cells='<td><code style="font-size:12px;color:var(--text-light);">'+_escH(n.danhSo||'')+'</code></td>'+
-    '<td><strong>'+_escH(n.ten||'')+'</strong>'+(n.gioiTinh==='nu'?' <span style="font-size:10px;color:var(--text-light);">(Nữ)</span>':'')+'</td>'+
+    '<td><strong>'+_escH(n.ten||'')+'</strong>'+(n.gioiTinh==='nu'?' <span style="display:inline-block;margin-left:4px;font-size:10px;font-weight:600;line-height:1.4;color:#c2185b;background:#fde4ef;border:1px solid #f8bbd0;padding:0 7px;border-radius:9px;vertical-align:1px;">Nữ</span>':'')+'</td>'+
     '<td style="font-size:12.5px;">'+_escH(n.chucDanh||'')+'</td>'+
     '<td style="text-align:center;">'+_escH(n.coQuanAo||'')+'</td>'+
     '<td style="text-align:center;">'+_escH(n.coGiay||'')+'</td>';
@@ -4922,7 +4922,7 @@ function _cpwInputRow(kind,key,data){
 function _cpwDataCells(n,nameExtra){
   var g=_cpwFmtThang;
   return '<td><code style="font-size:12px;color:var(--text-light);">'+_escH(n.danhSo||'')+'</code></td>'+
-    '<td><strong>'+_escH(n.ten||'')+'</strong>'+(n.gioiTinh==='nu'?' <span style="font-size:10px;color:var(--text-light);">(Nữ)</span>':'')+(nameExtra||'')+'</td>'+
+    '<td><strong>'+_escH(n.ten||'')+'</strong>'+(n.gioiTinh==='nu'?' <span style="display:inline-block;margin-left:4px;font-size:10px;font-weight:600;line-height:1.4;color:#c2185b;background:#fde4ef;border:1px solid #f8bbd0;padding:0 7px;border-radius:9px;vertical-align:1px;">Nữ</span>':'')+(nameExtra||'')+'</td>'+
     '<td style="font-size:12.5px;">'+_escH(n.chucDanh||'')+'</td>'+
     '<td style="text-align:center;">'+_escH(n.coQuanAo||'')+'</td>'+
     '<td style="text-align:center;">'+_escH(n.coGiay||'')+'</td>'+
