@@ -111,6 +111,19 @@
       return { action:"close", module:label, detail:"đã đóng " + noun, ref_table:sheet, ref_id:args[1] };
     return { action:"update", module:label, detail:"đã cập nhật " + noun, ref_table:sheet, ref_id:args[1] };
   }
+  // bulkWrite ghi đè cả bảng → so cache cũ với danh sách mới để biết thêm/xoá/sửa
+  function _buildBulk(sheet, cfg, before, rows) {
+    var noun = cfg.noun, label = cfg.label;
+    rows = rows || [];
+    var oldIds = (before || []).map(function (r) { return String(r.id); });
+    var newIds = rows.map(function (r) { return String(r.id); });
+    var added = rows.filter(function (r) { return oldIds.indexOf(String(r.id)) < 0; });
+    var removed = oldIds.filter(function (id) { return newIds.indexOf(id) < 0; }).length;
+    if (added.length) { var nm = _nameOf(added[0]); return { action:"create", module:label, detail:"đã thêm " + noun + (nm ? " “" + nm + "”" : ""), ref_table:sheet, ref_id:added[0].id }; }
+    if (removed) return { action:"delete", module:label, detail:"đã xoá " + noun, ref_table:sheet };
+    return { action:"update", module:label, detail:"đã cập nhật " + noun, ref_table:sheet };
+  }
+
   function hookDB() {
     if (typeof DB === "undefined" || DB.__actHooked) return;
     DB.__actHooked = true;
@@ -128,6 +141,21 @@
         return p;
       };
     });
+    // bulkWrite (VD trang SOP, Kế hoạch) — cần bắt riêng
+    var origBulk = DB.bulkWrite;
+    if (typeof origBulk === "function") {
+      DB.bulkWrite = function (sheet, rows) {
+        var cfg = MODULES[sheet], before = null;
+        try { before = cfg && DB.getCached ? DB.getCached(sheet) : null; } catch (e) {}
+        var p = origBulk.apply(DB, arguments);
+        try {
+          if (cfg && p && typeof p.then === "function") {
+            p.then(function () { log(_buildBulk(sheet, cfg, before, rows)); }, function () {});
+          }
+        } catch (e) {}
+        return p;
+      };
+    }
   }
 
   /* =========================================================
@@ -380,7 +408,7 @@
       bell.setAttribute("aria-label", "Hoạt động gần đây");
       bell.innerHTML = "📣";
       bell.style.cssText = "position:fixed;right:18px;bottom:18px;width:46px;height:46px;border-radius:50%;border:none;" +
-        "background:" + C.primary + ";color:#fff;font-size:19px;cursor:pointer;z-index:1000;box-shadow:0 6px 18px rgba(0,32,101,.28);";
+        "background:" + C.primary + ";color:#fff;font-size:19px;cursor:pointer;z-index:40;box-shadow:0 6px 18px rgba(0,32,101,.28);";
       bell.addEventListener("click", function () { _open = !_open; applyMode(); });
       document.body.appendChild(bell);
     }
@@ -397,7 +425,7 @@
     var cl = host.querySelector("#hse-act-close");
     if (narrow()) {
       unreserve();
-      host.style.zIndex = "1001";
+      host.style.zIndex = "40";
       host.style.boxShadow = "-6px 0 22px rgba(0,32,101,.20)";
       host.style.display = _open ? "flex" : "none";
       ensureBell();
@@ -405,7 +433,7 @@
     } else {
       _open = false;
       removeBell();
-      host.style.zIndex = "840";
+      host.style.zIndex = "15";
       host.style.boxShadow = "-2px 0 10px rgba(0,32,101,.05)";
       host.style.display = "flex";
       reserve();
