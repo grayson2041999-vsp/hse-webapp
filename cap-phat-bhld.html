@@ -1088,6 +1088,8 @@ let daTonKho=(()=>{
 let daTonKhoLichSu=(()=>{const bhld=BHLD.lsGet('lich_su_nhap_xuat');return bhld.length?bhld:loadData('tonkho-lichsu',[]);})();
 let daGroups=(()=>{const bhld=BHLD.lsGet('nhom_nv');return bhld.length?bhld:loadData('nhom-nv',[]);})();
 let phieuData=loadData('phieu-data',{});
+// Vật tư khác cấp phát theo quý+đơn vị (ngoài 8 nhóm định mức, còn tồn kho). Cấu trúc: phieuExtra[quyStr][donVi]=[{tbId,ten,ma,donVi,soLuong}]
+let phieuExtra=loadData('phieu-extra',{});
 let daQuyList=loadData('quy-list',null);
 let editingIds={nv:null,dm:null,dinhmuc:null,nhom:null,nhomtb:null,chucdanh:null};
 
@@ -3930,7 +3932,7 @@ function exportPhieuById(id,format){
     // Reuse existing phiếu quý word export với data từ phieu_requests
     const items=_parsePhieuItems(p.items);const td=`border:1px solid #000;padding:4px 6px;vertical-align:middle;`;const th=td+`text-align:center;background:#efefef;font-weight:bold;`;
     const[q,y]=p.quyStr.split('/');const quyLabel=`Quý ${q.slice(1)} năm ${y}`;
-    const dataRows=items.reduce((acc,it)=>{const key=it.tbId||it.ma||it.ten;if(!acc.find(r=>r.key===key))acc.push({key,ma:it.ma||_maByTbId(it.tbId),ten:it.ten,donVi:it.donVi||_dvtByTbId(it.tbId),soLuong:0,thucTe:0});const r=acc.find(x=>x.key===key);r.soLuong+=it.soLuongDinhMuc||0;if(it.thucTe!==''&&it.thucTe!==undefined)r.thucTe+=parseFloat(it.thucTe)||0;return acc;},[]).map((s,i)=>`<tr><td style="${td}text-align:center;">${i+1}</td><td style="${td}">${s.ma}</td><td style="${td}">${s.ten}</td><td style="${td}text-align:center;">${s.donVi}</td><td style="${td}text-align:center;">${s.thucTe||''}</td><td style="${td}"></td><td style="${td}"></td></tr>`).join('');
+    const dataRows=items.reduce((acc,it)=>{const key=it.tbId||it.ma||it.ten;if(!acc.find(r=>r.key===key))acc.push({key,ma:it.ma||_maByTbId(it.tbId),ten:it.ten,donVi:it.donVi||_dvtByTbId(it.tbId),soLuong:0,thucTe:0,ghiChu:it.ghiChu||''});const r=acc.find(x=>x.key===key);r.soLuong+=it.soLuongDinhMuc||0;if(it.thucTe!==''&&it.thucTe!==undefined)r.thucTe+=parseFloat(it.thucTe)||0;if(it.ghiChu&&!r.ghiChu)r.ghiChu=it.ghiChu;return acc;},[]).map((s,i)=>`<tr><td style="${td}text-align:center;">${i+1}</td><td style="${td}">${s.ma}</td><td style="${td}">${s.ten}</td><td style="${td}text-align:center;">${s.donVi}</td><td style="${td}text-align:center;">${s.thucTe||''}</td><td style="${td}"></td><td style="${td}">${s.ghiChu||''}</td></tr>`).join('');
     const blankRow=`<tr>${'<td style="'+td+'">&nbsp;</td>'.repeat(7)}</tr>`;
     const html=`<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40"><head><meta charset="utf-8"><style>@page{margin:2cm 2cm 2cm 2.5cm;size:A4 portrait;}body{font-family:"Times New Roman",serif;font-size:12pt;}table{border-collapse:collapse;}p{margin:0;}</style></head><body>
 <table style="width:100%;margin-bottom:10pt;"><tr><td rowspan="3" style="${td}width:62%;text-align:center;font-size:11pt;"><strong>XN DVC&amp;CƯVTTB</strong><br><strong>QUY TRÌNH</strong><br>CẤP PHÁT TRANG BỊ BẢO HỘ LAO ĐỘNG VÀ PHƯƠNG TIỆN BẢO HỘ CÁ NHÂN</td><td style="${td}text-align:center;font-weight:bold;">QT-KTVT-05/BM-03</td></tr><tr><td style="${td}">Lần ban hành: 01</td></tr><tr><td style="${td}">Ngày hiệu lực: 01.02.2022</td></tr></table>
@@ -4177,6 +4179,14 @@ function exportPhieuMatrixExcel(quyArg,dvArg){
   aoa.push(pad());
   var lg=pad(); lg[0]='Ghi chú: Quần áo — L: Liền, R: Rời, N: Nữ. Giày — T: Thấp cổ, C: Cao cổ, U: Ủng da. QA thợ hàn — H: Bộ đồ hàn. Số sau chữ là cỡ (VD: L52 = Bộ liền quần cỡ 52). Các cột Mũ, Kính, Áo mưa, Găng tay, Khẩu trang ghi số lượng cấp.';
   aoa.push(lg); merges.push({s:{r:aoa.length-1,c:0},e:{r:aoa.length-1,c:lastC}});
+  // Mục "Vật tư khác" (cấp theo đơn vị, ngoài 8 nhóm định mức)
+  var _extra=(dv&&typeof _cpwExtraGet==='function')?_cpwExtraGet(quyStr,dv).filter(function(s){return Number(s.soLuong)>0;}):[];
+  if(_extra.length){
+    aoa.push(pad());
+    var eh=pad(); eh[0]='VẬT TƯ KHÁC CẤP PHÁT (ngoài định mức)'; aoa.push(eh); merges.push({s:{r:aoa.length-1,c:0},e:{r:aoa.length-1,c:lastC}});
+    var ehh=pad(); ehh[0]='STT'; ehh[1]='Mã vật tư'; ehh[2]='Tên vật tư'; ehh[3]='ĐVT'; ehh[4]='SL cấp'; ehh[5]='Ký nhận'; aoa.push(ehh);
+    _extra.forEach(function(ex,i){ var row=pad(); row[0]=i+1; row[1]=ex.ma||''; row[2]=ex.ten||''; row[3]=ex.donVi||''; row[4]=ex.soLuong; aoa.push(row); });
+  }
   var ws=XLSX.utils.aoa_to_sheet(aoa); ws['!merges']=merges;
   var cols=[{wch:5},{wch:12},{wch:24}]; CATS.forEach(function(){cols.push({wch:9});cols.push({wch:9});}); ws['!cols']=cols;
   var wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,ws,'Cấp phát');
@@ -4799,21 +4809,36 @@ function cpwRender(){
   var dv=_cpwDonVi,q=_cpwQuy,st=_cpwState;
   var pend=_cpwPendingChanges(dv),phieu=_cpwPhieu(dv,q);
   var b1done=st.b1TrangThai==='dat';
+  var pStatus=phieu?phieu.status:null;
   var s1=b1done?'dat':(pend.length?'cho_duyet':'dang_lam');
-  var s2=!b1done?'khoa':(!phieu?'chua':(phieu.status==='pending'?'cho_duyet':(phieu.status==='approved'?'dat':'tra_ve')));
-  var b2done=s2==='dat';
-  var s3=!b2done?'khoa':(st.b3TrangThai==='xong'?'xong':'san_sang');
+  // Bước 2 đã xác nhận số lượng: dùng cột "buoc" sẵn có (>=3), hoặc đã có phiếu / đã hoàn tất → true (migrate phiếu đang chạy)
+  var b2done=(Number(st.buoc)||0)>=3||!!phieu||st.b3TrangThai==='xong';
+  // Bước 2 — Điền số lượng
+  var s2;
+  if(!b1done)s2='khoa';
+  else if(pStatus==='pending'||pStatus==='approved')s2='dat';
+  else s2=b2done?'dat':'dang_lam';
+  // Bước 3 — Chọn vật tư khác & gửi duyệt
+  var s3;
+  if(!b2done)s3='khoa';
+  else if(pStatus==='pending')s3='cho_duyet';
+  else if(pStatus==='approved')s3='dat';
+  else s3='san_sang';
+  // Bước 4 — Xuất phiếu & trình ký (mở khi phiếu được duyệt)
+  var s4=(pStatus==='approved')?(st.b3TrangThai==='xong'?'xong':'san_sang'):'khoa';
   var html='';
   html+=_cpwStepCard(1,'Kiểm tra danh sách nhân viên','search',s1,cpwStep1Body(s1,pend,b2done));
   html+=_cpwStepCard(2,'Điền số lượng yêu cầu cấp phát','edit',s2,cpwStep2Body(s2,phieu));
-  html+=_cpwStepCard(3,'Xuất phiếu & trình ký','file',s3,cpwStep3Body(s3,phieu));
+  html+=_cpwStepCard(3,'Chọn vật tư khác & gửi duyệt','pkg',s3,cpwStep3ExtraBody(s3,phieu));
+  html+=_cpwStepCard(4,'Xuất phiếu & trình ký','file',s4,cpwStep4Body(s4,phieu));
   if(_cpwDonVi==='Test'&&typeof canEditUnit==='function'&&canEditUnit('Test')){
     html+='<div style="margin-top:6px;text-align:right;"><button class="btn btn-outline btn-sm" style="color:var(--danger);border-color:#eab7b2;" onclick="cpwResetTest()">'+_ic('undo',15)+' Reset đơn vị Test</button></div>';
   }
   document.getElementById('cpw-steps').innerHTML=html;
   if(s1==='dang_lam'){ _cpwListReadOnly=false; cpwRenderList(); } // nhúng bảng kiểm tra/sửa vào Bước 1
   else if(s1==='cho_duyet'){ _cpwListReadOnly=true; cpwRenderList(); } // xem read-only trong lúc chờ duyệt
-  if(s2==='chua'||s2==='tra_ve')cpwRenderQuantity(); // nhúng bảng nhập số lượng vào Bước 2
+  if(s2==='dang_lam')cpwRenderQuantity(); // nhúng bảng nhập số lượng vào Bước 2
+  if(s3==='san_sang')cpwRenderExtra();     // nhúng bảng chọn vật tư khác vào Bước 3
 }
 function cpwStep1Body(s1,pend,b2done){
   if(s1==='dat'){
@@ -4835,15 +4860,22 @@ function cpwStep1Body(s1,pend,b2done){
 }
 function cpwStep2Body(s2,phieu){
   if(s2==='khoa')return '<div style="display:flex;align-items:center;gap:6px;font-size:13px;color:var(--text-light);">'+_ic('lock',15)+'Hoàn tất Bước 1 để mở bước này.</div>';
-  if(s2==='dat')return '<div style="display:flex;align-items:center;gap:6px;color:var(--success);font-size:13.5px;">'+_ic('check',16)+'Phiếu số lượng đã được Admin duyệt.</div>';
-  if(s2==='cho_duyet')return '<div style="display:flex;align-items:center;gap:6px;color:var(--warning);font-size:13.5px;">'+_ic('hour',16)+'Phiếu đã gửi, đang chờ Admin duyệt. Bước 3 sẽ mở khi được duyệt.</div>';
-  var head=(s2==='tra_ve')
-    ? '<div style="display:flex;align-items:flex-start;gap:6px;color:var(--danger);font-size:13.5px;margin-bottom:10px;">'+_ic('x',16)+'<span>Phiếu bị Admin trả về'+(phieu&&phieu.rejectReason?': <b>'+_escH(phieu.rejectReason)+'</b>':'')+'. Nhập lại số lượng rồi gửi duyệt lại.</span></div>'
-    : '<p style="font-size:13.5px;color:var(--text-light);margin:0 0 10px;">Điền số lượng cấp phát theo thực tế rồi gửi Admin phê duyệt.</p>';
-  return head+'<div id="cpw-b2-host"></div>';
+  if(phieu&&phieu.status==='pending')return '<div style="display:flex;align-items:center;gap:6px;color:var(--warning);font-size:13.5px;">'+_ic('hour',16)+'Phiếu đã gửi, đang chờ Admin duyệt.</div>';
+  if(phieu&&phieu.status==='approved')return '<div style="display:flex;align-items:center;gap:6px;color:var(--success);font-size:13.5px;">'+_ic('check',16)+'Số lượng đã được Admin duyệt.</div>';
+  if(s2==='dat')return '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">'+
+      '<span style="display:inline-flex;align-items:center;gap:6px;color:var(--success);font-size:13.5px;">'+_ic('check',16)+'Đã xác nhận số lượng cấp phát.</span>'+
+      '<button class="btn btn-outline btn-sm" onclick="cpwEditStep2()">'+_ic('edit',14)+' Sửa lại số lượng</button>'+
+    '</div>';
+  return '<p style="font-size:13.5px;color:var(--text-light);margin:0 0 10px;">Điền số lượng cấp phát theo thực tế, rồi bấm <b>Xác nhận &amp; tiếp tục</b>.</p><div id="cpw-b2-host"></div>';
 }
-function cpwStep3Body(s3,phieu){
-  if(s3==='khoa')return '<div style="display:flex;align-items:center;gap:6px;font-size:13px;color:var(--text-light);">'+_ic('lock',15)+'Hoàn tất Bước 2 (phiếu được duyệt) để mở bước này.</div>';
+function cpwStep3ExtraBody(s3,phieu){
+  if(s3==='khoa')return '<div style="display:flex;align-items:center;gap:6px;font-size:13px;color:var(--text-light);">'+_ic('lock',15)+'Hoàn tất Bước 2 để mở bước này.</div>';
+  if(s3==='cho_duyet')return '<div style="display:flex;align-items:center;gap:6px;color:var(--warning);font-size:13.5px;">'+_ic('hour',16)+'Phiếu đã gửi, đang chờ Admin duyệt. Bước 4 sẽ mở khi được duyệt.</div>';
+  if(s3==='dat')return '<div style="display:flex;align-items:center;gap:6px;color:var(--success);font-size:13.5px;">'+_ic('check',16)+'Phiếu đã được Admin duyệt.</div>';
+  return '<p style="font-size:13.5px;color:var(--text-light);margin:0 0 10px;">Chọn thêm vật tư khác còn tồn kho (ngoài 8 nhóm định mức) để đưa vào đề nghị — cấp theo đơn vị. Sau đó <b>Gửi Admin phê duyệt</b> (gồm cả số lượng ở Bước 2).</p><div id="cpw-b3-host"></div>';
+}
+function cpwStep4Body(s3,phieu){
+  if(s3==='khoa')return '<div style="display:flex;align-items:center;gap:6px;font-size:13px;color:var(--text-light);">'+_ic('lock',15)+'Hoàn tất Bước 3 (phiếu được duyệt) để mở bước này.</div>';
   if(s3==='xong')return '<div style="display:flex;align-items:center;gap:6px;color:var(--success);font-size:13.5px;">'+_ic('check',16)+'<span>Đã hoàn tất'+(_cpwState.hoanTatAt?' vào '+new Date(_cpwState.hoanTatAt).toLocaleDateString('vi-VN'):'')+'. Thời hạn cấp phát của nhân viên đã được cập nhật.</span></div>';
   return '<p style="font-size:13.5px;color:var(--text-light);margin:0 0 12px;">Xuất phiếu để trình ký. Sau khi trình ký, xác nhận để hệ thống cập nhật thời hạn cấp phát mới cho nhân viên.</p>'+
     '<div style="display:flex;gap:8px;flex-wrap:wrap;">'+
@@ -5188,7 +5220,7 @@ function cpwRenderQuantity(){
       '<th style="width:40px;text-align:center;">STT</th><th>Tên trang bị</th><th>Mã vật tư</th><th style="text-align:center;">ĐVT</th>'+
       '<th style="text-align:center;">Định mức</th><th style="text-align:center;">Yêu cầu thực tế</th>'+
     '</tr></thead><tbody id="cpw-b2-sum"></tbody></table></div>'+
-    '<div style="margin-top:14px;"><button class="btn btn-success btn-sm" onclick="cpwSubmitQuantity()">'+_ic('check',15)+' Gửi phê duyệt &amp; tiếp tục</button></div>';
+    '<div style="margin-top:14px;"><button class="btn btn-success btn-sm" onclick="cpwContinueStep2()">'+_ic('check',15)+' Xác nhận &amp; tiếp tục</button></div>';
   cpwUpdateB2Summary();
 }
 function cpwSaveField(quyStr,key,field,value,max){
@@ -5240,19 +5272,94 @@ function cpwFillEmp(nvId){
   if(typeof saveData==='function')saveData('phieu-data',phieuData);
   cpwRenderQuantity();
 }
+// ===================== BƯỚC 3: CHỌN VẬT TƯ KHÁC (ngoài 8 nhóm định mức, còn tồn kho) =====================
+function _cpwExtraGet(q,dv){ return (phieuExtra[q]&&phieuExtra[q][dv])?phieuExtra[q][dv]:[]; }
+function _cpwExtraSet(q,dv,arr){ if(!phieuExtra[q])phieuExtra[q]={}; phieuExtra[q][dv]=arr; if(typeof saveData==='function')saveData('phieu-extra',phieuExtra); }
+// Pool = danh mục còn tồn kho, thuộc nhóm KHÔNG rơi vào 8 cột định mức (category 'khac')
+function _cpwExtraPool(){
+  if(typeof daDanhMuc==='undefined'||!Array.isArray(daDanhMuc))return [];
+  return daDanhMuc.filter(function(dm){
+    var ton=(daTonKho&&daTonKho[dm.id])||0; if(ton<=0)return false;
+    var nhom=(typeof daNhomTB!=='undefined'&&Array.isArray(daNhomTB))?daNhomTB.find(function(n){return String(n.id)===String(dm.nhomId);}):null;
+    return _tbCategory(nhom)==='khac';
+  }).sort(function(a,b){return String(a.ten||'').localeCompare(String(b.ten||''),'vi');});
+}
+function cpwContinueStep2(){
+  if(!_lastBcRows.length){showToast('Chưa có dữ liệu số lượng.','warning');return;}
+  cpwSave({buoc:3}).then(function(){showToast('✅ Đã xác nhận số lượng. Chọn thêm vật tư khác (nếu có) rồi gửi duyệt.');cpwRender();});
+}
+function cpwEditStep2(){
+  var phieu=_cpwPhieu(_cpwDonVi,_cpwQuy);
+  if(phieu&&(phieu.status==='pending'||phieu.status==='approved')){showToast('Phiếu đã gửi/duyệt, không sửa lại số lượng được.','warning');return;}
+  cpwSave({buoc:2}).then(function(){cpwRender();});
+}
+function cpwRenderExtra(){
+  var host=document.getElementById('cpw-b3-host'); if(!host)return;
+  var quyStr=_cpwQuy, dv=_cpwDonVi;
+  // Bảo đảm _lastBcRows có dữ liệu (kể cả khi tải lại trang ngay ở bước 3) để lúc gửi duyệt còn số lượng bước 2
+  if(!_lastBcRows.length&&typeof computeQuyData==='function'){var _r=computeQuyData(quyStr,dv);_lastBcRows=(_r&&_r.rows)||[];}
+  var pool=_cpwExtraPool();
+  var sel=_cpwExtraGet(quyStr,dv); var selMap={}; sel.forEach(function(s){selMap[String(s.tbId)]=s.soLuong;});
+  var body='';
+  if(!pool.length){
+    body='<div style="padding:12px;color:var(--text-light);font-size:13px;background:#f8fafc;border:1px dashed var(--border);border-radius:8px;">Hiện không có vật tư nào khác còn tồn kho (ngoài 8 nhóm định mức). Bạn có thể bỏ qua và gửi duyệt.</div>';
+  } else {
+    var trs=pool.map(function(dm,i){
+      var nhom=(typeof daNhomTB!=='undefined')?daNhomTB.find(function(n){return String(n.id)===String(dm.nhomId);}):null;
+      var ton=(daTonKho&&daTonKho[dm.id])||0; var dvt=(nhom&&nhom.donVi)||''; var val=selMap[String(dm.id)]!==undefined?selMap[String(dm.id)]:'';
+      return '<tr>'+
+        '<td style="text-align:center;color:var(--text-light);">'+(i+1)+'</td>'+
+        '<td><strong>'+_escH(dm.ten||'')+'</strong></td>'+
+        '<td><code style="font-size:12px;color:var(--text-light);">'+_escH(dm.ma||'—')+'</code></td>'+
+        '<td style="text-align:center;font-size:12px;">'+_escH(dvt)+'</td>'+
+        '<td style="text-align:center;font-weight:700;color:var(--primary);">'+ton+'</td>'+
+        '<td style="text-align:center;"><input type="number" min="0" max="'+ton+'" step="1" value="'+val+'" style="width:66px;padding:4px 6px;border:1px solid var(--border);border-radius:5px;text-align:center;font-weight:700;color:var(--primary);" onchange="cpwOnExtraQty(this,'+dm.id+','+ton+')"></td>'+
+      '</tr>';
+    }).join('');
+    body='<div style="margin-bottom:8px;font-size:12px;color:var(--text-light);">Chỉ hiển thị vật tư còn tồn kho. Nhập số lượng cần cấp (để trống hoặc 0 = không cấp).</div>'+
+      '<div class="table-wrap" style="max-height:52vh;"><table style="font-size:13px;"><thead><tr>'+
+      '<th style="width:40px;text-align:center;">STT</th><th>Tên vật tư</th><th>Mã vật tư</th><th style="text-align:center;">ĐVT</th><th style="text-align:center;">Tồn kho</th><th style="text-align:center;">SL cấp</th>'+
+      '</tr></thead><tbody>'+trs+'</tbody></table></div>';
+  }
+  var selCount=sel.filter(function(s){return Number(s.soLuong)>0;}).length;
+  host.innerHTML=body+
+    '<div style="margin-top:14px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;">'+
+      '<button class="btn btn-outline btn-sm" onclick="cpwEditStep2()">'+_ic('undo',15)+' Quay lại Bước 2</button>'+
+      '<button class="btn btn-success btn-sm" onclick="cpwSubmitQuantity()">'+_ic('check',15)+' Gửi Admin phê duyệt</button>'+
+      '<span style="font-size:12px;color:var(--text-light);">'+(selCount?('Đã chọn '+selCount+' vật tư khác'):'Chưa chọn vật tư khác')+' · gửi duyệt sẽ gồm cả số lượng ở Bước 2</span>'+
+    '</div>';
+}
+function cpwOnExtraQty(el,tbId,ton){
+  var v=el.value;
+  if(v!==''&&Number(v)>Number(ton)){showToast('⚠️ Không được vượt tồn kho ('+ton+').','warning');v=String(ton);el.value=v;}
+  var quyStr=_cpwQuy, dv=_cpwDonVi;
+  var arr=_cpwExtraGet(quyStr,dv).filter(function(s){return String(s.tbId)!==String(tbId);});
+  var n=Number(v);
+  if(v!==''&&n>0){
+    var dm=(typeof daDanhMuc!=='undefined')?daDanhMuc.find(function(d){return String(d.id)===String(tbId);}):null;
+    var nhom=dm&&typeof daNhomTB!=='undefined'?daNhomTB.find(function(x){return String(x.id)===String(dm.nhomId);}):null;
+    arr.push({tbId:tbId,ten:dm?dm.ten:'',ma:dm?(dm.ma||''):'',donVi:(nhom&&nhom.donVi)||'',soLuong:n});
+  }
+  _cpwExtraSet(quyStr,dv,arr);
+}
 function cpwSubmitQuantity(){
   var quyStr=_cpwQuy, dv=_cpwDonVi;
   if(!quyStr||!dv){showToast('Thiếu quý hoặc đơn vị.','warning');return;}
-  if(!_lastBcRows.length){showToast('Không có dữ liệu cần duyệt.','warning');return;}
+  // Bảo đảm có dữ liệu số lượng bước 2 (kể cả khi tải lại trang ngay ở bước 3)
+  var rows=_lastBcRows.length?_lastBcRows:((typeof computeQuyData==='function'?(computeQuyData(quyStr,dv).rows):null)||[]); _lastBcRows=rows;
+  var extras=_cpwExtraGet(quyStr,dv).filter(function(s){return Number(s.soLuong)>0;});
+  if(!rows.length&&!extras.length){showToast('Không có dữ liệu cần duyệt.','warning');return;}
   var existing=BHLD.lsGet('phieu_requests').find(function(p){return p.type==='quy'&&p.quyStr===quyStr&&p.donVi===dv&&p.status==='pending';});
   if(existing){showToast('Phiếu '+quyStr+' – '+dv+' đã gửi, đang chờ duyệt.','warning');cpwRender();return;}
-  if(!confirm('Gửi phiếu quý '+quyStr+' – '+dv+' để Admin phê duyệt?'))return;
+  if(!confirm('Gửi phiếu quý '+quyStr+' – '+dv+' để Admin phê duyệt?'+(extras.length?('\n(Kèm '+extras.length+' vật tư khác)'):'')))return;
   var now=new Date().toISOString();var qData=phieuData[quyStr]||{};var itemsList=[];
-  _lastBcRows.forEach(function(r){r.items.forEach(function(it){var key=r.nv.id+'_'+it.tbId;var saved=qData[key]||{};itemsList.push({nvId:String(r.nv.id),nvTen:r.nv.ten,tbId:it.tbId,ten:it.ten,ma:it.ma||'',donVi:it.donVi||'',soLuongDinhMuc:it.soLuong,thucTe:saved.thucTe!==undefined?saved.thucTe:''});});});
+  rows.forEach(function(r){r.items.forEach(function(it){var key=r.nv.id+'_'+it.tbId;var saved=qData[key]||{};itemsList.push({nvId:String(r.nv.id),nvTen:r.nv.ten,tbId:it.tbId,ten:it.ten,ma:it.ma||'',donVi:it.donVi||'',soLuongDinhMuc:it.soLuong,thucTe:saved.thucTe!==undefined?saved.thucTe:''});});});
+  // Vật tư khác (theo đơn vị): không có định mức cá nhân, đánh dấu extra + ghi chú
+  extras.forEach(function(ex){itemsList.push({nvId:'',nvTen:'',tbId:ex.tbId,ten:ex.ten,ma:ex.ma||'',donVi:ex.donVi||'',soLuongDinhMuc:0,thucTe:ex.soLuong,extra:true,ghiChu:'Vật tư khác'});});
   var phieu={type:'quy',quyStr:quyStr,donVi:dv,status:'pending',items:JSON.stringify(itemsList),submittedBy:_getCurrentUserLabel(),submittedByUsername:_getCurrentUsername(),submittedAt:now,createdAt:now};
   BHLD.push.insert('phieu_requests',phieu).then(function(){
     showToast('✅ Đã gửi phiếu quý – đang chờ Admin duyệt.');
-    cpwSave({buoc:2}).then(cpwRender);
+    cpwSave({buoc:3}).then(cpwRender);
   }).catch(function(e){showToast('Gửi phiếu lỗi: '+(e&&e.message||e),'error');});
 }
 function cpwExport(){
@@ -5279,6 +5386,10 @@ function _cpwClearPhieuDataForTest(testNv){
     Object.keys(obj).forEach(function(key){ if(ids[key.split('_')[0]])delete obj[key]; });
   });
   if(typeof saveData==='function')saveData('phieu-data',phieuData);
+  // Dọn luôn vật tư khác của đơn vị Test
+  var changed=false;
+  Object.keys(phieuExtra||{}).forEach(function(q){ if(phieuExtra[q]&&phieuExtra[q].Test){delete phieuExtra[q].Test;changed=true;} });
+  if(changed&&typeof saveData==='function')saveData('phieu-extra',phieuExtra);
 }
 function cpwResetTest(){
   if(_cpwDonVi!=='Test'){showToast('Chỉ áp dụng cho đơn vị Test.','warning');return;}
