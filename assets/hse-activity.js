@@ -134,8 +134,19 @@
      GIAO DIỆN — CỬA SỔ FEED NỔI GÓC PHẢI
      ========================================================= */
   var HOST_ID = "hse-act-widget";
-  var _collapsed = false;
-  try { _collapsed = localStorage.getItem("hse_act_collapsed") === "1"; } catch (e) {}
+  var BELL_ID = "hse-act-bell";
+  var RAIL_W = 288;      // bề rộng cột — gọn, không lấn sự tập trung
+  var NARROW = 1100;     // dưới ngưỡng này: thu về nút chuông (overlay)
+  var _open = false;     // trạng thái mở overlay khi màn hẹp
+
+  // Bảng gốc → trang mở khi bấm vào một hoạt động (bấm-để-nhảy)
+  var REF_PAGE = {
+    ke_hoach_mot_lan: "ke-hoach.html", ke_hoach_lap_lai: "ke-hoach.html",
+    pccc_devices: "pccc-cnch.html", pccc_errors: "pccc-cnch.html",
+    hl_nhansu: "index.html#huan-luyen-dao-tao", sop: "index.html#sop",
+    phieu_requests: "cap-phat-bhld.html", cap_phat_tien_trinh: "cap-phat-bhld.html",
+    nhanvien: "cap-phat-bhld.html"
+  };
 
   function esc(s) { return String(s == null ? "" : s).replace(/[&<>"]/g, function (c) { return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]; }); }
 
@@ -159,7 +170,9 @@
       ? '<img src="' + esc(r.avatar_url) + '" style="width:38px;height:38px;border-radius:50%;object-fit:cover;flex:0 0 38px;border:2px solid #fff;box-shadow:0 1px 3px rgba(0,0,0,.15);">'
       : '<div style="width:38px;height:38px;border-radius:50%;flex:0 0 38px;background:' + avatarColor(r.role) + ';color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;">' + esc(initials(r.fullname, r.username)) + '</div>';
     var who = esc(r.fullname || r.username || "Người dùng");
-    return '<div class="hse-act-item" style="display:flex;gap:10px;padding:10px 12px;border-bottom:1px solid #eef1f7;align-items:flex-start;">' +
+    var page = r.ref_table && REF_PAGE[r.ref_table] ? REF_PAGE[r.ref_table] : "";
+    return '<div class="hse-act-item' + (page ? ' clk' : '') + '"' + (page ? ' data-page="' + esc(page) + '"' : '') +
+        ' style="display:flex;gap:10px;padding:9px 12px;border-bottom:1px solid #eef1f7;align-items:flex-start;">' +
         '<div style="position:relative;">' + av +
           '<span style="position:absolute;right:-2px;bottom:-2px;width:14px;height:14px;border-radius:50%;background:' + color + ';border:2px solid #fff;"></span>' +
         '</div>' +
@@ -192,25 +205,40 @@
         '</div>'
       : '<div style="padding:9px 12px;background:#f5f8ff;border-bottom:1px solid ' + C.border + ';font-size:11.5px;color:' + C.light + ';">Đăng nhập để tạo ảnh đại diện và ghi hoạt động của bạn.</div>';
 
+    var closeBtn = '<button id="hse-act-close" title="Đóng" aria-label="Đóng" style="display:none;background:rgba(255,255,255,.18);border:none;color:#fff;width:24px;height:24px;border-radius:6px;cursor:pointer;font-size:15px;line-height:1;">×</button>';
+
     return '' +
-      '<div style="display:flex;align-items:center;gap:8px;padding:11px 13px;background:linear-gradient(135deg,' + C.primary + ' 0%,' + C.primaryLight + ' 100%);color:#fff;border-bottom:3px solid ' + C.accent + ';">' +
-        '<span style="font-size:16px;">📣</span>' +
-        '<div style="flex:1;font-size:13.5px;font-weight:700;">Hoạt động gần đây</div>' +
-        '<button id="hse-act-collapse" title="Thu gọn" style="background:rgba(255,255,255,.18);border:none;color:#fff;width:24px;height:24px;border-radius:6px;cursor:pointer;font-size:14px;line-height:1;">' + (_collapsed ? "▢" : "—") + '</button>' +
+      '<div style="flex:0 0 auto;display:flex;align-items:center;gap:8px;padding:10px 13px;background:' + C.primary + ';color:#fff;border-bottom:2px solid ' + C.accent + ';">' +
+        '<span style="font-size:15px;">📣</span>' +
+        '<div style="flex:1;font-size:13px;font-weight:600;">Hoạt động gần đây</div>' +
+        '<button id="hse-act-refresh" title="Làm mới" aria-label="Làm mới" style="background:rgba(255,255,255,.18);border:none;color:#fff;width:24px;height:24px;border-radius:6px;cursor:pointer;font-size:13px;line-height:1;">↻</button>' +
+        closeBtn +
       '</div>' +
-      '<div id="hse-act-collapsible" style="display:' + (_collapsed ? "none" : "block") + ';">' +
-        meRow +
-        '<div id="hse-act-list" style="max-height:56vh;overflow-y:auto;">' + body + '</div>' +
-        '<div style="padding:7px 12px;text-align:center;font-size:10.5px;color:' + C.light + ';border-top:1px solid #eef1f7;background:#fafbfe;">Cập nhật trực tiếp · ' + MAX_ITEMS + ' hoạt động mới nhất</div>' +
-      '</div>';
+      meRow +
+      '<div id="hse-act-list" style="flex:1 1 auto;overflow-y:auto;">' + body + '</div>' +
+      '<div style="flex:0 0 auto;padding:7px 12px;text-align:center;font-size:10.5px;color:' + C.light + ';border-top:1px solid #eef1f7;background:#fafbfe;">Cập nhật trực tiếp · ' + MAX_ITEMS + ' mục mới nhất</div>';
   }
 
+  function injectStyle() {
+    if (document.getElementById("hse-act-style")) return;
+    var s = document.createElement("style");
+    s.id = "hse-act-style";
+    s.textContent = ".hse-act-item.clk{cursor:pointer;transition:background .12s}" +
+      ".hse-act-item.clk:hover{background:#f2f6ff}";
+    document.head.appendChild(s);
+  }
+  function topOffset() {
+    var tb = document.querySelector(".topbar");
+    return (tb && tb.offsetHeight) || 58;
+  }
   function buildHost() {
+    injectStyle();
     var host = document.createElement("div");
     host.id = HOST_ID;
-    host.style.cssText = "position:fixed;right:18px;top:74px;width:322px;max-width:calc(100vw - 30px);" +
-      "background:#fff;border:1px solid " + C.border + ";border-radius:12px;overflow:hidden;" +
-      "box-shadow:0 10px 34px rgba(0,32,101,.18);z-index:850;font-family:'Segoe UI',Arial,sans-serif;";
+    // Cột cố định cao full bên phải; vị trí/khung do applyMode() đặt theo màn hình
+    host.style.cssText = "position:fixed;right:0;bottom:0;width:" + RAIL_W + "px;max-width:86vw;" +
+      "background:#fff;display:flex;flex-direction:column;overflow:hidden;" +
+      "font-family:'Segoe UI',Arial,sans-serif;";
     return host;
   }
 
@@ -223,14 +251,15 @@
   }
 
   function wirePanel(host) {
-    var col = host.querySelector("#hse-act-collapse");
-    if (col) col.addEventListener("click", function () {
-      _collapsed = !_collapsed;
-      try { localStorage.setItem("hse_act_collapsed", _collapsed ? "1" : "0"); } catch (e) {}
-      var body = host.querySelector("#hse-act-collapsible");
-      if (body) body.style.display = _collapsed ? "none" : "block";
-      col.textContent = _collapsed ? "▢" : "—";
-    });
+    var refresh = host.querySelector("#hse-act-refresh");
+    if (refresh) refresh.addEventListener("click", function () { loadFeed(); });
+
+    var closeB = host.querySelector("#hse-act-close");
+    if (closeB) {
+      if (narrow()) closeB.style.display = "";
+      closeB.addEventListener("click", function () { _open = false; applyMode(); });
+    }
+
     var btn = host.querySelector("#hse-act-avatar-btn");
     var file = host.querySelector("#hse-act-avatar-file");
     if (btn && file) {
@@ -239,6 +268,14 @@
         if (file.files && file.files[0]) uploadAvatar(file.files[0], host);
       });
     }
+
+    // Bấm một hoạt động → mở trang liên quan
+    var list = host.querySelector("#hse-act-list");
+    if (list) list.addEventListener("click", function (e) {
+      var it = e.target && e.target.closest ? e.target.closest(".hse-act-item.clk") : null;
+      var page = it && it.getAttribute("data-page");
+      if (page) location.href = page;
+    });
   }
 
   function prepend(row) {
@@ -321,6 +358,61 @@
     return onIndex && (h === "" || h === "tong-quan");
   }
 
+  function narrow() { return (global.innerWidth || 1200) < NARROW; }
+
+  /* Dời nội dung trang sang trái đúng bằng bề rộng cột (không đè lên nhau) */
+  var _paddedEl = null;
+  function reserve() {
+    var c = document.getElementById("content");
+    if (c) { c.style.paddingRight = RAIL_W + "px"; c.style.transition = "padding-right .15s"; _paddedEl = c; }
+  }
+  function unreserve() {
+    if (_paddedEl) { _paddedEl.style.paddingRight = ""; _paddedEl = null; }
+    var c = document.getElementById("content");
+    if (c) c.style.paddingRight = "";
+  }
+
+  function ensureBell() {
+    var bell = document.getElementById(BELL_ID);
+    if (!bell) {
+      bell = document.createElement("button");
+      bell.id = BELL_ID;
+      bell.setAttribute("aria-label", "Hoạt động gần đây");
+      bell.innerHTML = "📣";
+      bell.style.cssText = "position:fixed;right:18px;bottom:18px;width:46px;height:46px;border-radius:50%;border:none;" +
+        "background:" + C.primary + ";color:#fff;font-size:19px;cursor:pointer;z-index:1000;box-shadow:0 6px 18px rgba(0,32,101,.28);";
+      bell.addEventListener("click", function () { _open = !_open; applyMode(); });
+      document.body.appendChild(bell);
+    }
+    return bell;
+  }
+  function removeBell() { var b = document.getElementById(BELL_ID); if (b) b.remove(); }
+
+  /* Đặt vị trí/khung cột theo độ rộng màn hình */
+  function applyMode() {
+    var host = document.getElementById(HOST_ID);
+    if (!host) return;
+    host.style.top = topOffset() + "px";
+    host.style.borderLeft = "1px solid " + C.border;
+    var cl = host.querySelector("#hse-act-close");
+    if (narrow()) {
+      unreserve();
+      host.style.zIndex = "1001";
+      host.style.boxShadow = "-6px 0 22px rgba(0,32,101,.20)";
+      host.style.display = _open ? "flex" : "none";
+      ensureBell();
+      if (cl) cl.style.display = "";
+    } else {
+      _open = false;
+      removeBell();
+      host.style.zIndex = "840";
+      host.style.boxShadow = "-2px 0 10px rgba(0,32,101,.05)";
+      host.style.display = "flex";
+      reserve();
+      if (cl) cl.style.display = "none";
+    }
+  }
+
   var _mounting = false;
   function ensure() {
     if (_mounting) return;
@@ -333,20 +425,22 @@
         renderPanel(host);
         _mounting = false;
       }
-    } else if (existing) {
-      existing.remove();
+      applyMode();
+    } else {
+      if (existing) existing.remove();
+      removeBell();
+      unreserve();
     }
   }
 
   /* Quan sát body để tự gắn lại sau khi app render lại (innerHTML="") */
   function watch() {
     var pending = null;
-    var mo = new MutationObserver(function () {
-      if (pending) return;
-      pending = setTimeout(function () { pending = null; ensure(); }, 60);
-    });
+    function schedule() { if (pending) return; pending = setTimeout(function () { pending = null; ensure(); }, 60); }
+    var mo = new MutationObserver(schedule);
     if (document.body) mo.observe(document.body, { childList: true });
     global.addEventListener("hashchange", ensure);
+    global.addEventListener("resize", schedule);
   }
 
   /* ─── Khởi động ─── */
