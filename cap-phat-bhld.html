@@ -2479,7 +2479,7 @@ function _fThang(yyyymm){
   if(!yyyymm)return'<span style="color:#bbb;font-size:12px;">—</span>';
   const[y,m]=yyyymm.split('-');return`<span style="font-size:12.5px;">T${parseInt(m)}/${y}</span>`;
 }
-function _fThangTxt(yyyymm){if(!yyyymm)return'';const[y,m]=yyyymm.split('-');return`T${parseInt(m)}/${y}`;}
+function _fThangTxt(yyyymm){if(!yyyymm)return'';const[y,m]=yyyymm.split('-');return`${String(m).padStart(2,'0')}/${y}`;}
 function _escH(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
 
 function _nvRow(n,idx,showDrag,showNhomCol,donViFilter){
