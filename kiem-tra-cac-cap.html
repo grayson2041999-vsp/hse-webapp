@@ -356,23 +356,54 @@
         <div class="cap-selector" id="capSelector"></div>
         <div id="noPermMsg" class="warn-box" style="display:none;"><svg class="lic-emoji" width="1.05em" height="1.05em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex-shrink:0" aria-hidden="true"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg> Bạn không có quyền nhập loại kiểm tra này.</div>
 
-        <!-- FORM CẤP 1/2 (nhập theo QUÝ) -->
+        <!-- FORM CẤP 1/2 (workflow 2 bước) -->
         <div id="formCap12" style="display:none;">
-          <div class="sec-div">Chọn kỳ kiểm tra</div>
-          <div class="form-row" style="grid-template-columns:1fr 1fr;">
-            <div class="form-group">
-              <label>Quý <span class="req">*</span></label>
-              <select class="inp" id="c12QuySel" onchange="renderQuarterBlocks()"></select>
+
+          <!-- BƯỚC 1: CHỌN ĐƠN VỊ -->
+          <div id="c12Step1">
+            <div class="sec-div">Bước 1 · Chọn đơn vị</div>
+            <div class="form-row" style="grid-template-columns:1fr;max-width:440px;">
+              <div class="form-group">
+                <label>Đơn vị <span class="req">*</span></label>
+                <select class="inp" id="c12DonViSel" onchange="toggleDonViKhac1()">
+                  <option value="">-- Chọn đơn vị --</option>
+                  <option>Cảng biển</option>
+                  <option>Căn cứ Kho - Giao nhận</option>
+                  <option>Xưởng sửa chữa</option>
+                  <option>Đội xe VTHH&amp;PTTBCD</option>
+                  <option>Đội xe VCHK</option>
+                  <option value="__khac__">Khác</option>
+                </select>
+                <input type="text" class="inp" id="c12DonViKhac" placeholder="Nhập tên đơn vị..." style="display:none;margin-top:6px;">
+              </div>
             </div>
-            <div class="form-group">
-              <label>Năm <span class="req">*</span></label>
-              <select class="inp" id="c12NamSel" onchange="renderQuarterBlocks()"></select>
+            <div style="margin-top:14px;">
+              <button class="btn btn-primary" onclick="goStep2()">Tiếp tục →</button>
             </div>
           </div>
-          <div style="margin:2px 0 6px;color:#64748b;font-size:12.5px;font-style:italic;">
-            Chọn quý sẽ hiện 3 bảng nhập cho 3 tháng trong quý. Mỗi bảng nhập cho một đơn vị và được lưu riêng.
+
+          <!-- BƯỚC 2: NHẬP THEO QUÝ (chỉ của đơn vị đã chọn) -->
+          <div id="c12Step2" style="display:none;">
+            <div class="sec-div" style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;">
+              <span>Bước 2 · Nhập kiểm tra — <span id="c12DonViLabel" style="color:var(--primary);font-weight:700;"></span></span>
+              <button class="btn btn-outline btn-sm" onclick="backStep1()">← Đổi đơn vị</button>
+            </div>
+            <div class="form-row" style="grid-template-columns:1fr 1fr;">
+              <div class="form-group">
+                <label>Quý <span class="req">*</span></label>
+                <select class="inp" id="c12QuySel" onchange="renderQuarterBlocks()"></select>
+              </div>
+              <div class="form-group">
+                <label>Năm <span class="req">*</span></label>
+                <select class="inp" id="c12NamSel" onchange="renderQuarterBlocks()"></select>
+              </div>
+            </div>
+            <div style="margin:2px 0 6px;color:#64748b;font-size:12.5px;font-style:italic;">
+              Chọn quý sẽ hiện 3 bảng nhập cho 3 tháng trong quý (chỉ của đơn vị đã chọn). Mỗi tháng lưu riêng.
+            </div>
+            <div id="c12QuarterWrap"></div>
           </div>
-          <div id="c12QuarterWrap"></div>
+
         </div>
 
         <!-- FORM CẤP 3/4/KHÁC -->
@@ -641,34 +672,55 @@ function buildThangNamSelects(){
   var fnEl=document.getElementById("filterNamSel"); if(fnEl) fnEl.innerHTML=namOpts(curY,true);
 }
 
-/* ── ĐƠN VỊ (per-block helpers) ── */
+/* ── ĐƠN VỊ (BƯỚC 1) ── */
+var currentDonVi=null; // đơn vị đang thao tác ở bước 2
+
 function isKhacDonVi(val){return !!val && DON_VI_FIXED.indexOf(val)<0;}
-function donViOptions(sel){
-  var html='<option value="">-- Chọn đơn vị --</option>';
-  DON_VI_FIXED.forEach(function(dv){html+='<option'+(dv===sel?" selected":"")+'>'+dv+'</option>';});
-  html+='<option value="__khac__"'+(isKhacDonVi(sel)?" selected":"")+'>Khác</option>';
-  return html;
-}
-function toggleDonViKhacM(sel){
-  var block=sel.closest(".qm-block");
-  var inp=block.querySelector(".qm-donvi-khac");
+function toggleDonViKhac1(){
+  var sel=document.getElementById("c12DonViSel");
+  var inp=document.getElementById("c12DonViKhac");
   inp.style.display=sel.value==="__khac__"?"block":"none";
   if(sel.value!=="__khac__") inp.value="";
 }
-function getDonViM(block){
-  var sel=block.querySelector(".qm-donvi");
-  if(sel.value==="__khac__") return block.querySelector(".qm-donvi-khac").value.trim();
+function getDonVi1(){
+  var sel=document.getElementById("c12DonViSel");
+  if(sel.value==="__khac__") return document.getElementById("c12DonViKhac").value.trim();
   return sel.value;
 }
+function setDonVi1(val){
+  var sel=document.getElementById("c12DonViSel");
+  var inp=document.getElementById("c12DonViKhac");
+  if(!val){sel.value="";inp.value="";inp.style.display="none";return;}
+  if(DON_VI_FIXED.indexOf(val)>=0){sel.value=val;inp.value="";inp.style.display="none";}
+  else{sel.value="__khac__";inp.value=val;inp.style.display="block";}
+}
 
-/* ── RENDER 3 KHỐI THÁNG THEO QUÝ ── */
+/* Bước 1 → Bước 2: chốt đơn vị rồi hiện phần nhập của riêng đơn vị đó */
+function goStep2(){
+  var dv=getDonVi1();
+  if(!dv){toast("Vui lòng chọn hoặc nhập Đơn vị.",false);document.getElementById("c12DonViSel").focus();return;}
+  currentDonVi=dv;
+  document.getElementById("c12DonViLabel").textContent=dv;
+  document.getElementById("c12Step1").style.display="none";
+  document.getElementById("c12Step2").style.display="block";
+  renderQuarterBlocks();
+}
+/* Bước 2 → Bước 1: đổi đơn vị */
+function backStep1(){
+  currentDonVi=null;
+  document.getElementById("c12Step2").style.display="none";
+  document.getElementById("c12Step1").style.display="block";
+  document.getElementById("c12QuarterWrap").innerHTML="";
+}
+
+/* ── RENDER 3 KHỐI THÁNG THEO QUÝ (chỉ của đơn vị đã chọn) ── */
 function renderQuarterBlocks(focusRec){
   var wrap=document.getElementById("c12QuarterWrap");
   if(!wrap) return;
   var qEl=document.getElementById("c12QuySel"), nEl=document.getElementById("c12NamSel");
   if(!qEl||!nEl){wrap.innerHTML="";return;}
   var q=parseInt(qEl.value,10), y=parseInt(nEl.value,10);
-  if(!q||!y||(currentCap!=="cap1"&&currentCap!=="cap2")){wrap.innerHTML="";return;}
+  if(!q||!y||!currentDonVi||(currentCap!=="cap1"&&currentCap!=="cap2")){wrap.innerHTML="";return;}
 
   var today=new Date(), curY=today.getFullYear(), curM=today.getMonth()+1;
   var existing=load(LS_KEY12,[]);
@@ -677,21 +729,21 @@ function renderQuarterBlocks(focusRec){
   QUY_MONTHS[q].forEach(function(m){
     var ym=y+"-"+(m<10?"0":"")+m;
     var reached=(y<curY)||(y===curY&&m<=curM);
-    // các bản ghi đã có cho (cap hiện tại, tháng này)
-    var recs=existing.filter(function(r){return r.type===currentCap && r.thang===ym;});
-    if(focusRec && focusRec.thang===ym && !recs.some(function(r){return r.id===focusRec.id;})) recs.push(focusRec);
-    wrap.appendChild(makeMonthSection(m,y,ym,reached,recs));
+    // bản ghi đã có cho (cap hiện tại, tháng này, ĐÚNG đơn vị đang chọn)
+    var rec=existing.find(function(r){return r.type===currentCap && r.thang===ym && r.donVi===currentDonVi;});
+    if(focusRec && focusRec.thang===ym) rec=focusRec;
+    wrap.appendChild(makeMonthSection(m,y,ym,reached,rec));
   });
 
   if(focusRec){
     setTimeout(function(){
-      var blk=wrap.querySelector('.qm-block[data-edit-id="'+focusRec.id+'"]');
+      var blk=wrap.querySelector('.qm-block[data-ym="'+focusRec.thang+'"]');
       if(blk) blk.scrollIntoView({behavior:"smooth",block:"center"});
     },60);
   }
 }
 
-function makeMonthSection(m,y,ym,reached,recs){
+function makeMonthSection(m,y,ym,reached,rec){
   var sec=document.createElement("div");
   sec.className="qm-section"; sec.dataset.ym=ym; sec.dataset.month=m;
   sec.style.cssText="border:1px solid #d5deed;border-radius:10px;padding:14px 16px;margin-bottom:16px;background:#fafcff;";
@@ -701,34 +753,24 @@ function makeMonthSection(m,y,ym,reached,recs){
     sec.innerHTML=head+'<div style="color:#64748b;font-style:italic;font-size:13px;">Chưa đến kỳ nhập của tháng này. Bạn có thể nhập khi đã bước sang tháng '+m+"/"+y+'.</div>';
     return sec;
   }
+  if(rec) head+='<span style="font-weight:500;font-size:11.5px;background:#fff7ed;color:#c2410c;border:1px solid #fed7aa;padding:2px 8px;border-radius:20px;">Đã có dữ liệu — đang sửa</span>';
   head+='</div>';
-  sec.innerHTML=head+'<div class="qm-blocks"></div>'+
-    '<div class="add-row-btn" style="margin-top:6px;" onclick="addDonViBlock(this)">＋ Thêm đơn vị cho tháng này</div>';
-  var blocksWrap=sec.querySelector(".qm-blocks");
-  if(recs.length){ recs.forEach(function(r){blocksWrap.appendChild(makeDonViBlock(ym,r));}); }
-  else { blocksWrap.appendChild(makeDonViBlock(ym,null)); }
+  sec.innerHTML=head+'<div class="qm-blocks"></div>';
+  sec.querySelector(".qm-blocks").appendChild(makeMonthBlock(ym,rec));
   return sec;
 }
 
-function makeDonViBlock(ym,rec){
+function makeMonthBlock(ym,rec){
   var block=document.createElement("div");
   block.className="qm-block"; block.dataset.ym=ym; block.dataset.editId=rec?rec.id:"";
-  if(rec) block.style.cssText="border-left:3px solid var(--primary);padding:10px 12px 4px;margin-bottom:12px;background:#fff;border-radius:6px;";
-  else    block.style.cssText="padding:10px 12px 4px;margin-bottom:12px;";
-  var donViVal=rec?(rec.donVi||""):"";
+  block.style.cssText="padding:2px 0;";
   var soLan=rec?(rec.soLanKiemTra!=null?rec.soLanKiemTra:0):"";
   var vps=rec?(typeof rec.violations==="string"?JSON.parse(rec.violations||"[]"):(rec.violations||[])):[];
   var soVP=rec?vps.length:"";
   block.innerHTML=
-    (rec?'<div style="font-size:11.5px;color:#c2410c;margin-bottom:8px;font-weight:600;">● Đã có dữ liệu — đang sửa</div>':'')+
     '<div class="form-row" style="grid-template-columns:1fr 1fr;">'+
-      '<div class="form-group"><label>Đơn vị <span class="req">*</span></label>'+
-        '<select class="inp qm-donvi" onchange="toggleDonViKhacM(this)">'+donViOptions(donViVal)+'</select>'+
-        '<input type="text" class="inp qm-donvi-khac" placeholder="Nhập tên đơn vị..." style="display:'+(isKhacDonVi(donViVal)?"block":"none")+';margin-top:6px;" value="'+(isKhacDonVi(donViVal)?esc(donViVal):"")+'"></div>'+
       '<div class="form-group"><label>Số lần kiểm tra trong tháng <span class="req">*</span></label>'+
         '<input type="number" class="inp qm-solan" min="0" placeholder="0" value="'+soLan+'"></div>'+
-    '</div>'+
-    '<div class="form-row" style="grid-template-columns:1fr 1fr;">'+
       '<div class="form-group"><label>Số vi phạm / ghi nhận <span class="req">*</span></label>'+
         '<input type="number" class="inp qm-sovp" min="0" placeholder="0" value="'+soVP+'"></div>'+
     '</div>'+
@@ -745,39 +787,23 @@ function makeDonViBlock(ym,rec){
     '</div>'+
     '<div style="display:flex;gap:10px;margin-top:12px;">'+
       '<button class="btn btn-success btn-sm" onclick="saveMonth(this)">💾 Lưu tháng này</button>'+
-      '<button class="btn btn-outline btn-sm" onclick="clearOrRemoveBlock(this)">↺ Xoá nhập</button>'+
+      '<button class="btn btn-outline btn-sm" onclick="clearMonthBlock(this)">↺ Xoá nhập</button>'+
     '</div>';
-  // gắn sự kiện cho ô "số vi phạm" + render sẵn vi phạm nếu đang sửa
   var sovpInp=block.querySelector(".qm-sovp");
   sovpInp.addEventListener("input",function(){renderVPM(block);});
   if(rec && vps.length){ setTimeout(function(){renderVPM(block,vps);},0); }
   return block;
 }
 
-function addDonViBlock(btn){
-  var sec=btn.closest(".qm-section");
-  var ym=sec.dataset.ym;
-  sec.querySelector(".qm-blocks").appendChild(makeDonViBlock(ym,null));
-}
-
-function clearOrRemoveBlock(btn){
+function clearMonthBlock(btn){
   var block=btn.closest(".qm-block");
-  var blocksWrap=block.parentNode;
-  // Nếu là block đã lưu (đang sửa) hoặc là block duy nhất → chỉ xoá nội dung nhập
-  var isOnly=blocksWrap.querySelectorAll(".qm-block").length<=1;
   if(block.dataset.editId){
     toast("Đây là bản ghi đã lưu. Để xoá hẳn, dùng nút Xoá ở tab Danh sách.",false);
   }
-  if(block.dataset.editId || isOnly){
-    block.querySelector(".qm-donvi").value="";
-    var dk=block.querySelector(".qm-donvi-khac"); dk.value=""; dk.style.display="none";
-    block.querySelector(".qm-solan").value="";
-    block.querySelector(".qm-sovp").value="";
-    block.querySelector(".qm-vpwrap").style.display="none";
-    block.querySelector(".qm-vpbody").innerHTML="";
-  } else {
-    blocksWrap.removeChild(block);
-  }
+  block.querySelector(".qm-solan").value="";
+  block.querySelector(".qm-sovp").value="";
+  block.querySelector(".qm-vpwrap").style.display="none";
+  block.querySelector(".qm-vpbody").innerHTML="";
 }
 
 /* ═══════════════════════════════════════════════════
@@ -924,7 +950,15 @@ function selectCap(cap, forceShow){
   document.getElementById("formCap34").style.display="none";
   // forceShow=true khi admin đang sửa bản ghi cap1/2 (bypass kiểm tra quyền nhập mới)
   if(!forceShow && !canInputCap(currentUser(),cap)){document.getElementById("noPermMsg").style.display="block";return;}
-  if(cap==="cap1"||cap==="cap2"){document.getElementById("formCap12").style.display="block"; renderQuarterBlocks();}
+  if(cap==="cap1"||cap==="cap2"){
+    document.getElementById("formCap12").style.display="block";
+    // luôn bắt đầu ở Bước 1 (chọn đơn vị)
+    currentDonVi=null;
+    setDonVi1("");
+    document.getElementById("c12Step2").style.display="none";
+    document.getElementById("c12Step1").style.display="block";
+    document.getElementById("c12QuarterWrap").innerHTML="";
+  }
   else{
     document.getElementById("formCap34").style.display="block";
     document.getElementById("c34TenKhacWrap").style.display=cap==="khac"?"flex":"none";
@@ -1162,11 +1196,11 @@ function saveMonth(btn){
   var u=currentUser();
   var thang=block.dataset.ym;
   var editId=block.dataset.editId||"";
-  var donVi=getDonViM(block);
+  var donVi=currentDonVi;
   var soLan=parseInt(block.querySelector(".qm-solan").value)||0;
   var soVP=parseInt(block.querySelector(".qm-sovp").value)||0;
   if(!thang){toast("Không xác định được tháng.",false);return;}
-  if(!donVi){toast("Tháng "+thang+": Vui lòng chọn hoặc nhập Đơn vị.",false);block.querySelector(".qm-donvi").focus();return;}
+  if(!donVi){toast("Chưa chọn đơn vị. Vui lòng quay lại Bước 1.",false);return;}
 
   var violations=[];
   var rows=block.querySelectorAll(".qm-vpbody tr");
@@ -1274,7 +1308,11 @@ function resetForm(){
   document.getElementById("noPermMsg").style.display="none";
   document.getElementById("formCap12").style.display="none";
   document.getElementById("formCap34").style.display="none";
+  currentDonVi=null;
   var qWrap=document.getElementById("c12QuarterWrap"); if(qWrap) qWrap.innerHTML="";
+  if(document.getElementById("c12DonViSel")) setDonVi1("");
+  var st1=document.getElementById("c12Step1"), st2=document.getElementById("c12Step2");
+  if(st1) st1.style.display="block"; if(st2) st2.style.display="none";
   document.getElementById("c34Noi").value=""; document.getElementById("c34TenKhac").value="";
   document.getElementById("doanBody").innerHTML=""; document.getElementById("c34VPBody").innerHTML="";
   addDoanRow(); addVPRow34();
@@ -1879,7 +1917,12 @@ function editRecord(id,sheet){
   selectCap(r.type, true);
 
   if(sheet==="12"){
-    // Mở đúng quý + năm chứa tháng của bản ghi, rồi cuộn tới & nạp sẵn dữ liệu
+    // Chốt đơn vị của bản ghi → vào thẳng Bước 2, mở đúng quý/năm chứa tháng
+    currentDonVi=r.donVi||"";
+    setDonVi1(currentDonVi);
+    document.getElementById("c12DonViLabel").textContent=currentDonVi;
+    document.getElementById("c12Step1").style.display="none";
+    document.getElementById("c12Step2").style.display="block";
     var parts=(r.thang||"").split("-");
     var y=parseInt(parts[0],10), m=parseInt(parts[1],10);
     if(y&&m){
