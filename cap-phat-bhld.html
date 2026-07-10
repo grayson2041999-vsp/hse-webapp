@@ -4927,7 +4927,10 @@ function cpwRender(){
   html+=_cpwStepCard(3,'Chọn vật tư khác & gửi duyệt','pkg',s3,cpwStep3ExtraBody(s3,phieu));
   html+=_cpwStepCard(4,'Xuất phiếu & trình ký','file',s4,cpwStep4Body(s4,phieu));
   if(_cpwDonVi==='Test'&&typeof canEditUnit==='function'&&canEditUnit('Test')){
-    html+='<div style="margin-top:6px;text-align:right;"><button class="btn btn-outline btn-sm" style="color:var(--danger);border-color:#eab7b2;" onclick="cpwResetTest()">'+_ic('undo',15)+' Reset đơn vị Test</button></div>';
+    html+='<div style="margin-top:6px;display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;">'+
+      '<button class="btn btn-outline btn-sm" onclick="cpwSaveTestBaseline()" title="Lưu danh sách + thông tin nhân viên Test hiện tại làm mặc định ban đầu">'+_ic('clip',15)+' Lưu làm mặc định ban đầu</button>'+
+      '<button class="btn btn-outline btn-sm" style="color:var(--danger);border-color:#eab7b2;" onclick="cpwResetTest()" title="Khôi phục danh sách nhân viên Test theo bản mặc định đã lưu">'+_ic('undo',15)+' Trả về mặc định ban đầu</button>'+
+    '</div>';
   }
   document.getElementById('cpw-steps').innerHTML=html;
   if(s1==='dang_lam'){ _cpwListReadOnly=false; cpwRenderList(); } // nhúng bảng kiểm tra/sửa vào Bước 1
@@ -5496,30 +5499,75 @@ function _cpwClearPhieuDataForTest(testNv){
   Object.keys(phieuExtra||{}).forEach(function(q){ if(phieuExtra[q]&&phieuExtra[q].Test){delete phieuExtra[q].Test;changed=true;} });
   if(changed&&typeof saveData==='function')saveData('phieu-extra',phieuExtra);
 }
+// ── Mặc định ban đầu cho chế độ Test (đồng bộ Supabase, bảng test_baseline) ──
+function _cpwTestBaselineLoad(){
+  var sb=window.HSE_SB; if(!sb)return Promise.resolve(null);
+  return sb.from('test_baseline').select('*').eq('id','Test').maybeSingle().then(function(r){
+    if(r.error||!r.data)return null;
+    try{ var arr=JSON.parse(r.data.data||'[]'); return Array.isArray(arr)?arr:null; }catch(e){ return null; }
+  }).catch(function(){ return null; });
+}
+function cpwSaveTestBaseline(){
+  if(_cpwDonVi!=='Test'){showToast('Chỉ áp dụng cho đơn vị Test.','warning');return;}
+  if(typeof canEditUnit==='function'&&!canEditUnit('Test')){showToast('Bạn không có quyền.','error');return;}
+  var sb=window.HSE_SB; if(!sb){showToast('Chưa kết nối Supabase để lưu mặc định.','error');return;}
+  var testNv=daNhanVien.filter(function(n){return n.boPhan==='Test';});
+  if(!testNv.length){showToast('Đơn vị Test chưa có nhân viên để lưu.','warning');return;}
+  if(!confirm('Lưu '+testNv.length+' nhân viên Test hiện tại làm MẶC ĐỊNH BAN ĐẦU?\n\nLần sau bấm "Trả về mặc định ban đầu" sẽ khôi phục đúng danh sách + thông tin này. Bản mặc định cũ (nếu có) sẽ bị thay thế.'))return;
+  var snapshot=testNv.map(function(n){return Object.assign({},n);});
+  var row={id:'Test',data:JSON.stringify(snapshot),updatedBy:(typeof _getCurrentUserLabel==='function'?_getCurrentUserLabel():''),updatedAt:new Date().toISOString()};
+  sb.from('test_baseline').upsert(row,{onConflict:'id'}).then(function(res){
+    if(res.error)throw new Error(res.error.message);
+    showToast('✅ Đã lưu mặc định ban đầu ('+snapshot.length+' nhân viên) cho chế độ Test.');
+  }).catch(function(e){
+    showToast('⚠️ Lưu mặc định lỗi: '+(e&&e.message||e)+' — đã tạo bảng test_baseline trên Supabase chưa?','error');
+  });
+}
 function cpwResetTest(){
   if(_cpwDonVi!=='Test'){showToast('Chỉ áp dụng cho đơn vị Test.','warning');return;}
   if(typeof canEditUnit==='function'&&!canEditUnit('Test')){showToast('Bạn không có quyền.','error');return;}
-  if(!confirm('Reset TOÀN BỘ dữ liệu thử nghiệm của đơn vị Test?\n\n• Xoá tất cả phiếu quý, thay đổi nhân sự, tiến trình wizard của Test\n• Đưa thời hạn cấp phát của nhân viên Test về trống\n\nNhân viên Test được GIỮ lại. Không hoàn tác được.'))return;
-  if(!confirm('Xác nhận lần cuối: reset đơn vị Test?'))return;
-  var jobs=[];
-  BHLD.lsGet('phieu_requests').filter(function(p){return p.donVi==='Test';}).forEach(function(p){jobs.push(BHLD.push.delete('phieu_requests',p.id));});
-  BHLD.lsGet('pending_changes').filter(function(c){return c.donVi==='Test';}).forEach(function(c){jobs.push(BHLD.push.delete('pending_changes',c.id));});
-  var resetFields={thangCapQuanAo:'',thangCapQAHan:'',thangCapAoMua:'',thangCapGiay:'',thangCapMu:'',thangCapKinh:''};
-  var testNv=daNhanVien.filter(function(n){return n.boPhan==='Test';});
-  testNv.forEach(function(n){
-    var idx=daNhanVien.findIndex(function(x){return String(x.id)===String(n.id);});
-    if(idx>=0)daNhanVien[idx]=Object.assign({},daNhanVien[idx],resetFields);
-    jobs.push(BHLD.push.update('nhanvien',n.id,resetFields));
-  });
-  if(typeof saveData==='function')saveData('nhanvien',daNhanVien);BHLD.lsSet('nhanvien',daNhanVien);
-  _cpwClearPhieuDataForTest(testNv);
-  var sb=window.HSE_SB;
-  if(sb)jobs.push(sb.from('cap_phat_tien_trinh').delete().eq('donVi','Test'));
-  Promise.all(jobs.map(function(j){return Promise.resolve(j).catch(function(){});})).then(function(){
-    _cpwState=null;
-    if(typeof renderTableNV==='function'&&_currentUnit==='Test')renderTableNV();
-    showToast('✅ Đã reset đơn vị Test. Bắt đầu lại từ Bước 1.');
-    cpwOnSelect();
+  if(!confirm('Trả về MẶC ĐỊNH BAN ĐẦU cho đơn vị Test?\n\n• Khôi phục danh sách + thông tin nhân viên theo bản mặc định đã lưu (nếu có)\n• Xoá tất cả phiếu quý, thay đổi nhân sự, tiến trình wizard, vật tư khác của Test\n\nKhông hoàn tác được.'))return;
+  if(!confirm('Xác nhận lần cuối: trả về mặc định đơn vị Test?'))return;
+  _cpwTestBaselineLoad().then(function(baseline){
+    var jobs=[];
+    // 1) Dọn phiếu + thay đổi nhân sự + tiến trình + phieuData/extra của Test
+    BHLD.lsGet('phieu_requests').filter(function(p){return p.donVi==='Test';}).forEach(function(p){jobs.push(BHLD.push.delete('phieu_requests',p.id));});
+    BHLD.lsGet('pending_changes').filter(function(c){return c.donVi==='Test';}).forEach(function(c){jobs.push(BHLD.push.delete('pending_changes',c.id));});
+    var testNv=daNhanVien.filter(function(n){return n.boPhan==='Test';});
+    _cpwClearPhieuDataForTest(testNv);
+    var sb=window.HSE_SB;
+    if(sb)jobs.push(sb.from('cap_phat_tien_trinh').delete().eq('donVi','Test'));
+    var finish=function(msg){
+      Promise.all(jobs.map(function(j){return Promise.resolve(j).catch(function(){});})).then(function(){
+        _cpwState=null;
+        if(typeof renderTableNV==='function'&&_currentUnit==='Test')renderTableNV();
+        showToast(msg);
+        cpwOnSelect();
+      });
+    };
+    if(baseline&&baseline.length){
+      // 2a) Khôi phục nhân viên đúng theo snapshot
+      var snapIds={}; baseline.forEach(function(n){snapIds[String(n.id)]=true;});
+      testNv.forEach(function(n){ if(!snapIds[String(n.id)])jobs.push(BHLD.push.delete('nhanvien',n.id)); }); // xoá người không có trong snapshot
+      daNhanVien=daNhanVien.filter(function(n){return n.boPhan!=='Test';});                                    // bỏ toàn bộ Test khỏi local
+      baseline.forEach(function(snap){                                                                          // thêm lại từ snapshot
+        var ent=Object.assign({},snap,{boPhan:'Test'});
+        daNhanVien.push(ent);
+        jobs.push(BHLD.push.insert('nhanvien',Object.assign({},ent)));
+      });
+      if(typeof saveData==='function')saveData('nhanvien',daNhanVien);BHLD.lsSet('nhanvien',daNhanVien);
+      finish('✅ Đã trả về mặc định ban đầu ('+baseline.length+' nhân viên) cho đơn vị Test.');
+    } else {
+      // 2b) Chưa có mặc định → xoá trắng tháng cấp (hành vi cũ)
+      var resetFields={thangCapQuanAo:'',thangCapQAHan:'',thangCapAoMua:'',thangCapGiay:'',thangCapMu:'',thangCapKinh:''};
+      testNv.forEach(function(n){
+        var idx=daNhanVien.findIndex(function(x){return String(x.id)===String(n.id);});
+        if(idx>=0)daNhanVien[idx]=Object.assign({},daNhanVien[idx],resetFields);
+        jobs.push(BHLD.push.update('nhanvien',n.id,resetFields));
+      });
+      if(typeof saveData==='function')saveData('nhanvien',daNhanVien);BHLD.lsSet('nhanvien',daNhanVien);
+      finish('✅ Đã reset Test (chưa có mặc định — xoá trắng tháng cấp). Bấm "Lưu làm mặc định ban đầu" để dùng lần sau.');
+    }
   });
 }
 /* ===================== REALTIME luồng cấp phát ===================== */
