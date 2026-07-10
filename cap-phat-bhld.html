@@ -4184,8 +4184,8 @@ function exportPhieuMatrixExcel(quyArg,dvArg){
   if(_extra.length){
     aoa.push(pad());
     var eh=pad(); eh[0]='VẬT TƯ KHÁC CẤP PHÁT (ngoài định mức)'; aoa.push(eh); merges.push({s:{r:aoa.length-1,c:0},e:{r:aoa.length-1,c:lastC}});
-    var ehh=pad(); ehh[0]='STT'; ehh[1]='Mã vật tư'; ehh[2]='Tên vật tư'; ehh[3]='ĐVT'; ehh[4]='SL cấp'; ehh[5]='Ký nhận'; aoa.push(ehh);
-    _extra.forEach(function(ex,i){ var row=pad(); row[0]=i+1; row[1]=ex.ma||''; row[2]=ex.ten||''; row[3]=ex.donVi||''; row[4]=ex.soLuong; aoa.push(row); });
+    var ehh=pad(); ehh[0]='STT'; ehh[1]='Mã vật tư'; ehh[2]='Tên vật tư'; ehh[3]='ĐVT'; ehh[4]='SL cấp'; ehh[5]='Ghi chú'; ehh[6]='Ký nhận'; aoa.push(ehh);
+    _extra.forEach(function(ex,i){ var row=pad(); row[0]=i+1; row[1]=ex.ma||''; row[2]=ex.ten||''; row[3]=ex.donVi||''; row[4]=ex.soLuong; row[5]=(ex.ghiChu&&String(ex.ghiChu).trim())?String(ex.ghiChu).trim():''; aoa.push(row); });
   }
   var ws=XLSX.utils.aoa_to_sheet(aoa); ws['!merges']=merges;
   var cols=[{wch:5},{wch:12},{wch:24}]; CATS.forEach(function(){cols.push({wch:9});cols.push({wch:9});}); ws['!cols']=cols;
@@ -5299,14 +5299,14 @@ function cpwRenderExtra(){
   // Bảo đảm _lastBcRows có dữ liệu (kể cả khi tải lại trang ngay ở bước 3) để lúc gửi duyệt còn số lượng bước 2
   if(!_lastBcRows.length&&typeof computeQuyData==='function'){var _r=computeQuyData(quyStr,dv);_lastBcRows=(_r&&_r.rows)||[];}
   var pool=_cpwExtraPool();
-  var sel=_cpwExtraGet(quyStr,dv); var selMap={}; sel.forEach(function(s){selMap[String(s.tbId)]=s.soLuong;});
+  var sel=_cpwExtraGet(quyStr,dv); var selMap={}, noteMap={}; sel.forEach(function(s){selMap[String(s.tbId)]=s.soLuong;noteMap[String(s.tbId)]=s.ghiChu||'';});
   var body='';
   if(!pool.length){
     body='<div style="padding:12px;color:var(--text-light);font-size:13px;background:#f8fafc;border:1px dashed var(--border);border-radius:8px;">Hiện không có vật tư nào khác còn tồn kho (ngoài 8 nhóm định mức). Bạn có thể bỏ qua và gửi duyệt.</div>';
   } else {
     var trs=pool.map(function(dm,i){
       var nhom=(typeof daNhomTB!=='undefined')?daNhomTB.find(function(n){return String(n.id)===String(dm.nhomId);}):null;
-      var ton=(daTonKho&&daTonKho[dm.id])||0; var dvt=(nhom&&nhom.donVi)||''; var val=selMap[String(dm.id)]!==undefined?selMap[String(dm.id)]:'';
+      var ton=(daTonKho&&daTonKho[dm.id])||0; var dvt=(nhom&&nhom.donVi)||''; var val=selMap[String(dm.id)]!==undefined?selMap[String(dm.id)]:''; var note=noteMap[String(dm.id)]||'';
       return '<tr>'+
         '<td style="text-align:center;color:var(--text-light);">'+(i+1)+'</td>'+
         '<td><strong>'+_escH(dm.ten||'')+'</strong></td>'+
@@ -5314,11 +5314,12 @@ function cpwRenderExtra(){
         '<td style="text-align:center;font-size:12px;">'+_escH(dvt)+'</td>'+
         '<td style="text-align:center;font-weight:700;color:var(--primary);">'+ton+'</td>'+
         '<td style="text-align:center;"><input type="number" min="0" max="'+ton+'" step="1" value="'+val+'" style="width:66px;padding:4px 6px;border:1px solid var(--border);border-radius:5px;text-align:center;font-weight:700;color:var(--primary);" onchange="cpwOnExtraQty(this,'+dm.id+','+ton+')"></td>'+
+        '<td><input type="text" value="'+_escH(note)+'" placeholder="Ghi chú (tuỳ chọn)" style="width:100%;min-width:150px;padding:4px 6px;border:1px solid var(--border);border-radius:5px;font-size:12.5px;" onchange="cpwOnExtraNote(this,'+dm.id+')"></td>'+
       '</tr>';
     }).join('');
-    body='<div style="margin-bottom:8px;font-size:12px;color:var(--text-light);">Chỉ hiển thị vật tư còn tồn kho. Nhập số lượng cần cấp (để trống hoặc 0 = không cấp).</div>'+
+    body='<div style="margin-bottom:8px;font-size:12px;color:var(--text-light);">Chỉ hiển thị vật tư còn tồn kho. Nhập số lượng cần cấp (để trống hoặc 0 = không cấp); có thể ghi chú thêm cho từng vật tư.</div>'+
       '<div class="table-wrap" style="max-height:52vh;"><table style="font-size:13px;"><thead><tr>'+
-      '<th style="width:40px;text-align:center;">STT</th><th>Tên vật tư</th><th>Mã vật tư</th><th style="text-align:center;">ĐVT</th><th style="text-align:center;">Tồn kho</th><th style="text-align:center;">SL cấp</th>'+
+      '<th style="width:40px;text-align:center;">STT</th><th>Tên vật tư</th><th>Mã vật tư</th><th style="text-align:center;">ĐVT</th><th style="text-align:center;">Tồn kho</th><th style="text-align:center;">SL cấp</th><th style="min-width:160px;">Ghi chú</th>'+
       '</tr></thead><tbody>'+trs+'</tbody></table></div>';
   }
   var selCount=sel.filter(function(s){return Number(s.soLuong)>0;}).length;
@@ -5329,18 +5330,27 @@ function cpwRenderExtra(){
       '<span style="font-size:12px;color:var(--text-light);">'+(selCount?('Đã chọn '+selCount+' vật tư khác'):'Chưa chọn vật tư khác')+' · gửi duyệt sẽ gồm cả số lượng ở Bước 2</span>'+
     '</div>';
 }
+// Cập nhật 1 vật tư khác (giữ đồng thời SL + ghi chú). Tự dọn nếu SL<=0 và không có ghi chú.
+function _cpwExtraSetItem(tbId,patch){
+  var quyStr=_cpwQuy, dv=_cpwDonVi;
+  var arr=_cpwExtraGet(quyStr,dv).slice();
+  var idx=arr.findIndex(function(s){return String(s.tbId)===String(tbId);});
+  var dm=(typeof daDanhMuc!=='undefined')?daDanhMuc.find(function(d){return String(d.id)===String(tbId);}):null;
+  var nhom=dm&&typeof daNhomTB!=='undefined'?daNhomTB.find(function(x){return String(x.id)===String(dm.nhomId);}):null;
+  var base=idx>=0?arr[idx]:{tbId:tbId,ten:dm?dm.ten:'',ma:dm?(dm.ma||''):'',donVi:(nhom&&nhom.donVi)||'',soLuong:0,ghiChu:''};
+  var ent=Object.assign({},base,patch);
+  var keep=(Number(ent.soLuong)||0)>0||(ent.ghiChu&&String(ent.ghiChu).trim());
+  if(!keep){ if(idx>=0)arr.splice(idx,1); }
+  else { if(idx>=0)arr[idx]=ent; else arr.push(ent); }
+  _cpwExtraSet(quyStr,dv,arr);
+}
 function cpwOnExtraQty(el,tbId,ton){
   var v=el.value;
   if(v!==''&&Number(v)>Number(ton)){showToast('⚠️ Không được vượt tồn kho ('+ton+').','warning');v=String(ton);el.value=v;}
-  var quyStr=_cpwQuy, dv=_cpwDonVi;
-  var arr=_cpwExtraGet(quyStr,dv).filter(function(s){return String(s.tbId)!==String(tbId);});
-  var n=Number(v);
-  if(v!==''&&n>0){
-    var dm=(typeof daDanhMuc!=='undefined')?daDanhMuc.find(function(d){return String(d.id)===String(tbId);}):null;
-    var nhom=dm&&typeof daNhomTB!=='undefined'?daNhomTB.find(function(x){return String(x.id)===String(dm.nhomId);}):null;
-    arr.push({tbId:tbId,ten:dm?dm.ten:'',ma:dm?(dm.ma||''):'',donVi:(nhom&&nhom.donVi)||'',soLuong:n});
-  }
-  _cpwExtraSet(quyStr,dv,arr);
+  _cpwExtraSetItem(tbId,{soLuong:v===''?0:Number(v)});
+}
+function cpwOnExtraNote(el,tbId){
+  _cpwExtraSetItem(tbId,{ghiChu:el.value||''});
 }
 function cpwSubmitQuantity(){
   var quyStr=_cpwQuy, dv=_cpwDonVi;
@@ -5355,7 +5365,7 @@ function cpwSubmitQuantity(){
   var now=new Date().toISOString();var qData=phieuData[quyStr]||{};var itemsList=[];
   rows.forEach(function(r){r.items.forEach(function(it){var key=r.nv.id+'_'+it.tbId;var saved=qData[key]||{};itemsList.push({nvId:String(r.nv.id),nvTen:r.nv.ten,tbId:it.tbId,ten:it.ten,ma:it.ma||'',donVi:it.donVi||'',soLuongDinhMuc:it.soLuong,thucTe:saved.thucTe!==undefined?saved.thucTe:''});});});
   // Vật tư khác (theo đơn vị): không có định mức cá nhân, đánh dấu extra + ghi chú
-  extras.forEach(function(ex){itemsList.push({nvId:'',nvTen:'',tbId:ex.tbId,ten:ex.ten,ma:ex.ma||'',donVi:ex.donVi||'',soLuongDinhMuc:0,thucTe:ex.soLuong,extra:true,ghiChu:'Vật tư khác'});});
+  extras.forEach(function(ex){var gc=(ex.ghiChu&&String(ex.ghiChu).trim())?String(ex.ghiChu).trim():'Vật tư khác';itemsList.push({nvId:'',nvTen:'',tbId:ex.tbId,ten:ex.ten,ma:ex.ma||'',donVi:ex.donVi||'',soLuongDinhMuc:0,thucTe:ex.soLuong,extra:true,ghiChu:gc});});
   var phieu={type:'quy',quyStr:quyStr,donVi:dv,status:'pending',items:JSON.stringify(itemsList),submittedBy:_getCurrentUserLabel(),submittedByUsername:_getCurrentUsername(),submittedAt:now,createdAt:now};
   BHLD.push.insert('phieu_requests',phieu).then(function(){
     showToast('✅ Đã gửi phiếu quý – đang chờ Admin duyệt.');
