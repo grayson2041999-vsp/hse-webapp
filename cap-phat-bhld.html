@@ -3552,6 +3552,49 @@ function _renderQuyStatusBar(quyStr,donVi){
   } else {bar.style.display='none';}
 }
 
+// Chi tiết phiếu quý cho Admin: xem tổng thể "ai được cấp gì" giống user (theo nhân viên + vật tư khác + tổng hợp)
+function _phieuQuyDetailHtml(p){
+  var items=_parsePhieuItems(p.items);
+  function q(it){var v=(it.thucTe!==''&&it.thucTe!==undefined)?Number(it.thucTe):Number(it.soLuongDinhMuc||0);return isNaN(v)?0:v;}
+  var normal=items.filter(function(it){return !it.extra&&it.nvId;});
+  var extras=items.filter(function(it){return it.extra||!it.nvId;}).filter(function(it){return q(it)>0;});
+  // Nhóm theo nhân viên (giữ thứ tự xuất hiện)
+  var order=[],byNv={};
+  normal.forEach(function(it){var k=String(it.nvId);if(!byNv[k]){byNv[k]={ten:it.nvTen||'',items:[]};order.push(k);}if(q(it)>0)byNv[k].items.push(it);});
+  var empRows=order.map(function(k,idx){
+    var e=byNv[k];
+    var chips=e.items.length?e.items.map(function(it){
+      var diff=(it.thucTe!==''&&it.thucTe!==undefined&&Number(it.thucTe)!==Number(it.soLuongDinhMuc));
+      return '<span style="display:inline-block;background:'+(diff?'#fff8e1':'#eef5ff')+';border:1px solid '+(diff?'#f2d98a':'#dbe4f3')+';border-radius:12px;padding:1px 9px;margin:2px 4px 2px 0;font-size:12px;white-space:nowrap;">'+_escH(it.ten||'')+' <b style="color:var(--primary);">×'+q(it)+'</b></span>';
+    }).join(''):'<span style="color:var(--text-light);font-size:12px;">— không cấp trong quý —</span>';
+    return '<tr><td style="text-align:center;color:var(--text-light);font-size:12px;padding:6px 8px;vertical-align:top;">'+(idx+1)+'</td>'+
+      '<td style="padding:6px 8px;font-size:12.5px;font-weight:600;white-space:nowrap;vertical-align:top;">'+_escH(e.ten)+'</td>'+
+      '<td style="padding:6px 8px;vertical-align:top;">'+chips+'</td></tr>';
+  }).join('');
+  // Tổng hợp trang bị (gồm cả vật tư khác)
+  var sumMap={},sumOrder=[];
+  items.forEach(function(it){if(q(it)<=0)return;var key=(it.ma||'')+'|'+(it.ten||'');if(!sumMap[key]){sumMap[key]={ten:it.ten||'',ma:it.ma||'',donVi:it.donVi||'',sl:0};sumOrder.push(key);}sumMap[key].sl+=q(it);});
+  var sumRows=sumOrder.map(function(key,i){var s=sumMap[key];return '<tr><td style="text-align:center;color:var(--text-light);font-size:12px;padding:4px 8px;">'+(i+1)+'</td><td style="padding:4px 8px;font-size:12px;">'+_escH(s.ten)+'</td><td style="padding:4px 8px;font-size:12px;"><code style="color:var(--text-light);">'+_escH(s.ma||'—')+'</code></td><td style="padding:4px 8px;font-size:12px;text-align:center;">'+_escH(s.donVi||'')+'</td><td style="padding:4px 8px;font-size:12px;text-align:center;font-weight:700;color:var(--primary);">'+s.sl+'</td></tr>';}).join('');
+  var extraRows=extras.map(function(it,i){return '<tr><td style="text-align:center;color:var(--text-light);font-size:12px;padding:4px 8px;">'+(i+1)+'</td><td style="padding:4px 8px;font-size:12px;">'+_escH(it.ten||'')+'</td><td style="padding:4px 8px;font-size:12px;"><code style="color:var(--text-light);">'+_escH(it.ma||'—')+'</code></td><td style="padding:4px 8px;font-size:12px;text-align:center;">'+_escH(it.donVi||'')+'</td><td style="padding:4px 8px;font-size:12px;text-align:center;font-weight:700;color:var(--primary);">'+q(it)+'</td><td style="padding:4px 8px;font-size:12px;color:var(--text-light);">'+_escH(it.ghiChu||'')+'</td></tr>';}).join('');
+  var html='<div style="font-size:12.5px;color:var(--text-light);margin-bottom:8px;"><b style="color:var(--primary);">'+order.length+'</b> nhân viên được cấp'+(extras.length?(' · <b style="color:var(--primary);">'+extras.length+'</b> vật tư khác'):'')+'</div>'+
+    '<div style="max-height:300px;overflow-y:auto;border:1px solid var(--border);border-radius:8px;">'+
+      '<table style="width:100%;border-collapse:collapse;"><thead><tr style="background:#f5f7fb;position:sticky;top:0;">'+
+      '<th style="padding:6px 8px;font-size:11px;text-align:center;width:36px;">#</th>'+
+      '<th style="padding:6px 8px;font-size:11px;text-align:left;">Nhân viên</th>'+
+      '<th style="padding:6px 8px;font-size:11px;text-align:left;">Trang bị được cấp (số lượng thực tế)</th>'+
+      '</tr></thead><tbody>'+(empRows||'<tr><td colspan="3" style="padding:10px;text-align:center;color:var(--text-light);font-size:12px;">Không có nhân viên trong phiếu.</td></tr>')+'</tbody></table></div>';
+  if(extras.length){
+    html+='<div style="margin-top:12px;font-size:12px;font-weight:600;color:var(--primary);">'+_ic('pkg',14)+' Vật tư khác cấp phát (theo đơn vị)</div>'+
+      '<div style="border:1px solid var(--border);border-radius:8px;margin-top:5px;overflow:hidden;"><table style="width:100%;border-collapse:collapse;"><thead><tr style="background:#f5f7fb;">'+
+      '<th style="padding:5px 8px;font-size:11px;text-align:center;width:36px;">#</th><th style="padding:5px 8px;font-size:11px;text-align:left;">Tên vật tư</th><th style="padding:5px 8px;font-size:11px;text-align:left;">Mã</th><th style="padding:5px 8px;font-size:11px;text-align:center;">ĐVT</th><th style="padding:5px 8px;font-size:11px;text-align:center;">SL</th><th style="padding:5px 8px;font-size:11px;text-align:left;">Ghi chú</th>'+
+      '</tr></thead><tbody>'+extraRows+'</tbody></table></div>';
+  }
+  html+='<details style="margin-top:10px;"><summary style="cursor:pointer;font-size:12px;color:var(--primary);font-weight:600;">'+_ic('pkg',13)+' Xem bảng tổng hợp trang bị</summary>'+
+    '<div style="border:1px solid var(--border);border-radius:8px;margin-top:6px;overflow:hidden;"><table style="width:100%;border-collapse:collapse;"><thead><tr style="background:#f5f7fb;">'+
+    '<th style="padding:5px 8px;font-size:11px;text-align:center;width:36px;">#</th><th style="padding:5px 8px;font-size:11px;text-align:left;">Tên trang bị</th><th style="padding:5px 8px;font-size:11px;text-align:left;">Mã</th><th style="padding:5px 8px;font-size:11px;text-align:center;">ĐVT</th><th style="padding:5px 8px;font-size:11px;text-align:center;">Tổng SL</th>'+
+    '</tr></thead><tbody>'+(sumRows||'')+'</tbody></table></div></details>';
+  return html;
+}
 function renderChoduyetTab(){
   if(!isAdmin()){document.getElementById('choduyet-list').innerHTML='<div style="padding:20px;color:var(--text-light);">Chỉ Admin mới có quyền phê duyệt.</div>';document.getElementById('daduyet-list').innerHTML='';return;}
   const all=BHLD.lsGet('phieu_requests');
@@ -3582,8 +3625,21 @@ function renderChoduyetTab(){
     }).join('');
     pendingEl.innerHTML=changeCards+pending.map(p=>{
       const label=p.type==='nv_moi'?`${_ic('userplus',14)} NV mới: ${_escH(p.nvTen||'')} (${_escH(p.chucDanh||'')}) – ${_escH(p.donVi||'')}`:`${_ic('cal',14)} Phiếu quý ${p.quyStr} – ${_escH(p.donVi||'')}`;
-      const items=_parsePhieuItems(p.items);
-      const itemRows=items.map((it,i)=>`<tr><td style="padding:4px 8px;font-size:12px;">${i+1}</td><td style="padding:4px 8px;font-size:12px;">${_escH(it.ten)}</td><td style="padding:4px 8px;font-size:12px;text-align:center;">${it.soLuongDinhMuc||''}</td><td style="padding:4px 8px;font-size:12px;text-align:center;font-weight:600;">${it.thucTe!==''&&it.thucTe!==undefined?it.thucTe:it.soLuongDinhMuc||'—'}</td><td style="padding:4px 8px;font-size:12px;color:var(--text-light);">${it.nvTen?_escH(it.nvTen):''}</td></tr>`).join('');
+      let bodyHtml;
+      if(p.type==='quy'){
+        bodyHtml=_phieuQuyDetailHtml(p);
+      } else {
+        const items=_parsePhieuItems(p.items);
+        const itemRows=items.map((it,i)=>`<tr><td style="padding:4px 8px;font-size:12px;">${i+1}</td><td style="padding:4px 8px;font-size:12px;">${_escH(it.ten)}</td><td style="padding:4px 8px;font-size:12px;text-align:center;">${it.soLuongDinhMuc||''}</td><td style="padding:4px 8px;font-size:12px;text-align:center;font-weight:600;">${it.thucTe!==''&&it.thucTe!==undefined?it.thucTe:it.soLuongDinhMuc||'—'}</td><td style="padding:4px 8px;font-size:12px;color:var(--text-light);">${it.nvTen?_escH(it.nvTen):''}</td></tr>`).join('');
+        bodyHtml=`<div style="max-height:220px;overflow-y:auto;">
+        <table style="width:100%;border-collapse:collapse;"><thead><tr style="background:#f5f7fb;">
+          <th style="padding:5px 8px;font-size:11px;text-align:left;">#</th>
+          <th style="padding:5px 8px;font-size:11px;text-align:left;">Trang bị</th>
+          <th style="padding:5px 8px;font-size:11px;text-align:center;">Định mức</th>
+          <th style="padding:5px 8px;font-size:11px;text-align:center;">Thực tế</th>
+          <th style="padding:5px 8px;font-size:11px;text-align:left;">Nhân viên</th>
+        </tr></thead><tbody>${itemRows}</tbody></table></div>`;
+      }
       return `<div style="border:1.5px solid var(--border);border-radius:10px;padding:16px;margin-bottom:16px;">
         <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:10px;">
           <div><strong style="color:var(--primary);">${label}</strong><div style="font-size:12px;color:var(--text-light);margin-top:3px;">Gửi bởi: ${_escH(p.submittedBy||'—')} · ${p.submittedAt?new Date(p.submittedAt).toLocaleDateString('vi-VN'):''}</div></div>
@@ -3593,14 +3649,7 @@ function renderChoduyetTab(){
             <button class="btn btn-danger btn-sm" onclick="rejectPhieu('${p.id}')">${_ic('x',14)} Trả lại</button>
           </div>
         </div>
-        <div style="max-height:220px;overflow-y:auto;">
-        <table style="width:100%;border-collapse:collapse;"><thead><tr style="background:#f5f7fb;">
-          <th style="padding:5px 8px;font-size:11px;text-align:left;">#</th>
-          <th style="padding:5px 8px;font-size:11px;text-align:left;">Trang bị</th>
-          <th style="padding:5px 8px;font-size:11px;text-align:center;">Định mức</th>
-          <th style="padding:5px 8px;font-size:11px;text-align:center;">Thực tế</th>
-          <th style="padding:5px 8px;font-size:11px;text-align:left;">Nhân viên</th>
-        </tr></thead><tbody>${itemRows}</tbody></table></div>
+        ${bodyHtml}
       </div>`;
     }).join('');
   }
