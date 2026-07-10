@@ -231,7 +231,7 @@
           '<button id="hse-act-avatar-btn" title="Đổi ảnh đại diện" style="border:1px solid ' + C.border + ';background:#fff;border-radius:6px;cursor:pointer;padding:5px 9px;font-size:12px;color:' + C.primary + ';font-weight:600;">📷 Ảnh</button>' +
           '<input id="hse-act-avatar-file" type="file" accept="image/*" style="display:none;">' +
         '</div>'
-      : '<div style="padding:9px 12px;background:#f5f8ff;border-bottom:1px solid ' + C.border + ';font-size:11.5px;color:' + C.light + ';">Đăng nhập để tạo ảnh đại diện và ghi hoạt động của bạn.</div>';
+      : '';
 
     var closeBtn = '<button id="hse-act-close" title="Đóng" aria-label="Đóng" style="display:none;background:rgba(255,255,255,.18);border:none;color:#fff;width:24px;height:24px;border-radius:6px;cursor:pointer;font-size:15px;line-height:1;">×</button>';
 
