@@ -237,14 +237,11 @@
 
     return '' +
       '<div style="flex:0 0 auto;display:flex;align-items:center;gap:8px;padding:10px 13px;background:' + C.primary + ';color:#fff;border-bottom:2px solid ' + C.accent + ';">' +
-        '<span style="font-size:15px;">📣</span>' +
         '<div style="flex:1;font-size:13px;font-weight:600;">Hoạt động gần đây</div>' +
-        '<button id="hse-act-refresh" title="Làm mới" aria-label="Làm mới" style="background:rgba(255,255,255,.18);border:none;color:#fff;width:24px;height:24px;border-radius:6px;cursor:pointer;font-size:13px;line-height:1;">↻</button>' +
         closeBtn +
       '</div>' +
       meRow +
-      '<div id="hse-act-list" style="flex:1 1 auto;overflow-y:auto;">' + body + '</div>' +
-      '<div style="flex:0 0 auto;padding:7px 12px;text-align:center;font-size:10.5px;color:' + C.light + ';border-top:1px solid #eef1f7;background:#fafbfe;">Cập nhật trực tiếp · ' + MAX_ITEMS + ' mục mới nhất</div>';
+      '<div id="hse-act-list" style="flex:1 1 auto;overflow-y:auto;">' + body + '</div>';
   }
 
   function injectStyle() {
@@ -279,9 +276,6 @@
   }
 
   function wirePanel(host) {
-    var refresh = host.querySelector("#hse-act-refresh");
-    if (refresh) refresh.addEventListener("click", function () { loadFeed(); });
-
     var closeB = host.querySelector("#hse-act-close");
     if (closeB) {
       if (narrow()) closeB.style.display = "";
@@ -406,7 +400,7 @@
       bell = document.createElement("button");
       bell.id = BELL_ID;
       bell.setAttribute("aria-label", "Hoạt động gần đây");
-      bell.innerHTML = "📣";
+      bell.innerHTML = "🔔";
       bell.style.cssText = "position:fixed;right:18px;bottom:18px;width:46px;height:46px;border-radius:50%;border:none;" +
         "background:" + C.primary + ";color:#fff;font-size:19px;cursor:pointer;z-index:40;box-shadow:0 6px 18px rgba(0,32,101,.28);";
       bell.addEventListener("click", function () { _open = !_open; applyMode(); });
@@ -469,6 +463,10 @@
     if (document.body) mo.observe(document.body, { childList: true });
     global.addEventListener("hashchange", ensure);
     global.addEventListener("resize", schedule);
+    // Quay lại tab sau khi máy ngủ/treo → tải lại lặng lẽ (bù realtime bị rớt)
+    if (global.document) global.document.addEventListener("visibilitychange", function () {
+      if (!global.document.hidden && isDashboard()) loadFeed();
+    });
   }
 
   /* ─── Khởi động ─── */
