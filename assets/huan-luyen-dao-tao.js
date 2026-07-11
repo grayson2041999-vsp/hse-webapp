@@ -64,6 +64,8 @@
   var LS_NHANSU   = "hl_nhansu";
   var LS_SETTINGS = "hl_settings";
   var LS_ORDER    = "hl_order";     // { key: [id1, id2, ...] } – thứ tự kéo–thả
+  var LS_WARN     = "hl_warndays";  // { key: số ngày báo sắp hết hạn }
+  var DEFAULT_WARN_DAYS = 60;       // mặc định ~2 tháng
 
   /* Lấy / ghi toàn bộ danh sách nhân sự (localStorage only) */
   function _getAllData() {
@@ -181,6 +183,23 @@
     s[key] = val;
     saveSettings(s);
   }
+
+  /* Số ngày báo "sắp hết hạn" theo từng mục (localStorage + best-effort DB) */
+  function getWarnDays(key) {
+    try {
+      var m = JSON.parse(localStorage.getItem(LS_WARN) || "{}");
+      return (m[key] !== undefined) ? parseInt(m[key]) : DEFAULT_WARN_DAYS;
+    } catch (e) { return DEFAULT_WARN_DAYS; }
+  }
+  function setWarnDays(key, val) {
+    var m;
+    try { m = JSON.parse(localStorage.getItem(LS_WARN) || "{}"); } catch (e) { m = {}; }
+    m[key] = val;
+    localStorage.setItem(LS_WARN, JSON.stringify(m));
+    if (typeof DB !== "undefined" && DB.isReady()) {
+      DB.update("hl_settings", key, { warn_days: val }).catch(function () {});
+    }
+  }
   function pageByKey(k) {
     for (var i = 0; i < PAGES.length; i++) if (PAGES[i].key === k) return PAGES[i];
     return null;
@@ -214,9 +233,13 @@
 
     var p2 = DB.getAll("hl_settings").then(function (rows) {
       if (rows && rows.length) {
-        var s = {};
-        rows.forEach(function (r) { s[r.loai] = parseInt(r.thoi_han_thang); });
+        var s = {}, w = {};
+        rows.forEach(function (r) {
+          s[r.loai] = parseInt(r.thoi_han_thang);
+          if (r.warn_days !== undefined && r.warn_days !== null) w[r.loai] = parseInt(r.warn_days);
+        });
         localStorage.setItem(LS_SETTINGS, JSON.stringify(s));
+        if (Object.keys(w).length) localStorage.setItem(LS_WARN, JSON.stringify(w));
       }
     }).catch(function () {});
 
@@ -296,6 +319,9 @@
       ".hl-stat.red{border-left:4px solid var(--danger);}",
       ".hl-val{font-size:26px;font-weight:800;color:var(--text);}",
       ".hl-lbl{font-size:11.5px;color:var(--text-muted);margin-top:1px;}",
+      ".hl-warn-input{width:50px;padding:1px 4px;border:1px solid #f0c987;border-radius:5px;",
+      "font-size:12px;font-weight:800;text-align:center;color:#e68900;background:#fff;}",
+      ".hl-warn-input:focus{outline:none;border-color:#e68900;box-shadow:0 0 0 2px rgba(230,137,0,.15);}",
       /* Table */
       ".hl-tw{overflow-x:auto;}",
       ".hl-tw table{width:100%;border-collapse:collapse;font-size:13px;}",
@@ -388,7 +414,7 @@
       var btn = document.createElement("button");
       btn.className = "hl-tab" + (pg.key === _currentKey ? " active" : "");
       btn.dataset.key = pg.key;
-      btn.innerHTML = '<span class="ic">' + pg.icon + '</span>' + pg.label;
+      btn.textContent = pg.label;
       btn.addEventListener("click", function () {
         _currentKey = pg.key;
         document.querySelectorAll(".hl-tab").forEach(function (t) {
@@ -411,12 +437,13 @@
 
     var pg = pageByKey(key);
     var months = getMonths(key);
+    var warnDays = getWarnDays(key);
     var data = getData(key);
 
     /* Tính thống kê */
     var total = data.length, ok = 0, warn = 0, exp = 0;
     data.forEach(function (p) {
-      var s = _calcStatus(p.lastDate, months);
+      var s = _calcStatus(p.lastDate, months, warnDays);
       if (s === "ok") ok++; else if (s === "warn") warn++; else exp++;
     });
 
@@ -425,7 +452,7 @@
     ph.className = "hl-ph";
     ph.innerHTML =
       '<div>' +
-        '<div class="hl-pt">' + pg.icon + ' ' + pg.label + '</div>' +
+        '<div class="hl-pt">' + pg.label + '</div>' +
         '<div class="hl-ps">' + pg.desc + '</div>' +
       '</div>' +
       (_canEdit
@@ -436,10 +463,15 @@
     /* Stats */
     var stats = document.createElement("div");
     stats.className = "hl-stats";
+    var warnLbl = 'Sắp hết hạn (≤ ' +
+      (_isAdmin
+        ? '<input type="number" class="hl-warn-input" id="hl-warn-' + key + '" value="' + warnDays + '" min="1" max="365" title="Số ngày báo sắp hết hạn (chỉ Admin)">'
+        : '<b>' + warnDays + '</b>') +
+      ' ngày)';
     stats.innerHTML =
       _stat("blue", total, "Tổng nhân sự") +
       _stat("green", ok, "Còn hiệu lực") +
-      _stat("orange", warn, "Sắp hết hạn (≤ 2 tháng)") +
+      _stat("orange", warn, warnLbl) +
       _stat("red", exp, "Đã hết hạn / Chưa có");
     body.appendChild(stats);
 
@@ -515,6 +547,15 @@
       }
     }
 
+    var warnInput = document.getElementById("hl-warn-" + key);
+    if (warnInput && _isAdmin) {
+      warnInput.addEventListener("change", function () {
+        var v = parseInt(this.value);
+        if (!isNaN(v) && v >= 1) { setWarnDays(key, v); _renderTabContent(key); }
+        else { this.value = getWarnDays(key); }
+      });
+    }
+
     var searchInput = document.getElementById("hl-search-" + key);
     if (searchInput) searchInput.addEventListener("input", function () { _fillTable(key); });
 
@@ -539,6 +580,7 @@
     var q = searchEl ? searchEl.value.toLowerCase() : "";
     var data = getData(key);
     var months = getMonths(key);
+    var warnDays = getWarnDays(key);
 
     var filtered = data.filter(function (p) {
       return !q ||
@@ -558,7 +600,7 @@
           (data.length ? "Không tìm thấy nhân sự phù hợp." : "Chưa có nhân sự nào. Nhập vào dòng bên dưới để thêm.") +
         '</td></tr>'
       : filtered.map(function (p, i) {
-      var status    = _calcStatus(p.lastDate, months);
+      var status    = _calcStatus(p.lastDate, months, warnDays);
       var nextLabel = _calcNext(p.lastDate, months);
       var nextColor = status === "expired" ? "var(--danger)" : status === "warn" ? "#e68900" : "#1a7a3c";
       var id = _esc(p.id);
@@ -1107,14 +1149,14 @@
     return _pad(dt.getDate()) + "/" + _pad(dt.getMonth() + 1) + "/" + dt.getFullYear();
   }
 
-  function _calcStatus(lastDate, months) {
+  function _calcStatus(lastDate, months, warnDays) {
     var dt = _nextDateObj(lastDate, months);
     if (!dt) return "expired";
     var now = new Date(); now.setHours(0, 0, 0, 0);
     dt.setHours(0, 0, 0, 0);
     var diffDays = Math.round((dt - now) / 86400000);
     if (diffDays < 0) return "expired";
-    if (diffDays <= 60) return "warn";     // ≤ ~2 tháng
+    if (diffDays <= (warnDays || DEFAULT_WARN_DAYS)) return "warn";
     return "ok";
   }
 
