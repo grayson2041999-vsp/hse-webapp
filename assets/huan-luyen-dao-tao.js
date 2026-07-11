@@ -56,6 +56,7 @@
   var _canEdit     = false;
   var _isAdmin     = false;
   var _dragId      = null;   // id hàng đang kéo
+  var _editRowId   = null;   // id hàng đang sửa inline (bấm bút chì)
 
   /* ──────────────────────────────────────────
      DỮ LIỆU (localStorage cache + Supabase)
@@ -303,6 +304,17 @@
       ".hl-tw tbody td{padding:7px 10px;border-bottom:1px solid #eef1f7;vertical-align:middle;}",
       ".hl-tw tbody tr:hover td{background:#eef3fb;}",
       ".hl-tw tbody tr:last-child td{border-bottom:none;}",
+      /* Kẻ dọc ngăn cách giữa các cột */
+      ".hl-tw th, .hl-tw td{border-right:1px solid #e4eaf3;}",
+      ".hl-tw th:last-child, .hl-tw td:last-child{border-right:none;}",
+      /* Hàng đang sửa inline */
+      ".hl-tw tbody tr.hl-editing td{background:#fffdf3;}",
+      ".hl-tw tbody tr.hl-editing:hover td{background:#fffdf3;}",
+      /* Nút icon (bút chì) cho ô thời hạn */
+      ".hl-icon-btn{display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;",
+      "border:1.5px solid var(--border);border-radius:7px;background:#fff;color:var(--brand);cursor:pointer;transition:.12s;}",
+      ".hl-icon-btn:hover{background:var(--brand);color:#fff;border-color:var(--brand);}",
+      ".hl-icon-btn.active{background:var(--brand);color:#fff;border-color:var(--brand);}",
       /* Inline edit fields */
       ".hl-inline{width:100%;box-sizing:border-box;border:1px solid transparent;",
       "background:transparent;border-radius:6px;padding:5px 7px;font-size:13px;",
@@ -418,7 +430,7 @@
         '<div class="hl-ps">' + pg.desc + '</div>' +
       '</div>' +
       (_canEdit
-        ? '<button class="btn btn-accent btn-sm" id="hl-btn-add">＋ Thêm nhân sự</button>'
+        ? ''
         : '<span style="font-size:12px;color:var(--text-muted);font-style:italic;">Chế độ xem</span>');
     body.appendChild(ph);
 
@@ -440,19 +452,17 @@
       _stat("red", exp, "Đã hết hạn / Chưa có");
     body.appendChild(stats);
 
-    /* Card cài đặt thời hạn – nay CẢ User (có quyền chỉnh) đều điều chỉnh được */
+    /* Card cài đặt thời hạn – khoá sẵn, bấm bút chì mới sửa được */
     var settCard = document.createElement("div");
     settCard.className = "hl-card";
-    var lockNote = _canEdit
-      ? '<span style="color:#1a7a3c;font-size:12px;"><svg class="lic-emoji" width="1.05em" height="1.05em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex-shrink:0" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg> Có thể điều chỉnh</span>'
-      : '<span style="font-size:12px;color:var(--text-muted);"><svg class="lic-emoji" width="1.05em" height="1.05em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex-shrink:0" aria-hidden="true"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg> Chế độ xem</span>';
     settCard.innerHTML =
-      '<div class="hl-card-h"><div class="hl-card-title"><svg class="lic-emoji" width="1.05em" height="1.05em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex-shrink:0" aria-hidden="true"><path d="M9.671 4.136a2.34 2.34 0 0 1 4.659 0 2.34 2.34 0 0 0 3.319 1.915 2.34 2.34 0 0 1 2.33 4.033 2.34 2.34 0 0 0 0 3.831 2.34 2.34 0 0 1-2.33 4.033 2.34 2.34 0 0 0-3.319 1.915 2.34 2.34 0 0 1-4.659 0 2.34 2.34 0 0 0-3.32-1.915 2.34 2.34 0 0 1-2.33-4.033 2.34 2.34 0 0 0 0-3.831A2.34 2.34 0 0 1 6.35 6.051a2.34 2.34 0 0 0 3.319-1.915"/><circle cx="12" cy="12" r="3"/></svg> Thời hạn huấn luyện lại</div>' + lockNote + '</div>' +
+      '<div class="hl-card-h"><div class="hl-card-title"><svg class="lic-emoji" width="1.05em" height="1.05em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex-shrink:0" aria-hidden="true"><path d="M9.671 4.136a2.34 2.34 0 0 1 4.659 0 2.34 2.34 0 0 0 3.319 1.915 2.34 2.34 0 0 1 2.33 4.033 2.34 2.34 0 0 0 0 3.831 2.34 2.34 0 0 1-2.33 4.033 2.34 2.34 0 0 0-3.319 1.915 2.34 2.34 0 0 1-4.659 0 2.34 2.34 0 0 0-3.32-1.915 2.34 2.34 0 0 1-2.33-4.033 2.34 2.34 0 0 0 0-3.831A2.34 2.34 0 0 1 6.35 6.051a2.34 2.34 0 0 0 3.319-1.915"/><circle cx="12" cy="12" r="3"/></svg> Thời hạn huấn luyện lại</div></div>' +
       '<div class="hl-card-b">' +
         '<div class="hl-set-row">' +
           '<span style="font-size:13.5px;font-weight:600;">Thời hạn huấn luyện lại:</span>' +
           '<input type="number" class="hl-set-input" id="hl-months-' + key + '" ' +
-            'value="' + months + '" min="1" max="120" ' + (_canEdit ? '' : 'disabled') + '>' +
+            'value="' + months + '" min="1" max="120" disabled>' +
+          (_canEdit ? '<button class="hl-icon-btn" id="hl-months-edit-' + key + '" title="Bấm để sửa"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"/><path d="m15 5 4 4"/></svg></button>' : '') +
           '<span style="font-size:13px;color:var(--text-muted);">tháng</span>' +
           '<span style="font-size:12px;color:var(--text-muted);font-style:italic;">– Áp dụng cho toàn bộ nhân sự trong mục này</span>' +
         '</div>' +
@@ -467,7 +477,7 @@
         '<div class="hl-card-title"><svg class="lic-emoji" width="1.05em" height="1.05em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex-shrink:0" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><path d="M16 3.128a4 4 0 0 1 0 7.744"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><circle cx="9" cy="7" r="4"/></svg> Danh sách nhân sự</div>' +
         '<input type="text" class="hl-search" id="hl-search-' + key + '" placeholder="Tìm kiếm...">' +
       '</div>' +
-      (_canEdit ? '<div class="hl-toolbar" style="padding:8px 18px;"><span class="hl-hint">✎ Bấm vào ô để sửa trực tiếp · ⣿ Kéo hàng để đổi thứ tự · ＋ Nhập vào dòng cuối rồi bấm ✓ (hoặc Enter) để thêm nhân sự (khi không tìm kiếm)</span></div>' : '') +
+      (_canEdit ? '<div class="hl-toolbar" style="padding:8px 18px;"><span class="hl-hint">✎ Bấm bút chì ở cột Thao tác để sửa dòng · ⣿ Kéo hàng để đổi thứ tự · ＋ Nhập vào dòng cuối rồi bấm ✓ (hoặc Enter) để thêm nhân sự (khi không tìm kiếm)</span></div>' : '') +
       '<div class="hl-tw"><table><thead><tr>' +
         (_canEdit ? '<th class="hl-handle-cell"></th>' : '') +
         '<th style="width:40px;text-align:center">STT</th>' +
@@ -476,10 +486,10 @@
         '<th>Chức danh</th>' +
         '<th>Đơn vị</th>' +
         (pg.subTypes ? '<th>Loại</th>' : '') +
-        '<th>TG huấn luyện gần nhất</th>' +
-        '<th>TG huấn luyện tiếp theo</th>' +
+        '<th>Ngày HL gần nhất</th>' +
+        '<th>Ngày HL tiếp theo</th>' +
         '<th>Trạng thái</th>' +
-        (_canEdit ? '<th style="width:70px;text-align:center">Xoá</th>' : '') +
+        (_canEdit ? '<th style="width:96px;text-align:center">Thao tác</th>' : '') +
       '</tr></thead>' +
       '<tbody id="hl-tbody-' + key + '"></tbody>' +
       '</table></div>';
@@ -490,11 +500,28 @@
 
     /* Wire events */
     var monthsInput = document.getElementById("hl-months-" + key);
+    var monthsEdit  = document.getElementById("hl-months-edit-" + key);
     if (monthsInput && _canEdit) {
-      monthsInput.addEventListener("change", function () {
-        var v = parseInt(this.value);
-        if (!isNaN(v) && v >= 1) { setMonths(key, v); _fillTable(key); }
-      });
+      /* Lưu + khoá lại */
+      var saveMonths = function () {
+        var v = parseInt(monthsInput.value);
+        if (!isNaN(v) && v >= 1) { setMonths(key, v); }
+        else { monthsInput.value = getMonths(key); }
+        monthsInput.disabled = true;
+        if (monthsEdit) monthsEdit.classList.remove("active");
+        _fillTable(key);
+      };
+      monthsInput.addEventListener("change", saveMonths);
+      monthsInput.addEventListener("blur", function () { if (!monthsInput.disabled) saveMonths(); });
+      monthsInput.addEventListener("keydown", function (e) { if (e.key === "Enter") { e.preventDefault(); monthsInput.blur(); } });
+      if (monthsEdit) {
+        monthsEdit.addEventListener("click", function () {
+          monthsInput.disabled = false;
+          monthsEdit.classList.add("active");
+          monthsInput.focus();
+          monthsInput.select && monthsInput.select();
+        });
+      }
     }
 
     var searchInput = document.getElementById("hl-search-" + key);
@@ -553,23 +580,25 @@
       var nextColor = status === "expired" ? "var(--danger)" : status === "warn" ? "#e68900" : "#1a7a3c";
       var id = _esc(p.id);
 
+      var editing = _canEdit && (p.id === _editRowId);
+
       var handleCell = _canEdit
-        ? '<td class="hl-handle-cell">' + (dragOn ? _gripSVG(id) : "") + '</td>'
+        ? '<td class="hl-handle-cell">' + (dragOn && !editing ? _gripSVG(id) : "") + '</td>'
         : "";
 
       /* Ô Loại (subType) */
       var subTypeCell = "";
       if (hasSubTypes) {
-        subTypeCell = _canEdit
+        subTypeCell = editing
           ? '<td>' + _selCell(id, "subType", p.subType, [
                 { v: "T-BOSIET", t: "T-BOSIET" }, { v: "T-FOET", t: "T-FOET" }
               ], "-- Chọn --") + '</td>'
           : '<td><span class="hl-badge ' + (p.subType === "T-BOSIET" ? "hl-blue" : "hl-gray") + '">' + _esc(p.subType || "–") + '</span></td>';
       }
 
-      /* Các ô có/không sửa inline */
+      /* Các ô — mặc định chỉ xem; chỉ hiện input khi hàng đang được sửa */
       var nameCell, pidCell, titleCell, unitCell, lastCell;
-      if (_canEdit) {
+      if (editing) {
         nameCell  = '<td>' + _inpCell(id, "name",  p.name,  "hl-inline-name", "Họ và tên") + '</td>';
         pidCell   = '<td>' + _inpCell(id, "pid",   p.pid,   "", "Danh số") + '</td>';
         titleCell = '<td>' + _inpCell(id, "title", p.title, "", "Chức danh") + '</td>';
@@ -584,13 +613,16 @@
         lastCell  = '<td>' + _fmtDate(p.lastDate) + '</td>';
       }
 
-      var delCell = _canEdit
-        ? '<td style="text-align:center;">' +
-            '<button class="btn btn-danger btn-sm" data-act="del" data-id="' + id + '" data-k="' + key + '"><svg class="lic-emoji" width="1.05em" height="1.05em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex-shrink:0" aria-hidden="true"><path d="M10 11v6"/><path d="M14 11v6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>' +
-          '</td>'
+      /* Cột Thao tác: bút chì (sửa) + xoá; khi đang sửa → lưu (✓) + huỷ (✗) */
+      var editBtn = '<button class="btn btn-ghost btn-sm" style="margin-right:3px" data-act="edit" data-id="' + id + '" data-k="' + key + '" title="Sửa"><svg class="lic-emoji" width="1.05em" height="1.05em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex-shrink:0" aria-hidden="true"><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"/><path d="m15 5 4 4"/></svg></button>';
+      var delBtn  = '<button class="btn btn-danger btn-sm" data-act="del" data-id="' + id + '" data-k="' + key + '" title="Xoá"><svg class="lic-emoji" width="1.05em" height="1.05em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex-shrink:0" aria-hidden="true"><path d="M10 11v6"/><path d="M14 11v6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>';
+      var saveBtn = '<button class="btn btn-accent btn-sm" style="margin-right:3px" data-act="save" data-id="' + id + '" data-k="' + key + '" title="Lưu"><svg class="lic-emoji" width="1.05em" height="1.05em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex-shrink:0" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></button>';
+      var cancelBtn = '<button class="btn btn-ghost btn-sm" data-act="cancel" data-k="' + key + '" title="Huỷ"><svg class="lic-emoji" width="1.05em" height="1.05em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex-shrink:0" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>';
+      var actCell = _canEdit
+        ? '<td style="text-align:center;white-space:nowrap;">' + (editing ? (saveBtn + cancelBtn) : (editBtn + delBtn)) + '</td>'
         : "";
 
-      return '<tr data-row-id="' + id + '">' +
+      return '<tr data-row-id="' + id + '"' + (editing ? ' class="hl-editing"' : '') + '>' +
         handleCell +
         '<td style="text-align:center;color:var(--text-muted);font-size:12px;">' + (i + 1) + '</td>' +
         nameCell + pidCell + titleCell + unitCell +
@@ -598,7 +630,7 @@
         lastCell +
         '<td style="font-weight:600;color:' + nextColor + ';">' + nextLabel + '</td>' +
         '<td>' + _statusBadge(status, p.lastDate) + '</td>' +
-        delCell +
+        actCell +
       '</tr>';
     }).join("");
 
@@ -607,10 +639,17 @@
 
     tbody.innerHTML = rowsHtml;
 
-    /* Wire nút xoá */
-    Array.prototype.forEach.call(tbody.querySelectorAll("button[data-act='del']"), function (btn) {
+    /* Wire nút Thao tác: xoá / sửa / lưu / huỷ */
+    Array.prototype.forEach.call(tbody.querySelectorAll("button[data-act]"), function (btn) {
+      var act = btn.getAttribute("data-act");
+      if (act === "addrow") return; // dòng thêm mới xử lý riêng
       btn.addEventListener("click", function () {
-        _deletePerson(btn.getAttribute("data-k"), btn.getAttribute("data-id"));
+        var id = btn.getAttribute("data-id");
+        var k  = btn.getAttribute("data-k");
+        if (act === "del")         _deletePerson(k, id);
+        else if (act === "edit")   { _editRowId = id; _fillTable(k); _focusFirstEdit(k); }
+        else if (act === "cancel") { _editRowId = null; _fillTable(k); }
+        else if (act === "save")   _commitRowEdit(k, id);
       });
     });
 
@@ -619,6 +658,49 @@
       if (dragOn) _wireDrag(tbody, key);
       _wireAddRow(tbody, key);
     }
+  }
+
+  function _focusFirstEdit(key) {
+    var tbody = document.getElementById("hl-tbody-" + key);
+    if (!tbody) return;
+    var el = tbody.querySelector("tr.hl-editing .hl-inline[data-field='name']");
+    if (el) { el.focus(); el.select && el.select(); }
+  }
+
+  /* Lưu 1 hàng đang sửa inline */
+  function _commitRowEdit(key, id) {
+    var tbody = document.getElementById("hl-tbody-" + key);
+    var row = tbody ? tbody.querySelector("tr.hl-editing[data-row-id='" + id + "']") : null;
+    if (!row) return;
+    function val(f) { var el = row.querySelector(".hl-inline[data-field='" + f + "']"); return el ? (el.value || "").trim() : undefined; }
+
+    var all = _getAllData();
+    var rec = null;
+    for (var i = 0; i < all.length; i++) { if (all[i].id === id) { rec = all[i]; break; } }
+    if (!rec) { _editRowId = null; _fillTable(key); return; }
+
+    var name = val("name"), pid = val("pid"), title = val("title"), unit = val("unit");
+    var pg = pageByKey(key), needSub = !!(pg && pg.subTypes);
+    var subType = val("subType");
+    var dateRaw = val("lastDate");
+    var lastDate = _toStorage(dateRaw);
+
+    if (dateRaw && !lastDate) {
+      var d = row.querySelector(".hl-inline-date");
+      if (d) d.classList.add("hl-invalid");
+      alert("Ngày không hợp lệ. Nhập theo định dạng DD/MM/YYYY, ví dụ: 15/04/2025");
+      return;
+    }
+    if (!name || !pid || !title || !unit || !lastDate || (needSub && !subType)) {
+      alert("Vui lòng điền đủ: Họ tên, Danh số, Chức danh, Đơn vị, Ngày (DD/MM/YYYY)" + (needSub ? ", Loại" : "") + ".");
+      return;
+    }
+
+    rec.name = name; rec.pid = pid; rec.title = title; rec.unit = unit; rec.lastDate = lastDate;
+    if (needSub) rec.subType = subType;
+    _updateRecord(rec);
+    _editRowId = null;
+    _fillTable(key);
   }
 
   /* ──────────────────────────────────────────
@@ -718,54 +800,24 @@
   }
 
   /* ──────────────────────────────────────────
-     INLINE EDIT — lưu ngay khi rời ô / đổi lựa chọn
+     INLINE EDIT — hàng đang sửa (bấm bút chì); lưu bằng nút ✓ hoặc Enter
   ────────────────────────────────────────── */
   function _wireInlineEdit(tbody, key) {
     /* Ô ngày: auto-format DD/MM/YYYY khi gõ (bỏ qua dòng thêm mới) */
-    Array.prototype.forEach.call(tbody.querySelectorAll(".hl-inline-date:not(.hl-new)"), function (el) {
+    Array.prototype.forEach.call(tbody.querySelectorAll("tr.hl-editing .hl-inline-date"), function (el) {
       el.addEventListener("input", function () { this.value = _fmtDMYInput(this.value); this.classList.remove("hl-invalid"); });
     });
 
-    /* Enter để xác nhận (nhả focus) */
-    Array.prototype.forEach.call(tbody.querySelectorAll("input.hl-inline:not(.hl-new)"), function (el) {
-      el.addEventListener("keydown", function (e) { if (e.key === "Enter") { e.preventDefault(); this.blur(); } });
-    });
-
-    /* Lưu khi đổi giá trị */
-    Array.prototype.forEach.call(tbody.querySelectorAll(".hl-inline[data-field]:not(.hl-new)"), function (el) {
-      el.addEventListener("change", function () {
-        _inlineSave(key, this.getAttribute("data-id"), this.getAttribute("data-field"), this.value, this);
+    /* Enter trong hàng đang sửa → lưu hàng */
+    Array.prototype.forEach.call(tbody.querySelectorAll("tr.hl-editing input.hl-inline"), function (el) {
+      el.addEventListener("keydown", function (e) {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          var tr = this.closest("tr");
+          if (tr) _commitRowEdit(key, tr.getAttribute("data-row-id"));
+        }
       });
     });
-  }
-
-  function _inlineSave(key, id, field, rawVal, el) {
-    var all = _getAllData();
-    var rec = null;
-    for (var i = 0; i < all.length; i++) { if (all[i].id === id) { rec = all[i]; break; } }
-    if (!rec) return;
-
-    if (field === "lastDate") {
-      var v = (rawVal || "").trim();
-      if (!v) { rec.lastDate = ""; }
-      else {
-        var stored = _toStorage(v);
-        if (!stored) {
-          if (el) el.classList.add("hl-invalid");
-          alert("Ngày không hợp lệ. Nhập theo định dạng DD/MM/YYYY, ví dụ: 15/04/2025");
-          return;
-        }
-        rec.lastDate = stored;
-        if (el) { el.classList.remove("hl-invalid"); el.value = _toDisplay(stored); }
-      }
-      _updateRecord(rec);
-      _fillTable(key); // cập nhật cột "tiếp theo" + trạng thái + thống kê
-      return;
-    }
-
-    /* Các trường text / select khác — không ảnh hưởng cột tính toán → không re-render */
-    rec[field] = (typeof rawVal === "string") ? rawVal.trim() : rawVal;
-    _updateRecord(rec);
   }
 
   /* ──────────────────────────────────────────
