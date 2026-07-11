@@ -137,7 +137,7 @@
           <select class="year-selector" id="yearSelect" onchange="renderTable()"></select>
           <div class="sync-status">
             <span class="sync-dot" id="syncDot"></span>
-            <span id="syncText">—</span>
+            <span id="syncText"></span>
           </div>
         </div>
       </div>
@@ -295,7 +295,13 @@ function getRecord(nam,thang){
 function setSyncStatus(state,text){
   var dot=document.getElementById("syncDot");
   var txt=document.getElementById("syncText");
-  if(dot)dot.className="sync-dot"+(state?" "+state:"");
+  if(dot){
+    dot.className="sync-dot"+(state?" "+state:"");
+    // Tooltip khi rê chuột — dùng cho trạng thái nghỉ (chấm xanh, không hiện chữ)
+    dot.title=text||(state==="ok"?"Đã kết nối — dữ liệu mới nhất":
+                     state==="syncing"?"Đang đồng bộ...":
+                     state==="err"?"Lỗi kết nối":"");
+  }
   if(txt)txt.textContent=text||"";
 }
 
@@ -304,12 +310,8 @@ function safePull(){
   DB.init();
   setSyncStatus("syncing","Đang đồng bộ...");
   DB.getAll(SH_MT).then(function(rows){
-    if(rows&&rows.length){
-      saveAllRecords(rows);
-      setSyncStatus("ok","Đã đồng bộ");
-    } else {
-      setSyncStatus("ok","Đã kết nối");
-    }
+    if(rows&&rows.length)saveAllRecords(rows);
+    setSyncStatus("ok","");   // tải xong: chỉ để chấm xanh + tooltip, không hiện chữ
     renderTable();
   }).catch(function(){
     setSyncStatus("err","Lỗi kết nối");
