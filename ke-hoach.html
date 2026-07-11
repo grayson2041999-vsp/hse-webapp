@@ -167,6 +167,13 @@
     .filter-bar{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px;align-items:center;}
     .filter-bar select{border:1.5px solid var(--border);border-radius:7px;padding:6px 10px;font-size:12.5px;background:#fff;outline:none;cursor:pointer;}
 
+    /* ===== PLAN: SCOPE TOGGLE ===== */
+    .scope-toggle{display:inline-flex;border:1.5px solid var(--border);border-radius:8px;overflow:hidden;}
+    .scope-toggle button{border:none;background:#fff;padding:6px 14px;font-size:12.5px;font-weight:600;color:var(--text-light);cursor:pointer;transition:all .15s;}
+    .scope-toggle button+button{border-left:1.5px solid var(--border);}
+    .scope-toggle button.active{background:var(--primary);color:#fff;}
+    .scope-toggle button:hover:not(.active){background:#dceaf7;color:var(--primary);}
+
     /* ===== PLAN: QUARTER NAV ===== */
     .q-nav{display:flex;align-items:center;gap:6px;}
     .q-nav button{width:30px;height:30px;border:1.5px solid var(--border);background:#fff;border-radius:7px;cursor:pointer;color:var(--primary);font-size:15px;display:flex;align-items:center;justify-content:center;transition:all .15s;}
@@ -1376,8 +1383,9 @@ showToast=function(msg,type){
 /* ============================================================
    ★ VIEW ĐƠN + SỬA INLINE (thay cho 2 tab cũ)
    ============================================================ */
-var _qOffset=0;      // điều hướng quý (0 = quý hiện tại)
-var _ie=null;        // trạng thái editor: {type:'oncetime'|'recurring', id:string|null}
+var _qOffset=0;          // điều hướng quý (0 = quý hiện tại)
+var _planScope="quarter"; // "quarter" = theo quý | "all" = xem tất cả
+var _ie=null;            // trạng thái editor: {type:'oncetime'|'recurring', id:string|null}
 
 var IC={
   cal:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px"><path d="M8 2v4M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/></svg>',
@@ -1391,6 +1399,7 @@ var IC={
 
 function switchQuarter(d){ _qOffset+=d; _ie=null; renderPlan(); }
 function goToday(){ _qOffset=0; _ie=null; renderPlan(); }
+function setScope(s){ _planScope=s; _ie=null; renderPlan(); }
 
 function planQuarterInfo(){
   var base=new Date();
@@ -1427,30 +1436,48 @@ function renderPlan(){
   var Q=planQuarterInfo();
   var once=getOnce(), recur=getRecur();
 
-  var overdue=once.filter(function(t){
-    if((t.status||"")==="Đã hoàn thành") return false;
-    if(!t.end) return false;
-    return new Date(t.end) < Q.start;
-  });
-  var onceQ=once.filter(function(t){
-    var ok=true;
-    if(t.start && new Date(t.start) > Q.end) ok=false;
-    if(t.end && new Date(t.end) < Q.start) ok=false;
-    return ok;
-  });
+  var scopeAll=_planScope==="all";
   function _so(a,b){ return (a.order||0)-(b.order||0); }
+  var overdue, onceQ, recurQ;
+  if(scopeAll){
+    // Xem tất cả — không lọc theo quý
+    overdue=once.filter(function(t){return computeStatus(t)==="Trễ hạn";});
+    onceQ=once.filter(function(t){return computeStatus(t)!=="Trễ hạn";});
+    recurQ=recur.slice();
+  } else {
+    overdue=once.filter(function(t){
+      if((t.status||"")==="Đã hoàn thành") return false;
+      if(!t.end) return false;
+      return new Date(t.end) < Q.start;
+    });
+    onceQ=once.filter(function(t){
+      var ok=true;
+      if(t.start && new Date(t.start) > Q.end) ok=false;
+      if(t.end && new Date(t.end) < Q.start) ok=false;
+      return ok;
+    });
+    recurQ=recur.filter(function(t){
+      if(t.allMonths) return true;
+      return (t.months||[]).some(function(m){return Q.months.indexOf(m)>=0;});
+    });
+  }
   overdue.sort(_so); onceQ.sort(_so);
-  var recurQ=recur.filter(function(t){
-    if(t.allMonths) return true;
-    return (t.months||[]).some(function(m){return Q.months.indexOf(m)>=0;});
-  });
 
+  var titleSuffix=scopeAll
+    ? ' — <span style="color:var(--accent)">Tất cả</span>'
+    : ' — '+Q.label+' <span style="font-size:12px;font-weight:400;color:var(--text-light)">(tháng '+Q.months.join(", ")+')</span>';
   var html='<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:16px">'+
-    '<div style="font-size:15px;font-weight:700;color:var(--primary)">'+IC.cal+' Kế hoạch công việc — '+Q.label+' <span style="font-size:12px;font-weight:400;color:var(--text-light)">(tháng '+Q.months.join(", ")+')</span></div>'+
-    '<div class="q-nav">'+
-      '<button title="Quý trước" onclick="switchQuarter(-1)">&#8249;</button>'+
-      '<button class="q-today" onclick="goToday()">Quý hiện tại</button>'+
-      '<button title="Quý sau" onclick="switchQuarter(1)">&#8250;</button>'+
+    '<div style="font-size:15px;font-weight:700;color:var(--primary)">'+IC.cal+' Kế hoạch công việc'+titleSuffix+'</div>'+
+    '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">'+
+      '<div class="scope-toggle">'+
+        '<button class="'+(scopeAll?"":"active")+'" onclick="setScope(\'quarter\')">Theo quý</button>'+
+        '<button class="'+(scopeAll?"active":"")+'" onclick="setScope(\'all\')">Tất cả</button>'+
+      '</div>'+
+      (scopeAll?'':'<div class="q-nav">'+
+        '<button title="Quý trước" onclick="switchQuarter(-1)">&#8249;</button>'+
+        '<button class="q-today" onclick="goToday()">Quý hiện tại</button>'+
+        '<button title="Quý sau" onclick="switchQuarter(1)">&#8250;</button>'+
+      '</div>')+
     '</div>'+
   '</div>';
 
@@ -1484,7 +1511,7 @@ function buildDeadlineTable(overdue, onceQ, editable, Q){
   }
   emit(overdue); emit(onceQ);
   if(!overdue.length && !onceQ.length && !adding){
-    body='<tr><td colspan="7" style="text-align:center;color:var(--text-light);padding:22px;font-style:italic">Chưa có công việc có kỳ hạn trong '+esc(Q.label)+'.'+(editable?' Nhấn nút bên dưới để thêm.':'')+'</td></tr>';
+    body='<tr><td colspan="7" style="text-align:center;color:var(--text-light);padding:22px;font-style:italic">Chưa có công việc có kỳ hạn'+(_planScope==="all"?"":" trong "+esc(Q.label))+'.'+(editable?' Nhấn nút bên dưới để thêm.':'')+'</td></tr>';
   }
   if(adding) body+=deadlineEditRows({},0);
   return '<div class="table-wrap"><table class="plan-table">'+_planCols()+_planHead()+'<tbody>'+body+'</tbody></table></div>';
@@ -1556,7 +1583,7 @@ function buildRecurTable(list, editable, Q){
     else body+=recurViewRow(t,n,editable);
   });
   if(!list.length && !adding){
-    body='<tr><td colspan="7" style="text-align:center;color:var(--text-light);padding:22px;font-style:italic">Chưa có công việc định kỳ áp dụng cho '+esc(Q.label)+'.'+(editable?' Nhấn nút bên dưới để thêm.':'')+'</td></tr>';
+    body='<tr><td colspan="7" style="text-align:center;color:var(--text-light);padding:22px;font-style:italic">Chưa có công việc định kỳ'+(_planScope==="all"?"":" áp dụng cho "+esc(Q.label))+'.'+(editable?' Nhấn nút bên dưới để thêm.':'')+'</td></tr>';
   }
   if(adding) body+=recurEditRows({},0);
   return '<div class="table-wrap"><table class="plan-table">'+_planCols()+_planHead()+'<tbody>'+body+'</tbody></table></div>';
