@@ -445,6 +445,8 @@
       ".nt-table th{background:#dde6f3;color:#003087;font-weight:700;padding:8px 10px;text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}",
       ".nt-table td{padding:8px 10px;border-bottom:1px solid #eef1f7;vertical-align:top;overflow:hidden;white-space:normal;word-break:break-word;overflow-wrap:anywhere;}",
       ".nt-table tbody tr:hover td{background:#f4f8fd;}",
+      ".nt-table th, .nt-table td{border-right:1px solid #e6ebf5;}",
+      ".nt-table th:last-child, .nt-table td:last-child{border-right:none;}",
 
       /* Badge */
       ".nt-badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:600;white-space:nowrap;}",

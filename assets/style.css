@@ -150,6 +150,8 @@ th,td{padding:11px 14px;text-align:left;border-bottom:1px solid var(--border);wh
 th{background:#f8fafc;font-weight:700;font-size:12px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.3px}
 tr:last-child td{border-bottom:none}
 tr:hover td{background:#fafbfc}
+#sop-tbl th,#sop-tbl td{border-right:1px solid #e6ebf5}
+#sop-tbl th:last-child,#sop-tbl td:last-child{border-right:none}
 .toolbar{display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap}
 .toolbar .spacer{flex:1}
 select,.inp{padding:8px 10px;border:1px solid var(--border);border-radius:8px;font-size:13px;font-family:inherit;outline:none;background:#fff}

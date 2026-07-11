@@ -603,6 +603,8 @@
       ".bal-table th{background:#dde6f3;color:#003087;font-weight:600;padding:9px 10px;text-align:left;white-space:nowrap;border-bottom:2px solid #cdd6e8;overflow:hidden;}",
       ".bal-table td{padding:8px 10px;border-bottom:1px solid #eef0f4;vertical-align:middle;overflow:hidden;word-break:break-word;overflow-wrap:anywhere;}",
       ".bal-table tbody tr:hover td{background:#eef3fb;}",
+      ".bal-table th, .bal-table td{border-right:1px solid #e6ebf5;}",
+      ".bal-table th:last-child, .bal-table td:last-child{border-right:none;}",
       ".bal-empty{text-align:center;color:#6b7c93;padding:24px!important;font-style:italic;}",
 
       /* Col widths */
