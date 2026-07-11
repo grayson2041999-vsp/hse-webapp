@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="description" content="Liên doanh Việt - Nga Vietsovpetro · Xí nghiệp Dịch vụ Cảng và CƯVTTB">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Môi trường · Quản lý HSE</title>
+  <title>Xử lý chất thải · Quản lý HSE</title>
   <style>
     :root {
       --primary:       #003087;
@@ -38,6 +38,8 @@
     .btn-primary:hover{background:var(--primary);}
     .btn-edit{background:#dceaf7;color:var(--primary);border:1px solid #b8d4ef;}
     .btn-edit:hover{background:#b8d4ef;}
+    .btn-danger{background:#fbe3e3;color:var(--danger);border:1px solid #f0c0c0;}
+    .btn-danger:hover{background:#f5cccc;}
     .btn-sm{padding:4px 11px;font-size:12px;}
     .btn-outline{background:#fff;border:1.5px solid var(--primary-light);color:var(--primary-light);}
     .btn-outline:hover{background:#dceaf7;}
@@ -64,7 +66,7 @@
     th.left{text-align:left;padding-left:14px;}
     td{padding:8px 10px;border-bottom:1px solid #f0f3fa;border-right:1px solid #f3f5fa;font-size:12.5px;vertical-align:middle;text-align:right;white-space:nowrap;}
     td.month-col{text-align:left;font-weight:600;color:var(--primary);padding-left:14px;min-width:90px;}
-    td.action-col{text-align:center;width:80px;}
+    td.action-col{text-align:center;width:140px;}
     tr:last-child td{border-bottom:none;}
     tr:hover td{background:#eef3fb;}
     tr.total-row td{background:#dde6f3;font-weight:700;color:var(--primary);border-top:2px solid #b8c8e4;}
@@ -115,89 +117,6 @@
 <script src="assets/app.js"></script>
 <script src="assets/hse-activity.js"></script>
 
-<!-- Edit / Add Modal -->
-<div class="modal-overlay" id="editModal">
-  <div class="modal">
-    <div class="modal-title" id="editModalTitle"><svg class="lic-emoji" width="1.05em" height="1.05em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex-shrink:0" aria-hidden="true"><path d="M12 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.375 2.625a1 1 0 0 1 3 3l-9.013 9.014a2 2 0 0 1-.853.505l-2.873.84a.5.5 0 0 1-.62-.62l.84-2.873a2 2 0 0 1 .506-.852z"/></svg> Nhập số liệu</div>
-    <input type="hidden" id="editRecordId">
-    <input type="hidden" id="editThang">
-    <input type="hidden" id="editNam">
-
-    <div class="form-section">Rác thải nguy hại</div>
-    <div class="form-row">
-      <div class="form-group">
-        <label class="form-label">Dạng lỏng (kg)</label>
-        <input class="form-input" id="f_rac_nh_long" type="number" min="0" step="0.01" placeholder="0">
-      </div>
-      <div class="form-group">
-        <label class="form-label">Dạng rắn (kg)</label>
-        <input class="form-input" id="f_rac_nh_ran" type="number" min="0" step="0.01" placeholder="0">
-      </div>
-    </div>
-
-    <div class="form-section">Rác không nguy hại &amp; thùng súc rửa</div>
-    <div class="form-row">
-      <div class="form-group">
-        <label class="form-label">Rác không nguy hại (kg)</label>
-        <input class="form-input" id="f_rac_knh" type="number" min="0" step="0.01" placeholder="0">
-      </div>
-      <div class="form-group">
-        <label class="form-label">Thùng chứa được súc rửa (kg)</label>
-        <input class="form-input" id="f_thung_suc_rua" type="number" min="0" step="0.01" placeholder="0">
-      </div>
-    </div>
-
-    <div class="form-section">Vỏ thùng các loại được xử lý (cái)</div>
-    <div class="form-row">
-      <div class="form-group">
-        <label class="form-label">Phuy sắt</label>
-        <input class="form-input" id="f_phuy_sat" type="number" min="0" step="1" placeholder="0">
-      </div>
-      <div class="form-group">
-        <label class="form-label">Phuy nhựa</label>
-        <input class="form-input" id="f_phuy_nhua" type="number" min="0" step="1" placeholder="0">
-      </div>
-    </div>
-    <div class="form-row">
-      <div class="form-group">
-        <label class="form-label">Can</label>
-        <input class="form-input" id="f_can" type="number" min="0" step="1" placeholder="0">
-      </div>
-      <div class="form-group">
-        <label class="form-label">Thùng nhựa 1m³</label>
-        <input class="form-input" id="f_thung_nhua_1m3" type="number" min="0" step="1" placeholder="0">
-      </div>
-    </div>
-
-    <div class="form-section">Chất thải khác</div>
-    <div class="form-row">
-      <div class="form-group">
-        <label class="form-label">Pin – Ắc quy (kg)</label>
-        <input class="form-input" id="f_pin_ac_quy" type="number" min="0" step="0.01" placeholder="0">
-      </div>
-      <div class="form-group">
-        <label class="form-label">Amiăng (kg)</label>
-        <input class="form-input" id="f_amiang" type="number" min="0" step="0.01" placeholder="0">
-      </div>
-    </div>
-    <div class="form-row">
-      <div class="form-group">
-        <label class="form-label">Dầu nhớt thải (m³)</label>
-        <input class="form-input" id="f_dau_nhot" type="number" min="0" step="0.001" placeholder="0">
-      </div>
-      <div class="form-group">
-        <label class="form-label">Nước thải xử lý (m³)</label>
-        <input class="form-input" id="f_nuoc_thai" type="number" min="0" step="0.001" placeholder="0">
-      </div>
-    </div>
-
-    <div class="modal-footer">
-      <button class="btn btn-outline btn-sm" onclick="closeEditModal()">Huỷ</button>
-      <button class="btn btn-primary btn-sm" onclick="confirmSave()"><svg class="lic-emoji" width="1.05em" height="1.05em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex-shrink:0" aria-hidden="true"><path d="M15.2 3a2 2 0 0 1 1.4.6l3.8 3.8a2 2 0 0 1 .6 1.4V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/><path d="M17 21v-7a1 1 0 0 0-1-1H8a1 1 0 0 0-1 1v7"/><path d="M7 3v4a1 1 0 0 0 1 1h7"/></svg> Lưu</button>
-    </div>
-  </div>
-</div>
-
 <div class="layout">
   <nav class="sidebar" id="sidebarNav"></nav>
   <div style="flex:1;">
@@ -209,7 +128,7 @@
       <div class="topbar-right" id="topbarRight"></div>
     </div>
     <div class="main">
-      <div class="page-title"><svg class="lic-emoji" width="1.05em" height="1.05em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex-shrink:0" aria-hidden="true"><path d="M7 19H4.815a1.83 1.83 0 0 1-1.57-.881 1.785 1.785 0 0 1-.004-1.784L7.196 9.5"/><path d="M11 19h8.203a1.83 1.83 0 0 0 1.556-.89 1.784 1.784 0 0 0 0-1.775l-1.226-2.12"/><path d="m14 16-3 3 3 3"/><path d="M8.293 13.596 7.196 9.5 3.1 10.598"/><path d="m9.344 5.811 1.093-1.892A1.83 1.83 0 0 1 11.985 3a1.784 1.784 0 0 1 1.546.888l3.943 6.843"/><path d="m13.378 9.633 4.096 1.098 1.097-4.096"/></svg> Môi trường</div>
+      <div class="page-title"><svg class="lic-emoji" width="1.05em" height="1.05em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex-shrink:0" aria-hidden="true"><path d="M7 19H4.815a1.83 1.83 0 0 1-1.57-.881 1.785 1.785 0 0 1-.004-1.784L7.196 9.5"/><path d="M11 19h8.203a1.83 1.83 0 0 0 1.556-.89 1.784 1.784 0 0 0 0-1.775l-1.226-2.12"/><path d="m14 16-3 3 3 3"/><path d="M8.293 13.596 7.196 9.5 3.1 10.598"/><path d="m9.344 5.811 1.093-1.892A1.83 1.83 0 0 1 11.985 3a1.784 1.784 0 0 1 1.546.888l3.943 6.843"/><path d="m13.378 9.633 4.096 1.098 1.097-4.096"/></svg> Xử lý chất thải</div>
       <div class="page-desc" id="pageDesc">Thống kê khối lượng và thể tích chất thải được xử lý.</div>
 
       <div class="toolbar">
@@ -312,20 +231,19 @@ function doLogout(){localStorage.removeItem(K_SESS);location.reload();}
 // ── Sidebar ──
 (function buildSidebar(){
   var LINKS=[
-    {href:"tong-quan.html",         icon:"📊", label:"Tổng quan"},
-    {href:"tai-nan-su-co.html",     icon:"⚠️", label:"Tai nạn - Sự cố"},
-    {href:"pccc-cnch.html",         icon:"🧯", label:"PCCC & CNCH"},
-    {href:"cap-phat-bhld.html",     icon:"🦺", label:"Cấp phát BHLĐ"},
-    {href:"huan-luyen-dao-tao.html",icon:"🎓", label:"Huấn luyện - Đào tạo"},
-    {href:"sop.html",               icon:"📑", label:"SOP"},
-    {href:"kiem-tra-cac-cap.html",  icon:"🔍", label:"Kiểm tra các cấp"},
-    {href:"quan-ly-thiet-bi.html",  icon:"⚙️", label:"Quản lý thiết bị"},
-    {href:"kham-suc-khoe.html",     icon:"🩺", label:"Khám sức khoẻ nghề nghiệp"},
-    {href:"moi-truong.html",        icon:"🌿", label:"Môi trường", active:true},
-    {href:"quan-ly-nha-thau.html",  icon:"👷", label:"Quản lý nhà thầu"},
-    {href:"ke-hoach.html",          icon:"🗓️", label:"Kế hoạch"},
-    {href:"bao-cao.html",           icon:"📈", label:"Báo cáo"},
-    {href:"quan-tri-he-thong.html", icon:"🛡️", label:"Quản trị hệ thống", adminOnly:true},
+    {href:"index.html#tong-quan",         icon:"📊", label:"Tổng quan"},
+    {href:"tai-nan-su-co.html",           icon:"⚠️", label:"Tai nạn - Sự cố"},
+    {href:"pccc-cnch.html",               icon:"🧯", label:"PCCC & CNCH"},
+    {href:"cap-phat-bhld.html",           icon:"🦺", label:"Cấp phát BHLĐ"},
+    {href:"index.html#huan-luyen-dao-tao",icon:"🎓", label:"Huấn luyện - Đào tạo"},
+    {href:"index.html#sop",               icon:"📑", label:"SOP"},
+    {href:"kiem-tra-cac-cap.html",        icon:"🔍", label:"Kiểm tra các cấp"},
+    {href:"index.html#quan-ly-thiet-bi",  icon:"⚙️", label:"Quản lý thiết bị"},
+    {href:"kham-suc-khoe.html",           icon:"🩺", label:"Khám sức khoẻ nghề nghiệp"},
+    {href:"moi-truong.html",              icon:"🌿", label:"Xử lý chất thải", active:true},
+    {href:"index.html#quan-ly-nha-thau",  icon:"👷", label:"Quản lý nhà thầu"},
+    {href:"ke-hoach.html",                icon:"🗓️", label:"Kế hoạch"},
+    {href:"index.html#quan-tri-he-thong", icon:"🛡️", label:"Quản trị hệ thống", adminOnly:true},
   ];
   var u=currentUser();
   var nav=document.getElementById("sidebarNav");
@@ -446,7 +364,10 @@ function renderTable(){
     var actionCell="";
     if(canEdit(u)){
       if(hasData){
-        actionCell='<button class="btn btn-edit btn-sm" onclick="startInlineEdit('+nam+','+m+')"><svg class="lic-emoji" width="1.05em" height="1.05em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex-shrink:0" aria-hidden="true"><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"/><path d="m15 5 4 4"/></svg> Sửa</button>';
+        actionCell='<div class="inline-actions">'+
+          '<button class="btn btn-edit btn-sm" onclick="startInlineEdit('+nam+','+m+')"><svg class="lic-emoji" width="1.05em" height="1.05em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex-shrink:0" aria-hidden="true"><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"/><path d="m15 5 4 4"/></svg> Sửa</button>'+
+          '<button class="btn btn-danger btn-sm" onclick="deleteRecord('+nam+','+m+')" title="Xoá số liệu tháng này"><svg class="lic-emoji" width="1.05em" height="1.05em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex-shrink:0" aria-hidden="true"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg></button>'+
+        '</div>';
       } else {
         actionCell='<button class="btn btn-primary btn-sm" onclick="startInlineEdit('+nam+','+m+')">+ Nhập</button>';
       }
@@ -607,90 +528,36 @@ function persistRecord(nam,thang,vals){
   }
 }
 
-// ── Edit Modal (giữ lại, không còn dùng trực tiếp) ──
-function openEdit(nam,thang){
-  var rec=getRecord(nam,thang)||{};
-  document.getElementById("editRecordId").value=rec.id||'';
-  document.getElementById("editThang").value=thang;
-  document.getElementById("editNam").value=nam;
-  document.getElementById("editModalTitle").textContent=
-    (rec.id?'✏️ Sửa số liệu':'📝 Nhập số liệu')+' – '+MONTHS[thang-1]+' / '+nam;
-  MT_FIELDS.forEach(function(f){
-    var el=document.getElementById("f_"+f);
-    if(el)el.value=(rec[f]!==undefined&&rec[f]!==null&&rec[f]!=='')?rec[f]:'';
-  });
-  document.getElementById("editModal").classList.add("open");
-}
-function closeEditModal(){document.getElementById("editModal").classList.remove("open");}
-
-function confirmSave(){
-  var id=document.getElementById("editRecordId").value;
-  var thang=parseInt(document.getElementById("editThang").value);
-  var nam=parseInt(document.getElementById("editNam").value);
+// ── Xoá 1 bản ghi tháng ──
+function deleteRecord(nam,thang){
   var u=currentUser();
-  if(!canEdit(u)){alert("Bạn không có quyền nhập liệu.");return;}
+  if(!canEdit(u)){alert("Bạn không có quyền xoá số liệu.");return;}
+  var rec=getRecord(nam,thang);
+  if(!rec){return;}
+  if(!confirm("Xoá toàn bộ số liệu "+MONTHS[thang-1]+" / "+nam+"?\nThao tác này không thể hoàn tác.")){return;}
 
-  var data={nam:nam,thang:thang};
-  MT_FIELDS.forEach(function(f){data[f]=num(document.getElementById("f_"+f).value);});
-  data.createdBy=u?u.username:'';
-  data.updatedAt=new Date().toISOString();
+  // Xoá khỏi localStorage
+  var all=getAllRecords().filter(function(r){return r.id!==rec.id;});
+  saveAllRecords(all);
+  if(editingKey===nam+"-"+thang)editingKey=null;
+  renderTable();
 
-  // Đảm bảo DB đã init và biết user hiện tại
-  if(typeof DB!=="undefined"){
+  // Xoá trên Sheets/DB (nếu có)
+  if(typeof DB!=="undefined" && rec.id){
     DB.init();
     if(u)DB.setUser(u.username);
+    setSyncStatus("syncing","Đang xoá...");
+    DB.delete(SH_MT,rec.id)
+      .then(function(){setSyncStatus("ok","Đã xoá ✓");})
+      .catch(function(e){setSyncStatus("err","Lỗi xoá: "+(e&&e.message||"unknown"));});
   }
-
-  var all=getAllRecords();
-  if(id){
-    data.id=id;
-    var idx=all.findIndex(function(r){return r.id===id;});
-    if(idx>=0)all[idx]=Object.assign(all[idx],data);
-    else all.push(data);
-    saveAllRecords(all);
-    if(typeof DB!=="undefined"){
-      setSyncStatus("syncing","Đang lưu...");
-      DB.update(SH_MT,id,data)
-        .then(function(){setSyncStatus("ok","Đã lưu vào Sheets ✓");})
-        .catch(function(e){
-          var msg=e&&e.message||"";
-          // Nếu Sheets không tìm thấy ID (sheet bị xoá/tạo lại) → insert mới
-          if(msg.indexOf("Không tìm thấy")>=0||msg.indexOf("id=")>=0){
-            console.warn("[MT] ID không tồn tại trên Sheets, chuyển sang insert:",id);
-            DB.insert(SH_MT,data)
-              .then(function(){setSyncStatus("ok","Đã lưu vào Sheets ✓");})
-              .catch(function(e2){
-                setSyncStatus("err","Lỗi Sheets: "+(e2&&e2.message||"unknown"));
-                console.error("[MT] insert fallback failed",e2);
-              });
-          } else {
-            setSyncStatus("err","Lỗi Sheets: "+msg);
-            console.error("[MT] update failed",e);
-          }
-        });
-    }
-  } else {
-    data.id=Date.now().toString(36)+Math.random().toString(36).slice(2,6);
-    data.createdAt=new Date().toISOString();
-    all.push(data);
-    saveAllRecords(all);
-    if(typeof DB!=="undefined"){
-      setSyncStatus("syncing","Đang lưu...");
-      DB.insert(SH_MT,data)
-        .then(function(){setSyncStatus("ok","Đã lưu vào Sheets ✓");})
-        .catch(function(e){
-          setSyncStatus("err","Lỗi Sheets: "+(e&&e.message||"unknown"));
-          console.error("[MT] insert failed",e);
-        });
-    }
-  }
-  closeEditModal();
-  renderTable();
 }
 
 // ── Page init ──
 window.addEventListener("DOMContentLoaded",function(){
-  buildTopbar();
+  // portal-nav.js (nạp cuối trang) sẽ dựng lại topbar theo chuẩn portal.
+  // Chỉ dựng topbar nội bộ khi portal-nav vắng mặt để tránh dựng 2 lần.
+  if(typeof window.__pnLogout==="undefined")buildTopbar();
   buildYearSelect();
 
   var u=currentUser();
@@ -699,9 +566,9 @@ window.addEventListener("DOMContentLoaded",function(){
     if(!u)
       desc.textContent='Bạn đang xem ở chế độ khách.';
     else if(canEdit(u))
-      desc.textContent='Bạn có quyền nhập và chỉnh sửa số liệu môi trường.';
+      desc.textContent='Bạn có quyền nhập và chỉnh sửa số liệu xử lý chất thải.';
     else
-      desc.textContent='Bạn chỉ có quyền xem số liệu môi trường.';
+      desc.textContent='Bạn chỉ có quyền xem số liệu xử lý chất thải.';
   }
 
   safePull();
