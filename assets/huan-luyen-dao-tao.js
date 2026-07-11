@@ -300,8 +300,10 @@
       ".hl-tw{overflow-x:auto;}",
       ".hl-tw table{width:100%;border-collapse:collapse;font-size:13px;}",
       ".hl-tw thead th{background:#dde6f3;color:var(--brand);font-weight:700;",
-      "padding:10px 12px;text-align:left;white-space:nowrap;border-bottom:2px solid #b8cde4;}",
-      ".hl-tw tbody td{padding:7px 10px;border-bottom:1px solid #eef1f7;vertical-align:middle;}",
+      "padding:10px 12px;text-align:center;white-space:nowrap;border-bottom:2px solid #b8cde4;}",
+      ".hl-tw tbody td{padding:7px 10px;border-bottom:1px solid #eef1f7;vertical-align:middle;text-align:center;}",
+      /* Riêng cột Họ và tên căn trái */
+      ".hl-tw th.hl-col-name, .hl-tw td.hl-col-name{text-align:left;}",
       ".hl-tw tbody tr:hover td{background:#eef3fb;}",
       ".hl-tw tbody tr:last-child td{border-bottom:none;}",
       /* Kẻ dọc ngăn cách giữa các cột */
@@ -470,7 +472,7 @@
       '<div class="hl-tw"><table><thead><tr>' +
         (_canEdit ? '<th class="hl-handle-cell"></th>' : '') +
         '<th style="width:40px;text-align:center">STT</th>' +
-        '<th>Họ và tên</th>' +
+        '<th class="hl-col-name">Họ và tên</th>' +
         '<th>Danh số</th>' +
         '<th>Chức danh</th>' +
         '<th>Đơn vị</th>' +
@@ -580,14 +582,14 @@
       /* Các ô — mặc định chỉ xem; chỉ hiện input khi hàng đang được sửa */
       var nameCell, pidCell, titleCell, unitCell, lastCell;
       if (editing) {
-        nameCell  = '<td>' + _inpCell(id, "name",  p.name,  "hl-inline-name", "Họ và tên") + '</td>';
+        nameCell  = '<td class="hl-col-name">' + _inpCell(id, "name",  p.name,  "hl-inline-name", "Họ và tên") + '</td>';
         pidCell   = '<td>' + _inpCell(id, "pid",   p.pid,   "", "Danh số") + '</td>';
         titleCell = '<td>' + _inpCell(id, "title", p.title, "", "Chức danh") + '</td>';
         unitCell  = '<td>' + _selCell(id, "unit",  p.unit, UNITS.map(function (u) { return { v: u, t: u }; }), "-- Chọn đơn vị --") + '</td>';
         lastCell  = '<td><input class="hl-inline hl-inline-date" data-id="' + id + '" data-field="lastDate" ' +
                       'maxlength="10" placeholder="DD/MM/YYYY" value="' + _esc(_toDisplay(p.lastDate)) + '" autocomplete="off"></td>';
       } else {
-        nameCell  = '<td style="font-weight:600;">' + _esc(p.name) + '</td>';
+        nameCell  = '<td class="hl-col-name" style="font-weight:600;">' + _esc(p.name) + '</td>';
         pidCell   = '<td><span class="hl-badge hl-blue">' + _esc(p.pid) + '</span></td>';
         titleCell = '<td>' + _esc(p.title || "–") + '</td>';
         unitCell  = '<td style="font-size:12.5px;">' + _esc(p.unit) + '</td>';
@@ -706,7 +708,7 @@
     return '<tr class="hl-addrow">' +
       '<td class="hl-handle-cell" style="text-align:center;color:var(--brand);font-weight:800;">＋</td>' +
       '<td style="text-align:center;color:var(--brand);font-size:11px;font-weight:600;">Mới</td>' +
-      '<td>' + _newInp("name",  "hl-inline-name", "Họ và tên") + '</td>' +
+      '<td class="hl-col-name">' + _newInp("name",  "hl-inline-name", "Họ và tên") + '</td>' +
       '<td>' + _newInp("pid",   "", "Danh số") + '</td>' +
       '<td>' + _newInp("title", "", "Chức danh") + '</td>' +
       '<td>' + _newSel("unit", UNITS.map(function (u) { return { v: u, t: u }; }), "-- Đơn vị --") + '</td>' +
