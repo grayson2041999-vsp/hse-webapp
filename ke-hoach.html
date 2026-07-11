@@ -167,6 +167,48 @@
     .filter-bar{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px;align-items:center;}
     .filter-bar select{border:1.5px solid var(--border);border-radius:7px;padding:6px 10px;font-size:12.5px;background:#fff;outline:none;cursor:pointer;}
 
+    /* ===== PLAN: QUARTER NAV ===== */
+    .q-nav{display:flex;align-items:center;gap:6px;}
+    .q-nav button{width:30px;height:30px;border:1.5px solid var(--border);background:#fff;border-radius:7px;cursor:pointer;color:var(--primary);font-size:15px;display:flex;align-items:center;justify-content:center;transition:all .15s;}
+    .q-nav button:hover{background:#dceaf7;border-color:var(--primary-light);}
+    .q-nav .q-today{width:auto;padding:0 12px;font-size:12px;font-weight:600;}
+
+    /* ===== PLAN TABLE ===== */
+    .plan-table{width:100%;border-collapse:collapse;table-layout:fixed;}
+    .plan-table th{background:#dde6f3;color:var(--primary);font-size:12px;font-weight:700;padding:9px 10px;text-align:left;white-space:nowrap;}
+    .plan-table td{padding:8px 10px;border-bottom:1px solid #f0f3fa;font-size:12.8px;vertical-align:top;}
+    .plan-table.ov th{background:#fdedec;color:#c0392b;}
+    .plan-row{cursor:default;}
+    .plan-row.can-edit{cursor:pointer;}
+    .plan-row.can-edit:hover td{background:#eef3fb;}
+    .plan-name{font-weight:600;line-height:1.45;word-break:break-word;white-space:normal;}
+
+    /* ô nhỏ, cắt bớt — hover để xem đầy đủ */
+    .cell-clip{position:relative;max-width:0;}
+    .cell-clip .clip-txt{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text-light);font-size:12px;}
+    .cell-clip .clip-full{display:none;position:absolute;left:6px;top:100%;z-index:40;margin-top:2px;min-width:180px;max-width:340px;background:#1a2535;color:#fff;padding:8px 11px;border-radius:8px;font-size:12.5px;line-height:1.5;white-space:normal;box-shadow:0 6px 20px rgba(0,0,0,0.28);pointer-events:none;}
+    .cell-clip .clip-full::before{content:"";position:absolute;left:14px;top:-5px;border-left:5px solid transparent;border-right:5px solid transparent;border-bottom:5px solid #1a2535;}
+    .cell-clip:hover .clip-full{display:block;}
+    .cell-clip.empty .clip-txt{opacity:.5;}
+
+    /* nút thêm dòng (+) */
+    .add-row-btn{display:inline-flex;align-items:center;gap:7px;margin:8px 0 4px;padding:7px 15px;border:1.5px dashed var(--primary-light);background:#f4f8fd;color:var(--primary);border-radius:8px;font-size:12.5px;font-weight:600;cursor:pointer;transition:all .15s;}
+    .add-row-btn:hover{background:#dceaf7;border-style:solid;}
+
+    /* editor inline */
+    .ie-row td{background:#f4f8fd !important;padding:6px 8px;}
+    .ie-row .inp{padding:5px 8px;font-size:12.5px;}
+    .ie-row textarea.inp{min-height:38px;}
+    .ie-dates{display:flex;flex-direction:column;gap:4px;}
+    .ie-detail{background:#eef4fb;border-top:2px solid var(--primary-light);}
+    .ie-detail td{padding:12px 14px;background:#eef4fb !important;}
+    .ie-detail .ie-grid{display:grid;grid-template-columns:180px 1fr;gap:14px;align-items:start;}
+    .ie-months{display:grid;grid-template-columns:repeat(6,1fr);gap:4px;padding:8px;background:#fff;border:1.5px solid var(--border);border-radius:8px;}
+    .ie-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:12px;padding-top:12px;border-top:1px dashed var(--border);}
+    .ie-mini-label{font-size:11px;font-weight:700;color:var(--text-light);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px;}
+    .plan-section-title{font-size:14px;font-weight:700;margin:6px 0 8px;display:flex;align-items:center;gap:7px;}
+    .report-link{margin-left:6px;font-size:11px;font-weight:700;color:var(--success);cursor:pointer;text-decoration:underline;}
+
     /* ===== RESPONSIVE ===== */
     @media(max-width:768px){
       .sidebar{transform:translateX(-100%);}
@@ -201,71 +243,8 @@
     <div class="page-title"><svg class="lic-emoji" width="1.05em" height="1.05em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex-shrink:0" aria-hidden="true"><path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/><path d="M8 14h.01"/><path d="M12 14h.01"/><path d="M16 14h.01"/><path d="M8 18h.01"/><path d="M12 18h.01"/><path d="M16 18h.01"/></svg> Kế hoạch</div>
     <div class="page-desc" id="pageDesc">Quản lý kế hoạch công việc HSE của đơn vị</div>
 
-    <!-- TABS -->
-    <div class="tab-bar">
-      <button class="tab-btn active" onclick="switchTab('quy')"><svg class="lic-emoji" width="1.05em" height="1.05em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex-shrink:0" aria-hidden="true"><path d="M3 3v16a2 2 0 0 0 2 2h16"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/></svg> Công việc trong quý</button>
-      <button class="tab-btn" onclick="switchTab('nhap')"><svg class="lic-emoji" width="1.05em" height="1.05em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex-shrink:0" aria-hidden="true"><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"/><path d="m15 5 4 4"/></svg> Nhập công việc</button>
-    </div>
-
-    <!-- TAB: CÔNG VIỆC TRONG QUÝ (chỉ xem) -->
-    <div class="tab-pane active" id="tab-quy">
-      <div id="quarterView"></div>
-    </div>
-
-    <!-- TAB: NHẬP CÔNG VIỆC (có kỳ hạn + định kỳ) -->
-    <div class="tab-pane" id="tab-nhap">
-      <div style="font-size:14.5px;font-weight:700;color:var(--primary);margin:2px 0 10px"><svg class="lic-emoji" width="1.05em" height="1.05em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex-shrink:0" aria-hidden="true"><path d="M12 17v5"/><path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z"/></svg> Công việc có kỳ hạn</div>
-      <div class="toolbar">
-        <div class="toolbar-left">
-          <input class="search-box" id="searchOncetime" placeholder="Tìm kiếm công việc..." oninput="renderTable('oncetime')">
-        </div>
-        <button class="btn btn-primary" id="btnAddOncetime" onclick="openModal('oncetime')">+ Thêm công việc</button>
-      </div>
-      <div class="filter-bar" id="filterBarOncetime">
-        <select id="filterChuTri" onchange="renderTable('oncetime')">
-          <option value="">Tất cả đơn vị chủ trì</option>
-        </select>
-        <select id="filterPage" onchange="renderTable('oncetime')">
-          <option value="">Tất cả trang liên quan</option>
-        </select>
-      </div>
-      <div id="onceGroups"></div>
-
-      <div style="font-size:14.5px;font-weight:700;color:#1a7a3c;margin:26px 0 10px"><svg class="lic-emoji" width="1.05em" height="1.05em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex-shrink:0" aria-hidden="true"><path d="m17 2 4 4-4 4"/><path d="M3 11v-1a4 4 0 0 1 4-4h14"/><path d="m7 22-4-4 4-4"/><path d="M21 13v1a4 4 0 0 1-4 4H3"/></svg> Công việc định kỳ</div>
-      <div class="toolbar">
-        <div class="toolbar-left">
-          <input class="search-box" id="searchRecurring" placeholder="Tìm kiếm công việc..." oninput="renderTable('recurring')">
-        </div>
-        <button class="btn btn-primary" id="btnAddRecurring" onclick="openModal('recurring')">+ Thêm công việc</button>
-      </div>
-      <div class="filter-bar">
-        <select id="filterRecurChuTri" onchange="renderTable('recurring')">
-          <option value="">Tất cả đơn vị chủ trì</option>
-        </select>
-        <select id="filterRecurPage" onchange="renderTable('recurring')">
-          <option value="">Tất cả trang liên quan</option>
-        </select>
-      </div>
-      <div class="table-wrap">
-        <table id="tableRecurring">
-          <thead>
-            <tr>
-              <th style="width:36px">#</th>
-              <th>Tên / Nội dung công việc</th>
-              <th>Tháng áp dụng</th>
-              <th>Ngày thực hiện</th>
-              <th>Đơn vị chủ trì</th>
-              <th>Đơn vị phối hợp</th>
-              <th>Cơ sở thực hiện</th>
-              <th>Trang liên quan</th>
-              <th>Ghi chú</th>
-              <th style="width:100px"></th>
-            </tr>
-          </thead>
-          <tbody id="tbodyRecurring"></tbody>
-        </table>
-      </div>
-    </div>
+    <!-- VIEW ĐƠN: KẾ HOẠCH CÔNG VIỆC -->
+    <div id="planView"></div>
   </main>
 </div>
 
@@ -465,14 +444,14 @@ function loadOnceFromSheets(){
         r.end  =sheetDateToLocal(r.end);
         if(r.completionDate) r.completionDate=sheetDateToLocal(r.completionDate);
       });
-      save(K_ONCETIME,rows); renderTable("oncetime"); renderQuarter();
+      save(K_ONCETIME,rows); renderPlan();
     }
   }).catch(function(){});
 }
 function loadRecurFromSheets(){
   if(typeof DB==="undefined"||!DB.isReady())return;
   DB.getAll("ke_hoach_lap_lai").then(function(rows){
-    if(rows&&rows.length){ save(K_RECUR,rows); renderTable("recurring"); renderQuarter(); }
+    if(rows&&rows.length){ save(K_RECUR,rows); renderPlan(); }
   }).catch(function(){});
 }
 
@@ -1394,6 +1373,355 @@ showToast=function(msg,type){
   _origShowToast(msg,type);
 };
 
+/* ============================================================
+   ★ VIEW ĐƠN + SỬA INLINE (thay cho 2 tab cũ)
+   ============================================================ */
+var _qOffset=0;      // điều hướng quý (0 = quý hiện tại)
+var _ie=null;        // trạng thái editor: {type:'oncetime'|'recurring', id:string|null}
+
+var IC={
+  cal:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px"><path d="M8 2v4M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/></svg>',
+  clock:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>',
+  warn:'<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4M12 17h.01"/></svg>',
+  repeat:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px"><path d="m17 2 4 4-4 4"/><path d="M3 11v-1a4 4 0 0 1 4-4h14"/><path d="m7 22-4-4 4-4"/><path d="M21 13v1a4 4 0 0 1-4 4H3"/></svg>',
+  plus:'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" style="vertical-align:-2px"><path d="M12 5v14M5 12h14"/></svg>',
+  trash:'<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/></svg>',
+  save:'<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><path d="M17 21v-8H7v8M7 3v5h8"/></svg>'
+};
+
+function switchQuarter(d){ _qOffset+=d; _ie=null; renderPlan(); }
+function goToday(){ _qOffset=0; _ie=null; renderPlan(); }
+
+function planQuarterInfo(){
+  var base=new Date();
+  var abs=Math.floor(base.getMonth()/3)+_qOffset;
+  var year=base.getFullYear()+Math.floor(abs/4);
+  var q=((abs%4)+4)%4;
+  return { q:q+1, year:year, months:[q*3+1,q*3+2,q*3+3],
+    start:new Date(year,q*3,1), end:new Date(year,q*3+3,0),
+    label:"Quý "+(q+1)+"/"+year };
+}
+
+function _phStr(t){ return Array.isArray(t.phoiHop)?t.phoiHop.filter(Boolean).join(", "):(t.phoiHop||""); }
+function _clipCell(val){
+  var v=(val==null?"":String(val));
+  if(v==="") return '<td class="cell-clip empty"><span class="clip-txt">—</span></td>';
+  return '<td class="cell-clip"><span class="clip-txt">'+esc(v)+'</span><span class="clip-full">'+esc(v)+'</span></td>';
+}
+function _planCols(){
+  return '<colgroup><col style="width:34px"><col><col style="width:150px"><col style="width:130px"><col style="width:150px"><col style="width:88px"><col style="width:88px"></colgroup>';
+}
+function _planHead(ov){
+  return '<thead><tr>'+
+    '<th>#</th><th>Nội dung công việc</th><th>Thời gian thực hiện</th>'+
+    '<th>Chủ trì</th><th>Phối hợp</th><th>Cơ sở</th><th>Ghi chú</th>'+
+  '</tr></thead>';
+}
+
+/* ---------- RENDER CHÍNH ---------- */
+function renderPlan(){
+  var box=document.getElementById("planView");
+  if(!box) return;
+  var u=currentUser();
+  var editable=u&&canEdit(u);
+  var Q=planQuarterInfo();
+  var once=getOnce(), recur=getRecur();
+
+  var overdue=once.filter(function(t){
+    if((t.status||"")==="Đã hoàn thành") return false;
+    if(!t.end) return false;
+    return new Date(t.end) < Q.start;
+  });
+  var onceQ=once.filter(function(t){
+    var ok=true;
+    if(t.start && new Date(t.start) > Q.end) ok=false;
+    if(t.end && new Date(t.end) < Q.start) ok=false;
+    return ok;
+  });
+  function _so(a,b){ return (a.order||0)-(b.order||0); }
+  overdue.sort(_so); onceQ.sort(_so);
+  var recurQ=recur.filter(function(t){
+    if(t.allMonths) return true;
+    return (t.months||[]).some(function(m){return Q.months.indexOf(m)>=0;});
+  });
+
+  var html='<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:16px">'+
+    '<div style="font-size:15px;font-weight:700;color:var(--primary)">'+IC.cal+' Kế hoạch công việc — '+Q.label+' <span style="font-size:12px;font-weight:400;color:var(--text-light)">(tháng '+Q.months.join(", ")+')</span></div>'+
+    '<div class="q-nav">'+
+      '<button title="Quý trước" onclick="switchQuarter(-1)">&#8249;</button>'+
+      '<button class="q-today" onclick="goToday()">Quý hiện tại</button>'+
+      '<button title="Quý sau" onclick="switchQuarter(1)">&#8250;</button>'+
+    '</div>'+
+  '</div>';
+
+  // ===== CÓ KỲ HẠN =====
+  html+='<div class="plan-section-title" style="color:var(--primary)">'+IC.clock+' Công việc có kỳ hạn</div>';
+  if(overdue.length){
+    html+='<div style="background:#fdedec;border-left:4px solid #c0392b;border-radius:0 8px 8px 0;padding:8px 14px;margin-bottom:8px;font-size:12.5px;font-weight:700;color:#c0392b">'+IC.warn+' '+overdue.length+' công việc trễ hạn chưa hoàn thành</div>';
+  }
+  html+=buildDeadlineTable(overdue, onceQ, editable, Q);
+  if(editable) html+='<button class="add-row-btn" onclick="planAdd(\'oncetime\')">'+IC.plus+' Thêm công việc có kỳ hạn</button>';
+
+  // ===== ĐỊNH KỲ =====
+  html+='<div class="plan-section-title" style="color:#1a7a3c;margin-top:26px">'+IC.repeat+' Công việc định kỳ</div>';
+  html+=buildRecurTable(recurQ, editable, Q);
+  if(editable) html+='<button class="add-row-btn" style="border-color:#1a7a3c;color:#1a7a3c;background:#f0faf4" onclick="planAdd(\'recurring\')">'+IC.plus+' Thêm công việc định kỳ</button>';
+
+  box.innerHTML=html;
+  if(_ie){ var f=document.getElementById("ieName"); if(f){ f.focus(); if(f.scrollIntoView) f.scrollIntoView({block:"center",behavior:"smooth"}); } }
+}
+
+/* ---------- BẢNG CÓ KỲ HẠN ---------- */
+function buildDeadlineTable(overdue, onceQ, editable, Q){
+  var body="", n=0;
+  var adding = editable && _ie && _ie.type==="oncetime" && _ie.id===null;
+  function emit(list){
+    list.forEach(function(t){
+      n++;
+      if(_ie && _ie.type==="oncetime" && _ie.id===t.id) body+=deadlineEditRows(t,n);
+      else body+=deadlineViewRow(t,n,editable);
+    });
+  }
+  emit(overdue); emit(onceQ);
+  if(!overdue.length && !onceQ.length && !adding){
+    body='<tr><td colspan="7" style="text-align:center;color:var(--text-light);padding:22px;font-style:italic">Chưa có công việc có kỳ hạn trong '+esc(Q.label)+'.'+(editable?' Nhấn nút bên dưới để thêm.':'')+'</td></tr>';
+  }
+  if(adding) body+=deadlineEditRows({},0);
+  return '<div class="table-wrap"><table class="plan-table">'+_planCols()+_planHead()+'<tbody>'+body+'</tbody></table></div>';
+}
+function deadlineViewRow(t,n,editable){
+  var st=computeStatus(t);
+  var ngay=[t.start?fmtDate(t.start):null,t.end?fmtDate(t.end):null].filter(Boolean).join(" – ")||"—";
+  var report=(st==="Đã hoàn thành")?'<span class="report-link" onclick="event.stopPropagation();viewCompletion(\''+t.id+'\')">xem báo cáo</span>':'';
+  var attr=editable?' class="plan-row can-edit" title="Bấm để sửa" onclick="planEdit(\'oncetime\',\''+t.id+'\')"':' class="plan-row"';
+  var rs=(st==="Trễ hạn")?' style="background:#fdf3f2"':'';
+  return '<tr'+attr+rs+'>'+
+    '<td style="color:var(--text-light);font-size:12px">'+n+'</td>'+
+    '<td class="plan-name">'+esc(t.name)+_qStatusBadge(st)+report+'</td>'+
+    '<td style="white-space:nowrap;font-size:12px">'+esc(ngay)+'</td>'+
+    '<td style="font-size:12px">'+esc(t.chuTri||"—")+'</td>'+
+    '<td style="font-size:12px">'+(_phStr(t)?esc(_phStr(t)):"—")+'</td>'+
+    _clipCell(t.coSo)+_clipCell(t.ghiChu)+
+  '</tr>';
+}
+function deadlineEditRows(t,n){
+  t=t||{};
+  var status=t.status||"Chưa bắt đầu";
+  var pagesChecked=t.pages||[];
+  var main='<tr class="ie-row">'+
+    '<td style="color:var(--text-light);font-size:12px">'+(n||"")+'</td>'+
+    '<td><textarea class="inp" id="ieName" rows="2" placeholder="Nội dung công việc...">'+esc(t.name||"")+'</textarea></td>'+
+    '<td><div class="ie-dates">'+
+        '<input class="inp" type="date" id="ieStart" value="'+esc(t.start||"")+'" title="Ngày bắt đầu">'+
+        '<input class="inp" type="date" id="ieEnd" value="'+esc(t.end||"")+'" title="Ngày kết thúc">'+
+      '</div></td>'+
+    '<td>'+unitDropdown("ieChuTri",t.chuTri||"")+'</td>'+
+    '<td>'+unitMultiCheck("iePhoiHop",t.phoiHop||[])+'</td>'+
+    '<td><input class="inp" id="ieCoSo" value="'+esc(t.coSo||"")+'" placeholder="Cơ sở..."></td>'+
+    '<td><input class="inp" id="ieGhiChu" value="'+esc(t.ghiChu||"")+'" placeholder="Ghi chú..."></td>'+
+  '</tr>';
+  var detail='<tr class="ie-detail"><td colspan="7">'+
+    '<div class="ie-grid">'+
+      '<div>'+
+        '<div class="ie-mini-label">Tình trạng</div>'+
+        '<select class="inp" id="ieStatus" onchange="ieToggleCompletion()">'+
+          ['Chưa bắt đầu','Đang thực hiện','Đã hoàn thành'].map(function(s){return '<option'+(status===s?' selected':'')+'>'+s+'</option>';}).join("")+
+        '</select>'+
+        '<div id="ieCompletion" style="margin-top:10px;'+(status==="Đã hoàn thành"?"":"display:none")+'">'+
+          '<div class="ie-mini-label">Ngày hoàn thành *</div>'+
+          '<input class="inp" type="date" id="ieCompletionDate" value="'+esc(t.completionDate||"")+'">'+
+          '<div class="ie-mini-label" style="margin-top:8px">Báo cáo hoàn thành *</div>'+
+          '<textarea class="inp" id="ieCompletionReport" rows="2" placeholder="Mô tả kết quả...">'+esc(t.completionReport||"")+'</textarea>'+
+        '</div>'+
+      '</div>'+
+      '<div>'+
+        '<div class="ie-mini-label">Trang liên quan <span style="font-weight:400;text-transform:none;letter-spacing:0">(hiển thị trên trang chủ phân hệ tương ứng)</span></div>'+
+        '<div class="pages-grid">'+
+          MENU.filter(function(m){return !m.adminOnly;}).map(function(m){
+            var chk=pagesChecked.indexOf(m.slug)>=0?" checked":"";
+            return '<label class="page-check"><input type="checkbox" name="ie_pages" value="'+m.slug+'"'+chk+'><span>'+m.title.toUpperCase()+'</span></label>';
+          }).join("")+
+        '</div>'+
+      '</div>'+
+    '</div>'+
+    '<div class="ie-actions">'+
+      (t.id?'<button class="btn btn-danger btn-sm" onclick="planDelete(\'oncetime\',\''+t.id+'\')">'+IC.trash+' Xoá</button>':'')+
+      '<button class="btn btn-outline btn-sm" onclick="planCancel()">Huỷ</button>'+
+      '<button class="btn btn-primary btn-sm" onclick="planSave(\'oncetime\')">'+IC.save+' Lưu</button>'+
+    '</div>'+
+  '</td></tr>';
+  return main+detail;
+}
+
+/* ---------- BẢNG ĐỊNH KỲ ---------- */
+function recurTimeStr(t){
+  var months=t.allMonths?"Hàng tháng":((t.months||[]).map(function(m){return "T"+m;}).join(", ")||"—");
+  var day=t.lastDay?"cuối tháng":(t.execDay?("ngày "+t.execDay):"");
+  return months+(day?" · "+day:"");
+}
+function buildRecurTable(list, editable, Q){
+  var body="", n=0;
+  var adding = editable && _ie && _ie.type==="recurring" && _ie.id===null;
+  list.forEach(function(t){
+    n++;
+    if(_ie && _ie.type==="recurring" && _ie.id===t.id) body+=recurEditRows(t,n);
+    else body+=recurViewRow(t,n,editable);
+  });
+  if(!list.length && !adding){
+    body='<tr><td colspan="7" style="text-align:center;color:var(--text-light);padding:22px;font-style:italic">Chưa có công việc định kỳ áp dụng cho '+esc(Q.label)+'.'+(editable?' Nhấn nút bên dưới để thêm.':'')+'</td></tr>';
+  }
+  if(adding) body+=recurEditRows({},0);
+  return '<div class="table-wrap"><table class="plan-table">'+_planCols()+_planHead()+'<tbody>'+body+'</tbody></table></div>';
+}
+function recurViewRow(t,n,editable){
+  var attr=editable?' class="plan-row can-edit" title="Bấm để sửa" onclick="planEdit(\'recurring\',\''+t.id+'\')"':' class="plan-row"';
+  return '<tr'+attr+'>'+
+    '<td style="color:var(--text-light);font-size:12px">'+n+'</td>'+
+    '<td class="plan-name">'+esc(t.name)+'</td>'+
+    '<td style="font-size:12px"><span class="badge badge-green" style="font-size:11px">'+esc(recurTimeStr(t))+'</span></td>'+
+    '<td style="font-size:12px">'+esc(t.chuTri||"—")+'</td>'+
+    '<td style="font-size:12px">'+(_phStr(t)?esc(_phStr(t)):"—")+'</td>'+
+    _clipCell(t.coSo)+_clipCell(t.ghiChu)+
+  '</tr>';
+}
+function recurEditRows(t,n){
+  t=t||{};
+  var allMonths=t.allMonths===true;
+  var monthsChecked=t.months||[];
+  var pagesChecked=t.pages||[];
+  var main='<tr class="ie-row">'+
+    '<td style="color:var(--text-light);font-size:12px">'+(n||"")+'</td>'+
+    '<td><textarea class="inp" id="ieName" rows="2" placeholder="Nội dung công việc...">'+esc(t.name||"")+'</textarea></td>'+
+    '<td style="font-size:11px;color:var(--text-light)">Chọn tháng &amp; ngày ở khung bên dưới &#9660;</td>'+
+    '<td>'+unitDropdown("ieChuTri",t.chuTri||"")+'</td>'+
+    '<td>'+unitMultiCheck("iePhoiHop",t.phoiHop||[])+'</td>'+
+    '<td><input class="inp" id="ieCoSo" value="'+esc(t.coSo||"")+'" placeholder="Cơ sở..."></td>'+
+    '<td><input class="inp" id="ieGhiChu" value="'+esc(t.ghiChu||"")+'" placeholder="Ghi chú..."></td>'+
+  '</tr>';
+  var detail='<tr class="ie-detail"><td colspan="7">'+
+    '<div class="ie-mini-label">Thời gian thực hiện</div>'+
+    '<label style="display:inline-flex;align-items:center;gap:7px;font-weight:700;color:var(--primary);margin-bottom:8px;cursor:pointer">'+
+      '<input type="checkbox" id="ieAllMonths" '+(allMonths?"checked":"")+' onchange="ieToggleAllMonths()" style="accent-color:var(--primary);width:14px;height:14px"> Hàng tháng (tất cả các tháng)</label>'+
+    '<div class="ie-months" id="ieMonthGrid" style="'+(allMonths?"opacity:.45;pointer-events:none":"")+'">'+
+      [1,2,3,4,5,6,7,8,9,10,11,12].map(function(m){
+        var chk=monthsChecked.indexOf(m)>=0?" checked":"";
+        return '<label class="month-chk"><input type="checkbox" name="ie_months" value="'+m+'"'+chk+'> T'+m+'</label>';
+      }).join("")+
+    '</div>'+
+    '<div style="display:flex;align-items:flex-end;gap:16px;margin-top:10px;flex-wrap:wrap">'+
+      '<div><div class="ie-mini-label">Ngày thực hiện (1–31)</div>'+
+        '<input class="inp" type="number" id="ieExecDay" min="1" max="31" style="width:110px;'+(t.lastDay?"opacity:.45;pointer-events:none":"")+'" value="'+esc(t.lastDay?"":(t.execDay||""))+'" placeholder="VD: 5"></div>'+
+      '<label style="display:inline-flex;align-items:center;gap:7px;font-weight:600;color:var(--primary);cursor:pointer;padding-bottom:7px">'+
+        '<input type="checkbox" id="ieLastDay" '+(t.lastDay?"checked":"")+' onchange="ieToggleLastDay()" style="accent-color:var(--primary);width:14px;height:14px"> Ngày cuối tháng</label>'+
+    '</div>'+
+    '<div class="ie-mini-label" style="margin-top:14px">Trang liên quan <span style="font-weight:400;text-transform:none;letter-spacing:0">(hiển thị trên trang chủ phân hệ tương ứng)</span></div>'+
+    '<div class="pages-grid">'+
+      MENU.filter(function(m){return !m.adminOnly;}).map(function(m){
+        var chk=pagesChecked.indexOf(m.slug)>=0?" checked":"";
+        return '<label class="page-check"><input type="checkbox" name="ie_pages" value="'+m.slug+'"'+chk+'><span>'+m.title.toUpperCase()+'</span></label>';
+      }).join("")+
+    '</div>'+
+    '<div class="ie-actions">'+
+      (t.id?'<button class="btn btn-danger btn-sm" onclick="planDelete(\'recurring\',\''+t.id+'\')">'+IC.trash+' Xoá</button>':'')+
+      '<button class="btn btn-outline btn-sm" onclick="planCancel()">Huỷ</button>'+
+      '<button class="btn btn-primary btn-sm" onclick="planSave(\'recurring\')">'+IC.save+' Lưu</button>'+
+    '</div>'+
+  '</td></tr>';
+  return main+detail;
+}
+
+/* ---------- TOGGLE trong editor ---------- */
+function ieToggleCompletion(){
+  var s=document.getElementById("ieStatus"), b=document.getElementById("ieCompletion");
+  if(s&&b) b.style.display=(s.value==="Đã hoàn thành")?"block":"none";
+}
+function ieToggleAllMonths(){
+  var chk=document.getElementById("ieAllMonths"), grid=document.getElementById("ieMonthGrid");
+  if(!chk||!grid) return;
+  grid.style.opacity=chk.checked?".45":"1";
+  grid.style.pointerEvents=chk.checked?"none":"auto";
+  if(chk.checked) grid.querySelectorAll('input[type=checkbox]').forEach(function(c){c.checked=false;});
+}
+function ieToggleLastDay(){
+  var chk=document.getElementById("ieLastDay"), inp=document.getElementById("ieExecDay");
+  if(!chk||!inp) return;
+  inp.style.opacity=chk.checked?".45":"1";
+  inp.style.pointerEvents=chk.checked?"none":"auto";
+  if(chk.checked) inp.value="";
+}
+
+/* ---------- HÀNH ĐỘNG ---------- */
+function planEdit(type,id){ if(!canEdit(currentUser())) return; _ie={type:type,id:id}; renderPlan(); }
+function planAdd(type){ if(!canEdit(currentUser())) return; _ie={type:type,id:null}; renderPlan(); }
+function planCancel(){ _ie=null; renderPlan(); }
+
+function planDelete(type,id){
+  if(!confirm("Bạn có chắc muốn xoá công việc này?")) return;
+  var sheet=type==="oncetime"?"ke_hoach_mot_lan":"ke_hoach_lap_lai";
+  if(type==="oncetime") saveOnce(getOnce().filter(function(x){return x.id!==id;}));
+  else saveRecur(getRecur().filter(function(x){return x.id!==id;}));
+  if(typeof DB!=="undefined"&&DB.isReady()) DB.delete(sheet,id).catch(function(){});
+  savePageLinks();
+  _ie=null; renderPlan();
+  showToast("🗑️ Đã xoá","danger");
+}
+
+function planSave(type){
+  var nameEl=document.getElementById("ieName");
+  var name=(nameEl&&nameEl.value||"").trim();
+  if(!name){ showToast("⚠️ Vui lòng nhập nội dung công việc","warning"); if(nameEl)nameEl.focus(); return; }
+  var pages=[]; document.querySelectorAll('input[name="ie_pages"]:checked').forEach(function(cb){pages.push(cb.value);});
+  var editingId=_ie&&_ie.id;
+  var item={
+    id: editingId||uid(),
+    name:name,
+    chuTri:unitValue("ieChuTri"),
+    phoiHop:unitMultiValue("iePhoiHop"),
+    coSo:(document.getElementById("ieCoSo")||{}).value||"",
+    ghiChu:(document.getElementById("ieGhiChu")||{}).value||"",
+    pages:pages,
+    updatedAt:new Date().toISOString()
+  };
+  if(type==="oncetime"){
+    item.start=(document.getElementById("ieStart")||{}).value||"";
+    item.end=(document.getElementById("ieEnd")||{}).value||"";
+    var stEl=document.getElementById("ieStatus"); item.status=stEl?stEl.value:"Chưa bắt đầu";
+    if(item.status==="Đã hoàn thành"){
+      var cd=(document.getElementById("ieCompletionDate")||{}).value||"";
+      var cr=((document.getElementById("ieCompletionReport")||{}).value||"").trim();
+      if(!cd){ showToast("⚠️ Vui lòng chọn ngày hoàn thành","warning"); return; }
+      if(!cr){ showToast("⚠️ Vui lòng nhập báo cáo hoàn thành","warning"); return; }
+      item.completionDate=cd; item.completionReport=cr;
+    }
+    var data=getOnce(), isNew=!editingId;
+    if(!isNew){ var idx=data.findIndex(function(x){return x.id===editingId;}); if(idx>=0){ item.order=data[idx].order; data[idx]=item; } else { item.order=data.length*10; data.push(item); } }
+    else { item.order=data.length*10; data.push(item); }
+    saveOnce(data);
+    if(typeof DB!=="undefined"&&DB.isReady()){
+      var op=isNew?DB.insert("ke_hoach_mot_lan",item):DB.update("ke_hoach_mot_lan",item.id,item).catch(function(e){if(e&&e.message&&e.message.indexOf("tìm thấy")>=0)return DB.insert("ke_hoach_mot_lan",item);throw e;});
+      op.then(function(){_khToast(true,"Công việc");}).catch(function(e){_khToast(false,e&&e.message||"");});
+    }
+  } else {
+    var allM=document.getElementById("ieAllMonths"); item.allMonths=allM&&allM.checked;
+    var months=[];
+    if(!item.allMonths){ document.querySelectorAll('input[name="ie_months"]:checked').forEach(function(cb){months.push(parseInt(cb.value));}); months.sort(function(a,b){return a-b;}); }
+    item.months=months;
+    var ld=document.getElementById("ieLastDay"); item.lastDay=ld&&ld.checked;
+    var di=document.getElementById("ieExecDay"); item.execDay=item.lastDay?"":((di&&di.value)?parseInt(di.value):"");
+    var data=getRecur(), isNew=!editingId;
+    if(!isNew){ var idx=data.findIndex(function(x){return x.id===editingId;}); if(idx>=0)data[idx]=item; else data.push(item); }
+    else { data.push(item); }
+    saveRecur(data);
+    if(typeof DB!=="undefined"&&DB.isReady()){
+      var op2=isNew?DB.insert("ke_hoach_lap_lai",item):DB.update("ke_hoach_lap_lai",item.id,item).catch(function(e){if(e&&e.message&&e.message.indexOf("tìm thấy")>=0)return DB.insert("ke_hoach_lap_lai",item);throw e;});
+      op2.then(function(){_khToast(true,"Công việc");}).catch(function(e){_khToast(false,e&&e.message||"");});
+    }
+  }
+  savePageLinks();
+  _ie=null; renderPlan();
+  showToast("✅ Đã lưu công việc","success");
+}
+
 /* -------- INIT -------- */
 seedUsers();
 // Khởi động DB (dùng cùng URL đã cấu hình trong Quản trị hệ thống)
@@ -1404,9 +1732,7 @@ if(typeof DB!=="undefined"){
 }
 buildSidebar();
 buildTopbar();
-renderTable("oncetime");
-renderTable("recurring");
-renderQuarter();
+renderPlan();
 // Pull dữ liệu mới từ Sheets sau 1.5s (nền, không block UI)
 setTimeout(function(){
   loadOnceFromSheets();
