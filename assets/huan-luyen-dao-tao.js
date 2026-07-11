@@ -56,6 +56,7 @@
   var _canEdit     = false;
   var _isAdmin     = false;
   var _dragId      = null;   // id hàng đang kéo
+  var _dragUnit    = null;   // đơn vị của hàng đang kéo (chỉ kéo trong cùng đơn vị)
   var _editRowId   = null;   // id hàng đang sửa inline (bấm bút chì)
 
   /* ──────────────────────────────────────────
@@ -98,14 +99,20 @@
     _setOrderMap(m);
   }
 
-  /* Lọc nhân sự theo loại + sắp xếp theo thứ tự kéo–thả */
+  /* Vị trí đơn vị theo thứ tự droplist (đơn vị lạ → xuống cuối) */
+  function _unitIndex(u) { var i = UNITS.indexOf(u); return i < 0 ? UNITS.length + 1 : i; }
+
+  /* Lọc nhân sự theo loại + gom nhóm theo đơn vị (thứ tự droplist),
+     trong từng đơn vị xếp theo thứ tự kéo–thả */
   function getData(key) {
     var arr = _getAllData().filter(function (p) { return p.loai_huan_luyen === key; });
     var order = _getOrder(key);
     arr.sort(function (a, b) {
+      var ua = _unitIndex(a.unit), ub = _unitIndex(b.unit);
+      if (ua !== ub) return ua - ub;                 // gom theo đơn vị trước
       var ia = order.indexOf(a.id); if (ia < 0) ia = Infinity;
       var ib = order.indexOf(b.id); if (ib < 0) ib = Infinity;
-      if (ia !== ib) return ia - ib;
+      if (ia !== ib) return ia - ib;                 // rồi thứ tự kéo tay trong đơn vị
       return String(a.createdAt || "").localeCompare(String(b.createdAt || ""));
     });
     return arr;
@@ -203,6 +210,31 @@
   function pageByKey(k) {
     for (var i = 0; i < PAGES.length; i++) if (PAGES[i].key === k) return PAGES[i];
     return null;
+  }
+
+  /* ── Kiểm tra trùng Danh số / Họ tên (trong cùng 1 nhóm) ── */
+  function _norm(s) {
+    return String(s == null ? "" : s).trim().toLowerCase().replace(/\s+/g, " ");
+  }
+  function _dupCheck(key, pid, name, excludeId) {
+    var arr = getData(key), dupPid = null, dupName = null;
+    for (var i = 0; i < arr.length; i++) {
+      var p = arr[i];
+      if (p.id === excludeId) continue;
+      if (!dupPid  && pid  && _norm(p.pid)  === _norm(pid))  dupPid  = p;
+      if (!dupName && name && _norm(p.name) === _norm(name)) dupName = p;
+    }
+    return { pid: dupPid, name: dupName };
+  }
+  /* Trả về true nếu được phép lưu (không trùng, hoặc người dùng đồng ý) */
+  function _confirmDup(key, pid, name, excludeId) {
+    var d = _dupCheck(key, pid, name, excludeId);
+    if (!d.pid && !d.name) return true;
+    var msg = "⚠ CẢNH BÁO TRÙNG trong mục này:\n";
+    if (d.pid)  msg += "\n• Danh số \"" + pid + "\" đã tồn tại (" + (d.pid.name || "?") + ").";
+    if (d.name) msg += "\n• Họ tên \"" + name + "\" đã tồn tại (danh số " + (d.name.pid || "?") + ").";
+    msg += "\n\nVẫn tiếp tục lưu?";
+    return confirm(msg);
   }
 
   /* Xây thứ tự từ dữ liệu server (nếu có cột "sort") */
@@ -330,6 +362,11 @@
       ".hl-tw tbody td{padding:7px 10px;border-bottom:1px solid #eef1f7;vertical-align:middle;text-align:center;}",
       /* Riêng cột Họ và tên căn trái */
       ".hl-tw th.hl-col-name, .hl-tw td.hl-col-name{text-align:left;}",
+      /* Ô trùng danh số / họ tên */
+      ".hl-tw td.hl-dup{background:#fdecec !important;}",
+      ".hl-dup-ic{color:#c0392b;}",
+      ".hl-dupwarn{background:#fdedec;color:#c0392b;padding:8px 18px;font-size:12.5px;",
+      "font-weight:600;border-bottom:1px solid #f5c6cb;}",
       ".hl-tw tbody tr:hover td{background:#eef3fb;}",
       ".hl-tw tbody tr:last-child td{border-bottom:none;}",
       /* Kẻ dọc ngăn cách giữa các cột */
@@ -455,9 +492,10 @@
         '<div class="hl-pt">' + pg.label + '</div>' +
         '<div class="hl-ps">' + pg.desc + '</div>' +
       '</div>' +
-      (_canEdit
-        ? ''
-        : '<span style="font-size:12px;color:var(--text-muted);font-style:italic;">Chế độ xem</span>');
+      '<div style="display:flex;align-items:center;gap:10px;">' +
+        (_canEdit ? '' : '<span style="font-size:12px;color:var(--text-muted);font-style:italic;">Chế độ xem</span>') +
+        '<button class="btn btn-ghost btn-sm" id="hl-btn-export" title="Xuất Excel tất cả 6 nhóm"><svg class="lic-emoji" width="1.05em" height="1.05em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex-shrink:0" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg> Xuất Excel</button>' +
+      '</div>';
     body.appendChild(ph);
 
     /* Stats */
@@ -479,7 +517,6 @@
     var settCard = document.createElement("div");
     settCard.className = "hl-card";
     settCard.innerHTML =
-      '<div class="hl-card-h"><div class="hl-card-title"><svg class="lic-emoji" width="1.05em" height="1.05em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex-shrink:0" aria-hidden="true"><path d="M9.671 4.136a2.34 2.34 0 0 1 4.659 0 2.34 2.34 0 0 0 3.319 1.915 2.34 2.34 0 0 1 2.33 4.033 2.34 2.34 0 0 0 0 3.831 2.34 2.34 0 0 1-2.33 4.033 2.34 2.34 0 0 0-3.319 1.915 2.34 2.34 0 0 1-4.659 0 2.34 2.34 0 0 0-3.32-1.915 2.34 2.34 0 0 1-2.33-4.033 2.34 2.34 0 0 0 0-3.831A2.34 2.34 0 0 1 6.35 6.051a2.34 2.34 0 0 0 3.319-1.915"/><circle cx="12" cy="12" r="3"/></svg> Thời hạn huấn luyện lại</div></div>' +
       '<div class="hl-card-b">' +
         '<div class="hl-set-row">' +
           '<span style="font-size:13.5px;font-weight:600;">Thời hạn huấn luyện lại:</span>' +
@@ -497,9 +534,9 @@
     tableCard.className = "hl-card";
     tableCard.innerHTML =
       '<div class="hl-card-h">' +
-        '<div class="hl-card-title"><svg class="lic-emoji" width="1.05em" height="1.05em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex-shrink:0" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><path d="M16 3.128a4 4 0 0 1 0 7.744"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><circle cx="9" cy="7" r="4"/></svg> Danh sách nhân sự</div>' +
         '<input type="text" class="hl-search" id="hl-search-' + key + '" placeholder="Tìm kiếm...">' +
       '</div>' +
+      '<div id="hl-dupwarn-' + key + '" class="hl-dupwarn" style="display:none"></div>' +
       (_canEdit ? '<div class="hl-toolbar" style="padding:8px 18px;"><span class="hl-hint">✎ Bấm bút chì ở cột Thao tác để sửa dòng · ⣿ Kéo hàng để đổi thứ tự · ＋ Nhập vào dòng cuối rồi bấm ✓ (hoặc Enter) để thêm nhân sự (khi không tìm kiếm)</span></div>' : '') +
       '<div class="hl-tw"><table><thead><tr>' +
         (_canEdit ? '<th class="hl-handle-cell"></th>' : '') +
@@ -561,6 +598,59 @@
 
     var addBtn = document.getElementById("hl-btn-add");
     if (addBtn) addBtn.addEventListener("click", function () { _openModal(key, null); });
+
+    var exportBtn = document.getElementById("hl-btn-export");
+    if (exportBtn) exportBtn.addEventListener("click", _exportExcel);
+  }
+
+  /* ──────────────────────────────────────────
+     XUẤT EXCEL — 6 nhóm = 6 sheet (SheetJS nạp từ CDN khi cần)
+  ────────────────────────────────────────── */
+  function _loadXLSX(cb) {
+    if (window.XLSX) return cb();
+    var s = document.createElement("script");
+    s.src = "https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js";
+    s.onload = function () { cb(); };
+    s.onerror = function () { alert("Không tải được thư viện xuất Excel. Vui lòng kiểm tra kết nối mạng rồi thử lại."); };
+    document.head.appendChild(s);
+  }
+
+  function _nextPlain(lastDate, months) {
+    var dt = _nextDateObj(lastDate, months);
+    if (!dt) return "";
+    return _pad(dt.getDate()) + "/" + _pad(dt.getMonth() + 1) + "/" + dt.getFullYear();
+  }
+  function _statusText(status, lastDate) {
+    if (!lastDate) return "Chưa có dữ liệu";
+    return status === "ok" ? "Còn hiệu lực" : status === "warn" ? "Sắp hết hạn" : "Hết hạn";
+  }
+
+  function _exportExcel() {
+    _loadXLSX(function () {
+      var wb = XLSX.utils.book_new();
+      PAGES.forEach(function (pg) {
+        var months = getMonths(pg.key), warnDays = getWarnDays(pg.key);
+        var hasSub = !!pg.subTypes;
+        var rows = getData(pg.key);
+        var header = ["STT", "Họ tên", "Danh số", "Chức danh", "Đơn vị"];
+        if (hasSub) header.push("Loại");
+        header = header.concat(["Ngày HL gần nhất", "Ngày HL tiếp theo", "Trạng thái", "Ghi chú"]);
+        var aoa = [header];
+        rows.forEach(function (p, i) {
+          var st = _calcStatus(p.lastDate, months, warnDays);
+          var r = [i + 1, p.name || "", p.pid || "", p.title || "", p.unit || ""];
+          if (hasSub) r.push(p.subType || "");
+          r.push(_toDisplay(p.lastDate) || "", _nextPlain(p.lastDate, months), _statusText(st, p.lastDate), p.note || "");
+          aoa.push(r);
+        });
+        var ws = XLSX.utils.aoa_to_sheet(aoa);
+        var nm = pg.label.replace(/[\\\/?*\[\]:]/g, "-").slice(0, 31);
+        XLSX.utils.book_append_sheet(wb, ws, nm);
+      });
+      var t = new Date();
+      var fn = "HuanLuyen_HSE_" + t.getFullYear() + _pad(t.getMonth() + 1) + _pad(t.getDate()) + ".xlsx";
+      XLSX.writeFile(wb, fn);
+    });
   }
 
   function _stat(cls, val, lbl) {
@@ -581,6 +671,30 @@
     var data = getData(key);
     var months = getMonths(key);
     var warnDays = getWarnDays(key);
+
+    /* Đếm trùng danh số / họ tên trong cả nhóm */
+    var pidCounts = {}, nameCounts = {};
+    data.forEach(function (p) {
+      var kp = _norm(p.pid);  if (kp) pidCounts[kp]  = (pidCounts[kp]  || 0) + 1;
+      var kn = _norm(p.name); if (kn) nameCounts[kn] = (nameCounts[kn] || 0) + 1;
+    });
+    var dupPidGroups  = Object.keys(pidCounts).filter(function (k) { return pidCounts[k]  > 1; }).length;
+    var dupNameGroups = Object.keys(nameCounts).filter(function (k) { return nameCounts[k] > 1; }).length;
+
+    /* Cập nhật thanh cảnh báo trùng phía trên bảng */
+    var dw = document.getElementById("hl-dupwarn-" + key);
+    if (dw) {
+      if (dupPidGroups || dupNameGroups) {
+        var parts = [];
+        if (dupPidGroups)  parts.push(dupPidGroups + " danh số trùng");
+        if (dupNameGroups) parts.push(dupNameGroups + " họ tên trùng");
+        dw.style.display = "block";
+        dw.innerHTML = "⚠ Phát hiện " + parts.join(" và ") + " trong mục này — các ô bị bôi đỏ bên dưới.";
+      } else {
+        dw.style.display = "none";
+        dw.innerHTML = "";
+      }
+    }
 
     var filtered = data.filter(function (p) {
       return !q ||
@@ -631,8 +745,10 @@
         lastCell  = '<td><input class="hl-inline hl-inline-date" data-id="' + id + '" data-field="lastDate" ' +
                       'maxlength="10" placeholder="DD/MM/YYYY" value="' + _esc(_toDisplay(p.lastDate)) + '" autocomplete="off"></td>';
       } else {
-        nameCell  = '<td class="hl-col-name" style="font-weight:600;">' + _esc(p.name) + '</td>';
-        pidCell   = '<td><span class="hl-badge hl-blue">' + _esc(p.pid) + '</span></td>';
+        var dupName = nameCounts[_norm(p.name)] > 1;
+        var dupPid  = pidCounts[_norm(p.pid)]  > 1;
+        nameCell  = '<td class="hl-col-name' + (dupName ? ' hl-dup' : '') + '" style="font-weight:600;"' + (dupName ? ' title="Trùng họ tên"' : '') + '>' + _esc(p.name) + (dupName ? ' <span class="hl-dup-ic">⚠</span>' : '') + '</td>';
+        pidCell   = '<td' + (dupPid ? ' class="hl-dup" title="Trùng danh số"' : '') + '><span class="hl-badge ' + (dupPid ? 'hl-exp' : 'hl-blue') + '">' + _esc(p.pid) + (dupPid ? ' ⚠' : '') + '</span></td>';
         titleCell = '<td>' + _esc(p.title || "–") + '</td>';
         unitCell  = '<td style="font-size:12.5px;">' + _esc(p.unit) + '</td>';
         lastCell  = '<td>' + _fmtDate(p.lastDate) + '</td>';
@@ -720,6 +836,7 @@
       alert("Vui lòng điền đủ: Họ tên, Danh số, Chức danh, Đơn vị, Ngày (DD/MM/YYYY)" + (needSub ? ", Loại" : "") + ".");
       return;
     }
+    if (!_confirmDup(key, pid, name, id)) return;
 
     rec.name = name; rec.pid = pid; rec.title = title; rec.unit = unit; rec.lastDate = lastDate;
     if (needSub) rec.subType = subType;
@@ -798,6 +915,7 @@
       alert("Vui lòng điền đủ: Họ tên, Danh số, Chức danh, Đơn vị, Ngày (DD/MM/YYYY)" + (needSub ? ", Loại" : "") + ".");
       return;
     }
+    if (!_confirmDup(key, pid, name, null)) return;
 
     var record = {
       id: Date.now().toString(36) + Math.random().toString(36).slice(2, 5),
@@ -854,12 +972,14 @@
     Array.prototype.forEach.call(handles, function (h) {
       h.addEventListener("dragstart", function (e) {
         _dragId = h.getAttribute("data-drag-id");
+        var rec = _getAllData().filter(function (p) { return p.id === _dragId; })[0];
+        _dragUnit = rec ? rec.unit : null;
         var tr = h.closest("tr");
         if (tr) tr.classList.add("hl-dragging");
         try { e.dataTransfer.effectAllowed = "move"; e.dataTransfer.setData("text/plain", _dragId); } catch (ex) {}
       });
       h.addEventListener("dragend", function () {
-        _dragId = null;
+        _dragId = null; _dragUnit = null;
         Array.prototype.forEach.call(tbody.querySelectorAll("tr"), function (r) {
           r.classList.remove("hl-dragging", "hl-drop-before", "hl-drop-after");
         });
@@ -871,6 +991,12 @@
       row.addEventListener("dragover", function (e) {
         if (!_dragId) return;
         e.preventDefault();
+        /* Chỉ cho thả trong cùng đơn vị */
+        if (_rowUnit(row) !== _dragUnit) {
+          try { e.dataTransfer.dropEffect = "none"; } catch (ex) {}
+          row.classList.remove("hl-drop-before", "hl-drop-after");
+          return;
+        }
         try { e.dataTransfer.dropEffect = "move"; } catch (ex) {}
         var after = _isAfter(row, e.clientY);
         row.classList.toggle("hl-drop-after", after);
@@ -896,7 +1022,19 @@
     return clientY > r.top + r.height / 2;
   }
 
+  /* Đơn vị của 1 hàng (theo id) */
+  function _rowUnit(row) {
+    var id = row.getAttribute("data-row-id");
+    var rec = _getAllData().filter(function (p) { return p.id === id; })[0];
+    return rec ? rec.unit : null;
+  }
+
   function _reorder(key, dragId, targetId, after) {
+    var all = _getAllData();
+    var dr = all.filter(function (p) { return p.id === dragId; })[0];
+    var tg = all.filter(function (p) { return p.id === targetId; })[0];
+    if (!dr || !tg) return;
+    if (dr.unit !== tg.unit) return; // chỉ đổi thứ tự trong cùng đơn vị
     var ids = getData(key).map(function (p) { return p.id; }); // thứ tự hiển thị hiện tại
     var from = ids.indexOf(dragId);
     if (from < 0) return;
@@ -1045,6 +1183,7 @@
       alert("Vui lòng điền đầy đủ các trường bắt buộc (*). Ngày phải đúng dạng DD/MM/YYYY.");
       return;
     }
+    if (!_confirmDup(_editingKey, pid, name, _editingId)) return;
 
     var record = { name: name, pid: pid, title: title, unit: unit, lastDate: lastDate, note: note,
       loai_huan_luyen: _editingKey };
