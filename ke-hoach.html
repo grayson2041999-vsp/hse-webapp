@@ -381,8 +381,14 @@ function buildTopbar(){
 }
 
 /* -------- DATA -------- */
-function getOnce(){return load(K_ONCETIME,[]);}
-function getRecur(){return load(K_RECUR,[]);}
+function _normArrFields(x,withMonths){
+  x.phoiHop=_asArr(x.phoiHop);
+  x.pages=_asArr(x.pages);
+  if(withMonths) x.months=_asArr(x.months).map(function(m){return parseInt(m,10);}).filter(function(m){return !isNaN(m);});
+  return x;
+}
+function getOnce(){return load(K_ONCETIME,[]).map(function(x){return _normArrFields(x,false);});}
+function getRecur(){return load(K_RECUR,[]).map(function(x){return _normArrFields(x,true);});}
 
 /* saveOnce / saveRecur: chỉ lưu localStorage, Sheets xử lý riêng từng thao tác */
 function saveOnce(data){ save(K_ONCETIME,data); }
@@ -648,7 +654,18 @@ function planQuarterInfo(){
     label:"Quý "+(q+1)+"/"+year };
 }
 
-function _phStr(t){ return Array.isArray(t.phoiHop)?t.phoiHop.filter(Boolean).join(", "):(t.phoiHop||""); }
+/* Chuẩn hoá về mảng: xử lý cả trường hợp Supabase trả chuỗi JSON '["A","B"]' hoặc '[]' */
+function _asArr(v){
+  if(Array.isArray(v)) return v;
+  if(v==null||v==="") return [];
+  if(typeof v==="string"){
+    var s=v.trim();
+    if(s.charAt(0)==="["){ try{ var p=JSON.parse(s); return Array.isArray(p)?p:[]; }catch(e){} }
+    return s?[s]:[];
+  }
+  return [v];
+}
+function _phStr(t){ return _asArr(t.phoiHop).filter(Boolean).join(", "); }
 function _clipCell(val){
   var v=(val==null?"":String(val));
   if(v==="") return '<td class="cell-clip empty"><span class="clip-txt">—</span></td>';
