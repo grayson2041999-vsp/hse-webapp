@@ -357,9 +357,6 @@
       "margin-bottom:18px;flex-wrap:wrap;gap:10px;}",
       ".hl-pt{font-size:18px;font-weight:700;color:var(--brand);}",
       ".hl-ps{font-size:12.5px;color:var(--text-muted);margin-top:3px;}",
-      /* Viewer notice */
-      ".hl-viewer-note{background:#fef9e7;border-left:3px solid var(--warning);",
-      "padding:9px 14px;border-radius:0 8px 8px 0;font-size:12.5px;color:#856404;margin-bottom:14px;}",
       /* Modal */
       ".hl-modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);",
       "z-index:200;align-items:center;justify-content:center;}",
@@ -433,14 +430,6 @@
         ? ''
         : '<span style="font-size:12px;color:var(--text-muted);font-style:italic;">Chế độ xem</span>');
     body.appendChild(ph);
-
-    /* Viewer notice */
-    if (!_user) {
-      var vn = document.createElement("div");
-      vn.className = "hl-viewer-note";
-      vn.innerHTML = "<svg class='lic-emoji' width='1.05em' height='1.05em' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' style='display:inline-block;vertical-align:-0.15em;flex-shrink:0' aria-hidden='true'><path d='M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0'/><circle cx='12' cy='12' r='3'/></svg> Bạn đang xem ở chế độ khách. <a href='#' onclick='return false' id='hl-login-link' style='color:var(--brand);font-weight:600'>Đăng nhập</a> để thêm/sửa dữ liệu.";
-      body.appendChild(vn);
-    }
 
     /* Stats */
     var stats = document.createElement("div");
@@ -529,14 +518,6 @@
 
     var addBtn = document.getElementById("hl-btn-add");
     if (addBtn) addBtn.addEventListener("click", function () { _openModal(key, null); });
-
-    var loginLink = document.getElementById("hl-login-link");
-    if (loginLink) {
-      loginLink.addEventListener("click", function (e) {
-        e.preventDefault();
-        if (typeof openLoginModal === "function") openLoginModal();
-      });
-    }
   }
 
   function _stat(cls, val, lbl) {
