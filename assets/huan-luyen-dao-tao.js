@@ -352,8 +352,15 @@
       ".hl-val{font-size:26px;font-weight:800;color:var(--text);}",
       ".hl-lbl{font-size:11.5px;color:var(--text-muted);margin-top:1px;}",
       ".hl-warn-input{width:50px;padding:1px 4px;border:1px solid #f0c987;border-radius:5px;",
-      "font-size:12px;font-weight:800;text-align:center;color:#e68900;background:#fff;}",
+      "font-size:12px;font-weight:800;text-align:center;color:#e68900;background:#fff;vertical-align:middle;}",
       ".hl-warn-input:focus{outline:none;border-color:#e68900;box-shadow:0 0 0 2px rgba(230,137,0,.15);}",
+      ".hl-warn-save{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;",
+      "margin-left:4px;border:1px solid #f0c987;border-radius:5px;background:#fff;color:#e68900;",
+      "cursor:pointer;vertical-align:middle;padding:0;}",
+      ".hl-warn-save:hover{background:#e68900;color:#fff;border-color:#e68900;}",
+      /* Nút Xuất Excel – xanh lá Excel, in đậm */
+      ".hl-btn-excel{background:#217346;color:#fff;font-weight:700;border:1px solid #217346;}",
+      ".hl-btn-excel:hover{background:#1a5c38;border-color:#1a5c38;color:#fff;}",
       /* Table */
       ".hl-tw{overflow-x:auto;}",
       ".hl-tw table{width:100%;border-collapse:collapse;font-size:13px;}",
@@ -494,7 +501,7 @@
       '</div>' +
       '<div style="display:flex;align-items:center;gap:10px;">' +
         (_canEdit ? '' : '<span style="font-size:12px;color:var(--text-muted);font-style:italic;">Chế độ xem</span>') +
-        '<button class="btn btn-ghost btn-sm" id="hl-btn-export" title="Xuất Excel tất cả 6 nhóm"><svg class="lic-emoji" width="1.05em" height="1.05em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex-shrink:0" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg> Xuất Excel</button>' +
+        '<button class="btn btn-sm hl-btn-excel" id="hl-btn-export" title="Xuất Excel tất cả 6 nhóm"><svg class="lic-emoji" width="1.05em" height="1.05em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex-shrink:0" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg> Xuất Excel</button>' +
       '</div>';
     body.appendChild(ph);
 
@@ -502,8 +509,9 @@
     var stats = document.createElement("div");
     stats.className = "hl-stats";
     var warnLbl = 'Sắp hết hạn (≤ ' +
-      (_isAdmin
-        ? '<input type="number" class="hl-warn-input" id="hl-warn-' + key + '" value="' + warnDays + '" min="1" max="365" title="Số ngày báo sắp hết hạn (chỉ Admin)">'
+      (_canEdit
+        ? '<input type="number" class="hl-warn-input" id="hl-warn-' + key + '" value="' + warnDays + '" min="1" max="365" title="Số ngày báo sắp hết hạn">' +
+          '<button class="hl-warn-save" id="hl-warn-save-' + key + '" title="Lưu"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></button>'
         : '<b>' + warnDays + '</b>') +
       ' ngày)';
     stats.innerHTML =
@@ -585,12 +593,15 @@
     }
 
     var warnInput = document.getElementById("hl-warn-" + key);
-    if (warnInput && _isAdmin) {
-      warnInput.addEventListener("change", function () {
-        var v = parseInt(this.value);
+    var warnSave  = document.getElementById("hl-warn-save-" + key);
+    if (warnInput && _canEdit) {
+      var doSaveWarn = function () {
+        var v = parseInt(warnInput.value);
         if (!isNaN(v) && v >= 1) { setWarnDays(key, v); _renderTabContent(key); }
-        else { this.value = getWarnDays(key); }
-      });
+        else { warnInput.value = getWarnDays(key); }
+      };
+      if (warnSave) warnSave.addEventListener("click", doSaveWarn);
+      warnInput.addEventListener("keydown", function (e) { if (e.key === "Enter") { e.preventDefault(); doSaveWarn(); } });
     }
 
     var searchInput = document.getElementById("hl-search-" + key);
