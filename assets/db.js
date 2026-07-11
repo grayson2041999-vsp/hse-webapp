@@ -116,6 +116,12 @@ var DB = (function () {
       return sb.from(tbl(sheet)).update(patch).eq(pkOf(sheet), id).select().maybeSingle();
     }).then(function (res) {
       if (res.error) throw new Error(res.error.message);
+      // Bản ghi chưa tồn tại trên server (vd: tạo lúc offline) -> chèn mới thay vì bỏ qua
+      if (!res.data) {
+        var full = Object.assign({}, patch);
+        full[pkOf(sheet)] = id;
+        return insert(sheet, full);
+      }
       if (_cache[sheet]) {
         var idx = _cache[sheet].findIndex(function (r) { return String(r[pkOf(sheet)]) === String(id); });
         if (idx >= 0) _cache[sheet][idx] = res.data;
@@ -227,6 +233,34 @@ var DB = (function () {
   function getCached(sheet) { return _cache[sheet] || null; }
   function clearCache(sheet) { if (sheet) delete _cache[sheet]; else _cache = {}; }
 
+  /* ─── Gửi lại các thao tác còn tồn trong outbox (offline / lỗi tạm) ─── */
+  function _outboxSheets() {
+    var out = [];
+    for (var i = 0; i < localStorage.length; i++) {
+      var k = localStorage.key(i);
+      if (k && k.indexOf("hse_db_outbox_") === 0) out.push(k.slice("hse_db_outbox_".length));
+    }
+    return out;
+  }
+  function flushOutbox(sheet) {
+    var sheets = sheet ? [sheet] : _outboxSheets();
+    var chain = Promise.resolve();
+    var replayed = 0;
+    sheets.forEach(function (s) {
+      _getOutbox(s).forEach(function (e) {
+        chain = chain.then(function () {
+          var op;
+          if (e.op === "delete") op = del(s, e.id);
+          else if (e.op === "update") op = update(s, e.id, e.data);
+          else op = insert(s, e.data);
+          // Thành công thì các hàm trên tự xoá khỏi outbox; thất bại thì tự đẩy lại
+          return op.then(function () { replayed++; }).catch(function () {});
+        });
+      });
+    });
+    return chain.then(function () { return replayed; });
+  }
+
   return {
     init: init,
     isReady: isReady,
@@ -246,6 +280,7 @@ var DB = (function () {
     testConnection: testConnection,
     getCached: getCached,
     clearCache: clearCache,
+    flushOutbox: flushOutbox,
     DEFAULT_URL: DEFAULT_URL
   };
 })();
