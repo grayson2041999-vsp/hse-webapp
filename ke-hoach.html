@@ -1507,7 +1507,6 @@ function deadlineViewRow(t,n,editable){
 function deadlineEditRows(t,n){
   t=t||{};
   var status=t.status||"Chưa bắt đầu";
-  var pagesChecked=t.pages||[];
   var main='<tr class="ie-row">'+
     '<td style="color:var(--text-light);font-size:12px">'+(n||"")+'</td>'+
     '<td><textarea class="inp" id="ieName" rows="2" placeholder="Nội dung công việc...">'+esc(t.name||"")+'</textarea></td>'+
@@ -1521,27 +1520,16 @@ function deadlineEditRows(t,n){
     '<td><input class="inp" id="ieGhiChu" value="'+esc(t.ghiChu||"")+'" placeholder="Ghi chú..."></td>'+
   '</tr>';
   var detail='<tr class="ie-detail"><td colspan="7">'+
-    '<div class="ie-grid">'+
-      '<div>'+
-        '<div class="ie-mini-label">Tình trạng</div>'+
-        '<select class="inp" id="ieStatus" onchange="ieToggleCompletion()">'+
-          ['Chưa bắt đầu','Đang thực hiện','Đã hoàn thành'].map(function(s){return '<option'+(status===s?' selected':'')+'>'+s+'</option>';}).join("")+
-        '</select>'+
-        '<div id="ieCompletion" style="margin-top:10px;'+(status==="Đã hoàn thành"?"":"display:none")+'">'+
-          '<div class="ie-mini-label">Ngày hoàn thành *</div>'+
-          '<input class="inp" type="date" id="ieCompletionDate" value="'+esc(t.completionDate||"")+'">'+
-          '<div class="ie-mini-label" style="margin-top:8px">Báo cáo hoàn thành *</div>'+
-          '<textarea class="inp" id="ieCompletionReport" rows="2" placeholder="Mô tả kết quả...">'+esc(t.completionReport||"")+'</textarea>'+
-        '</div>'+
-      '</div>'+
-      '<div>'+
-        '<div class="ie-mini-label">Trang liên quan <span style="font-weight:400;text-transform:none;letter-spacing:0">(hiển thị trên trang chủ phân hệ tương ứng)</span></div>'+
-        '<div class="pages-grid">'+
-          MENU.filter(function(m){return !m.adminOnly;}).map(function(m){
-            var chk=pagesChecked.indexOf(m.slug)>=0?" checked":"";
-            return '<label class="page-check"><input type="checkbox" name="ie_pages" value="'+m.slug+'"'+chk+'><span>'+m.title.toUpperCase()+'</span></label>';
-          }).join("")+
-        '</div>'+
+    '<div style="max-width:300px">'+
+      '<div class="ie-mini-label">Tình trạng</div>'+
+      '<select class="inp" id="ieStatus" onchange="ieToggleCompletion()">'+
+        ['Chưa bắt đầu','Đang thực hiện','Đã hoàn thành'].map(function(s){return '<option'+(status===s?' selected':'')+'>'+s+'</option>';}).join("")+
+      '</select>'+
+      '<div id="ieCompletion" style="margin-top:10px;'+(status==="Đã hoàn thành"?"":"display:none")+'">'+
+        '<div class="ie-mini-label">Ngày hoàn thành *</div>'+
+        '<input class="inp" type="date" id="ieCompletionDate" value="'+esc(t.completionDate||"")+'">'+
+        '<div class="ie-mini-label" style="margin-top:8px">Báo cáo hoàn thành *</div>'+
+        '<textarea class="inp" id="ieCompletionReport" rows="2" placeholder="Mô tả kết quả...">'+esc(t.completionReport||"")+'</textarea>'+
       '</div>'+
     '</div>'+
     '<div class="ie-actions">'+
@@ -1588,7 +1576,6 @@ function recurEditRows(t,n){
   t=t||{};
   var allMonths=t.allMonths===true;
   var monthsChecked=t.months||[];
-  var pagesChecked=t.pages||[];
   var main='<tr class="ie-row">'+
     '<td style="color:var(--text-light);font-size:12px">'+(n||"")+'</td>'+
     '<td><textarea class="inp" id="ieName" rows="2" placeholder="Nội dung công việc...">'+esc(t.name||"")+'</textarea></td>'+
@@ -1613,13 +1600,6 @@ function recurEditRows(t,n){
         '<input class="inp" type="number" id="ieExecDay" min="1" max="31" style="width:110px;'+(t.lastDay?"opacity:.45;pointer-events:none":"")+'" value="'+esc(t.lastDay?"":(t.execDay||""))+'" placeholder="VD: 5"></div>'+
       '<label style="display:inline-flex;align-items:center;gap:7px;font-weight:600;color:var(--primary);cursor:pointer;padding-bottom:7px">'+
         '<input type="checkbox" id="ieLastDay" '+(t.lastDay?"checked":"")+' onchange="ieToggleLastDay()" style="accent-color:var(--primary);width:14px;height:14px"> Ngày cuối tháng</label>'+
-    '</div>'+
-    '<div class="ie-mini-label" style="margin-top:14px">Trang liên quan <span style="font-weight:400;text-transform:none;letter-spacing:0">(hiển thị trên trang chủ phân hệ tương ứng)</span></div>'+
-    '<div class="pages-grid">'+
-      MENU.filter(function(m){return !m.adminOnly;}).map(function(m){
-        var chk=pagesChecked.indexOf(m.slug)>=0?" checked":"";
-        return '<label class="page-check"><input type="checkbox" name="ie_pages" value="'+m.slug+'"'+chk+'><span>'+m.title.toUpperCase()+'</span></label>';
-      }).join("")+
     '</div>'+
     '<div class="ie-actions">'+
       (t.id?'<button class="btn btn-danger btn-sm" onclick="planDelete(\'recurring\',\''+t.id+'\')">'+IC.trash+' Xoá</button>':'')+
@@ -1670,8 +1650,10 @@ function planSave(type){
   var nameEl=document.getElementById("ieName");
   var name=(nameEl&&nameEl.value||"").trim();
   if(!name){ showToast("⚠️ Vui lòng nhập nội dung công việc","warning"); if(nameEl)nameEl.focus(); return; }
-  var pages=[]; document.querySelectorAll('input[name="ie_pages"]:checked').forEach(function(cb){pages.push(cb.value);});
   var editingId=_ie&&_ie.id;
+  // Giữ nguyên liên kết trang liên quan đã có (đã bỏ phần chọn trong editor)
+  var pages=[];
+  if(editingId){ var _src=(type==="oncetime"?getOnce():getRecur()).find(function(x){return x.id===editingId;}); if(_src) pages=_src.pages||[]; }
   var item={
     id: editingId||uid(),
     name:name,
