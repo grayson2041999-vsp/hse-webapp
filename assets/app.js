@@ -26,6 +26,7 @@
     { slug:"cap-phat-bhld",      title:"Cấp phát BHLĐ",               icon:"🦺", licon:"shield-check",     group:"ung-dung", sub:["Quản lý cấp phát","Danh mục BHLĐ","Định mức cấp phát","Phiếu yêu cầu","Tồn kho","Nhu cầu mua sắm"] },
     { slug:"huan-luyen-dao-tao", title:"Huấn luyện - Đào tạo",        icon:"🎓", licon:"graduation-cap",   group:"ung-dung", sub:["Thống kê các loại đào tạo, huấn luyện","Kiểm tra kiến thức an toàn","Đào tạo nội bộ"] },
     { slug:"bao-chay-tu-dong",   title:"Báo cáo hệ thống báo cháy tự động", icon:"🔔", licon:"bell",       group:"ung-dung", sub:["Danh sách thiết bị báo cháy","Ghi nhận lỗi & khắc phục"] },
+    { slug:"tra-cuu-atvsld",     title:"Tra cứu ATVSLĐ",              icon:"📚", licon:"book-open",       group:"ung-dung", sub:[] },
     { slug:"quan-tri-he-thong",  title:"Quản trị hệ thống",           icon:"🛡️", licon:"settings",         group:"admin",    sub:[], adminOnly:true }
   ];
 
@@ -202,7 +203,10 @@
     "user":'<path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>',
     "bell":'<path d="M10.268 21a2 2 0 0 0 3.464 0"/><path d="M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326"/>',
     "lock":'<rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>',
-    "key":'<path d="m15.5 7.5 2.3 2.3a1 1 0 0 0 1.4 0l2.1-2.1a1 1 0 0 0 0-1.4L19 4"/><path d="m21 2-9.6 9.6"/><circle cx="7.5" cy="15.5" r="5.5"/>'
+    "key":'<path d="m15.5 7.5 2.3 2.3a1 1 0 0 0 1.4 0l2.1-2.1a1 1 0 0 0 0-1.4L19 4"/><path d="m21 2-9.6 9.6"/><circle cx="7.5" cy="15.5" r="5.5"/>',
+    "book-open":'<path d="M12 7v14"/><path d="M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z"/>',
+    "external-link":'<path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>',
+    "info":'<circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/>'
   };
   function lic(name, size){
     var p = ICON_PATHS[name]; if(!p) return "";
@@ -676,6 +680,14 @@
       return;
     }
 
+    // Trang Tra cứu ATVSLĐ: link NotebookLM do admin cấu hình
+    if(slug === "tra-cuu-atvsld"){
+      if(!canView(u, slug)){ renderShell(slug, deniedNode()); return; }
+      var atvsldContainer = renderShell(slug, el("div"));
+      renderTraCuuAtvsld(atvsldContainer, u, isAdmin(u));
+      return;
+    }
+
     // Trang thường: anonymous có thể xem, user/viewer theo phân quyền
     if(!canView(u, slug)){
       renderShell(slug, deniedNode()); return;
@@ -740,6 +752,120 @@
       if(b) b.addEventListener("click", openLoginModal);
     }, 0);
     return d;
+  }
+
+  /* =========================================================
+     RENDER: TRA CỨU THÔNG TIN ATVSLĐ (NotebookLM)
+     - Admin: cấu hình & lưu link NotebookLM (lưu trên Supabase → app_settings)
+     - User/Viewer: bấm → thông báo cần đăng nhập Google → mở link tab mới
+     ========================================================= */
+  var ATVSLD_KEY = "notebooklm_atvsld";
+  var ATVSLD_GG_MSG =
+    "Chức năng này sử dụng NotebookLM của Google.\n\n" +
+    "Bạn cần đăng nhập tài khoản Google trên trình duyệt để xem tài liệu.\n\n" +
+    "Bấm OK để tiếp tục mở tài liệu tra cứu.";
+
+  function renderTraCuuAtvsld(container, u, admin){
+    var FULL_TITLE = "Tra cứu thông tin về ATVSLĐ tại XNDV";
+    var currentLink = "";
+
+    container.innerHTML =
+      '<div class="page-title" style="display:flex;align-items:center;gap:9px">'+lic("book-open",22)+esc(FULL_TITLE)+'</div>'+
+      '<div class="page-desc">Tra cứu thông tin về An toàn - Vệ sinh lao động tại Xí nghiệp Dịch vụ Cảng và Cung ứng vật tư thiết bị qua trợ lý NotebookLM.</div>'+
+      '<div id="atvsld-body" style="margin-top:18px"></div>';
+
+    var body = $("#atvsld-body", container);
+
+    function esc2(s){ return esc(s==null?"":s); }
+    function isValidLink(s){ return /^https?:\/\//i.test(String(s||"").trim()); }
+
+    function openDoc(){
+      if(!isValidLink(currentLink)){
+        alert("Quản trị viên chưa cấu hình liên kết tài liệu tra cứu. Vui lòng liên hệ Admin.");
+        return;
+      }
+      // confirm() đồng bộ → window.open ngay sau OK không bị chặn popup
+      if(window.confirm(ATVSLD_GG_MSG)){
+        window.open(currentLink, "_blank", "noopener");
+      }
+    }
+
+    function draw(){
+      var hasLink = isValidLink(currentLink);
+      var html =
+        '<div class="card" style="max-width:640px;padding:26px 24px;text-align:center">'+
+          '<div style="width:64px;height:64px;margin:0 auto 14px;border-radius:16px;display:flex;align-items:center;justify-content:center;'+
+            'background:rgba(200,16,46,.08);color:var(--accent,#C8102E)">'+lic("book-open",34)+'</div>'+
+          '<h3 style="margin:0 0 6px;font-size:17px;color:var(--text)">Kho tài liệu ATVSLĐ (NotebookLM)</h3>'+
+          '<p style="margin:0 auto 20px;max-width:440px;color:var(--text-muted);font-size:13.5px;line-height:1.55">'+
+            'Đặt câu hỏi và tra cứu nhanh các quy định, quy trình, tài liệu về An toàn - Vệ sinh lao động của Xí nghiệp.</p>'+
+          '<button class="btn btn-accent" id="atvsld-open" '+(hasLink?'':'disabled style="opacity:.55;cursor:not-allowed"')+
+            ' style="display:inline-flex;align-items:center;gap:8px;font-size:14px;padding:11px 22px">'+
+            lic("external-link",17)+'<span>Mở tài liệu tra cứu</span></button>'+
+          (hasLink?'':'<div style="margin-top:12px;font-size:12.5px;color:var(--text-muted)">Chưa có liên kết. Quản trị viên cần cấu hình bên dưới.</div>')+
+          '<div style="margin-top:16px;font-size:12px;color:var(--text-muted);display:flex;align-items:center;justify-content:center;gap:6px">'+
+            lic("info",14)+'<span>Yêu cầu đăng nhập tài khoản Google để xem.</span></div>'+
+        '</div>';
+
+      if(admin){
+        html +=
+          '<div class="card" style="max-width:640px;margin-top:18px;padding:20px 24px">'+
+            '<div style="display:flex;align-items:center;gap:8px;font-weight:700;color:var(--text);margin-bottom:4px">'+
+              lic("settings",17)+'<span>Cấu hình liên kết (chỉ Admin)</span></div>'+
+            '<div style="font-size:12.5px;color:var(--text-muted);margin-bottom:12px">Dán liên kết chia sẻ NotebookLM (đặt chế độ công khai để mọi người xem được).</div>'+
+            '<div class="field"><label>Liên kết NotebookLM</label>'+
+              '<input class="inp" id="atvsld-link" style="width:100%" placeholder="https://notebooklm.google.com/notebook/..." value="'+esc2(currentLink)+'"></div>'+
+            '<div style="display:flex;gap:10px;align-items:center;margin-top:12px">'+
+              '<button class="btn btn-accent" id="atvsld-save">Lưu liên kết</button>'+
+              (hasLink?'<a href="#" id="atvsld-test" style="font-size:13px;color:var(--brand);font-weight:600">Mở thử</a>':'')+
+              '<span id="atvsld-msg" style="font-size:13px"></span>'+
+            '</div>'+
+          '</div>';
+      }
+      body.innerHTML = html;
+
+      var ob = $("#atvsld-open", body);
+      if(ob) ob.addEventListener("click", openDoc);
+
+      if(admin){
+        var saveBtn = $("#atvsld-save", body);
+        var msgEl = $("#atvsld-msg", body);
+        var testEl = $("#atvsld-test", body);
+        if(testEl) testEl.addEventListener("click", function(e){ e.preventDefault(); openDoc(); });
+        saveBtn.addEventListener("click", function(){
+          var val = ($("#atvsld-link", body).value || "").trim();
+          if(val && !isValidLink(val)){
+            msgEl.textContent = "Liên kết phải bắt đầu bằng http:// hoặc https://";
+            msgEl.style.color = "var(--accent,#C8102E)"; return;
+          }
+          saveBtn.disabled = true;
+          msgEl.style.color = "var(--text-muted)"; msgEl.textContent = "Đang lưu...";
+          DB.insert("app_settings", { key: ATVSLD_KEY, value: val, updated_at: new Date().toISOString() })
+            .then(function(){
+              currentLink = val;
+              msgEl.style.color = "#1a7a3c"; msgEl.textContent = "✅ Đã lưu.";
+              saveBtn.disabled = false;
+              draw();
+            })
+            .catch(function(e){
+              saveBtn.disabled = false;
+              msgEl.style.color = "var(--accent,#C8102E)";
+              msgEl.textContent = "Lưu thất bại: " + (e && e.message || e);
+            });
+        });
+      }
+    }
+
+    draw(); // vẽ ngay (trạng thái chưa có link) để không chờ mạng
+
+    // Nạp link đã lưu từ Supabase
+    if(window.DB && DB.getAll){
+      DB.getAll("app_settings").then(function(rows){
+        var row = (rows||[]).filter(function(r){ return r.key === ATVSLD_KEY; })[0];
+        currentLink = (row && row.value) || "";
+        draw();
+      }).catch(function(){ /* giữ trạng thái mặc định nếu lỗi mạng */ });
+    }
   }
 
   /* =========================================================
