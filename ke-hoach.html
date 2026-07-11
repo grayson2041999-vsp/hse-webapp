@@ -185,6 +185,8 @@
     .plan-table th{background:#dde6f3;color:var(--primary);font-size:12px;font-weight:700;padding:9px 10px;text-align:left;white-space:nowrap;}
     .plan-table td{padding:8px 10px;border-bottom:1px solid #f0f3fa;font-size:12.8px;vertical-align:top;}
     .plan-table.ov th{background:#fdedec;color:#c0392b;}
+    .plan-table th,.plan-table td{border-right:1px solid #e6ebf5;}
+    .plan-table th:last-child,.plan-table td:last-child{border-right:none;}
     .plan-row{cursor:default;}
     .plan-row.can-edit{cursor:pointer;}
     .plan-row.can-edit:hover td{background:#eef3fb;}
@@ -1418,13 +1420,18 @@ function _clipCell(val){
   return '<td class="cell-clip"><span class="clip-txt">'+esc(v)+'</span><span class="clip-full">'+esc(v)+'</span></td>';
 }
 function _planCols(){
-  return '<colgroup><col style="width:34px"><col><col style="width:150px"><col style="width:130px"><col style="width:150px"><col style="width:88px"><col style="width:88px"></colgroup>';
+  return '<colgroup><col style="width:32px"><col><col style="width:108px"><col style="width:138px"><col style="width:122px"><col style="width:138px"><col style="width:80px"><col style="width:80px"></colgroup>';
 }
 function _planHead(ov){
   return '<thead><tr>'+
-    '<th>#</th><th>Nội dung công việc</th><th>Thời gian thực hiện</th>'+
+    '<th>#</th><th>Nội dung công việc</th><th>Tình trạng</th><th>Thời gian thực hiện</th>'+
     '<th>Chủ trì</th><th>Phối hợp</th><th>Cơ sở</th><th>Ghi chú</th>'+
   '</tr></thead>';
+}
+function _stChip(st){
+  var styles={"Đã hoàn thành":"background:#eafaf1;color:#1a7a3c","Đang thực hiện":"background:#fef5e4;color:#e68900","Trễ hạn":"background:#fdedec;color:#c0392b","Chưa bắt đầu":"background:#f0f3fa;color:#4a5568"};
+  var s=styles[st]||"background:#f0f3fa;color:#4a5568";
+  return '<span style="'+s+';padding:2px 8px;border-radius:12px;font-size:11px;font-weight:700;white-space:nowrap">'+esc(st)+'</span>';
 }
 
 /* ---------- RENDER CHÍNH ---------- */
@@ -1511,7 +1518,7 @@ function buildDeadlineTable(overdue, onceQ, editable, Q){
   }
   emit(overdue); emit(onceQ);
   if(!overdue.length && !onceQ.length && !adding){
-    body='<tr><td colspan="7" style="text-align:center;color:var(--text-light);padding:22px;font-style:italic">Chưa có công việc có kỳ hạn'+(_planScope==="all"?"":" trong "+esc(Q.label))+'.'+(editable?' Nhấn nút bên dưới để thêm.':'')+'</td></tr>';
+    body='<tr><td colspan="8" style="text-align:center;color:var(--text-light);padding:22px;font-style:italic">Chưa có công việc có kỳ hạn'+(_planScope==="all"?"":" trong "+esc(Q.label))+'.'+(editable?' Nhấn nút bên dưới để thêm.':'')+'</td></tr>';
   }
   if(adding) body+=deadlineEditRows({},0);
   return '<div class="table-wrap"><table class="plan-table">'+_planCols()+_planHead()+'<tbody>'+body+'</tbody></table></div>';
@@ -1524,7 +1531,8 @@ function deadlineViewRow(t,n,editable){
   var rs=(st==="Trễ hạn")?' style="background:#fdf3f2"':'';
   return '<tr'+attr+rs+'>'+
     '<td style="color:var(--text-light);font-size:12px">'+n+'</td>'+
-    '<td class="plan-name">'+esc(t.name)+_qStatusBadge(st)+report+'</td>'+
+    '<td class="plan-name">'+esc(t.name)+report+'</td>'+
+    '<td>'+_stChip(st)+'</td>'+
     '<td style="white-space:nowrap;font-size:12px">'+esc(ngay)+'</td>'+
     '<td style="font-size:12px">'+esc(t.chuTri||"—")+'</td>'+
     '<td style="font-size:12px">'+(_phStr(t)?esc(_phStr(t)):"—")+'</td>'+
@@ -1537,6 +1545,9 @@ function deadlineEditRows(t,n){
   var main='<tr class="ie-row">'+
     '<td style="color:var(--text-light);font-size:12px">'+(n||"")+'</td>'+
     '<td><textarea class="inp" id="ieName" rows="2" placeholder="Nội dung công việc...">'+esc(t.name||"")+'</textarea></td>'+
+    '<td><select class="inp" id="ieStatus" onchange="ieToggleCompletion()" style="padding:5px 6px">'+
+        ['Chưa bắt đầu','Đang thực hiện','Đã hoàn thành'].map(function(s){return '<option'+(status===s?' selected':'')+'>'+s+'</option>';}).join("")+
+      '</select></td>'+
     '<td><div class="ie-dates">'+
         '<input class="inp" type="date" id="ieStart" value="'+esc(t.start||"")+'" title="Ngày bắt đầu">'+
         '<input class="inp" type="date" id="ieEnd" value="'+esc(t.end||"")+'" title="Ngày kết thúc">'+
@@ -1546,13 +1557,9 @@ function deadlineEditRows(t,n){
     '<td><input class="inp" id="ieCoSo" value="'+esc(t.coSo||"")+'" placeholder="Cơ sở..."></td>'+
     '<td><input class="inp" id="ieGhiChu" value="'+esc(t.ghiChu||"")+'" placeholder="Ghi chú..."></td>'+
   '</tr>';
-  var detail='<tr class="ie-detail"><td colspan="7">'+
-    '<div style="max-width:300px">'+
-      '<div class="ie-mini-label">Tình trạng</div>'+
-      '<select class="inp" id="ieStatus" onchange="ieToggleCompletion()">'+
-        ['Chưa bắt đầu','Đang thực hiện','Đã hoàn thành'].map(function(s){return '<option'+(status===s?' selected':'')+'>'+s+'</option>';}).join("")+
-      '</select>'+
-      '<div id="ieCompletion" style="margin-top:10px;'+(status==="Đã hoàn thành"?"":"display:none")+'">'+
+  var detail='<tr class="ie-detail"><td colspan="8">'+
+    '<div style="max-width:340px">'+
+      '<div id="ieCompletion" style="'+(status==="Đã hoàn thành"?"":"display:none")+'">'+
         '<div class="ie-mini-label">Ngày hoàn thành *</div>'+
         '<input class="inp" type="date" id="ieCompletionDate" value="'+esc(t.completionDate||"")+'">'+
         '<div class="ie-mini-label" style="margin-top:8px">Báo cáo hoàn thành *</div>'+
@@ -1583,7 +1590,7 @@ function buildRecurTable(list, editable, Q){
     else body+=recurViewRow(t,n,editable);
   });
   if(!list.length && !adding){
-    body='<tr><td colspan="7" style="text-align:center;color:var(--text-light);padding:22px;font-style:italic">Chưa có công việc định kỳ'+(_planScope==="all"?"":" áp dụng cho "+esc(Q.label))+'.'+(editable?' Nhấn nút bên dưới để thêm.':'')+'</td></tr>';
+    body='<tr><td colspan="8" style="text-align:center;color:var(--text-light);padding:22px;font-style:italic">Chưa có công việc định kỳ'+(_planScope==="all"?"":" áp dụng cho "+esc(Q.label))+'.'+(editable?' Nhấn nút bên dưới để thêm.':'')+'</td></tr>';
   }
   if(adding) body+=recurEditRows({},0);
   return '<div class="table-wrap"><table class="plan-table">'+_planCols()+_planHead()+'<tbody>'+body+'</tbody></table></div>';
@@ -1593,6 +1600,7 @@ function recurViewRow(t,n,editable){
   return '<tr'+attr+'>'+
     '<td style="color:var(--text-light);font-size:12px">'+n+'</td>'+
     '<td class="plan-name">'+esc(t.name)+'</td>'+
+    '<td><span style="background:#eafaf1;color:#1a7a3c;padding:2px 8px;border-radius:12px;font-size:11px;font-weight:700;white-space:nowrap">Định kỳ</span></td>'+
     '<td style="font-size:12px"><span class="badge badge-green" style="font-size:11px">'+esc(recurTimeStr(t))+'</span></td>'+
     '<td style="font-size:12px">'+esc(t.chuTri||"—")+'</td>'+
     '<td style="font-size:12px">'+(_phStr(t)?esc(_phStr(t)):"—")+'</td>'+
@@ -1606,13 +1614,14 @@ function recurEditRows(t,n){
   var main='<tr class="ie-row">'+
     '<td style="color:var(--text-light);font-size:12px">'+(n||"")+'</td>'+
     '<td><textarea class="inp" id="ieName" rows="2" placeholder="Nội dung công việc...">'+esc(t.name||"")+'</textarea></td>'+
+    '<td><span style="background:#eafaf1;color:#1a7a3c;padding:2px 8px;border-radius:12px;font-size:11px;font-weight:700;white-space:nowrap">Định kỳ</span></td>'+
     '<td style="font-size:11px;color:var(--text-light)">Chọn tháng &amp; ngày ở khung bên dưới &#9660;</td>'+
     '<td>'+unitDropdown("ieChuTri",t.chuTri||"")+'</td>'+
     '<td>'+unitMultiCheck("iePhoiHop",t.phoiHop||[])+'</td>'+
     '<td><input class="inp" id="ieCoSo" value="'+esc(t.coSo||"")+'" placeholder="Cơ sở..."></td>'+
     '<td><input class="inp" id="ieGhiChu" value="'+esc(t.ghiChu||"")+'" placeholder="Ghi chú..."></td>'+
   '</tr>';
-  var detail='<tr class="ie-detail"><td colspan="7">'+
+  var detail='<tr class="ie-detail"><td colspan="8">'+
     '<div class="ie-mini-label">Thời gian thực hiện</div>'+
     '<label style="display:inline-flex;align-items:center;gap:7px;font-weight:700;color:var(--primary);margin-bottom:8px;cursor:pointer">'+
       '<input type="checkbox" id="ieAllMonths" '+(allMonths?"checked":"")+' onchange="ieToggleAllMonths()" style="accent-color:var(--primary);width:14px;height:14px"> Hàng tháng (tất cả các tháng)</label>'+
