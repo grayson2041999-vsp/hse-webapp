@@ -3,7 +3,10 @@
    Module quản lý huấn luyện, đào tạo HSE
    - 6 loại huấn luyện (ATVSLĐ nhóm 1-4, T-BOSIET/T-FOET, hoá chất)
    - Phân quyền tích hợp với HSE.renderPage (admin / user / viewer)
-   - Lưu localStorage + sync Google Sheets qua DB.cachedLoad/cachedSave
+   - Lưu localStorage + sync Supabase qua DB.*
+   - Ngày huấn luyện gần nhất lưu & hiển thị dạng DD/MM/YYYY
+   - Sửa INLINE trực tiếp trên bảng (họ tên, danh số, chức danh, đơn vị, ngày)
+   - Kéo–thả (drag) để đổi thứ tự nhân sự; thứ tự lưu localStorage + đồng bộ DB
    ========================================================= */
 (function () {
   "use strict";
@@ -52,39 +55,74 @@
   var _user        = null;
   var _canEdit     = false;
   var _isAdmin     = false;
+  var _dragId      = null;   // id hàng đang kéo
 
   /* ──────────────────────────────────────────
-     DỮ LIỆU (localStorage cache + Sheets)
-     - 1 sheet "hl_nhansu"  : toàn bộ nhân sự, lọc theo cột loai_huan_luyen
-     - 1 sheet "hl_settings": thời hạn từng loại [{loai, thoi_han_thang}]
+     DỮ LIỆU (localStorage cache + Supabase)
   ────────────────────────────────────────── */
   var LS_NHANSU   = "hl_nhansu";
   var LS_SETTINGS = "hl_settings";
+  var LS_ORDER    = "hl_order";     // { key: [id1, id2, ...] } – thứ tự kéo–thả
 
   /* Lấy / ghi toàn bộ danh sách nhân sự (localStorage only) */
   function _getAllData() {
-    try { return JSON.parse(localStorage.getItem(LS_NHANSU) || "[]"); } catch (e) { return []; }
+    var arr;
+    try { arr = JSON.parse(localStorage.getItem(LS_NHANSU) || "[]"); } catch (e) { arr = []; }
+    /* Chuẩn hoá ngày cũ "YYYY-MM" → "YYYY-MM-01" để phần còn lại chỉ xử lý 1 dạng */
+    for (var i = 0; i < arr.length; i++) {
+      if (arr[i] && /^\d{4}-\d{2}$/.test(arr[i].lastDate)) arr[i].lastDate = arr[i].lastDate + "-01";
+    }
+    return arr;
   }
   function _setAllData(arr) {
     localStorage.setItem(LS_NHANSU, JSON.stringify(arr));
   }
 
-  /* Lọc nhân sự theo loại */
-  function getData(key) {
-    return _getAllData().filter(function (p) { return p.loai_huan_luyen === key; });
+  /* ── Thứ tự kéo–thả (localStorage) ── */
+  function _getOrderMap() {
+    try { return JSON.parse(localStorage.getItem(LS_ORDER) || "{}"); } catch (e) { return {}; }
+  }
+  function _setOrderMap(m) {
+    localStorage.setItem(LS_ORDER, JSON.stringify(m || {}));
+  }
+  function _getOrder(key) {
+    var m = _getOrderMap();
+    return Array.isArray(m[key]) ? m[key] : [];
+  }
+  function _setOrder(key, ids) {
+    var m = _getOrderMap();
+    m[key] = ids;
+    _setOrderMap(m);
   }
 
-  /* Insert 1 record lên Sheets + localStorage */
+  /* Lọc nhân sự theo loại + sắp xếp theo thứ tự kéo–thả */
+  function getData(key) {
+    var arr = _getAllData().filter(function (p) { return p.loai_huan_luyen === key; });
+    var order = _getOrder(key);
+    arr.sort(function (a, b) {
+      var ia = order.indexOf(a.id); if (ia < 0) ia = Infinity;
+      var ib = order.indexOf(b.id); if (ib < 0) ib = Infinity;
+      if (ia !== ib) return ia - ib;
+      return String(a.createdAt || "").localeCompare(String(b.createdAt || ""));
+    });
+    return arr;
+  }
+
+  /* Insert 1 record lên Supabase + localStorage */
   function _insertRecord(record) {
     var all = _getAllData();
     all.push(record);
     _setAllData(all);
+    /* Thêm vào cuối thứ tự của loại tương ứng */
+    var ord = _getOrder(record.loai_huan_luyen);
+    if (ord.indexOf(record.id) < 0) { ord.push(record.id); _setOrder(record.loai_huan_luyen, ord); }
     if (typeof DB !== "undefined" && DB.isReady()) {
       DB.insert("hl_nhansu", record).catch(function () {});
     }
   }
 
-  /* Update 1 record lên Sheets + localStorage */
+  /* Update 1 record lên Supabase + localStorage.
+     LƯU Ý: object record KHÔNG chứa trường "sort" → không đụng schema.  */
   function _updateRecord(record) {
     var all = _getAllData();
     for (var i = 0; i < all.length; i++) {
@@ -96,22 +134,37 @@
     }
   }
 
-  /* Delete 1 record trên Sheets + localStorage */
+  /* Delete 1 record trên Supabase + localStorage */
   function _deleteRecord(id) {
+    var rec = _getAllData().filter(function (p) { return p.id === id; })[0];
     _setAllData(_getAllData().filter(function (p) { return p.id !== id; }));
+    if (rec) {
+      var ord = _getOrder(rec.loai_huan_luyen).filter(function (x) { return x !== id; });
+      _setOrder(rec.loai_huan_luyen, ord);
+    }
     if (typeof DB !== "undefined" && DB.isReady()) {
       DB.delete("hl_nhansu", id).catch(function () {});
     }
   }
 
-  /* Settings: lưu dạng object {nhom1:24, nhom2:24, ...} trong localStorage */
+  /* Đồng bộ thứ tự lên DB (best-effort, KHÔNG bắt buộc có cột "sort").
+     Gửi riêng patch {sort:i} cho từng record → nếu cột chưa có, chỉ lệnh này
+     thất bại (được nuốt lặng), các thao tác ghi khác KHÔNG bị ảnh hưởng.  */
+  function _syncOrderToDB(key) {
+    if (typeof DB === "undefined" || !DB.isReady()) return;
+    var ids = _getOrder(key);
+    ids.forEach(function (id, i) {
+      DB.update("hl_nhansu", id, { sort: i }).catch(function () {});
+    });
+  }
+
+  /* Settings: lưu dạng object {nhom1:24, ...} trong localStorage */
   function getSettings() {
     try { return JSON.parse(localStorage.getItem(LS_SETTINGS) || "{}"); } catch (e) { return {}; }
   }
   function saveSettings(s) {
     localStorage.setItem(LS_SETTINGS, JSON.stringify(s));
     if (typeof DB !== "undefined" && DB.isReady()) {
-      /* Ghi lên Sheets dạng [{loai, thoi_han_thang}] */
       var arr = Object.keys(s).map(function (k) { return { loai: k, thoi_han_thang: s[k] }; });
       DB.bulkWrite("hl_settings", arr).catch(function () {});
     }
@@ -132,7 +185,25 @@
     return null;
   }
 
-  /* Sync từ Sheets khi tải trang, re-render sau khi có data */
+  /* Xây thứ tự từ dữ liệu server (nếu có cột "sort") */
+  function _rebuildOrderFromRows() {
+    var all = _getAllData();
+    var m = _getOrderMap();
+    PAGES.forEach(function (pg) {
+      var rows = all.filter(function (r) { return r.loai_huan_luyen === pg.key; });
+      var hasSort = rows.some(function (r) { return typeof r.sort === "number"; });
+      if (!hasSort) return; // giữ thứ tự localStorage nếu server chưa có cột sort
+      rows.sort(function (a, b) {
+        var sa = typeof a.sort === "number" ? a.sort : Infinity;
+        var sb = typeof b.sort === "number" ? b.sort : Infinity;
+        return sa - sb;
+      });
+      m[pg.key] = rows.map(function (r) { return r.id; });
+    });
+    _setOrderMap(m);
+  }
+
+  /* Sync từ Supabase khi tải trang, re-render sau khi có data */
   function syncFromSheets() {
     if (typeof DB === "undefined" || !DB.isReady()) return;
 
@@ -148,8 +219,8 @@
       }
     }).catch(function () {});
 
-    /* Re-render sau khi cả 2 đã về */
     Promise.all([p1, p2]).then(function () {
+      _rebuildOrderFromRows();
       _renderTabContent(_currentKey);
     }).catch(function () {});
   }
@@ -229,9 +300,27 @@
       ".hl-tw table{width:100%;border-collapse:collapse;font-size:13px;}",
       ".hl-tw thead th{background:#dde6f3;color:var(--brand);font-weight:700;",
       "padding:10px 12px;text-align:left;white-space:nowrap;border-bottom:2px solid #b8cde4;}",
-      ".hl-tw tbody td{padding:9px 12px;border-bottom:1px solid #eef1f7;vertical-align:middle;}",
+      ".hl-tw tbody td{padding:7px 10px;border-bottom:1px solid #eef1f7;vertical-align:middle;}",
       ".hl-tw tbody tr:hover td{background:#eef3fb;}",
       ".hl-tw tbody tr:last-child td{border-bottom:none;}",
+      /* Inline edit fields */
+      ".hl-inline{width:100%;box-sizing:border-box;border:1px solid transparent;",
+      "background:transparent;border-radius:6px;padding:5px 7px;font-size:13px;",
+      "font-family:inherit;color:var(--text);transition:.12s;}",
+      ".hl-inline:hover{border-color:var(--border);background:#fff;}",
+      ".hl-inline:focus{outline:none;border-color:var(--brand-light);background:#fff;",
+      "box-shadow:0 0 0 2px rgba(37,99,235,.12);}",
+      ".hl-inline-sel{cursor:pointer;}",
+      ".hl-inline-date{max-width:120px;letter-spacing:.4px;}",
+      ".hl-inline.hl-invalid{border-color:var(--danger);background:#fdedec;}",
+      ".hl-inline-name{font-weight:600;}",
+      /* Drag handle */
+      ".hl-handle-cell{width:26px;text-align:center;padding-left:4px!important;padding-right:0!important;}",
+      ".hl-handle{cursor:grab;color:var(--text-muted);opacity:.6;display:inline-flex;}",
+      ".hl-handle:hover{opacity:1;color:var(--brand);}",
+      ".hl-tw tbody tr.hl-dragging{opacity:.4;}",
+      ".hl-tw tbody tr.hl-drop-before td{box-shadow:inset 0 2px 0 0 var(--brand);}",
+      ".hl-tw tbody tr.hl-drop-after td{box-shadow:inset 0 -2px 0 0 var(--brand);}",
       /* Badges */
       ".hl-badge{display:inline-block;padding:2px 9px;border-radius:20px;font-size:11.5px;font-weight:600;}",
       ".hl-ok{background:#eafaf1;color:#1a7a3c;}",
@@ -249,6 +338,7 @@
       ".hl-search{padding:6px 10px;border:1.5px solid var(--border);border-radius:7px;",
       "font-size:12.5px;width:200px;}",
       ".hl-search:focus{outline:none;border-color:var(--brand-light);}",
+      ".hl-hint{font-size:11.5px;color:var(--text-muted);font-style:italic;}",
       ".hl-empty td{text-align:center;padding:28px;color:var(--text-muted);font-style:italic;}",
       /* Page header */
       ".hl-ph{display:flex;align-items:flex-start;justify-content:space-between;",
@@ -350,19 +440,19 @@
       _stat("red", exp, "Đã hết hạn / Chưa có");
     body.appendChild(stats);
 
-    /* Card cài đặt thời hạn */
+    /* Card cài đặt thời hạn – nay CẢ User (có quyền chỉnh) đều điều chỉnh được */
     var settCard = document.createElement("div");
     settCard.className = "hl-card";
-    var lockNote = _isAdmin
-      ? '<span style="color:#1a7a3c;font-size:12px;"><svg class="lic-emoji" width="1.05em" height="1.05em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex-shrink:0" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg> Admin – có thể điều chỉnh</span>'
-      : '<span style="font-size:12px;color:var(--text-muted);"><svg class="lic-emoji" width="1.05em" height="1.05em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex-shrink:0" aria-hidden="true"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg> Chỉ Admin mới chỉnh được</span>';
+    var lockNote = _canEdit
+      ? '<span style="color:#1a7a3c;font-size:12px;"><svg class="lic-emoji" width="1.05em" height="1.05em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex-shrink:0" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg> Có thể điều chỉnh</span>'
+      : '<span style="font-size:12px;color:var(--text-muted);"><svg class="lic-emoji" width="1.05em" height="1.05em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex-shrink:0" aria-hidden="true"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg> Chế độ xem</span>';
     settCard.innerHTML =
       '<div class="hl-card-h"><div class="hl-card-title"><svg class="lic-emoji" width="1.05em" height="1.05em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex-shrink:0" aria-hidden="true"><path d="M9.671 4.136a2.34 2.34 0 0 1 4.659 0 2.34 2.34 0 0 0 3.319 1.915 2.34 2.34 0 0 1 2.33 4.033 2.34 2.34 0 0 0 0 3.831 2.34 2.34 0 0 1-2.33 4.033 2.34 2.34 0 0 0-3.319 1.915 2.34 2.34 0 0 1-4.659 0 2.34 2.34 0 0 0-3.32-1.915 2.34 2.34 0 0 1-2.33-4.033 2.34 2.34 0 0 0 0-3.831A2.34 2.34 0 0 1 6.35 6.051a2.34 2.34 0 0 0 3.319-1.915"/><circle cx="12" cy="12" r="3"/></svg> Thời hạn huấn luyện lại</div>' + lockNote + '</div>' +
       '<div class="hl-card-b">' +
         '<div class="hl-set-row">' +
           '<span style="font-size:13.5px;font-weight:600;">Thời hạn huấn luyện lại:</span>' +
           '<input type="number" class="hl-set-input" id="hl-months-' + key + '" ' +
-            'value="' + months + '" min="1" max="120" ' + (_isAdmin ? '' : 'disabled') + '>' +
+            'value="' + months + '" min="1" max="120" ' + (_canEdit ? '' : 'disabled') + '>' +
           '<span style="font-size:13px;color:var(--text-muted);">tháng</span>' +
           '<span style="font-size:12px;color:var(--text-muted);font-style:italic;">– Áp dụng cho toàn bộ nhân sự trong mục này</span>' +
         '</div>' +
@@ -377,7 +467,9 @@
         '<div class="hl-card-title"><svg class="lic-emoji" width="1.05em" height="1.05em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex-shrink:0" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><path d="M16 3.128a4 4 0 0 1 0 7.744"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><circle cx="9" cy="7" r="4"/></svg> Danh sách nhân sự</div>' +
         '<input type="text" class="hl-search" id="hl-search-' + key + '" placeholder="Tìm kiếm...">' +
       '</div>' +
+      (_canEdit ? '<div class="hl-toolbar" style="padding:8px 18px;"><span class="hl-hint">✎ Bấm vào ô để sửa trực tiếp · ⣿ Kéo hàng để đổi thứ tự (khi không tìm kiếm)</span></div>' : '') +
       '<div class="hl-tw"><table><thead><tr>' +
+        (_canEdit ? '<th class="hl-handle-cell"></th>' : '') +
         '<th style="width:40px;text-align:center">STT</th>' +
         '<th>Họ và tên</th>' +
         '<th>Danh số</th>' +
@@ -387,7 +479,7 @@
         '<th>TG huấn luyện gần nhất</th>' +
         '<th>TG huấn luyện tiếp theo</th>' +
         '<th>Trạng thái</th>' +
-        (_canEdit ? '<th style="width:90px;text-align:center">Thao tác</th>' : '') +
+        (_canEdit ? '<th style="width:70px;text-align:center">Xoá</th>' : '') +
       '</tr></thead>' +
       '<tbody id="hl-tbody-' + key + '"></tbody>' +
       '</table></div>';
@@ -398,7 +490,7 @@
 
     /* Wire events */
     var monthsInput = document.getElementById("hl-months-" + key);
-    if (monthsInput && _isAdmin) {
+    if (monthsInput && _canEdit) {
       monthsInput.addEventListener("change", function () {
         var v = parseInt(this.value);
         if (!isNaN(v) && v >= 1) { setMonths(key, v); _fillTable(key); }
@@ -448,7 +540,8 @@
 
     var pg = pageByKey(key);
     var hasSubTypes = !!(pg && pg.subTypes);
-    var colCount = 8 + (hasSubTypes ? 1 : 0) + (_canEdit ? 1 : 0);
+    var colCount = 8 + (hasSubTypes ? 1 : 0) + (_canEdit ? 2 : 0);
+    var dragOn = _canEdit && !q; // chỉ kéo–thả khi không lọc tìm kiếm
 
     if (!filtered.length) {
       tbody.innerHTML = '<tr class="hl-empty"><td colspan="' + colCount + '">' +
@@ -458,45 +551,211 @@
     }
 
     tbody.innerHTML = filtered.map(function (p, i) {
-      var status = _calcStatus(p.lastDate, months);
+      var status    = _calcStatus(p.lastDate, months);
       var nextLabel = _calcNext(p.lastDate, months);
       var nextColor = status === "expired" ? "var(--danger)" : status === "warn" ? "#e68900" : "#1a7a3c";
-      var subTypeCell = hasSubTypes
-        ? '<td><span class="hl-badge ' + (p.subType === "T-BOSIET" ? "hl-blue" : "hl-gray") + '">' + _esc(p.subType || "–") + '</span></td>'
+      var id = _esc(p.id);
+
+      var handleCell = _canEdit
+        ? '<td class="hl-handle-cell">' + (dragOn ? _gripSVG(id) : "") + '</td>'
         : "";
-      var actions = _canEdit
-        ? '<td style="text-align:center;white-space:nowrap;">' +
-            '<button class="btn btn-ghost btn-sm" style="margin-right:3px" data-act="edit" data-id="' + _esc(p.id) + '" data-k="' + key + '"><svg class="lic-emoji" width="1.05em" height="1.05em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex-shrink:0" aria-hidden="true"><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"/><path d="m15 5 4 4"/></svg></button>' +
-            '<button class="btn btn-danger btn-sm" data-act="del" data-id="' + _esc(p.id) + '" data-k="' + key + '"><svg class="lic-emoji" width="1.05em" height="1.05em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex-shrink:0" aria-hidden="true"><path d="M10 11v6"/><path d="M14 11v6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>' +
+
+      /* Ô Loại (subType) */
+      var subTypeCell = "";
+      if (hasSubTypes) {
+        subTypeCell = _canEdit
+          ? '<td>' + _selCell(id, "subType", p.subType, [
+                { v: "T-BOSIET", t: "T-BOSIET" }, { v: "T-FOET", t: "T-FOET" }
+              ], "-- Chọn --") + '</td>'
+          : '<td><span class="hl-badge ' + (p.subType === "T-BOSIET" ? "hl-blue" : "hl-gray") + '">' + _esc(p.subType || "–") + '</span></td>';
+      }
+
+      /* Các ô có/không sửa inline */
+      var nameCell, pidCell, titleCell, unitCell, lastCell;
+      if (_canEdit) {
+        nameCell  = '<td>' + _inpCell(id, "name",  p.name,  "hl-inline-name", "Họ và tên") + '</td>';
+        pidCell   = '<td>' + _inpCell(id, "pid",   p.pid,   "", "Danh số") + '</td>';
+        titleCell = '<td>' + _inpCell(id, "title", p.title, "", "Chức danh") + '</td>';
+        unitCell  = '<td>' + _selCell(id, "unit",  p.unit, UNITS.map(function (u) { return { v: u, t: u }; }), "-- Chọn đơn vị --") + '</td>';
+        lastCell  = '<td><input class="hl-inline hl-inline-date" data-id="' + id + '" data-field="lastDate" ' +
+                      'maxlength="10" placeholder="DD/MM/YYYY" value="' + _esc(_toDisplay(p.lastDate)) + '" autocomplete="off"></td>';
+      } else {
+        nameCell  = '<td style="font-weight:600;">' + _esc(p.name) + '</td>';
+        pidCell   = '<td><span class="hl-badge hl-blue">' + _esc(p.pid) + '</span></td>';
+        titleCell = '<td>' + _esc(p.title || "–") + '</td>';
+        unitCell  = '<td style="font-size:12.5px;">' + _esc(p.unit) + '</td>';
+        lastCell  = '<td>' + _fmtDate(p.lastDate) + '</td>';
+      }
+
+      var delCell = _canEdit
+        ? '<td style="text-align:center;">' +
+            '<button class="btn btn-danger btn-sm" data-act="del" data-id="' + id + '" data-k="' + key + '"><svg class="lic-emoji" width="1.05em" height="1.05em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex-shrink:0" aria-hidden="true"><path d="M10 11v6"/><path d="M14 11v6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>' +
           '</td>'
         : "";
-      return '<tr>' +
+
+      return '<tr data-row-id="' + id + '">' +
+        handleCell +
         '<td style="text-align:center;color:var(--text-muted);font-size:12px;">' + (i + 1) + '</td>' +
-        '<td style="font-weight:600;">' + _esc(p.name) + '</td>' +
-        '<td><span class="hl-badge hl-blue">' + _esc(p.pid) + '</span></td>' +
-        '<td>' + _esc(p.title || "–") + '</td>' +
-        '<td style="font-size:12.5px;">' + _esc(p.unit) + '</td>' +
+        nameCell + pidCell + titleCell + unitCell +
         subTypeCell +
-        '<td>' + _fmtMonth(p.lastDate) + '</td>' +
+        lastCell +
         '<td style="font-weight:600;color:' + nextColor + ';">' + nextLabel + '</td>' +
         '<td>' + _statusBadge(status, p.lastDate) + '</td>' +
-        actions +
+        delCell +
       '</tr>';
     }).join("");
 
-    /* Wire action buttons */
-    Array.prototype.forEach.call(tbody.querySelectorAll("button[data-act]"), function (btn) {
+    /* Wire nút xoá */
+    Array.prototype.forEach.call(tbody.querySelectorAll("button[data-act='del']"), function (btn) {
       btn.addEventListener("click", function () {
-        var id = btn.getAttribute("data-id");
-        var k  = btn.getAttribute("data-k");
-        if (btn.getAttribute("data-act") === "edit") _openModal(k, id);
-        else _deletePerson(k, id);
+        _deletePerson(btn.getAttribute("data-k"), btn.getAttribute("data-id"));
+      });
+    });
+
+    if (_canEdit) {
+      _wireInlineEdit(tbody, key);
+      if (dragOn) _wireDrag(tbody, key);
+    }
+  }
+
+  /* Ô input inline */
+  function _inpCell(id, field, val, extraCls, ph) {
+    return '<input class="hl-inline ' + extraCls + '" data-id="' + id + '" data-field="' + field + '" ' +
+      'value="' + _esc(val || "") + '" placeholder="' + _esc(ph || "") + '" autocomplete="off">';
+  }
+  /* Ô select inline */
+  function _selCell(id, field, val, opts, placeholder) {
+    var o = '<option value="">' + _esc(placeholder || "-- Chọn --") + '</option>';
+    o += opts.map(function (op) {
+      return '<option value="' + _esc(op.v) + '"' + (op.v === val ? " selected" : "") + '>' + _esc(op.t) + '</option>';
+    }).join("");
+    return '<select class="hl-inline hl-inline-sel" data-id="' + id + '" data-field="' + field + '">' + o + '</select>';
+  }
+
+  /* ──────────────────────────────────────────
+     INLINE EDIT — lưu ngay khi rời ô / đổi lựa chọn
+  ────────────────────────────────────────── */
+  function _wireInlineEdit(tbody, key) {
+    /* Ô ngày: auto-format DD/MM/YYYY khi gõ */
+    Array.prototype.forEach.call(tbody.querySelectorAll(".hl-inline-date"), function (el) {
+      el.addEventListener("input", function () { this.value = _fmtDMYInput(this.value); this.classList.remove("hl-invalid"); });
+    });
+
+    /* Enter để xác nhận (nhả focus) */
+    Array.prototype.forEach.call(tbody.querySelectorAll("input.hl-inline"), function (el) {
+      el.addEventListener("keydown", function (e) { if (e.key === "Enter") { e.preventDefault(); this.blur(); } });
+    });
+
+    /* Lưu khi đổi giá trị */
+    Array.prototype.forEach.call(tbody.querySelectorAll(".hl-inline[data-field]"), function (el) {
+      el.addEventListener("change", function () {
+        _inlineSave(key, this.getAttribute("data-id"), this.getAttribute("data-field"), this.value, this);
       });
     });
   }
 
+  function _inlineSave(key, id, field, rawVal, el) {
+    var all = _getAllData();
+    var rec = null;
+    for (var i = 0; i < all.length; i++) { if (all[i].id === id) { rec = all[i]; break; } }
+    if (!rec) return;
+
+    if (field === "lastDate") {
+      var v = (rawVal || "").trim();
+      if (!v) { rec.lastDate = ""; }
+      else {
+        var stored = _toStorage(v);
+        if (!stored) {
+          if (el) el.classList.add("hl-invalid");
+          alert("Ngày không hợp lệ. Nhập theo định dạng DD/MM/YYYY, ví dụ: 15/04/2025");
+          return;
+        }
+        rec.lastDate = stored;
+        if (el) { el.classList.remove("hl-invalid"); el.value = _toDisplay(stored); }
+      }
+      _updateRecord(rec);
+      _fillTable(key); // cập nhật cột "tiếp theo" + trạng thái + thống kê
+      return;
+    }
+
+    /* Các trường text / select khác — không ảnh hưởng cột tính toán → không re-render */
+    rec[field] = (typeof rawVal === "string") ? rawVal.trim() : rawVal;
+    _updateRecord(rec);
+  }
+
   /* ──────────────────────────────────────────
-     MODAL THÊM / SỬA
+     DRAG & DROP — đổi thứ tự
+  ────────────────────────────────────────── */
+  function _wireDrag(tbody, key) {
+    /* Chỉ tay cầm (grip) mới kéo được → không cản trở việc bôi/sửa text trong ô */
+    var handles = tbody.querySelectorAll(".hl-handle[draggable='true']");
+    Array.prototype.forEach.call(handles, function (h) {
+      h.addEventListener("dragstart", function (e) {
+        _dragId = h.getAttribute("data-drag-id");
+        var tr = h.closest("tr");
+        if (tr) tr.classList.add("hl-dragging");
+        try { e.dataTransfer.effectAllowed = "move"; e.dataTransfer.setData("text/plain", _dragId); } catch (ex) {}
+      });
+      h.addEventListener("dragend", function () {
+        _dragId = null;
+        Array.prototype.forEach.call(tbody.querySelectorAll("tr"), function (r) {
+          r.classList.remove("hl-dragging", "hl-drop-before", "hl-drop-after");
+        });
+      });
+    });
+
+    var rows = tbody.querySelectorAll("tr[data-row-id]");
+    Array.prototype.forEach.call(rows, function (row) {
+      row.addEventListener("dragover", function (e) {
+        if (!_dragId) return;
+        e.preventDefault();
+        try { e.dataTransfer.dropEffect = "move"; } catch (ex) {}
+        var after = _isAfter(row, e.clientY);
+        row.classList.toggle("hl-drop-after", after);
+        row.classList.toggle("hl-drop-before", !after);
+      });
+      row.addEventListener("dragleave", function () {
+        row.classList.remove("hl-drop-before", "hl-drop-after");
+      });
+      row.addEventListener("drop", function (e) {
+        e.preventDefault();
+        var targetId = row.getAttribute("data-row-id");
+        var after = _isAfter(row, e.clientY);
+        row.classList.remove("hl-drop-before", "hl-drop-after");
+        if (_dragId && targetId && _dragId !== targetId) {
+          _reorder(key, _dragId, targetId, after);
+        }
+      });
+    });
+  }
+
+  function _isAfter(row, clientY) {
+    var r = row.getBoundingClientRect();
+    return clientY > r.top + r.height / 2;
+  }
+
+  function _reorder(key, dragId, targetId, after) {
+    var ids = getData(key).map(function (p) { return p.id; }); // thứ tự hiển thị hiện tại
+    var from = ids.indexOf(dragId);
+    if (from < 0) return;
+    ids.splice(from, 1);
+    var to = ids.indexOf(targetId);
+    if (to < 0) to = ids.length - 1;
+    ids.splice(after ? to + 1 : to, 0, dragId);
+    _setOrder(key, ids);
+    _syncOrderToDB(key);
+    _fillTable(key);
+  }
+
+  function _gripSVG(id) {
+    return '<span class="hl-handle" draggable="true" data-drag-id="' + id + '" title="Kéo để đổi thứ tự"><svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">' +
+      '<circle cx="9" cy="6" r="1.6"/><circle cx="15" cy="6" r="1.6"/>' +
+      '<circle cx="9" cy="12" r="1.6"/><circle cx="15" cy="12" r="1.6"/>' +
+      '<circle cx="9" cy="18" r="1.6"/><circle cx="15" cy="18" r="1.6"/></svg></span>';
+  }
+
+  /* ──────────────────────────────────────────
+     MODAL THÊM (dùng cho thêm mới; sửa có thể làm inline)
   ────────────────────────────────────────── */
   function _wireModal() {
     var existing = document.getElementById("hl-modal-bg");
@@ -542,9 +801,9 @@
             '</div>' +
             '<div class="field" style="grid-column:1/-1">' +
               '<label>Thời gian huấn luyện gần nhất <span style="color:var(--danger)">*</span></label>' +
-              '<input class="inp" id="hl-f-lastdate" maxlength="7" placeholder="MM/YYYY" ' +
-                'style="width:140px;letter-spacing:1px;" autocomplete="off">' +
-              '<div style="font-size:11.5px;color:var(--text-muted);margin-top:4px;">Nhập theo định dạng MM/YYYY, ví dụ: 04/2025</div>' +
+              '<input class="inp" id="hl-f-lastdate" maxlength="10" placeholder="DD/MM/YYYY" ' +
+                'style="width:150px;letter-spacing:1px;" autocomplete="off">' +
+              '<div style="font-size:11.5px;color:var(--text-muted);margin-top:4px;">Nhập theo định dạng DD/MM/YYYY, ví dụ: 15/04/2025</div>' +
             '</div>' +
             '<div class="field" style="grid-column:1/-1">' +
               '<label>Ghi chú</label>' +
@@ -564,11 +823,9 @@
     bg.addEventListener("click", function (e) { if (e.target === bg) _closeModal(); });
     document.getElementById("hl-modal-save").addEventListener("click", _savePerson);
 
-    /* Auto-format MM/YYYY khi gõ */
+    /* Auto-format DD/MM/YYYY khi gõ */
     document.getElementById("hl-f-lastdate").addEventListener("input", function () {
-      var raw = this.value.replace(/\D/g, "").slice(0, 6);
-      if (raw.length > 2) raw = raw.slice(0, 2) + "/" + raw.slice(2);
-      this.value = raw;
+      this.value = _fmtDMYInput(this.value);
     });
   }
 
@@ -580,7 +837,6 @@
     document.getElementById("hl-modal-title").textContent =
       (isEdit ? "✏️ Chỉnh sửa nhân sự" : "➕ Thêm nhân sự") + " – " + pg.label;
 
-    /* Hiện/ẩn dropdown Loại tuỳ theo tab */
     var subTypeWrap = document.getElementById("hl-f-subtype-wrap");
     if (subTypeWrap) subTypeWrap.style.display = pg.subTypes ? "block" : "none";
 
@@ -624,7 +880,7 @@
     var needSubType = !!(pg && pg.subTypes);
 
     if (!name || !pid || !title || !unit || !lastDate || (needSubType && !subType)) {
-      alert("Vui lòng điền đầy đủ các trường bắt buộc (*)");
+      alert("Vui lòng điền đầy đủ các trường bắt buộc (*). Ngày phải đúng dạng DD/MM/YYYY.");
       return;
     }
 
@@ -652,21 +908,60 @@
   }
 
   /* ──────────────────────────────────────────
-     HELPERS
+     HELPERS — NGÀY THÁNG (DD/MM/YYYY)
   ────────────────────────────────────────── */
-  /* Chuyển "YYYY-MM" ↔ "MM/YYYY" để hiển thị / lưu */
-  function _toDisplay(stored) {
-    if (!stored) return "";
-    var p = stored.split("-");
-    return p.length === 2 ? p[1] + "/" + p[0] : "";
+  /* Lưu nội bộ: "YYYY-MM-DD".  Hiển thị / nhập: "DD/MM/YYYY". */
+  function _pad(n) { return n < 10 ? "0" + n : "" + n; }
+
+  /* Parse chuỗi lưu → {y,m,d} (chấp nhận cả YYYY-MM cũ) */
+  function _parseStored(stored) {
+    if (!stored) return null;
+    var p = String(stored).split("-");
+    var y = parseInt(p[0]), m = parseInt(p[1]), d = p.length >= 3 ? parseInt(p[2]) : 1;
+    if (isNaN(y) || isNaN(m)) return null;
+    if (isNaN(d)) d = 1;
+    return { y: y, m: m, d: d };
   }
+
+  /* "YYYY-MM-DD" → "DD/MM/YYYY" (YYYY-MM cũ → 01/MM/YYYY) */
+  function _toDisplay(stored) {
+    var o = _parseStored(stored);
+    if (!o) return "";
+    return _pad(o.d) + "/" + _pad(o.m) + "/" + o.y;
+  }
+
+  /* "DD/MM/YYYY" → "YYYY-MM-DD" (chấp nhận "MM/YYYY" cũ → ngày 01). "" nếu sai */
   function _toStorage(display) {
     if (!display) return "";
-    var p = display.split("/");
-    if (p.length !== 2 || p[0].length !== 2 || p[1].length !== 4) return "";
-    var m = parseInt(p[0]), y = parseInt(p[1]);
-    if (m < 1 || m > 12 || y < 2000 || y > 2100) return "";
-    return p[1] + "-" + p[0];
+    var p = String(display).split("/");
+    var d, m, y;
+    if (p.length === 3) {
+      d = parseInt(p[0]); m = parseInt(p[1]); y = parseInt(p[2]);
+      if (p[0].length < 1 || p[1].length < 1 || p[2].length !== 4) return "";
+    } else if (p.length === 2) { // MM/YYYY cũ
+      d = 1; m = parseInt(p[0]); y = parseInt(p[1]);
+      if (p[1].length !== 4) return "";
+    } else return "";
+    if (isNaN(d) || isNaN(m) || isNaN(y)) return "";
+    if (m < 1 || m > 12 || y < 1900 || y > 2100 || d < 1 || d > 31) return "";
+    /* Kiểm tra ngày thực sự tồn tại (vd 31/02 không hợp lệ) */
+    var dim = new Date(y, m, 0).getDate();
+    if (d > dim) return "";
+    return y + "-" + _pad(m) + "-" + _pad(d);
+  }
+
+  /* Auto-format khi gõ → chèn dấu "/" thành DD/MM/YYYY */
+  function _fmtDMYInput(v) {
+    var d = String(v).replace(/\D/g, "").slice(0, 8);
+    if (d.length >= 5) return d.slice(0, 2) + "/" + d.slice(2, 4) + "/" + d.slice(4);
+    if (d.length >= 3) return d.slice(0, 2) + "/" + d.slice(2);
+    return d;
+  }
+
+  /* Hiển thị ngày trong bảng (chế độ xem) */
+  function _fmtDate(stored) {
+    if (!stored) return '<span style="color:var(--text-muted)">–</span>';
+    return _toDisplay(stored);
   }
 
   function _esc(s) {
@@ -674,24 +969,32 @@
       .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
   }
 
+  /* Ngày huấn luyện tiếp theo = ngày gần nhất + N tháng (giữ ngày, kẹp theo số ngày trong tháng) */
+  function _nextDateObj(lastDate, months) {
+    var o = _parseStored(lastDate);
+    if (!o) return null;
+    var total = (o.m - 1) + Number(months);
+    var ny = o.y + Math.floor(total / 12);
+    var nm = ((total % 12) + 12) % 12;       // 0-11
+    var dim = new Date(ny, nm + 1, 0).getDate();
+    var nd = Math.min(o.d, dim);
+    return new Date(ny, nm, nd);
+  }
+
   function _calcNext(lastDate, months) {
-    if (!lastDate) return '<span style="color:var(--text-muted)">Chưa có dữ liệu</span>';
-    var parts = lastDate.split("-").map(Number);
-    var y = parts[0], m = parts[1];
-    var nm = m - 1 + Number(months);
-    var ny = y + Math.floor(nm / 12);
-    nm = nm % 12 + 1;
-    return "Tháng " + nm + "/" + ny;
+    var dt = _nextDateObj(lastDate, months);
+    if (!dt) return '<span style="color:var(--text-muted)">Chưa có dữ liệu</span>';
+    return _pad(dt.getDate()) + "/" + _pad(dt.getMonth() + 1) + "/" + dt.getFullYear();
   }
 
   function _calcStatus(lastDate, months) {
-    if (!lastDate) return "expired";
-    var parts = lastDate.split("-").map(Number);
-    var nextDate = new Date(parts[0], parts[1] - 1 + Number(months), 1);
-    var now = new Date();
-    var diffM = (nextDate.getFullYear() - now.getFullYear()) * 12 + (nextDate.getMonth() - now.getMonth());
-    if (diffM < 0) return "expired";
-    if (diffM <= 2) return "warn";
+    var dt = _nextDateObj(lastDate, months);
+    if (!dt) return "expired";
+    var now = new Date(); now.setHours(0, 0, 0, 0);
+    dt.setHours(0, 0, 0, 0);
+    var diffDays = Math.round((dt - now) / 86400000);
+    if (diffDays < 0) return "expired";
+    if (diffDays <= 60) return "warn";     // ≤ ~2 tháng
     return "ok";
   }
 
@@ -700,12 +1003,6 @@
     if (status === "ok")   return '<span class="hl-badge hl-ok"><svg class="lic-emoji" width="1.05em" height="1.05em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex-shrink:0" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg> Còn hiệu lực</span>';
     if (status === "warn") return '<span class="hl-badge hl-warn"><svg class="lic-emoji" width="1.05em" height="1.05em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex-shrink:0" aria-hidden="true"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg> Sắp hết hạn</span>';
     return '<span class="hl-badge hl-exp">✗ Hết hạn</span>';
-  }
-
-  function _fmtMonth(lastDate) {
-    if (!lastDate) return '<span style="color:var(--text-muted)">–</span>';
-    var parts = lastDate.split("-");
-    return "Tháng " + parseInt(parts[1]) + "/" + parts[0];
   }
 
 })();
