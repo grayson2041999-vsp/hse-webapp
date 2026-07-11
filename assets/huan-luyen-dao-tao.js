@@ -467,7 +467,7 @@
         '<div class="hl-card-title"><svg class="lic-emoji" width="1.05em" height="1.05em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex-shrink:0" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><path d="M16 3.128a4 4 0 0 1 0 7.744"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><circle cx="9" cy="7" r="4"/></svg> Danh sách nhân sự</div>' +
         '<input type="text" class="hl-search" id="hl-search-' + key + '" placeholder="Tìm kiếm...">' +
       '</div>' +
-      (_canEdit ? '<div class="hl-toolbar" style="padding:8px 18px;"><span class="hl-hint">✎ Bấm vào ô để sửa trực tiếp · ⣿ Kéo hàng để đổi thứ tự (khi không tìm kiếm)</span></div>' : '') +
+      (_canEdit ? '<div class="hl-toolbar" style="padding:8px 18px;"><span class="hl-hint">✎ Bấm vào ô để sửa trực tiếp · ⣿ Kéo hàng để đổi thứ tự · ＋ Nhập vào dòng cuối rồi bấm ✓ (hoặc Enter) để thêm nhân sự (khi không tìm kiếm)</span></div>' : '') +
       '<div class="hl-tw"><table><thead><tr>' +
         (_canEdit ? '<th class="hl-handle-cell"></th>' : '') +
         '<th style="width:40px;text-align:center">STT</th>' +
@@ -543,14 +543,11 @@
     var colCount = 8 + (hasSubTypes ? 1 : 0) + (_canEdit ? 2 : 0);
     var dragOn = _canEdit && !q; // chỉ kéo–thả khi không lọc tìm kiếm
 
-    if (!filtered.length) {
-      tbody.innerHTML = '<tr class="hl-empty"><td colspan="' + colCount + '">' +
-        (data.length ? "Không tìm thấy nhân sự phù hợp." : "Chưa có nhân sự nào. Nhấn &#8220;Thêm nhân sự&#8221; để bắt đầu.") +
-        '</td></tr>';
-      return;
-    }
-
-    tbody.innerHTML = filtered.map(function (p, i) {
+    var rowsHtml = !filtered.length
+      ? '<tr class="hl-empty"><td colspan="' + colCount + '">' +
+          (data.length ? "Không tìm thấy nhân sự phù hợp." : "Chưa có nhân sự nào. Nhập vào dòng bên dưới để thêm.") +
+        '</td></tr>'
+      : filtered.map(function (p, i) {
       var status    = _calcStatus(p.lastDate, months);
       var nextLabel = _calcNext(p.lastDate, months);
       var nextColor = status === "expired" ? "var(--danger)" : status === "warn" ? "#e68900" : "#1a7a3c";
@@ -605,6 +602,11 @@
       '</tr>';
     }).join("");
 
+    /* Dòng thêm mới inline ở cuối bảng (khi có quyền & không đang tìm kiếm) */
+    if (_canEdit && !q) rowsHtml += _buildAddRow(key, hasSubTypes);
+
+    tbody.innerHTML = rowsHtml;
+
     /* Wire nút xoá */
     Array.prototype.forEach.call(tbody.querySelectorAll("button[data-act='del']"), function (btn) {
       btn.addEventListener("click", function () {
@@ -615,7 +617,90 @@
     if (_canEdit) {
       _wireInlineEdit(tbody, key);
       if (dragOn) _wireDrag(tbody, key);
+      _wireAddRow(tbody, key);
     }
+  }
+
+  /* ──────────────────────────────────────────
+     DÒNG THÊM MỚI INLINE
+  ────────────────────────────────────────── */
+  function _newInp(field, extraCls, ph) {
+    return '<input class="hl-inline hl-new ' + (extraCls || "") + '" data-field="' + field + '" ' +
+      'placeholder="' + _esc(ph || "") + '" autocomplete="off">';
+  }
+  function _newSel(field, opts, placeholder) {
+    var o = '<option value="">' + _esc(placeholder || "-- Chọn --") + '</option>';
+    o += opts.map(function (op) {
+      return '<option value="' + _esc(op.v) + '">' + _esc(op.t) + '</option>';
+    }).join("");
+    return '<select class="hl-inline hl-inline-sel hl-new" data-field="' + field + '">' + o + '</select>';
+  }
+
+  function _buildAddRow(key, hasSubTypes) {
+    var sub = hasSubTypes
+      ? '<td>' + _newSel("subType", [{ v: "T-BOSIET", t: "T-BOSIET" }, { v: "T-FOET", t: "T-FOET" }], "-- Loại --") + '</td>'
+      : "";
+    return '<tr class="hl-addrow">' +
+      '<td class="hl-handle-cell" style="text-align:center;color:var(--brand);font-weight:800;">＋</td>' +
+      '<td style="text-align:center;color:var(--brand);font-size:11px;font-weight:600;">Mới</td>' +
+      '<td>' + _newInp("name",  "hl-inline-name", "Họ và tên") + '</td>' +
+      '<td>' + _newInp("pid",   "", "Danh số") + '</td>' +
+      '<td>' + _newInp("title", "", "Chức danh") + '</td>' +
+      '<td>' + _newSel("unit", UNITS.map(function (u) { return { v: u, t: u }; }), "-- Đơn vị --") + '</td>' +
+      sub +
+      '<td><input class="hl-inline hl-inline-date hl-new" data-field="lastDate" maxlength="10" placeholder="DD/MM/YYYY" autocomplete="off"></td>' +
+      '<td style="color:var(--text-muted)">–</td>' +
+      '<td style="color:var(--text-muted)">–</td>' +
+      '<td style="text-align:center;"><button class="btn btn-accent btn-sm" data-act="addrow" data-k="' + key + '" title="Thêm nhân sự"><svg class="lic-emoji" width="1.05em" height="1.05em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></button></td>' +
+    '</tr>';
+  }
+
+  function _wireAddRow(tbody, key) {
+    var row = tbody.querySelector(".hl-addrow");
+    if (!row) return;
+    /* Auto-format ngày + Enter để thêm nhanh */
+    Array.prototype.forEach.call(row.querySelectorAll(".hl-inline-date.hl-new"), function (el) {
+      el.addEventListener("input", function () { this.value = _fmtDMYInput(this.value); this.classList.remove("hl-invalid"); });
+    });
+    Array.prototype.forEach.call(row.querySelectorAll("input.hl-new"), function (el) {
+      el.addEventListener("keydown", function (e) { if (e.key === "Enter") { e.preventDefault(); _commitAddRow(key); } });
+    });
+    var btn = row.querySelector("button[data-act='addrow']");
+    if (btn) btn.addEventListener("click", function () { _commitAddRow(key); });
+  }
+
+  function _commitAddRow(key) {
+    var tbody = document.getElementById("hl-tbody-" + key);
+    var row = tbody ? tbody.querySelector(".hl-addrow") : null;
+    if (!row) return;
+    function val(f) { var el = row.querySelector("[data-field='" + f + "']"); return el ? (el.value || "").trim() : ""; }
+
+    var name = val("name"), pid = val("pid"), title = val("title"), unit = val("unit");
+    var pg = pageByKey(key), needSub = !!(pg && pg.subTypes);
+    var subType = val("subType");
+    var dateRaw = val("lastDate");
+    var lastDate = _toStorage(dateRaw);
+
+    if (dateRaw && !lastDate) {
+      var d = row.querySelector(".hl-inline-date");
+      if (d) d.classList.add("hl-invalid");
+      alert("Ngày không hợp lệ. Nhập theo định dạng DD/MM/YYYY, ví dụ: 15/04/2025");
+      return;
+    }
+    if (!name || !pid || !title || !unit || !lastDate || (needSub && !subType)) {
+      alert("Vui lòng điền đủ: Họ tên, Danh số, Chức danh, Đơn vị, Ngày (DD/MM/YYYY)" + (needSub ? ", Loại" : "") + ".");
+      return;
+    }
+
+    var record = {
+      id: Date.now().toString(36) + Math.random().toString(36).slice(2, 5),
+      createdAt: new Date().toISOString(),
+      name: name, pid: pid, title: title, unit: unit, lastDate: lastDate, note: "",
+      loai_huan_luyen: key
+    };
+    if (needSub) record.subType = subType;
+    _insertRecord(record);
+    _renderTabContent(key);
   }
 
   /* Ô input inline */
@@ -636,18 +721,18 @@
      INLINE EDIT — lưu ngay khi rời ô / đổi lựa chọn
   ────────────────────────────────────────── */
   function _wireInlineEdit(tbody, key) {
-    /* Ô ngày: auto-format DD/MM/YYYY khi gõ */
-    Array.prototype.forEach.call(tbody.querySelectorAll(".hl-inline-date"), function (el) {
+    /* Ô ngày: auto-format DD/MM/YYYY khi gõ (bỏ qua dòng thêm mới) */
+    Array.prototype.forEach.call(tbody.querySelectorAll(".hl-inline-date:not(.hl-new)"), function (el) {
       el.addEventListener("input", function () { this.value = _fmtDMYInput(this.value); this.classList.remove("hl-invalid"); });
     });
 
     /* Enter để xác nhận (nhả focus) */
-    Array.prototype.forEach.call(tbody.querySelectorAll("input.hl-inline"), function (el) {
+    Array.prototype.forEach.call(tbody.querySelectorAll("input.hl-inline:not(.hl-new)"), function (el) {
       el.addEventListener("keydown", function (e) { if (e.key === "Enter") { e.preventDefault(); this.blur(); } });
     });
 
     /* Lưu khi đổi giá trị */
-    Array.prototype.forEach.call(tbody.querySelectorAll(".hl-inline[data-field]"), function (el) {
+    Array.prototype.forEach.call(tbody.querySelectorAll(".hl-inline[data-field]:not(.hl-new)"), function (el) {
       el.addEventListener("change", function () {
         _inlineSave(key, this.getAttribute("data-id"), this.getAttribute("data-field"), this.value, this);
       });
