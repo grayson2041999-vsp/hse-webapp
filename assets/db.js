@@ -22,7 +22,7 @@ var DB = (function () {
   var _autoSyncTimer = null;
 
   /* ─── Bảng không dùng cột "id" làm khoá chính ─── */
-  var PK = { hl_settings: "loai" };
+  var PK = { hl_settings: "loai", app_settings: "key" };
   function pkOf(t) { return PK[t] || "id"; }
 
   /* ─── Ánh xạ "sheet" cũ → bảng Postgres ─── */
