@@ -604,12 +604,12 @@ function canEdit(u){
   if(!u) return false;
   if(u.role==="viewer") return false;
   if(u.role==="admin") return true;
-  return (u.perms||[]).indexOf("pccc-cnch") >= 0;
+  return (u.perms||[]).indexOf("bao-chay-tu-dong") >= 0;
 }
 function canView(u){
   if(!u)return true;
   if(u.role==="admin")return true;
-  return (u.perms||[]).indexOf("pccc-cnch")>=0;
+  return (u.perms||[]).indexOf("bao-chay-tu-dong")>=0;
 }
 
 /* ---- SIDEBAR ---- */
