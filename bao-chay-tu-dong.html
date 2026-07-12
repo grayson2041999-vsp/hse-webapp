@@ -270,7 +270,7 @@
                 <select class="inp" id="filterLogYear" style="width:90px;padding:4px 8px;font-size:12.5px;" onchange="renderErrorLog();updateLockUI()">
                 </select>
               </div>
-              <button class="btn btn-primary btn-sm" id="btnAddError" onclick="openErrorModal()">+ Nhập báo lỗi</button>
+              <button class="btn btn-primary btn-sm" id="btnAddError" onclick="startInlineAdd()">+ Nhập báo lỗi</button>
             </div>
           </div>
           <div class="lock-notice" id="lockNotice"><svg class="lic-emoji" width="1.05em" height="1.05em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex-shrink:0" aria-hidden="true"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg> Tháng này đã được Admin khoá. Bạn không thể thêm, sửa hoặc xóa bản ghi.</div>
@@ -359,79 +359,6 @@
     <div class="modal-footer">
       <button class="btn btn-outline" onclick="closeDeviceModal()">Hủy</button>
       <button class="btn btn-primary" onclick="saveDevice()"><svg class="lic-emoji" width="1.05em" height="1.05em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex-shrink:0" aria-hidden="true"><path d="M15.2 3a2 2 0 0 1 1.4.6l3.8 3.8a2 2 0 0 1 .6 1.4V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/><path d="M17 21v-7a1 1 0 0 0-1-1H8a1 1 0 0 0-1 1v7"/><path d="M7 3v4a1 1 0 0 0 1 1h7"/></svg> Lưu</button>
-    </div>
-  </div>
-</div>
-
-<!-- MODAL NHẬP BÁO LỖI (User) -->
-<div class="modal-bg" id="errorModalBg">
-  <div class="modal" style="width:580px">
-    <div class="modal-head">
-      <h3 id="errorModalTitle">Nhập báo lỗi hệ thống BCTĐ</h3>
-      <button class="modal-close" onclick="closeErrorModal()">×</button>
-    </div>
-    <div class="modal-body">
-      <div id="noDeviceWarn" class="warn-box" style="display:none">
-        <svg class="lic-emoji" width="1.05em" height="1.05em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex-shrink:0" aria-hidden="true"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg> Chưa có hệ thống nào được tạo. Vui lòng liên hệ Admin để thêm hệ thống trước.
-      </div>
-      <div class="form-row">
-        <div class="form-group">
-          <label>Tháng <span class="req">*</span></label>
-          <select class="inp" id="eMonth" onchange="updateDateRange()"></select>
-        </div>
-        <div class="form-group">
-          <label>Năm <span class="req">*</span></label>
-          <select class="inp" id="eYear" onchange="updateDateRange()"></select>
-        </div>
-      </div>
-      <div class="form-row full" style="margin-bottom:10px">
-        <div class="form-group">
-          <label>Hệ thống <span class="req">*</span></label>
-          <select class="inp" id="eDevice"></select>
-        </div>
-      </div>
-      <div class="form-row">
-        <div class="form-group">
-          <label>Thiết bị <span class="req">*</span></label>
-          <input class="inp" id="eChildDevice" placeholder="VD: SD123, HD456,...">
-        </div>
-        <div class="form-group">
-          <label>Vị trí thiết bị <span class="req">*</span></label>
-          <input class="inp" id="eDevLocation" placeholder="VD: kho A1, kho H1,...">
-        </div>
-      </div>
-      <div class="form-row">
-        <div class="form-group">
-          <label>Loại lỗi <span class="req">*</span></label>
-          <select class="inp" id="eErrType" onchange="toggleCustomErr()">
-            <option value="Lỗi thiết bị">Lỗi thiết bị</option>
-            <option value="Khác">Khác</option>
-          </select>
-        </div>
-        <div class="form-group" id="customErrGroup" style="display:none">
-          <label>Mô tả lỗi khác <span class="req">*</span></label>
-          <input class="inp" id="eErrCustom" placeholder="Nhập mô tả lỗi...">
-        </div>
-        <div class="form-group" id="detectDateGroup">
-          <label>Ngày phát hiện <span class="req">*</span></label>
-          <input class="inp" type="date" id="eDetectDate">
-        </div>
-      </div>
-      <div class="form-row full">
-        <div class="form-group">
-          <label>Biện pháp khắc phục <span class="req">*</span></label>
-          <div class="chip-group" style="margin-bottom:8px">
-            <span class="chip" onclick="appendBienPhap('Kiểm tra hiện trường')">Kiểm tra hiện trường</span>
-            <span class="chip" onclick="appendBienPhap('Khởi động lại hệ thống')">Khởi động lại hệ thống</span>
-            <span class="chip" onclick="appendBienPhap('Phối hợp với Đội BVVT tiếp tục giám sát hệ thống')">Phối hợp với Đội BVVT giám sát</span>
-          </div>
-          <textarea class="inp" id="eMeasure" placeholder="Nhập biện pháp khắc phục hoặc chọn mẫu nhanh ở trên..." rows="3"></textarea>
-        </div>
-      </div>
-    </div>
-    <div class="modal-footer">
-      <button class="btn btn-outline" onclick="closeErrorModal()">Hủy</button>
-      <button class="btn btn-primary" onclick="saveError()"><svg class="lic-emoji" width="1.05em" height="1.05em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex-shrink:0" aria-hidden="true"><path d="M15.2 3a2 2 0 0 1 1.4.6l3.8 3.8a2 2 0 0 1 .6 1.4V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/><path d="M17 21v-7a1 1 0 0 0-1-1H8a1 1 0 0 0-1 1v7"/><path d="M7 3v4a1 1 0 0 0 1 1h7"/></svg> Lưu</button>
     </div>
   </div>
 </div>
@@ -847,6 +774,9 @@ function isOwner(rec){
 }
 
 /* ---- RENDER ERROR LOG ---- */
+var _inlineAddOpen=false;
+var _inlineEditId=null;
+
 function renderErrorLog(){
   var u=currentUser();
   var editable=u&&canEdit(u);
@@ -856,20 +786,25 @@ function renderErrorLog(){
   if(fm) items=items.filter(function(x){return String(x.month)===fm;});
   if(fy) items=items.filter(function(x){return String(x.year)===fy;});
   var tb=document.getElementById("tbodyErrors");
-  if(!items.length){
+  var devices=getDevices();
+  var rowsHtml="";
+  // Dòng thêm mới inline (nếu đang mở)
+  if(_inlineAddOpen && editable){ rowsHtml+=inlineRowHtml(null,-1); }
+  if(!items.length && !(_inlineAddOpen&&editable)){
     tb.innerHTML='<tr class="empty-row"><td colspan="9">Chưa có bản ghi báo lỗi nào'+(fm||fy?' trong khoảng thời gian đã chọn':'')+'. '+(editable?'Nhấn <b>+ Nhập báo lỗi</b> để thêm.':'')+'</td></tr>';
     return;
   }
-  var devices=getDevices();
-  tb.innerHTML=items.map(function(x,i){
-    var dev=devices.find(function(d){return d.id===x.deviceId;})||{};
-    var errLabel=x.errType==="Khác"?(x.errCustom||"Khác"):"Báo lỗi"+(x.childDevice?" "+x.childDevice:"")+(x.devLocation?" – "+x.devLocation:"");
+  rowsHtml+=items.map(function(x,i){
     var rowLocked=isMonthLocked(x.month,x.year);
     var canEditRow=editable&&!rowLocked&&isOwner(x);
+    // Dòng này đang được sửa inline
+    if(canEditRow && _inlineEditId===x.id){ return inlineRowHtml(x,i); }
+    var dev=devices.find(function(d){return d.id===x.deviceId;})||{};
+    var errLabel=x.errType==="Khác"?(x.errCustom||"Khác"):"Báo lỗi"+(x.childDevice?" "+x.childDevice:"")+(x.devLocation?" – "+x.devLocation:"");
     var btns=rowLocked
       ?'<span style="font-size:11px;color:var(--danger)"><svg class="lic-emoji" width="1.05em" height="1.05em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex-shrink:0" aria-hidden="true"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span>'
       :(canEditRow
-        ?'<button class="btn btn-edit btn-sm" onclick="openErrorModal(\''+x.id+'\')"><svg class="lic-emoji" width="1.05em" height="1.05em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex-shrink:0" aria-hidden="true"><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"/><path d="m15 5 4 4"/></svg></button> '+
+        ?'<button class="btn btn-edit btn-sm" onclick="startInlineEdit(\''+x.id+'\')"><svg class="lic-emoji" width="1.05em" height="1.05em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex-shrink:0" aria-hidden="true"><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"/><path d="m15 5 4 4"/></svg></button> '+
          '<button class="btn btn-danger btn-sm" onclick="deleteError(\''+x.id+'\')"><svg class="lic-emoji" width="1.05em" height="1.05em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex-shrink:0" aria-hidden="true"><path d="M10 11v6"/><path d="M14 11v6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>'
         :(editable?'<span style="font-size:11px;color:var(--text-light)" title="Bạn không thể sửa bản ghi của người khác">—</span>':''));
     var parentLabel=esc(dev.name||x.deviceId);
@@ -885,6 +820,169 @@ function renderErrorLog(){
       '<td style="font-size:12px;color:var(--text-light)">'+esc(x.createdBy||"—")+'</td>'+
       '<td style="white-space:nowrap">'+btns+'</td></tr>';
   }).join("");
+  tb.innerHTML=rowsHtml;
+  // Kích hoạt date-picker cho dòng inline vừa render
+  if((_inlineAddOpen||_inlineEditId)&&window.HSEDate){ HSEDate.attachAll(tb); }
+  // Focus ô nhập đầu tiên khi thêm mới
+  if(_inlineAddOpen){ var f=document.getElementById("ie_child"); if(f) setTimeout(function(){f.focus();},60); }
+}
+
+/* ---- INLINE EDIT: HELPERS DỰNG OPTION ---- */
+function _ieOptMonths(sel){var o="";for(var m=1;m<=12;m++){o+='<option value="'+m+'"'+(m===sel?' selected':'')+'>Tháng '+m+'</option>';}return o;}
+function _ieOptYears(sel){var now=new Date();var ys=[];for(var y=now.getFullYear()-2;y<=now.getFullYear()+1;y++)ys.push(y);if(sel&&ys.indexOf(sel)<0)ys.push(sel);ys.sort(function(a,b){return a-b;});return ys.map(function(y){return '<option value="'+y+'"'+(y===sel?' selected':'')+'>'+y+'</option>';}).join("");}
+function _ieOptDevices(sel){var devices=getDevices();if(!devices.length)return '<option value="">— Chưa có hệ thống —</option>';return devices.map(function(d){return '<option value="'+d.id+'"'+(d.id===sel?' selected':'')+'>'+esc(d.name)+' — '+esc(d.location)+'</option>';}).join("");}
+
+/* ---- INLINE EDIT: DỰNG DÒNG NHẬP/SỬA ---- */
+function inlineRowHtml(rec, idx){
+  var u=currentUser();
+  var now=new Date();
+  var fm=parseInt(document.getElementById("filterLogMonth").value)||(now.getMonth()+1);
+  var fy=parseInt(document.getElementById("filterLogYear").value)||now.getFullYear();
+  var m=rec?rec.month:fm;
+  var y=rec?rec.year:fy;
+  var devices=getDevices();
+  var devId=rec?rec.deviceId:(devices[0]?devices[0].id:"");
+  var errType=rec?rec.errType:"Lỗi thiết bị";
+  var isKhac=errType==="Khác";
+  var who=rec?(rec.createdBy||"—"):(u?(u.fullname||u.username):"Khách");
+  var saveArg=rec?("'"+rec.id+"'"):"null";
+  var idxCell=rec?(idx+1):'<span class="badge badge-blue">Mới</span>';
+  var st='style="font-size:12px;padding:4px 6px;width:100%;margin:0"';
+  var childVal=rec?esc(rec.childDevice||""):"";
+  var locVal=rec?esc(rec.devLocation||""):"";
+  var errCustomVal=rec?esc(rec.errCustom||""):"";
+  var measureVal=rec?esc(rec.measure||""):"";
+  var dateVal=rec?esc(rec.detectDate||""):"";
+  return '<tr class="inline-edit-row" style="background:#eef6ff">'+
+    '<td style="color:var(--text-light);font-size:12px;vertical-align:top;padding-top:8px">'+idxCell+'</td>'+
+    '<td style="vertical-align:top"><div style="display:flex;flex-direction:column;gap:4px">'+
+       '<select class="inp" id="ie_month" '+st+'>'+_ieOptMonths(m)+'</select>'+
+       '<select class="inp" id="ie_year" '+st+'>'+_ieOptYears(y)+'</select></div></td>'+
+    '<td style="vertical-align:top"><select class="inp" id="ie_device" '+st+'>'+_ieOptDevices(devId)+'</select></td>'+
+    '<td style="vertical-align:top"><div style="display:flex;flex-direction:column;gap:4px">'+
+       '<input class="inp" id="ie_child" '+st+' placeholder="Thiết bị (VD: SD123)" value="'+childVal+'">'+
+       '<input class="inp" id="ie_loc" '+st+' placeholder="Vị trí (VD: kho A1)" value="'+locVal+'"></div></td>'+
+    '<td style="vertical-align:top"><div style="display:flex;flex-direction:column;gap:4px">'+
+       '<select class="inp" id="ie_errtype" '+st+' onchange="toggleInlineErrType()">'+
+         '<option value="Lỗi thiết bị"'+(!isKhac?' selected':'')+'>Lỗi thiết bị</option>'+
+         '<option value="Khác"'+(isKhac?' selected':'')+'>Khác</option></select>'+
+       '<input class="inp" id="ie_errcustom" placeholder="Mô tả lỗi khác" value="'+errCustomVal+'" style="font-size:12px;padding:4px 6px;width:100%;margin:0;display:'+(isKhac?'block':'none')+'"></div></td>'+
+    '<td style="vertical-align:top"><input class="inp" type="date" id="ie_date" '+st+' value="'+dateVal+'"></td>'+
+    '<td style="vertical-align:top;min-width:170px"><div style="display:flex;flex-direction:column;gap:4px">'+
+       '<div class="chip-group" style="margin:0;display:flex;flex-wrap:wrap;gap:3px">'+
+         '<span class="chip" style="font-size:10px;padding:2px 6px" onclick="appendBienPhapInline(\'Kiểm tra hiện trường\')">Kiểm tra hiện trường</span>'+
+         '<span class="chip" style="font-size:10px;padding:2px 6px" onclick="appendBienPhapInline(\'Khởi động lại hệ thống\')">Khởi động lại</span>'+
+         '<span class="chip" style="font-size:10px;padding:2px 6px" onclick="appendBienPhapInline(\'Phối hợp với Đội BVVT tiếp tục giám sát hệ thống\')">Phối hợp BVVT</span></div>'+
+       '<textarea class="inp" id="ie_measure" rows="2" style="font-size:12px;padding:4px 6px;width:100%;margin:0" placeholder="Biện pháp khắc phục...">'+measureVal+'</textarea></div></td>'+
+    '<td style="font-size:12px;color:var(--text-light);vertical-align:top;padding-top:8px">'+esc(who)+'</td>'+
+    '<td style="white-space:nowrap;vertical-align:top"><div style="display:flex;flex-direction:column;gap:4px">'+
+       '<button class="btn btn-primary btn-sm" onclick="saveInline('+saveArg+')">Lưu</button>'+
+       '<button class="btn btn-outline btn-sm" onclick="cancelInline()">Hủy</button></div></td>'+
+  '</tr>';
+}
+
+function toggleInlineErrType(){
+  var v=document.getElementById("ie_errtype").value;
+  var el=document.getElementById("ie_errcustom");
+  if(el) el.style.display=(v==="Khác")?"block":"none";
+}
+
+function appendBienPhapInline(text){
+  var ta=document.getElementById("ie_measure");
+  if(!ta)return;
+  var cur=(ta.value||"").trim();
+  ta.value=cur?(cur+". "+text):text;
+  ta.focus();
+}
+
+function startInlineAdd(){
+  var u=currentUser();
+  if(!canEdit(u)){showToast("⚠️ Bạn không có quyền thêm bản ghi","warning");return;}
+  if(!getDevices().length){showToast("⚠️ Chưa có hệ thống nào. Vui lòng liên hệ Admin để thêm hệ thống trước.","warning");return;}
+  var fm=parseInt(document.getElementById("filterLogMonth").value);
+  var fy=parseInt(document.getElementById("filterLogYear").value);
+  if(fm&&fy&&isMonthLocked(fm,fy)){showToast("🔒 Tháng "+fm+"/"+fy+" đã bị khoá. Không thể thêm.","danger");return;}
+  _inlineEditId=null;
+  _inlineAddOpen=true;
+  renderErrorLog();
+}
+
+function startInlineEdit(id){
+  var rec=getErrors().find(function(x){return x.id===id;});
+  if(!rec)return;
+  if(isMonthLocked(rec.month,rec.year)){showToast("🔒 Tháng "+rec.month+"/"+rec.year+" đã bị khoá. Không thể sửa.","danger");return;}
+  if(!isOwner(rec)){showToast("⚠️ Bạn không có quyền sửa bản ghi của người khác.","warning");return;}
+  _inlineAddOpen=false;
+  _inlineEditId=id;
+  renderErrorLog();
+}
+
+function cancelInline(){ _inlineAddOpen=false; _inlineEditId=null; renderErrorLog(); }
+
+function saveInline(id){
+  var isNew=!id;
+  var u=currentUser();
+  if(!canEdit(u)){showToast("⚠️ Bạn không có quyền thao tác","warning");return;}
+  var month=parseInt(document.getElementById("ie_month").value);
+  var year=parseInt(document.getElementById("ie_year").value);
+  var deviceId=document.getElementById("ie_device").value;
+  var childDevice=(document.getElementById("ie_child").value||"").trim();
+  var devLocation=(document.getElementById("ie_loc").value||"").trim();
+  var errType=document.getElementById("ie_errtype").value;
+  var errCustom=(document.getElementById("ie_errcustom").value||"").trim();
+  var _dEl=document.getElementById("ie_date");
+  var detectDate=window.HSEDate?HSEDate.getValue(_dEl):_dEl.value;
+  var measure=(document.getElementById("ie_measure").value||"").trim();
+
+  if(isMonthLocked(month,year)){showToast("🔒 Tháng "+month+"/"+year+" đã bị khoá. Không thể lưu.","danger");return;}
+  if(!isNew){
+    var _existing=getErrors().find(function(x){return x.id===id;});
+    if(_existing&&!isOwner(_existing)){showToast("⚠️ Bạn không có quyền sửa bản ghi của người khác.","warning");return;}
+  }
+  if(!deviceId){showToast("⚠️ Vui lòng chọn hệ thống","warning");return;}
+  if(!childDevice){showToast("⚠️ Vui lòng nhập tên thiết bị","warning");return;}
+  if(!devLocation){showToast("⚠️ Vui lòng nhập vị trí thiết bị","warning");return;}
+  if(errType==="Khác"&&!errCustom){showToast("⚠️ Vui lòng nhập mô tả lỗi","warning");return;}
+  if(!detectDate){showToast("⚠️ Vui lòng chọn ngày phát hiện","warning");return;}
+  if(!measure){showToast("⚠️ Vui lòng nhập biện pháp khắc phục","warning");return;}
+
+  var existingRec=isNew?null:getErrors().find(function(x){return x.id===id;});
+  var item={
+    id:id||uid(),
+    month:month, year:year,
+    deviceId:deviceId,
+    childDevice:childDevice,
+    devLocation:devLocation,
+    errType:errType,
+    errCustom:errType==="Khác"?errCustom:"",
+    detectDate:detectDate,
+    measure:measure,
+    createdBy:(existingRec&&existingRec.createdBy)?existingRec.createdBy:(u?(u.fullname||u.username):"Khách"),
+    createdAt:(existingRec&&existingRec.createdAt)?existingRec.createdAt:new Date().toISOString()
+  };
+  var data=getErrors();
+  if(!isNew){
+    var idx=data.findIndex(function(x){return x.id===id;});
+    if(idx>=0)data[idx]=item; else data.push(item);
+  } else { data.push(item); }
+  saveErrors(data);
+  // Sheets/Supabase: insert với bản ghi mới, update (fallback insert) với bản ghi cũ
+  if(typeof DB!=="undefined"&&DB.isReady()){
+    var _op=isNew
+      ? DB.insert("pccc_errors",item)
+      : DB.update("pccc_errors",item.id,item).catch(function(e){
+          if(e&&e.message&&e.message.indexOf("tìm thấy")>=0)
+            return DB.insert("pccc_errors",item);
+          throw e;
+        });
+    _op.then(function(){ _dbToast(true,"Bản ghi"); })
+       .catch(function(e){ _dbToast(false,e&&e.message||""); });
+  }
+  _inlineAddOpen=false;
+  _inlineEditId=null;
+  populateMonthFilter();
+  renderErrorLog();
+  showToast(isNew?"✅ Đã thêm bản ghi báo lỗi":"✅ Đã cập nhật bản ghi","success");
 }
 
 /* ---- POPULATE MONTH FILTER ---- */
@@ -1013,6 +1111,7 @@ function closeErrorModal(){document.getElementById("errorModalBg").classList.rem
 function populateDeviceSelect(){
   var devices=getDevices();
   var sel=document.getElementById("eDevice");
+  if(!sel) return; // modal nhập báo lỗi đã bỏ, dùng nhập inline
   var cur=sel.value;
   sel.innerHTML=devices.length
     ?devices.map(function(d){return'<option value="'+d.id+'"'+(d.id===cur?' selected':'')+'>'+esc(d.name)+' — '+esc(d.location)+'</option>';}).join("")
@@ -1148,7 +1247,6 @@ function setupRoleUI(){
 function doLogout(){localStorage.removeItem(K_SESS);location.reload();}
 
 document.getElementById("deviceModalBg").addEventListener("click",function(e){if(e.target===this)closeDeviceModal();});
-document.getElementById("errorModalBg").addEventListener("click",function(e){if(e.target===this)closeErrorModal();});
 
 /* ---- TOAST ---- */
 var _tt;
