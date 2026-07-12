@@ -995,14 +995,32 @@
       '<div class="page-desc">Quản lý người dùng, vai trò và phân quyền truy cập từng trang.</div>'));
 
     var bar = el("div","toolbar");
-    bar.innerHTML='<button class="btn btn-accent" id="addU">＋ Thêm người dùng</button>'+
-      '<div class="muted">Vai trò: <b>Admin</b> toàn quyền · <b>User</b> thao tác theo phân quyền · <b>Viewer</b> chỉ xem.</div>'+
+    bar.innerHTML='<div class="muted">Vai trò: <b>Admin</b> toàn quyền · <b>User</b> thao tác theo phân quyền · <b>Viewer</b> chỉ xem.</div>'+
       '<div class="spacer"></div><input class="inp" id="q" type="search" name="hse_user_search" autocomplete="off" placeholder="Tìm theo tên / tài khoản...">';
     container.appendChild(bar);
 
     var tw = el("div","table-wrap"); var tbl = el("table"); tbl.id="utbl"; tw.appendChild(tbl); container.appendChild(tw);
 
+    // Nút "Thêm người dùng" đặt dưới cùng bảng, canh giữa
+    var addBar = el("div","", '<button class="btn btn-accent" id="addU">＋ Thêm người dùng</button>');
+    addBar.style.cssText = "display:flex;justify-content:center;margin:16px 0 4px;";
+    container.appendChild(addBar);
+
     var modal = buildModal(); container.appendChild(modal.bg);
+
+    // Trả về tên trang tương ứng với slug (để hiển thị cột "Trang được phép sửa")
+    function slugTitle(slug){ for(var i=0;i<MENU.length;i++){ if(MENU[i].slug===slug) return MENU[i].title; } return slug; }
+    // Danh sách các trang có thể phân quyền (loại trừ trang chỉ admin / chỉ admin sửa)
+    function editablePages(){ return MENU.filter(function(m){ return !m.adminOnly && !m.adminEditOnly; }); }
+    function permCellHtml(x){
+      if(x.role==="admin") return '<b style="color:var(--brand)">Tất cả</b>';
+      var perms = x.perms||[];
+      if(!perms.length) return '<span class="muted">Chưa phân quyền</span>';
+      var chips = perms.map(function(s){
+        return '<span class="badge badge-user" style="font-weight:500;margin:1px 2px 1px 0;display:inline-block;">'+esc(slugTitle(s))+'</span>';
+      }).join('');
+      return '<div style="max-width:340px;line-height:1.7">'+chips+'</div>';
+    }
 
     function draw(filter){
       var u = getUsers(); var me = currentUser();
@@ -1013,7 +1031,6 @@
       var nMod = MENU.length;
       var html='<thead><tr><th>Tài khoản</th><th>Danh số</th><th>Họ tên</th><th>Vai trò</th><th>Trang được phép sửa</th><th>Trạng thái</th><th>Thao tác</th></tr></thead><tbody>';
       rows.forEach(function(x){
-        var permCount = x.role==="admin" ? nMod : (x.perms||[]).length;
         var isPending = x.pendingApproval && x.active===false;
         var statusHtml = isPending
           ? '<span class="badge" style="background:#fef9e7;color:#856404;"><svg class="lic-emoji" width="1.05em" height="1.05em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex-shrink:0" aria-hidden="true"><path d="M5 22h14"/><path d="M5 2h14"/><path d="M17 22v-4.172a2 2 0 0 0-.586-1.414L12 12l-4.414 4.414A2 2 0 0 0 7 17.828V22"/><path d="M7 2v4.172a2 2 0 0 0 .586 1.414L12 12l4.414-4.414A2 2 0 0 0 17 6.172V2"/></svg> Chờ duyệt</span>'
@@ -1025,7 +1042,7 @@
           '<td style="color:var(--text-muted);font-size:12.5px;">'+(x.danhSo||'—')+'</td>'+
           '<td>'+esc(x.fullname||"")+'</td>'+
           '<td><span class="badge badge-'+x.role+'">'+roleLabel(x.role)+'</span></td>'+
-          '<td>'+permCount+' / '+nMod+'</td>'+
+          '<td>'+permCellHtml(x)+'</td>'+
           '<td>'+statusHtml+'</td>'+
           '<td>'+
             '<button class="btn btn-ghost btn-sm" data-act="edit" data-id="'+esc(x.id)+'">'+(isPending?'✅ Duyệt / Sửa':'Sửa')+'</button> '+
@@ -1033,7 +1050,7 @@
             '<button class="btn btn-danger btn-sm" data-act="del" data-id="'+esc(x.id)+'"'+((me&&String(x.id)===String(me.id))?' disabled':'')+'>Xoá</button>'+
           '</td></tr>';
       });
-      if(!rows.length) html+='<tr><td colspan="6" class="muted" style="text-align:center;padding:24px">Không có người dùng phù hợp.</td></tr>';
+      if(!rows.length) html+='<tr><td colspan="7" class="muted" style="text-align:center;padding:24px">Không có người dùng phù hợp.</td></tr>';
       html+='</tbody>';
       tbl.innerHTML=html;
 
@@ -1091,8 +1108,75 @@
       setUsers(u); if(sheetUser) _syncUserSheet(sheetAction, sheetUser); draw($("#q").value); return true;
     };
 
-    $("#addU").addEventListener("click", function(){ modal.open(null); });
-    $("#q").addEventListener("input", function(){ draw(this.value); });
+    // ---- Thêm người dùng kiểu inline (chèn dòng nhập ngay trong bảng) ----
+    var inlineActive = false;
+    function openInlineAdd(){
+      if(inlineActive) return;
+      var tbody = tbl.querySelector("tbody"); if(!tbody) return;
+      inlineActive = true;
+      var addBtn = $("#addU"); if(addBtn) addBtn.disabled = true;
+
+      var permsGridHtml = editablePages().map(function(m){
+        return '<label class="perm-item" style="margin:0"><input type="checkbox" value="'+m.slug+'"><span>'+m.icon+' '+esc(m.title)+'</span></label>';
+      }).join('');
+
+      var mainTr = document.createElement("tr");
+      mainTr.className = "inline-add-row";
+      mainTr.innerHTML =
+        '<td><input class="inp" id="ia_un" placeholder="Email / tài khoản" autocomplete="off" style="width:100%"></td>'+
+        '<td><input class="inp" id="ia_ds" placeholder="Danh số" style="width:100%"></td>'+
+        '<td><input class="inp" id="ia_fn" placeholder="Họ và tên" style="width:100%"></td>'+
+        '<td><select class="inp" id="ia_role" style="width:100%"><option value="user">User</option><option value="admin">Admin</option></select></td>'+
+        '<td><span class="muted" id="ia_permsum">Chọn ở dưới ↓</span></td>'+
+        '<td><input class="inp" id="ia_pw" type="password" placeholder="Mật khẩu *" autocomplete="new-password" style="width:100%"></td>'+
+        '<td style="white-space:nowrap"><button class="btn btn-accent btn-sm" id="ia_save">Lưu</button> <button class="btn btn-ghost btn-sm" id="ia_cancel">Huỷ</button></td>';
+
+      var permTr = document.createElement("tr");
+      permTr.className = "inline-add-perms";
+      permTr.innerHTML = '<td colspan="7" style="background:#f7fafc">'+
+        '<div style="font-size:12px;font-weight:700;color:var(--text-muted);margin-bottom:6px">Trang được phép sửa &nbsp;<a href="#" id="ia_selAll">chọn tất cả</a> · <a href="#" id="ia_selNone">bỏ chọn</a></div>'+
+        '<div class="perm-grid" id="ia_perms">'+permsGridHtml+'</div></td>';
+
+      tbody.appendChild(mainTr);
+      tbody.appendChild(permTr);
+
+      var roleSel = mainTr.querySelector("#ia_role");
+      function getPerms(){ var a=[]; permTr.querySelectorAll("#ia_perms input:checked").forEach(function(c){a.push(c.value);}); return a; }
+      function updateSum(){ var n=getPerms().length; mainTr.querySelector("#ia_permsum").textContent = n ? (n+" trang đã chọn") : "Chọn ở dưới ↓"; }
+      function syncRole(){
+        if(roleSel.value==="admin"){ permTr.style.display="none"; mainTr.querySelector("#ia_permsum").innerHTML='<b style="color:var(--brand)">Tất cả</b>'; }
+        else { permTr.style.display=""; updateSum(); }
+      }
+      roleSel.addEventListener("change", syncRole);
+      permTr.querySelectorAll("#ia_perms input").forEach(function(c){ c.addEventListener("change", updateSum); });
+      permTr.querySelector("#ia_selAll").addEventListener("click", function(e){ e.preventDefault(); permTr.querySelectorAll("#ia_perms input").forEach(function(c){c.checked=true;}); updateSum(); });
+      permTr.querySelector("#ia_selNone").addEventListener("click", function(e){ e.preventDefault(); permTr.querySelectorAll("#ia_perms input").forEach(function(c){c.checked=false;}); updateSum(); });
+
+      function closeInline(){ inlineActive=false; if(addBtn) addBtn.disabled=false; draw($("#q").value); }
+      mainTr.querySelector("#ia_cancel").addEventListener("click", closeInline);
+
+      mainTr.querySelector("#ia_save").addEventListener("click", function(){
+        var un = mainTr.querySelector("#ia_un").value.trim();
+        var pw = mainTr.querySelector("#ia_pw").value;
+        var role = roleSel.value;
+        if(!un){ alert("Vui lòng nhập email / tài khoản."); return; }
+        if(findUser(un)){ alert("Email này đã được sử dụng."); return; }
+        if(!pw || pw.length<6){ alert("Mật khẩu tối thiểu 6 ký tự."); return; }
+        var newUser = { id:Date.now().toString(36), username:un, password:pw,
+          fullname:mainTr.querySelector("#ia_fn").value.trim(),
+          danhSo:mainTr.querySelector("#ia_ds").value.trim(),
+          role:role, perms: role==="admin" ? [] : getPerms(), capPhatUnits:[],
+          active:true, created:new Date().toISOString() };
+        var u = getUsers(); u.push(newUser); setUsers(u); _syncUserSheet('insert', newUser);
+        inlineActive=false; if(addBtn) addBtn.disabled=false; draw($("#q").value);
+      });
+
+      syncRole();
+      mainTr.querySelector("#ia_un").focus();
+    }
+
+    $("#addU").addEventListener("click", openInlineAdd);
+    $("#q").addEventListener("input", function(){ if(inlineActive){ inlineActive=false; var a=$("#addU"); if(a) a.disabled=false; } draw(this.value); });
     draw("");
 
     // Khi đồng bộ users từ Sheets hoàn tất (sau ~2s), vẽ lại bảng để hiển thị
