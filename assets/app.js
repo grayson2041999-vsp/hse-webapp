@@ -1017,7 +1017,7 @@
       var perms = x.perms||[];
       if(!perms.length) return '<span class="muted">Chưa phân quyền</span>';
       var chips = perms.map(function(s){
-        return '<span class="badge badge-user" style="font-weight:500;margin:1px 2px 1px 0;display:inline-block;">'+esc(slugTitle(s))+'</span>';
+        return '<span class="badge" style="font-weight:500;margin:1px 2px 1px 0;display:inline-block;color:#1a1a1a;background:#fff;border:1px solid #1a1a1a;">'+esc(slugTitle(s))+'</span>';
       }).join('');
       return '<div style="max-width:340px;line-height:1.7">'+chips+'</div>';
     }
