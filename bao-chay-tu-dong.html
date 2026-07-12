@@ -772,12 +772,21 @@ function _errRowHtml(x,i,editable,locked){
   if(canEditRow && _inlineEditId===x.id){ return inlineRowHtml(x,i); }
   var errLabel=x.errType==="Khác"?(x.errCustom||"Khác"):"Báo lỗi"+(x.childDevice?" "+x.childDevice:"")+(x.devLocation?" – "+x.devLocation:"");
   var childLabel=esc(x.childDevice||"—")+(x.devLocation?' – <span style="color:var(--text-light)">'+esc(x.devLocation)+'</span>':"");
+  // Làm nổi bật tên của user đang đăng nhập ở cột Người nhập (so khớp bỏ khoảng trắng, không phân biệt hoa/thường)
+  var _cu=currentUser();
+  var _cb=String(x.createdBy||"").trim().toLowerCase();
+  var _cf=_cu?String(_cu.fullname||"").trim().toLowerCase():"";
+  var _cn=_cu?String(_cu.username||"").trim().toLowerCase():"";
+  var mine=!!(_cb && (_cb===_cf || _cb===_cn));
+  var whoCell=mine
+    ?'<td style="font-size:12.5px;font-weight:700;color:var(--primary)">'+esc(x.createdBy)+'</td>'
+    :'<td style="font-size:12px;color:var(--text-light)">'+esc(x.createdBy||"—")+'</td>';
   var tds='<td style="color:var(--text-light);font-size:12px">'+(i+1)+'</td>'+
     '<td style="font-size:12.5px">'+childLabel+'</td>'+
     '<td><span class="badge '+(x.errType==="Khác"?"badge-orange":"badge-red")+'">'+esc(errLabel)+'</span></td>'+
     '<td style="white-space:nowrap">'+fmtDate(x.detectDate)+'</td>'+
     '<td style="max-width:320px;font-size:12.5px">'+esc(x.measure||"—")+'</td>'+
-    '<td style="font-size:12px;color:var(--text-light)">'+esc(x.createdBy||"—")+'</td>';
+    whoCell;
   // Khi tháng bị khoá: bỏ hẳn cột thao tác (đã có badge "Tháng đã khoá" ở trên)
   if(!locked){
     var btns=canEditRow
