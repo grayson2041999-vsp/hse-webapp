@@ -270,31 +270,10 @@
                 <select class="inp" id="filterLogYear" style="width:90px;padding:4px 8px;font-size:12.5px;" onchange="renderErrorLog();updateLockUI()">
                 </select>
               </div>
-              <div class="month-filter" style="margin-bottom:0;padding:6px 12px;box-shadow:none;border:1.5px solid var(--border);border-radius:8px;">
-                <label>Hệ thống:</label>
-                <select class="inp" id="filterSystem" style="min-width:180px;max-width:280px;padding:4px 8px;font-size:12.5px;" onchange="renderErrorLog()">
-                </select>
-              </div>
-              <button class="btn btn-primary btn-sm" id="btnAddError" onclick="startInlineAdd()">+ Nhập báo lỗi</button>
             </div>
           </div>
           <div class="lock-notice" id="lockNotice"><svg class="lic-emoji" width="1.05em" height="1.05em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex-shrink:0" aria-hidden="true"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg> Tháng này đã được Admin khoá. Bạn không thể thêm, sửa hoặc xóa bản ghi.</div>
-          <div class="table-wrap" style="margin-bottom:0">
-            <table>
-              <thead>
-                <tr>
-                  <th style="width:40px">#</th>
-                  <th>Thiết bị – Vị trí</th>
-                  <th>Loại lỗi</th>
-                  <th>Ngày phát hiện</th>
-                  <th>Biện pháp khắc phục</th>
-                  <th>Người nhập</th>
-                  <th style="width:80px"></th>
-                </tr>
-              </thead>
-              <tbody id="tbodyErrors"></tbody>
-            </table>
-          </div>
+          <div id="errorLogContainer"></div>
         </div>
       </div>
     </div>
@@ -777,55 +756,77 @@ function isOwner(rec){
 }
 
 /* ---- RENDER ERROR LOG ---- */
-var _inlineAddOpen=false;
+var _inlineAddSystem=null; // deviceId đang mở dòng thêm mới, hoặc null
 var _inlineEditId=null;
 
+/* Một dòng hiển thị (hoặc dòng sửa inline) trong bảng của một hệ thống */
+function _errRowHtml(x,i,editable,locked){
+  var canEditRow=editable&&!locked&&isOwner(x);
+  if(canEditRow && _inlineEditId===x.id){ return inlineRowHtml(x,i); }
+  var errLabel=x.errType==="Khác"?(x.errCustom||"Khác"):"Báo lỗi"+(x.childDevice?" "+x.childDevice:"")+(x.devLocation?" – "+x.devLocation:"");
+  var btns=locked
+    ?'<span style="font-size:11px;color:var(--danger)"><svg class="lic-emoji" width="1.05em" height="1.05em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex-shrink:0" aria-hidden="true"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span>'
+    :(canEditRow
+      ?'<button class="btn btn-edit btn-sm" onclick="startInlineEdit(\''+x.id+'\')"><svg class="lic-emoji" width="1.05em" height="1.05em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex-shrink:0" aria-hidden="true"><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"/><path d="m15 5 4 4"/></svg></button> '+
+       '<button class="btn btn-danger btn-sm" onclick="deleteError(\''+x.id+'\')"><svg class="lic-emoji" width="1.05em" height="1.05em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex-shrink:0" aria-hidden="true"><path d="M10 11v6"/><path d="M14 11v6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>'
+      :(editable?'<span style="font-size:11px;color:var(--text-light)" title="Bạn không thể sửa bản ghi của người khác">—</span>':''));
+  var childLabel=esc(x.childDevice||"—")+(x.devLocation?' – <span style="color:var(--text-light)">'+esc(x.devLocation)+'</span>':"");
+  return '<tr>'+
+    '<td style="color:var(--text-light);font-size:12px">'+(i+1)+'</td>'+
+    '<td style="font-size:12.5px">'+childLabel+'</td>'+
+    '<td><span class="badge '+(x.errType==="Khác"?"badge-orange":"badge-red")+'">'+esc(errLabel)+'</span></td>'+
+    '<td style="white-space:nowrap">'+fmtDate(x.detectDate)+'</td>'+
+    '<td style="max-width:320px;font-size:12.5px">'+esc(x.measure||"—")+'</td>'+
+    '<td style="font-size:12px;color:var(--text-light)">'+esc(x.createdBy||"—")+'</td>'+
+    '<td style="white-space:nowrap">'+btns+'</td></tr>';
+}
+
+/* Mỗi hệ thống một bảng con; xếp theo thứ tự danh sách hệ thống; gộp thành nhật ký tổng */
 function renderErrorLog(){
   var u=currentUser();
   var editable=u&&canEdit(u);
-  var items=getErrors();
   var fm=document.getElementById("filterLogMonth").value;
   var fy=document.getElementById("filterLogYear").value;
-  var _fsEl=document.getElementById("filterSystem");
-  var fs=_fsEl?_fsEl.value:"";
-  if(fm) items=items.filter(function(x){return String(x.month)===fm;});
-  if(fy) items=items.filter(function(x){return String(x.year)===fy;});
-  if(fs) items=items.filter(function(x){return String(x.deviceId)===fs;});
-  var tb=document.getElementById("tbodyErrors");
-  var rowsHtml="";
-  // Dòng thêm mới inline (nếu đang mở)
-  if(_inlineAddOpen && editable){ rowsHtml+=inlineRowHtml(null,-1); }
-  if(!items.length && !(_inlineAddOpen&&editable)){
-    tb.innerHTML='<tr class="empty-row"><td colspan="7">Chưa có bản ghi báo lỗi nào cho hệ thống / tháng đang chọn. '+(editable?'Nhấn <b>+ Nhập báo lỗi</b> để thêm.':'')+'</td></tr>';
+  var locked=!!(fm&&fy&&isMonthLocked(parseInt(fm),parseInt(fy)));
+  var container=document.getElementById("errorLogContainer");
+  if(!container) return;
+  var devices=getDevices();
+  if(!devices.length){
+    container.innerHTML='<div style="padding:22px;text-align:center;color:var(--text-light);font-size:13px">Chưa có hệ thống nào được tạo. Vui lòng liên hệ Admin để thêm hệ thống trước.</div>';
     return;
   }
-  rowsHtml+=items.map(function(x,i){
-    var rowLocked=isMonthLocked(x.month,x.year);
-    var canEditRow=editable&&!rowLocked&&isOwner(x);
-    // Dòng này đang được sửa inline
-    if(canEditRow && _inlineEditId===x.id){ return inlineRowHtml(x,i); }
-    var errLabel=x.errType==="Khác"?(x.errCustom||"Khác"):"Báo lỗi"+(x.childDevice?" "+x.childDevice:"")+(x.devLocation?" – "+x.devLocation:"");
-    var btns=rowLocked
-      ?'<span style="font-size:11px;color:var(--danger)"><svg class="lic-emoji" width="1.05em" height="1.05em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex-shrink:0" aria-hidden="true"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span>'
-      :(canEditRow
-        ?'<button class="btn btn-edit btn-sm" onclick="startInlineEdit(\''+x.id+'\')"><svg class="lic-emoji" width="1.05em" height="1.05em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex-shrink:0" aria-hidden="true"><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"/><path d="m15 5 4 4"/></svg></button> '+
-         '<button class="btn btn-danger btn-sm" onclick="deleteError(\''+x.id+'\')"><svg class="lic-emoji" width="1.05em" height="1.05em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex-shrink:0" aria-hidden="true"><path d="M10 11v6"/><path d="M14 11v6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>'
-        :(editable?'<span style="font-size:11px;color:var(--text-light)" title="Bạn không thể sửa bản ghi của người khác">—</span>':''));
-    var childLabel=esc(x.childDevice||"—")+(x.devLocation?' – <span style="color:var(--text-light)">'+esc(x.devLocation)+'</span>':"");
-    return '<tr>'+
-      '<td style="color:var(--text-light);font-size:12px">'+(i+1)+'</td>'+
-      '<td style="font-size:12.5px">'+childLabel+'</td>'+
-      '<td><span class="badge '+(x.errType==="Khác"?"badge-orange":"badge-red")+'">'+esc(errLabel)+'</span></td>'+
-      '<td style="white-space:nowrap">'+fmtDate(x.detectDate)+'</td>'+
-      '<td style="max-width:260px;font-size:12.5px">'+esc(x.measure||"—")+'</td>'+
-      '<td style="font-size:12px;color:var(--text-light)">'+esc(x.createdBy||"—")+'</td>'+
-      '<td style="white-space:nowrap">'+btns+'</td></tr>';
+  var errs=getErrors().filter(function(x){
+    return (!fm||String(x.month)===fm) && (!fy||String(x.year)===fy);
+  });
+  var thead='<thead><tr>'+
+    '<th style="width:40px">#</th>'+
+    '<th>Thiết bị – Vị trí</th>'+
+    '<th>Loại lỗi</th>'+
+    '<th>Ngày phát hiện</th>'+
+    '<th>Biện pháp khắc phục</th>'+
+    '<th>Người nhập</th>'+
+    '<th style="width:80px"></th>'+
+  '</tr></thead>';
+  container.innerHTML=devices.map(function(dev){
+    var rows=errs.filter(function(x){return String(x.deviceId)===String(dev.id);});
+    var body=rows.map(function(x,i){ return _errRowHtml(x,i,editable,locked); }).join("");
+    if(editable && !locked && _inlineAddSystem===dev.id){ body+=inlineRowHtml(null,rows.length); }
+    if(!body){ body='<tr class="empty-row"><td colspan="7">Chưa có bản ghi báo lỗi nào trong tháng này.</td></tr>'; }
+    var addBtn=(editable&&!locked&&_inlineAddSystem!==dev.id)
+      ?'<div style="padding:8px 0 2px"><button class="btn btn-primary btn-sm" onclick="startInlineAdd(\''+dev.id+'\')">+ Nhập báo lỗi</button></div>'
+      :'';
+    return '<div class="sys-block" style="margin-bottom:22px">'+
+      '<div style="display:flex;align-items:center;gap:8px;font-weight:700;color:var(--primary);font-size:13.5px;margin-bottom:8px;padding:7px 11px;background:#eef4fb;border-left:4px solid var(--primary);border-radius:6px">'+
+        '<svg class="lic-emoji" width="1.05em" height="1.05em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex-shrink:0" aria-hidden="true"><path d="M10.268 21a2 2 0 0 0 3.464 0"/><path d="M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326"/></svg>'+
+        esc(dev.name)+'<span style="font-weight:500;color:var(--text-light);font-size:12px"> — '+esc(dev.location)+'</span></div>'+
+      '<div class="table-wrap" style="margin-bottom:0"><table>'+thead+'<tbody>'+body+'</tbody></table></div>'+
+      addBtn+
+    '</div>';
   }).join("");
-  tb.innerHTML=rowsHtml;
   // Kích hoạt date-picker cho dòng inline vừa render
-  if((_inlineAddOpen||_inlineEditId)&&window.HSEDate){ HSEDate.attachAll(tb); }
+  if((_inlineAddSystem||_inlineEditId)&&window.HSEDate){ HSEDate.attachAll(container); }
   // Focus ô nhập đầu tiên khi thêm mới
-  if(_inlineAddOpen){ var f=document.getElementById("ie_child"); if(f) setTimeout(function(){f.focus();},60); }
+  if(_inlineAddSystem){ var f=document.getElementById("ie_child"); if(f) setTimeout(function(){f.focus();},60); }
 }
 
 /* ---- INLINE EDIT: HELPERS DỰNG OPTION ---- */
@@ -885,7 +886,7 @@ function appendBienPhapInline(text){
   ta.focus();
 }
 
-function startInlineAdd(){
+function startInlineAdd(deviceId){
   var u=currentUser();
   if(!canEdit(u)){showToast("⚠️ Bạn không có quyền thêm bản ghi","warning");return;}
   if(!getDevices().length){showToast("⚠️ Chưa có hệ thống nào. Vui lòng liên hệ Admin để thêm hệ thống trước.","warning");return;}
@@ -893,7 +894,7 @@ function startInlineAdd(){
   var fy=parseInt(document.getElementById("filterLogYear").value);
   if(fm&&fy&&isMonthLocked(fm,fy)){showToast("🔒 Tháng "+fm+"/"+fy+" đã bị khoá. Không thể thêm.","danger");return;}
   _inlineEditId=null;
-  _inlineAddOpen=true;
+  _inlineAddSystem=deviceId||null;
   renderErrorLog();
 }
 
@@ -902,29 +903,28 @@ function startInlineEdit(id){
   if(!rec)return;
   if(isMonthLocked(rec.month,rec.year)){showToast("🔒 Tháng "+rec.month+"/"+rec.year+" đã bị khoá. Không thể sửa.","danger");return;}
   if(!isOwner(rec)){showToast("⚠️ Bạn không có quyền sửa bản ghi của người khác.","warning");return;}
-  _inlineAddOpen=false;
+  _inlineAddSystem=null;
   _inlineEditId=id;
   renderErrorLog();
 }
 
-function cancelInline(){ _inlineAddOpen=false; _inlineEditId=null; renderErrorLog(); }
+function cancelInline(){ _inlineAddSystem=null; _inlineEditId=null; renderErrorLog(); }
 
 function saveInline(id){
   var isNew=!id;
   var u=currentUser();
   if(!canEdit(u)){showToast("⚠️ Bạn không có quyền thao tác","warning");return;}
   var existingRec=isNew?null:getErrors().find(function(x){return x.id===id;});
-  // Tháng, năm, hệ thống lấy từ bộ lọc ở đầu bảng (thêm mới) hoặc giữ nguyên từ bản ghi (sửa)
-  var _fsEl=document.getElementById("filterSystem");
+  // Tháng, năm lấy từ bộ lọc Tháng; hệ thống lấy từ bảng con đang thêm (thêm mới) hoặc giữ nguyên từ bản ghi (sửa)
   var month, year, deviceId;
   if(isNew){
     month=parseInt(document.getElementById("filterLogMonth").value);
     year=parseInt(document.getElementById("filterLogYear").value);
-    deviceId=_fsEl?_fsEl.value:"";
+    deviceId=_inlineAddSystem||"";
   } else {
     month=existingRec?existingRec.month:parseInt(document.getElementById("filterLogMonth").value);
     year=existingRec?existingRec.year:parseInt(document.getElementById("filterLogYear").value);
-    deviceId=existingRec?existingRec.deviceId:(_fsEl?_fsEl.value:"");
+    deviceId=existingRec?existingRec.deviceId:"";
   }
   var childDevice=(document.getElementById("ie_child").value||"").trim();
   var devLocation=(document.getElementById("ie_loc").value||"").trim();
@@ -936,7 +936,7 @@ function saveInline(id){
 
   if(isMonthLocked(month,year)){showToast("🔒 Tháng "+month+"/"+year+" đã bị khoá. Không thể lưu.","danger");return;}
   if(existingRec&&!isOwner(existingRec)){showToast("⚠️ Bạn không có quyền sửa bản ghi của người khác.","warning");return;}
-  if(!deviceId){showToast("⚠️ Vui lòng chọn hệ thống ở bộ lọc phía trên","warning");return;}
+  if(!deviceId){showToast("⚠️ Không xác định được hệ thống. Vui lòng thử lại.","warning");return;}
   if(!childDevice){showToast("⚠️ Vui lòng nhập tên thiết bị","warning");return;}
   if(!devLocation){showToast("⚠️ Vui lòng nhập vị trí thiết bị","warning");return;}
   if(errType==="Khác"&&!errCustom){showToast("⚠️ Vui lòng nhập mô tả lỗi","warning");return;}
@@ -974,7 +974,7 @@ function saveInline(id){
     _op.then(function(){ _dbToast(true,"Bản ghi"); })
        .catch(function(e){ _dbToast(false,e&&e.message||""); });
   }
-  _inlineAddOpen=false;
+  _inlineAddSystem=null;
   _inlineEditId=null;
   populateMonthFilter();populateSystemFilter();
   renderErrorLog();
