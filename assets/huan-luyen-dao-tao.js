@@ -303,12 +303,110 @@
     _pt.innerHTML = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink:0"><path d="M21.42 10.922a1 1 0 0 0-.019-1.838L12.83 5.18a2 2 0 0 0-1.66 0L2.6 9.08a1 1 0 0 0 0 1.832l8.57 3.908a2 2 0 0 0 1.66 0z"/><path d="M22 10v6"/><path d="M6 12.5V16a6 3 0 0 0 12 0v-3.5"/></svg><span>Huấn luyện - Đào tạo</span>';
     _container.appendChild(_pt);
 
-    _container.appendChild(_buildTabBar());
+    /* Thanh tra cứu tổng hợp (xuyên suốt 6 nhóm) */
+    var gs = document.createElement("div");
+    gs.className = "hl-gsearch";
+    gs.innerHTML =
+      '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>' +
+      '<input type="text" id="hl-global-search" placeholder="Tra cứu nhân viên theo tên hoặc danh số — xem tất cả khoá học đã tham gia...">';
+    _container.appendChild(gs);
+
+    var tabBar = _buildTabBar();
+    _container.appendChild(tabBar);
     var body = document.createElement("div");
     body.id = "hl-body";
     _container.appendChild(body);
+
+    var lookup = document.createElement("div");
+    lookup.id = "hl-lookup";
+    lookup.style.display = "none";
+    _container.appendChild(lookup);
+
     _renderTabContent(_currentKey);
     _wireModal();
+
+    var gsInput = document.getElementById("hl-global-search");
+    gsInput.addEventListener("input", function () {
+      var q = this.value.trim();
+      if (!q) {
+        lookup.style.display = "none"; lookup.innerHTML = "";
+        tabBar.style.display = ""; body.style.display = "";
+      } else {
+        tabBar.style.display = "none"; body.style.display = "none";
+        lookup.style.display = "block";
+        _renderLookup(q, lookup);
+      }
+    });
+  }
+
+  /* ──────────────────────────────────────────
+     TRA CỨU TỔNG HỢP — gom theo danh số, hiện mọi khoá học
+  ────────────────────────────────────────── */
+  function _renderLookup(q, lookup) {
+    var all = _getAllData();
+    var qn = _norm(q);
+
+    /* Danh số nào có bản ghi khớp (theo tên hoặc danh số) */
+    var matchPids = {};
+    all.forEach(function (p) {
+      if (_norm(p.pid).indexOf(qn) >= 0 || _norm(p.name).indexOf(qn) >= 0) matchPids[_norm(p.pid)] = true;
+    });
+
+    /* Gom toàn bộ khoá học của các danh số khớp */
+    var groups = {}, orderKeys = [];
+    all.forEach(function (p) {
+      var kp = _norm(p.pid);
+      if (!matchPids[kp]) return;
+      if (!groups[kp]) { groups[kp] = { pid: p.pid, name: p.name, title: p.title, unit: p.unit, courses: [] }; orderKeys.push(kp); }
+      groups[kp].courses.push(p);
+    });
+
+    if (!orderKeys.length) {
+      lookup.innerHTML = '<div class="hl-lk-note">Không tìm thấy nhân viên phù hợp với "' + _esc(q) + '".</div>';
+      return;
+    }
+
+    /* Sắp xếp nhân viên theo tên */
+    orderKeys.sort(function (a, b) { return String(groups[a].name || "").localeCompare(String(groups[b].name || "")); });
+
+    var pgIndex = {};
+    PAGES.forEach(function (pg, i) { pgIndex[pg.key] = i; });
+
+    var html = '<div class="hl-lk-note">Tìm thấy <b>' + orderKeys.length + '</b> nhân viên · ' +
+      'tổng <b>' + orderKeys.reduce(function (s, k) { return s + groups[k].courses.length; }, 0) + '</b> khoá học.</div>';
+
+    orderKeys.forEach(function (kp) {
+      var g = groups[kp];
+      /* Sắp khoá theo thứ tự nhóm PAGES */
+      g.courses.sort(function (a, b) { return (pgIndex[a.loai_huan_luyen] || 0) - (pgIndex[b.loai_huan_luyen] || 0); });
+
+      var rows = g.courses.map(function (c) {
+        var pg = pageByKey(c.loai_huan_luyen);
+        var months = getMonths(c.loai_huan_luyen);
+        var st = _calcStatus(c.lastDate, months, getWarnDays(c.loai_huan_luyen));
+        var nextColor = st === "expired" ? "var(--danger)" : st === "warn" ? "#e68900" : "#1a7a3c";
+        return '<tr>' +
+          '<td style="font-weight:600;">' + _esc(pg ? pg.label : c.loai_huan_luyen) + '</td>' +
+          '<td>' + (c.subType ? '<span class="hl-badge ' + (c.subType === "T-BOSIET" ? "hl-blue" : "hl-gray") + '">' + _esc(c.subType) + '</span>' : '–') + '</td>' +
+          '<td>' + _fmtDate(c.lastDate) + '</td>' +
+          '<td style="font-weight:600;color:' + nextColor + ';">' + _calcNext(c.lastDate, months) + '</td>' +
+          '<td>' + _statusBadge(st, c.lastDate) + '</td>' +
+        '</tr>';
+      }).join("");
+
+      html +=
+        '<div class="hl-lk-card">' +
+          '<div class="hl-lk-head">' +
+            '<div class="hl-lk-name">' + _esc(g.name) + '</div>' +
+            '<div class="hl-lk-meta">Danh số <b>' + _esc(g.pid) + '</b> · ' + _esc(g.title || "–") + ' · ' + _esc(g.unit || "–") + '</div>' +
+          '</div>' +
+          '<div class="hl-tw"><table><thead><tr>' +
+            '<th>Khoá học</th><th>Loại</th><th>Ngày HL gần nhất</th><th>Ngày HL tiếp theo</th><th>Trạng thái</th>' +
+          '</tr></thead><tbody>' + rows + '</tbody></table></div>' +
+        '</div>';
+    });
+
+    lookup.innerHTML = html;
   }
 
   /* ──────────────────────────────────────────
@@ -317,6 +415,18 @@
   function _buildStyles() {
     var s = document.createElement("style");
     s.textContent = [
+      /* Thanh tra cứu tổng hợp */
+      ".hl-gsearch{position:relative;margin-bottom:16px;}",
+      ".hl-gsearch input{width:100%;box-sizing:border-box;padding:11px 14px 11px 40px;",
+      "border:1.5px solid var(--border);border-radius:10px;font-size:14px;background:var(--surface);}",
+      ".hl-gsearch input:focus{outline:none;border-color:var(--brand-light);box-shadow:0 0 0 3px rgba(37,99,235,.1);}",
+      ".hl-gsearch svg{position:absolute;left:13px;top:50%;transform:translateY(-50%);color:var(--text-muted);}",
+      ".hl-lk-note{font-size:13px;color:var(--text-muted);margin-bottom:12px;}",
+      ".hl-lk-card{background:var(--surface);border-radius:10px;box-shadow:0 1px 3px rgba(16,24,40,.08);",
+      "margin-bottom:16px;overflow:hidden;}",
+      ".hl-lk-head{padding:12px 18px;background:#f8fafd;border-bottom:1px solid var(--border);}",
+      ".hl-lk-name{font-size:15px;font-weight:800;color:var(--brand);}",
+      ".hl-lk-meta{font-size:12.5px;color:var(--text-muted);margin-top:2px;}",
       /* Tab bar */
       ".hl-tabs{display:flex;gap:2px;flex-wrap:wrap;background:var(--surface);",
       "border-radius:10px;padding:6px;box-shadow:0 1px 3px rgba(16,24,40,.07);margin-bottom:20px;}",
