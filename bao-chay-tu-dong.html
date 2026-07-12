@@ -674,7 +674,8 @@ function renderDevices(){
 function getLockedMonths(){ return load(K_LOCKED,[]); }
 
 function isMonthLocked(m,y){
-  return getLockedMonths().some(function(x){ return x.month===m && x.year===y; });
+  // So sánh theo chuỗi để không phụ thuộc kiểu (số ở local vs chuỗi khi đồng bộ từ Sheets/Supabase)
+  return getLockedMonths().some(function(x){ return String(x.month)===String(m) && String(x.year)===String(y); });
 }
 
 function toggleLockMonth(){
