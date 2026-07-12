@@ -79,6 +79,8 @@
     .err-table{table-layout:fixed;}
     .err-table th,.err-table td{border-right:1px solid #e2e8f2;word-break:break-word;}
     .err-table th:last-child,.err-table td:last-child{border-right:none;}
+    .err-table tr.sys-row td,.err-table tr.sys-row:hover td{background:#eef4fb;}
+    .err-table tr.sys-row:not(:first-child) td{border-top:2px solid #d8e2f0;}
 
     /* BADGES */
     .badge{display:inline-block;padding:3px 9px;border-radius:20px;font-size:11.5px;font-weight:600;}
@@ -787,7 +789,7 @@ function _errRowHtml(x,i,editable,locked){
   return '<tr>'+tds+'</tr>';
 }
 
-/* Mỗi hệ thống một bảng con; xếp theo thứ tự danh sách hệ thống; gộp thành nhật ký tổng */
+/* Một bảng duy nhất: 1 dòng tiêu đề cột dùng chung, mỗi hệ thống là 1 nhóm (dòng tiêu đề hệ thống) */
 function renderErrorLog(){
   var u=currentUser();
   var editable=u&&canEdit(u);
@@ -805,10 +807,9 @@ function renderErrorLog(){
     return (!fm||String(x.month)===fm) && (!fy||String(x.year)===fy);
   });
   var cols=locked?6:7; // tháng khoá thì bỏ cột thao tác
-  // Colgroup dùng chung cho mọi bảng con → các cột thẳng hàng với nhau
   var colgroup=locked
     ?'<colgroup><col style="width:44px"><col style="width:19%"><col style="width:21%"><col style="width:110px"><col style="width:32%"><col style="width:14%"></colgroup>'
-    :'<colgroup><col style="width:44px"><col style="width:18%"><col style="width:20%"><col style="width:110px"><col style="width:29%"><col style="width:12%"><col style="width:92px"></colgroup>';
+    :'<colgroup><col style="width:44px"><col style="width:18%"><col style="width:20%"><col style="width:110px"><col style="width:29%"><col style="width:12%"><col style="width:70px"></colgroup>';
   var thead='<thead><tr>'+
     '<th>#</th>'+
     '<th>Thiết bị – Vị trí</th>'+
@@ -818,26 +819,31 @@ function renderErrorLog(){
     '<th>Người nhập</th>'+
     (locked?'':'<th></th>')+
   '</tr></thead>';
-  container.innerHTML=devices.map(function(dev){
+  var bell='<svg class="lic-emoji" width="1.05em" height="1.05em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex-shrink:0" aria-hidden="true"><path d="M10.268 21a2 2 0 0 0 3.464 0"/><path d="M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326"/></svg>';
+  var body=devices.map(function(dev){
     var rows=errs.filter(function(x){return String(x.deviceId)===String(dev.id);});
-    var body=rows.map(function(x,i){ return _errRowHtml(x,i,editable,locked); }).join("");
     var addingThis=editable&&!locked&&_inlineAddSystem===dev.id;
-    if(addingThis){ body+=inlineRowHtml(null,rows.length); }
-    if(editable&&!locked&&!addingThis){
-      // Nút nhập nằm ngay trong bảng để tiết kiệm diện tích; kèm thông báo khi bảng trống
-      var msg=rows.length?'':'<span style="color:var(--text-light);font-size:12.5px;margin-right:12px">Chưa có bản ghi báo lỗi nào trong tháng này.</span>';
-      body+='<tr class="add-row"><td colspan="'+cols+'" style="padding:8px 12px;background:#fafcff">'+msg+
-        '<button class="btn btn-primary btn-sm" onclick="startInlineAdd(\''+dev.id+'\')">+ Nhập báo lỗi</button></td></tr>';
-    } else if(!body){
-      body='<tr class="empty-row"><td colspan="'+cols+'">Chưa có bản ghi báo lỗi nào trong tháng này.</td></tr>';
-    }
-    return '<div class="sys-block" style="margin-bottom:22px">'+
-      '<div style="display:flex;align-items:center;gap:8px;font-weight:700;color:var(--primary);font-size:13.5px;margin-bottom:8px;padding:7px 11px;background:#eef4fb;border-left:4px solid var(--primary);border-radius:6px">'+
-        '<svg class="lic-emoji" width="1.05em" height="1.05em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex-shrink:0" aria-hidden="true"><path d="M10.268 21a2 2 0 0 0 3.464 0"/><path d="M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326"/></svg>'+
-        esc(dev.name)+'<span style="font-weight:500;color:var(--text-light);font-size:12px"> — '+esc(dev.location)+'</span></div>'+
-      '<div class="table-wrap" style="margin-bottom:0"><table class="err-table">'+colgroup+thead+'<tbody>'+body+'</tbody></table></div>'+
-    '</div>';
+    // Dòng tiêu đề hệ thống (nhóm), kèm nút + nếu được nhập
+    var addBtn=(editable&&!locked&&!addingThis)
+      ?'<button class="btn btn-primary btn-sm" style="margin-left:auto;padding:1px 10px;font-size:17px;line-height:1.2;font-weight:400" title="Nhập báo lỗi" onclick="startInlineAdd(\''+dev.id+'\')">+</button>'
+      :'';
+    // Badge đếm số lỗi của hệ thống trong tháng đang chọn
+    var cnt=rows.length;
+    var countBadge=cnt>0
+      ?'<span class="badge badge-red" style="font-size:11px">'+cnt+' lỗi</span>'
+      :'<span style="font-size:11px;color:var(--text-light);background:#eef1f6;border-radius:10px;padding:1px 9px;font-weight:600">0 lỗi</span>';
+    var out='<tr class="sys-row"><td colspan="'+cols+'" style="background:#eef4fb;border-left:4px solid var(--primary);padding:6px 12px">'+
+      '<div style="display:flex;align-items:center;gap:8px">'+bell+
+        '<span style="font-weight:700;color:var(--primary);font-size:13px">'+esc(dev.name)+'</span>'+
+        '<span style="font-weight:500;color:var(--text-light);font-size:12px">— '+esc(dev.location)+'</span>'+
+        countBadge+
+        addBtn+
+      '</div></td></tr>';
+    out+=rows.map(function(x,i){ return _errRowHtml(x,i,editable,locked); }).join("");
+    if(addingThis){ out+=inlineRowHtml(null,rows.length); }
+    return out;
   }).join("");
+  container.innerHTML='<div class="table-wrap" style="margin-bottom:0"><table class="err-table">'+colgroup+thead+'<tbody>'+body+'</tbody></table></div>';
   // Kích hoạt date-picker cho dòng inline vừa render
   if((_inlineAddSystem||_inlineEditId)&&window.HSEDate){ HSEDate.attachAll(container); }
   // Focus ô nhập đầu tiên khi thêm mới
@@ -863,7 +869,7 @@ function inlineRowHtml(rec, idx){
   var dateVal=rec?esc(rec.detectDate||""):"";
   // Cột Người nhập: dòng thêm mới để trống (tự gán theo tài khoản khi lưu); dòng sửa hiện người tạo gốc
   var whoCell=rec?esc(rec.createdBy||"—"):'';
-  return '<tr class="inline-edit-row" style="background:#eef6ff">'+
+  return '<tr class="inline-edit-row" style="background:#eef6ff" onkeydown="ieKeydown(event)">'+
     '<td style="color:var(--text-light);font-size:12px;vertical-align:top;padding-top:8px">'+idxCell+'</td>'+
     '<td style="vertical-align:top"><div style="display:flex;flex-direction:column;gap:4px">'+
        '<input class="inp" id="ie_child" '+st+' placeholder="Thiết bị (VD: SD123)" value="'+childVal+'">'+
@@ -924,6 +930,18 @@ function startInlineEdit(id){
 }
 
 function cancelInline(){ _inlineAddSystem=null; _inlineEditId=null; renderErrorLog(); }
+
+/* Phím tắt trong dòng nhập inline: Enter = Lưu, Esc = Hủy.
+   Trong ô Biện pháp (textarea): Enter = xuống dòng, Ctrl/Cmd+Enter = Lưu. */
+function ieKeydown(e){
+  if(e.key==="Escape"){ e.preventDefault(); cancelInline(); return; }
+  if(e.key==="Enter"){
+    var isTextarea=e.target&&e.target.tagName==="TEXTAREA";
+    if(isTextarea&&!(e.ctrlKey||e.metaKey)) return;
+    e.preventDefault();
+    saveInline(_inlineEditId||null);
+  }
+}
 
 function saveInline(id){
   var isNew=!id;
