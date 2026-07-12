@@ -1008,8 +1008,9 @@
 
     var modal = buildModal(); container.appendChild(modal.bg);
 
-    // Trả về tên trang tương ứng với slug (để hiển thị cột "Trang được phép sửa")
-    function slugTitle(slug){ for(var i=0;i<MENU.length;i++){ if(MENU[i].slug===slug) return MENU[i].title; } return slug; }
+    // Trả về tên & nhóm trang tương ứng với slug (để hiển thị cột "Trang được phép sửa")
+    function slugMenu(slug){ for(var i=0;i<MENU.length;i++){ if(MENU[i].slug===slug) return MENU[i]; } return null; }
+    function slugTitle(slug){ var m=slugMenu(slug); return m?m.title:slug; }
     // Danh sách các trang có thể phân quyền (loại trừ trang chỉ admin / chỉ admin sửa)
     function editablePages(){ return MENU.filter(function(m){ return !m.adminOnly && !m.adminEditOnly; }); }
     function permCellHtml(x){
@@ -1017,7 +1018,10 @@
       var perms = x.perms||[];
       if(!perms.length) return '<span class="muted">Chưa phân quyền</span>';
       var chips = perms.map(function(s){
-        return '<span class="badge" style="font-weight:500;margin:1px 2px 1px 0;display:inline-block;color:#1a1a1a;background:#fff;border:1px solid #1a1a1a;">'+esc(slugTitle(s))+'</span>';
+        var m = slugMenu(s);
+        // Nhóm "theo-doi" (tra cứu) → xanh navy · "ung-dung" (ứng dụng) → đỏ, giống trang Tổng quan
+        var color = (m && m.group==="ung-dung") ? "var(--accent)" : "var(--brand)";
+        return '<span class="badge" style="font-weight:600;margin:1px 2px 1px 0;display:inline-block;color:'+color+';background:#fff;border:1px solid '+color+';">'+esc(slugTitle(s))+'</span>';
       }).join('');
       return '<div style="max-width:340px;line-height:1.7">'+chips+'</div>';
     }
@@ -1041,7 +1045,7 @@
           '<td><b>'+esc(x.username)+'</b></td>'+
           '<td style="color:var(--text-muted);font-size:12.5px;">'+(x.danhSo||'—')+'</td>'+
           '<td>'+esc(x.fullname||"")+'</td>'+
-          '<td><span class="badge badge-'+x.role+'">'+roleLabel(x.role)+'</span></td>'+
+          '<td><span class="badge badge-'+x.role+'"'+(x.role==="user"?' style="color:#1a1a1a;background:#fff;border:1px solid #1a1a1a;font-weight:700;"':'')+'>'+roleLabel(x.role)+'</span></td>'+
           '<td>'+permCellHtml(x)+'</td>'+
           '<td>'+statusHtml+'</td>'+
           '<td>'+
