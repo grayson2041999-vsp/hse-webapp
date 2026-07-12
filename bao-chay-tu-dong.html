@@ -820,13 +820,10 @@ function renderErrorLog(){
     (locked?'':'<th></th>')+
   '</tr></thead>';
   var bell='<svg class="lic-emoji" width="1.05em" height="1.05em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex-shrink:0" aria-hidden="true"><path d="M10.268 21a2 2 0 0 0 3.464 0"/><path d="M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326"/></svg>';
+  var plusIcon='<svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.12em;margin-right:5px" aria-hidden="true"><path d="M5 12h14"/><path d="M12 5v14"/></svg>';
   var body=devices.map(function(dev){
     var rows=errs.filter(function(x){return String(x.deviceId)===String(dev.id);});
     var addingThis=editable&&!locked&&_inlineAddSystem===dev.id;
-    // Dòng tiêu đề hệ thống (nhóm), kèm nút + nếu được nhập
-    var addBtn=(editable&&!locked&&!addingThis)
-      ?'<button class="btn btn-primary btn-sm" style="margin-left:auto;padding:1px 10px;font-size:17px;line-height:1.2;font-weight:400" title="Nhập báo lỗi" onclick="startInlineAdd(\''+dev.id+'\')">+</button>'
-      :'';
     // Badge đếm số lỗi của hệ thống trong tháng đang chọn
     var cnt=rows.length;
     var countBadge=cnt>0
@@ -837,10 +834,14 @@ function renderErrorLog(){
         '<span style="font-weight:700;color:var(--primary);font-size:13px">'+esc(dev.name)+'</span>'+
         '<span style="font-weight:500;color:var(--text-light);font-size:12px">— '+esc(dev.location)+'</span>'+
         countBadge+
-        addBtn+
       '</div></td></tr>';
     out+=rows.map(function(x,i){ return _errRowHtml(x,i,editable,locked); }).join("");
     if(addingThis){ out+=inlineRowHtml(null,rows.length); }
+    // Nút "+ Nhập báo lỗi" canh giữa ở cuối nhóm hệ thống
+    else if(editable&&!locked){
+      out+='<tr class="add-row"><td colspan="'+cols+'" style="text-align:center;padding:8px 6px;background:#fafcff">'+
+        '<button class="btn btn-outline btn-sm" style="font-weight:600" onclick="startInlineAdd(\''+dev.id+'\')">'+plusIcon+'Nhập báo lỗi</button></td></tr>';
+    }
     return out;
   }).join("");
   container.innerHTML='<div class="table-wrap" style="margin-bottom:0"><table class="err-table">'+colgroup+thead+'<tbody>'+body+'</tbody></table></div>';
