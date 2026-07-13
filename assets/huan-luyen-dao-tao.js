@@ -58,6 +58,7 @@
   var _dragId      = null;   // id hàng đang kéo
   var _dragUnit    = null;   // đơn vị của hàng đang kéo (chỉ kéo trong cùng đơn vị)
   var _editRowId   = null;   // id hàng đang sửa inline (bấm bút chì)
+  var _statusFilter = "all"; // bộ lọc theo cột Trạng thái
 
   /* ──────────────────────────────────────────
      DỮ LIỆU (localStorage cache + Supabase)
@@ -532,6 +533,10 @@
       ".hl-search{padding:6px 10px;border:1.5px solid var(--border);border-radius:7px;",
       "font-size:12.5px;width:200px;}",
       ".hl-search:focus{outline:none;border-color:var(--brand-light);}",
+      ".hl-stfilter{display:block;margin-top:5px;width:100%;box-sizing:border-box;padding:3px 5px;",
+      "font-size:11px;font-weight:600;border:1px solid var(--border);border-radius:5px;",
+      "background:#fff;color:var(--text);cursor:pointer;}",
+      ".hl-stfilter:focus{outline:none;border-color:var(--brand-light);}",
       ".hl-hint{font-size:11.5px;color:var(--text-muted);font-style:italic;}",
       ".hl-empty td{text-align:center;padding:28px;color:var(--text-muted);font-style:italic;}",
       /* Page header */
@@ -571,6 +576,7 @@
       btn.textContent = pg.label;
       btn.addEventListener("click", function () {
         _currentKey = pg.key;
+        _statusFilter = "all";
         document.querySelectorAll(".hl-tab").forEach(function (t) {
           t.classList.toggle("active", t.dataset.key === pg.key);
         });
@@ -666,7 +672,15 @@
         (pg.subTypes ? '<th>Loại</th>' : '') +
         '<th>Ngày HL gần nhất</th>' +
         '<th>Ngày HL tiếp theo</th>' +
-        '<th>Trạng thái</th>' +
+        '<th style="min-width:130px">Trạng thái' +
+          '<select class="hl-stfilter" id="hl-stfilter-' + key + '">' +
+            '<option value="all">Tất cả</option>' +
+            '<option value="ok">Còn hiệu lực</option>' +
+            '<option value="warn">Sắp hết hạn</option>' +
+            '<option value="expired">Hết hạn</option>' +
+            '<option value="nodata">Chưa có dữ liệu</option>' +
+          '</select>' +
+        '</th>' +
         (_canEdit ? '<th style="width:96px;text-align:center">Thao tác</th>' : '') +
       '</tr></thead>' +
       '<tbody id="hl-tbody-' + key + '"></tbody>' +
@@ -716,6 +730,12 @@
 
     var searchInput = document.getElementById("hl-search-" + key);
     if (searchInput) searchInput.addEventListener("input", function () { _fillTable(key); });
+
+    var stFilter = document.getElementById("hl-stfilter-" + key);
+    if (stFilter) {
+      stFilter.value = _statusFilter;
+      stFilter.addEventListener("change", function () { _statusFilter = this.value; _fillTable(key); });
+    }
 
     var addBtn = document.getElementById("hl-btn-add");
     if (addBtn) addBtn.addEventListener("click", function () { _openModal(key, null); });
@@ -818,11 +838,15 @@
     }
 
     var filtered = data.filter(function (p) {
-      return !q ||
+      var textOk = !q ||
         (p.name  || "").toLowerCase().indexOf(q) >= 0 ||
         (p.pid   || "").toLowerCase().indexOf(q) >= 0 ||
         (p.unit  || "").toLowerCase().indexOf(q) >= 0 ||
         (p.title || "").toLowerCase().indexOf(q) >= 0;
+      if (!textOk) return false;
+      if (_statusFilter === "all") return true;
+      var sk = p.lastDate ? _calcStatus(p.lastDate, months, warnDays) : "nodata";
+      return sk === _statusFilter;
     });
 
     var pg = pageByKey(key);
