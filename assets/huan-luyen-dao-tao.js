@@ -59,6 +59,11 @@
   var _dragUnit    = null;   // đơn vị của hàng đang kéo (chỉ kéo trong cùng đơn vị)
   var _editRowId   = null;   // id hàng đang sửa inline (bấm bút chì)
   var _statusFilter = "all"; // bộ lọc theo cột Trạng thái
+  /* Cập nhật khoá đào tạo hàng loạt (wizard) */
+  var _batchMode  = false;
+  var _batchStep  = 1;       // 1: chọn ngày · 2: chọn nhân viên · 3: xác nhận
+  var _batchDate  = "";      // ngày khoá (YYYY-MM-DD)
+  var _batchSel   = {};      // { id: true } nhân viên được chọn
 
   /* ──────────────────────────────────────────
      DỮ LIỆU (localStorage cache + Supabase)
@@ -472,6 +477,29 @@
       /* Nút Xuất Excel – xanh lá Excel, in đậm */
       ".hl-btn-excel{background:#217346;color:#fff;font-weight:700;border:1px solid #217346;}",
       ".hl-btn-excel:hover{background:#1a5c38;border-color:#1a5c38;color:#fff;}",
+      /* Nút + wizard cập nhật khoá hàng loạt */
+      ".hl-btn-batch{background:#eef3fb;color:var(--brand);font-weight:700;border:1px solid #cfe0f5;}",
+      ".hl-btn-batch:hover{background:var(--brand);color:#fff;border-color:var(--brand);}",
+      ".hl-batch{border-top:3px solid var(--brand);}",
+      ".hl-batch-h{padding:12px 18px;border-bottom:1px solid var(--border);background:#f8fafd;}",
+      ".hl-batch-steps{display:flex;align-items:center;gap:6px;flex-wrap:wrap;}",
+      ".hl-bstep{display:flex;align-items:center;gap:6px;font-size:12.5px;font-weight:600;color:var(--text-muted);}",
+      ".hl-bstep .hl-bnum{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;",
+      "border-radius:50%;border:1.5px solid var(--border);font-size:12px;background:#fff;}",
+      ".hl-bstep.cur{color:var(--brand);}",
+      ".hl-bstep.cur .hl-bnum{border-color:var(--brand);color:var(--brand);}",
+      ".hl-bstep.done{color:#1a7a3c;}",
+      ".hl-bstep.done .hl-bnum{background:#1a7a3c;border-color:#1a7a3c;color:#fff;}",
+      ".hl-bsep{width:24px;height:2px;background:var(--border);}",
+      ".hl-batch-b{padding:16px 18px;}",
+      ".hl-batch-f{padding:12px 18px;border-top:1px solid var(--border);display:flex;gap:10px;justify-content:flex-end;}",
+      ".hl-btn-batch-apply{background:var(--brand);color:#fff;font-weight:700;border:none;}",
+      ".hl-btn-batch-apply:hover{background:var(--brand-light);color:#fff;}",
+      ".hl-btn-batch-apply:disabled{opacity:.6;cursor:not-allowed;}",
+      ".hl-batch-date.hl-invalid{border-color:var(--danger);background:#fdedec;}",
+      ".hl-bprog{display:flex;align-items:center;gap:10px;}",
+      ".hl-bprog-track{flex:1;height:12px;background:var(--border);border-radius:6px;overflow:hidden;max-width:420px;}",
+      ".hl-bprog-fill{height:100%;background:var(--brand);width:0;transition:width .1s;}",
       /* Table */
       ".hl-tw{overflow-x:auto;}",
       ".hl-tw table{width:100%;border-collapse:collapse;font-size:13px;}",
@@ -617,6 +645,7 @@
       '</div>' +
       '<div style="display:flex;align-items:center;gap:10px;">' +
         (_canEdit ? '' : '<span style="font-size:12px;color:var(--text-muted);font-style:italic;">Chế độ xem</span>') +
+        (_canEdit && !_batchMode ? '<button class="btn btn-sm hl-btn-batch" id="hl-btn-batch" title="Cập nhật ngày huấn luyện cho nhiều nhân viên"><svg class="lic-emoji" width="1.05em" height="1.05em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex-shrink:0" aria-hidden="true"><path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/><path d="m9 16 2 2 4-4"/></svg> Cập nhật khoá</button>' : '') +
         '<button class="btn btn-sm hl-btn-excel" id="hl-btn-export" title="Xuất Excel tất cả 6 nhóm"><svg class="lic-emoji" width="1.05em" height="1.05em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex-shrink:0" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg> Xuất Excel</button>' +
       '</div>';
     body.appendChild(ph);
@@ -653,6 +682,9 @@
       '</div>';
     body.appendChild(settCard);
 
+    /* Wizard cập nhật khoá đào tạo hàng loạt */
+    if (_batchMode) body.appendChild(_buildBatchPanel(key));
+
     /* Card bảng nhân sự */
     var tableCard = document.createElement("div");
     tableCard.className = "hl-card";
@@ -661,9 +693,11 @@
         '<input type="text" class="hl-search" id="hl-search-' + key + '" placeholder="Tìm kiếm...">' +
       '</div>' +
       '<div id="hl-dupwarn-' + key + '" class="hl-dupwarn" style="display:none"></div>' +
-      (_canEdit ? '<div class="hl-toolbar" style="padding:8px 18px;"><span class="hl-hint">✎ Bấm bút chì ở cột Thao tác để sửa dòng · ⣿ Kéo hàng để đổi thứ tự · ＋ Nhập vào dòng cuối rồi bấm ✓ (hoặc Enter) để thêm nhân sự (khi không tìm kiếm)</span></div>' : '') +
+      (_canEdit && !_batchMode ? '<div class="hl-toolbar" style="padding:8px 18px;"><span class="hl-hint">✎ Bấm bút chì ở cột Thao tác để sửa dòng · ⣿ Kéo hàng để đổi thứ tự · ＋ Nhập vào dòng cuối rồi bấm ✓ (hoặc Enter) để thêm nhân sự (khi không tìm kiếm)</span></div>' : '') +
       '<div class="hl-tw"><table><thead><tr>' +
-        (_canEdit ? '<th class="hl-handle-cell"></th>' : '') +
+        (_batchMode
+          ? '<th style="width:36px;text-align:center"><input type="checkbox" id="hl-cb-all-' + key + '" title="Chọn tất cả đang hiển thị"></th>'
+          : (_canEdit ? '<th class="hl-handle-cell"></th>' : '')) +
         '<th style="width:40px;text-align:center">STT</th>' +
         '<th class="hl-col-name">Họ và tên</th>' +
         '<th>Danh số</th>' +
@@ -680,7 +714,7 @@
             '<option value="expired">Hết hạn</option>' +
           '</select>' +
         '</th>' +
-        (_canEdit ? '<th style="width:96px;text-align:center">Thao tác</th>' : '') +
+        (_canEdit && !_batchMode ? '<th style="width:96px;text-align:center">Thao tác</th>' : '') +
       '</tr></thead>' +
       '<tbody id="hl-tbody-' + key + '"></tbody>' +
       '</table></div>';
@@ -741,6 +775,25 @@
 
     var exportBtn = document.getElementById("hl-btn-export");
     if (exportBtn) exportBtn.addEventListener("click", _exportExcel);
+
+    var batchBtn = document.getElementById("hl-btn-batch");
+    if (batchBtn) batchBtn.addEventListener("click", function () {
+      _batchMode = true; _batchStep = 1; _batchDate = ""; _batchSel = {};
+      _renderTabContent(key);
+    });
+
+    _wireBatchPanel(key);
+
+    var cbAll = document.getElementById("hl-cb-all-" + key);
+    if (cbAll) cbAll.addEventListener("change", function () {
+      var on = this.checked;
+      var tbody = document.getElementById("hl-tbody-" + key);
+      Array.prototype.forEach.call(tbody.querySelectorAll(".hl-batch-cb"), function (cb) {
+        cb.checked = on; _batchSel[cb.getAttribute("data-id")] = on ? true : undefined;
+        if (!on) delete _batchSel[cb.getAttribute("data-id")];
+      });
+      _batchUpdateCount(key);
+    });
   }
 
   /* ──────────────────────────────────────────
@@ -801,6 +854,138 @@
   }
 
   /* ──────────────────────────────────────────
+     WIZARD — CẬP NHẬT KHOÁ ĐÀO TẠO HÀNG LOẠT
+  ────────────────────────────────────────── */
+  function _batchSelCount() { return Object.keys(_batchSel).length; }
+
+  function _buildBatchPanel(key) {
+    var el = document.createElement("div");
+    el.className = "hl-card hl-batch";
+    el.id = "hl-batch-panel";
+
+    var steps = [[1, "Chọn ngày"], [2, "Chọn nhân viên"], [3, "Xác nhận & cập nhật"]];
+    var stepHtml = steps.map(function (s) {
+      var cls = s[0] < _batchStep ? "done" : (s[0] === _batchStep ? "cur" : "todo");
+      return '<div class="hl-bstep ' + cls + '"><span class="hl-bnum">' + (s[0] < _batchStep ? "✓" : s[0]) + '</span>' + s[1] + '</div>';
+    }).join('<span class="hl-bsep"></span>');
+
+    var body;
+    if (_batchStep === 1) {
+      body = '<div class="hl-batch-b">' +
+        '<label style="font-weight:600;font-size:13.5px;">Ngày huấn luyện của khoá: </label>' +
+        '<input class="inp hl-batch-date" id="hl-batch-date" maxlength="10" placeholder="DD/MM/YYYY" value="' + _esc(_toDisplay(_batchDate)) + '" autocomplete="off" style="width:150px;letter-spacing:1px;">' +
+        '<div class="hl-hint" style="margin-top:6px;">Ngày này sẽ được đặt làm “Ngày HL gần nhất” cho các nhân viên bạn chọn.</div>' +
+      '</div>';
+    } else if (_batchStep === 2) {
+      body = '<div class="hl-batch-b">' +
+        '<div style="font-size:13.5px;">Tick chọn nhân viên tham gia khoá ở <b>cột đầu của bảng bên dưới</b>. Đã chọn: <b id="hl-batch-count">' + _batchSelCount() + '</b> nhân viên.</div>' +
+        '<div class="hl-hint" style="margin-top:4px;">Mẹo: dùng ô tìm kiếm / bộ lọc trạng thái rồi tick ô ở tiêu đề để chọn nhanh cả nhóm đang hiển thị.</div>' +
+      '</div>';
+    } else {
+      body = '<div class="hl-batch-b">' +
+        '<div style="font-size:13.5px;">Sẽ đặt <b>Ngày HL gần nhất = ' + _esc(_toDisplay(_batchDate)) + '</b> cho <b>' + _batchSelCount() + '</b> nhân viên đã chọn.</div>' +
+        '<div class="hl-bprog" style="margin-top:12px;"><div class="hl-bprog-track"><div class="hl-bprog-fill" id="hl-batch-bar"></div></div><span id="hl-batch-pct" class="hl-hint"></span></div>' +
+      '</div>';
+    }
+
+    var footer = '<div class="hl-batch-f">' +
+      '<button class="btn btn-ghost btn-sm" id="hl-batch-cancel">Huỷ</button>' +
+      (_batchStep > 1 ? '<button class="btn btn-ghost btn-sm" id="hl-batch-back">← Quay lại</button>' : '') +
+      (_batchStep < 3
+        ? '<button class="btn btn-accent btn-sm" id="hl-batch-next">Tiếp theo →</button>'
+        : '<button class="btn btn-sm hl-btn-batch-apply" id="hl-batch-apply">✓ Cập nhật khoá đào tạo</button>') +
+    '</div>';
+
+    el.innerHTML = '<div class="hl-batch-h"><div class="hl-batch-steps">' + stepHtml + '</div></div>' + body + footer;
+    return el;
+  }
+
+  function _wireBatchPanel(key) {
+    if (!_batchMode) return;
+    var cancel = document.getElementById("hl-batch-cancel");
+    if (cancel) cancel.addEventListener("click", function () { _batchExit(key); });
+    var back = document.getElementById("hl-batch-back");
+    if (back) back.addEventListener("click", function () { if (_batchStep > 1) { _batchStep--; _renderTabContent(key); } });
+    var next = document.getElementById("hl-batch-next");
+    if (next) next.addEventListener("click", function () { _batchNext(key); });
+    var apply = document.getElementById("hl-batch-apply");
+    if (apply) apply.addEventListener("click", function () { _batchApply(key); });
+    var dateEl = document.getElementById("hl-batch-date");
+    if (dateEl) {
+      dateEl.addEventListener("input", function () { this.value = _fmtDMYInput(this.value); this.classList.remove("hl-invalid"); });
+      dateEl.addEventListener("keydown", function (e) { if (e.key === "Enter") { e.preventDefault(); _batchNext(key); } });
+      setTimeout(function () { dateEl.focus(); }, 50);
+    }
+  }
+
+  function _batchUpdateCount(key) {
+    var c = document.getElementById("hl-batch-count");
+    if (c) c.textContent = _batchSelCount();
+    /* Đồng bộ trạng thái ô "chọn tất cả" */
+    var cbAll = document.getElementById("hl-cb-all-" + key);
+    var tbody = document.getElementById("hl-tbody-" + key);
+    if (cbAll && tbody) {
+      var all = tbody.querySelectorAll(".hl-batch-cb");
+      var checked = tbody.querySelectorAll(".hl-batch-cb:checked");
+      cbAll.checked = all.length > 0 && all.length === checked.length;
+    }
+  }
+
+  function _batchNext(key) {
+    if (_batchStep === 1) {
+      var dateEl = document.getElementById("hl-batch-date");
+      var stored = _toStorage(dateEl ? dateEl.value : "");
+      if (!stored) { if (dateEl) dateEl.classList.add("hl-invalid"); alert("Vui lòng nhập ngày hợp lệ theo định dạng DD/MM/YYYY."); return; }
+      _batchDate = stored; _batchStep = 2; _renderTabContent(key); return;
+    }
+    if (_batchStep === 2) {
+      if (_batchSelCount() === 0) { alert("Vui lòng chọn ít nhất 1 nhân viên tham gia khoá."); return; }
+      _batchStep = 3; _renderTabContent(key); return;
+    }
+  }
+
+  function _batchExit(key) {
+    _batchMode = false; _batchStep = 1; _batchDate = ""; _batchSel = {};
+    _renderTabContent(key);
+  }
+
+  function _batchApply(key) {
+    var ids = Object.keys(_batchSel);
+    if (!ids.length || !_batchDate) return;
+    var all = _getAllData();
+    var bar = document.getElementById("hl-batch-bar");
+    var pct = document.getElementById("hl-batch-pct");
+    var applyBtn = document.getElementById("hl-batch-apply");
+    if (applyBtn) applyBtn.disabled = true;
+    var total = ids.length, i = 0, delay = Math.max(8, Math.round(500 / total));
+    function step() {
+      if (i < total) {
+        var r = all.filter(function (p) { return p.id === ids[i]; })[0];
+        if (r) r.lastDate = _batchDate;
+        i++;
+        var p = Math.round(i / total * 100);
+        if (bar) bar.style.width = p + "%";
+        if (pct) pct.textContent = p + "% (" + i + "/" + total + ")";
+        setTimeout(step, delay);
+      } else {
+        _setAllData(all);
+        if (typeof DB !== "undefined" && DB.isReady()) {
+          ids.forEach(function (id) {
+            var r = all.filter(function (p) { return p.id === id; })[0];
+            if (r) DB.update("hl_nhansu", id, r).catch(function () {});
+          });
+        }
+        var done = total, dt = _toDisplay(_batchDate);
+        setTimeout(function () {
+          alert("Đã cập nhật “Ngày HL gần nhất” = " + dt + " cho " + done + " nhân viên.");
+          _batchExit(key);
+        }, 150);
+      }
+    }
+    step();
+  }
+
+  /* ──────────────────────────────────────────
      FILL TABLE
   ────────────────────────────────────────── */
   function _fillTable(key) {
@@ -850,8 +1035,8 @@
 
     var pg = pageByKey(key);
     var hasSubTypes = !!(pg && pg.subTypes);
-    var colCount = 8 + (hasSubTypes ? 1 : 0) + (_canEdit ? 2 : 0);
-    var dragOn = _canEdit && !q; // chỉ kéo–thả khi không lọc tìm kiếm
+    var colCount = 8 + (hasSubTypes ? 1 : 0) + (_batchMode ? 1 : (_canEdit ? 2 : 0));
+    var dragOn = _canEdit && !q && !_batchMode; // chỉ kéo–thả khi không lọc/không cập nhật hàng loạt
 
     var rowsHtml = !filtered.length
       ? '<tr class="hl-empty"><td colspan="' + colCount + '">' +
@@ -863,11 +1048,11 @@
       var nextColor = status === "expired" ? "var(--danger)" : status === "warn" ? "#e68900" : "#1a7a3c";
       var id = _esc(p.id);
 
-      var editing = _canEdit && (p.id === _editRowId);
+      var editing = _canEdit && !_batchMode && (p.id === _editRowId);
 
-      var handleCell = _canEdit
-        ? '<td class="hl-handle-cell">' + (dragOn && !editing ? _gripSVG(id) : "") + '</td>'
-        : "";
+      var handleCell = _batchMode
+        ? '<td style="text-align:center"><input type="checkbox" class="hl-batch-cb" data-id="' + id + '"' + (_batchSel[p.id] ? ' checked' : '') + '></td>'
+        : (_canEdit ? '<td class="hl-handle-cell">' + (dragOn && !editing ? _gripSVG(id) : "") + '</td>' : "");
 
       /* Ô Loại (subType) */
       var subTypeCell = "";
@@ -903,7 +1088,7 @@
       var delBtn  = '<button class="btn btn-danger btn-sm" data-act="del" data-id="' + id + '" data-k="' + key + '" title="Xoá"><svg class="lic-emoji" width="1.05em" height="1.05em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex-shrink:0" aria-hidden="true"><path d="M10 11v6"/><path d="M14 11v6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>';
       var saveBtn = '<button class="btn btn-accent btn-sm" style="margin-right:3px" data-act="save" data-id="' + id + '" data-k="' + key + '" title="Lưu"><svg class="lic-emoji" width="1.05em" height="1.05em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex-shrink:0" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></button>';
       var cancelBtn = '<button class="btn btn-ghost btn-sm" data-act="cancel" data-k="' + key + '" title="Huỷ"><svg class="lic-emoji" width="1.05em" height="1.05em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex-shrink:0" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>';
-      var actCell = _canEdit
+      var actCell = (_canEdit && !_batchMode)
         ? '<td style="text-align:center;white-space:nowrap;">' + (editing ? (saveBtn + cancelBtn) : (editBtn + delBtn)) + '</td>'
         : "";
 
@@ -919,8 +1104,8 @@
       '</tr>';
     }).join("");
 
-    /* Dòng thêm mới inline ở cuối bảng (khi có quyền & không đang tìm kiếm) */
-    if (_canEdit && !q) rowsHtml += _buildAddRow(key, hasSubTypes);
+    /* Dòng thêm mới inline ở cuối bảng (khi có quyền & không đang tìm kiếm & không cập nhật hàng loạt) */
+    if (_canEdit && !q && !_batchMode) rowsHtml += _buildAddRow(key, hasSubTypes);
 
     tbody.innerHTML = rowsHtml;
 
@@ -938,7 +1123,15 @@
       });
     });
 
-    if (_canEdit) {
+    if (_batchMode) {
+      Array.prototype.forEach.call(tbody.querySelectorAll(".hl-batch-cb"), function (cb) {
+        cb.addEventListener("change", function () {
+          var pid = this.getAttribute("data-id");
+          if (this.checked) _batchSel[pid] = true; else delete _batchSel[pid];
+          _batchUpdateCount(key);
+        });
+      });
+    } else if (_canEdit) {
       _wireInlineEdit(tbody, key);
       if (dragOn) _wireDrag(tbody, key);
       _wireAddRow(tbody, key);
