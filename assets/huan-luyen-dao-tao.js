@@ -59,6 +59,8 @@
   var _dragUnit    = null;   // đơn vị của hàng đang kéo (chỉ kéo trong cùng đơn vị)
   var _editRowId   = null;   // id hàng đang sửa inline (bấm bút chì)
   var _statusFilter = "all"; // bộ lọc theo cột Trạng thái
+  var _syncing     = false;  // đang tải dữ liệu lần đầu từ Supabase
+  var _syncedOnce  = false;  // đã hoàn tất tải lần đầu (thành công/thất bại)
   /* Cập nhật khoá đào tạo hàng loạt (wizard) */
   var _batchMode  = false;
   var _batchStep  = 1;       // 1: chọn ngày · 2: chọn nhân viên · 3: xác nhận
@@ -261,9 +263,12 @@
     _setOrderMap(m);
   }
 
-  /* Sync từ Supabase khi tải trang, re-render sau khi có data */
+  /* Sync từ Supabase khi tải trang, re-render sau khi có data.
+     - KHÔNG thoát sớm khi client chưa sẵn sàng: DB.getAll tự chờ client.
+     - Đánh dấu _syncing để hiển thị trạng thái "đang tải" khi máy chưa có cache. */
   function syncFromSheets() {
-    if (typeof DB === "undefined" || !DB.isReady()) return;
+    if (typeof DB === "undefined") return;
+    _syncing = true;
 
     var p1 = DB.getAll("hl_nhansu").then(function (rows) {
       if (rows && rows.length) _setAllData(rows);
@@ -281,10 +286,13 @@
       }
     }).catch(function () {});
 
-    Promise.all([p1, p2]).then(function () {
+    function finish() {
       _rebuildOrderFromRows();
-      _renderTabContent(_currentKey);
-    }).catch(function () {});
+      _syncing = false;
+      _syncedOnce = true;
+      if (document.getElementById("hl-body")) _renderTabContent(_currentKey);
+    }
+    Promise.all([p1, p2]).then(finish, finish);
   }
 
   /* ──────────────────────────────────────────
@@ -569,6 +577,12 @@
       ".hl-stfilter:focus{outline:none;border-color:var(--brand-light);}",
       ".hl-hint{font-size:11.5px;color:var(--text-muted);font-style:italic;}",
       ".hl-empty td{text-align:center;padding:28px;color:var(--text-muted);font-style:italic;}",
+      /* Trạng thái đang tải */
+      ".hl-loading{display:flex;align-items:center;gap:9px;background:#eef3fb;color:var(--brand);",
+      "padding:10px 14px;border-radius:8px;font-size:12.5px;font-weight:600;margin-bottom:14px;}",
+      ".hl-spin{width:14px;height:14px;border:2px solid #cfe0f5;border-top-color:var(--brand);",
+      "border-radius:50%;display:inline-block;animation:hlspin .7s linear infinite;}",
+      "@keyframes hlspin{to{transform:rotate(360deg);}}",
       /* Page header */
       ".hl-ph{display:flex;align-items:flex-start;justify-content:space-between;",
       "margin-bottom:18px;flex-wrap:wrap;gap:10px;}",
@@ -651,6 +665,14 @@
         '<button class="btn btn-sm hl-btn-excel" id="hl-btn-export" title="Xuất Excel tất cả 6 nhóm"><svg class="lic-emoji" width="1.05em" height="1.05em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex-shrink:0" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg> Xuất Excel</button>' +
       '</div>';
     body.appendChild(ph);
+
+    /* Trạng thái đang tải lần đầu (máy mới chưa có cache) */
+    if (_syncing && !_syncedOnce && _getAllData().length === 0) {
+      var ld = document.createElement("div");
+      ld.className = "hl-loading";
+      ld.innerHTML = '<span class="hl-spin"></span> Đang tải dữ liệu từ máy chủ, vui lòng đợi…';
+      body.appendChild(ld);
+    }
 
     /* Stats */
     var stats = document.createElement("div");
@@ -1040,10 +1062,11 @@
     var colCount = 8 + (hasSubTypes ? 1 : 0) + (_batchMode ? 1 : (_canEdit ? 2 : 0));
     var dragOn = _canEdit && !q && !_batchMode; // chỉ kéo–thả khi không lọc/không cập nhật hàng loạt
 
+    var emptyMsg = data.length
+      ? "Không tìm thấy nhân sự phù hợp."
+      : (_syncing && !_syncedOnce ? "⏳ Đang tải dữ liệu từ máy chủ…" : "Chưa có nhân sự nào. Nhập vào dòng bên dưới để thêm.");
     var rowsHtml = !filtered.length
-      ? '<tr class="hl-empty"><td colspan="' + colCount + '">' +
-          (data.length ? "Không tìm thấy nhân sự phù hợp." : "Chưa có nhân sự nào. Nhập vào dòng bên dưới để thêm.") +
-        '</td></tr>'
+      ? '<tr class="hl-empty"><td colspan="' + colCount + '">' + emptyMsg + '</td></tr>'
       : filtered.map(function (p, i) {
       var status    = _calcStatus(p.lastDate, months, warnDays);
       var nextLabel = _calcNext(p.lastDate, months);
