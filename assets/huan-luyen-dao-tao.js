@@ -477,9 +477,11 @@
       /* Nút Xuất Excel – xanh lá Excel, in đậm */
       ".hl-btn-excel{background:#217346;color:#fff;font-weight:700;border:1px solid #217346;}",
       ".hl-btn-excel:hover{background:#1a5c38;border-color:#1a5c38;color:#fff;}",
-      /* Nút + wizard cập nhật khoá hàng loạt */
-      ".hl-btn-batch{background:#eef3fb;color:var(--brand);font-weight:700;border:1px solid #cfe0f5;}",
-      ".hl-btn-batch:hover{background:var(--brand);color:#fff;border-color:var(--brand);}",
+      /* Nút + wizard cập nhật khoá hàng loạt – nổi bật */
+      ".hl-btn-batch{background:var(--brand);color:#fff;font-weight:800;border:1px solid var(--brand);",
+      "padding:8px 16px;box-shadow:0 2px 6px rgba(37,99,235,.35);letter-spacing:.2px;}",
+      ".hl-btn-batch:hover{background:var(--brand-light);border-color:var(--brand-light);color:#fff;",
+      "box-shadow:0 3px 10px rgba(37,99,235,.45);}",
       ".hl-batch{border-top:3px solid var(--brand);}",
       ".hl-batch-h{padding:12px 18px;border-bottom:1px solid var(--border);background:#f8fafd;}",
       ".hl-batch-steps{display:flex;align-items:center;gap:6px;flex-wrap:wrap;}",
@@ -645,7 +647,7 @@
       '</div>' +
       '<div style="display:flex;align-items:center;gap:10px;">' +
         (_canEdit ? '' : '<span style="font-size:12px;color:var(--text-muted);font-style:italic;">Chế độ xem</span>') +
-        (_canEdit && !_batchMode ? '<button class="btn btn-sm hl-btn-batch" id="hl-btn-batch" title="Cập nhật ngày huấn luyện cho nhiều nhân viên"><svg class="lic-emoji" width="1.05em" height="1.05em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex-shrink:0" aria-hidden="true"><path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/><path d="m9 16 2 2 4-4"/></svg> Cập nhật khoá</button>' : '') +
+        (_canEdit && !_batchMode ? '<button class="btn btn-sm hl-btn-batch" id="hl-btn-batch" title="Cập nhật ngày huấn luyện cho nhiều nhân viên"><svg class="lic-emoji" width="1.05em" height="1.05em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex-shrink:0" aria-hidden="true"><path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/><path d="m9 16 2 2 4-4"/></svg> Cập nhật ngày HL</button>' : '') +
         '<button class="btn btn-sm hl-btn-excel" id="hl-btn-export" title="Xuất Excel tất cả 6 nhóm"><svg class="lic-emoji" width="1.05em" height="1.05em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex-shrink:0" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg> Xuất Excel</button>' +
       '</div>';
     body.appendChild(ph);
