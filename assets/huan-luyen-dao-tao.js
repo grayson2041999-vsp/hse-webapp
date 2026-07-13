@@ -678,7 +678,6 @@
             '<option value="ok">Còn hiệu lực</option>' +
             '<option value="warn">Sắp hết hạn</option>' +
             '<option value="expired">Hết hạn</option>' +
-            '<option value="nodata">Chưa có dữ liệu</option>' +
           '</select>' +
         '</th>' +
         (_canEdit ? '<th style="width:96px;text-align:center">Thao tác</th>' : '') +
