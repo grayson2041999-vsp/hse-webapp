@@ -156,6 +156,23 @@
     /* ── ADD/DEL ROW ── */
     .add-row-btn{display:inline-flex;align-items:center;gap:5px;padding:5px 12px;background:#eef3fb;color:var(--primary);border:1.5px dashed var(--primary);border-radius:6px;font-size:12.5px;font-weight:600;cursor:pointer;margin-top:8px;}
     .add-row-btn:hover{background:#dde6f3;}
+
+    /* ── WIZARD (cấp 3/4/khác) ── */
+    .wiz-steps{display:flex;align-items:center;margin:4px 0 22px;}
+    .wiz-step{display:flex;align-items:center;gap:9px;}
+    .wiz-step-dot{width:30px;height:30px;border-radius:50%;background:#e2e8f0;color:var(--text-light);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13.5px;flex-shrink:0;border:2px solid #e2e8f0;transition:all .2s;}
+    .wiz-step-lbl{font-size:12.5px;font-weight:600;color:var(--text-light);white-space:nowrap;transition:color .2s;}
+    .wiz-step-line{flex:1;height:2px;background:#e2e8f0;margin:0 12px;min-width:24px;transition:background .2s;}
+    .wiz-step.active .wiz-step-dot{background:var(--primary);border-color:var(--primary);color:#fff;box-shadow:0 0 0 4px rgba(0,48,135,.12);}
+    .wiz-step.active .wiz-step-lbl{color:var(--primary);}
+    .wiz-step.done .wiz-step-dot{background:var(--success);border-color:var(--success);color:#fff;}
+    .wiz-step.done .wiz-step-lbl{color:var(--success);}
+    .wiz-step.done{cursor:pointer;}
+    .wiz-step.done .wiz-step-line,.wiz-step.active .wiz-step-line{background:var(--success);}
+    .wiz-nav{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:22px;border-top:1.5px solid var(--border);padding-top:16px;}
+    .wiz-nav-right{display:flex;gap:10px;}
+    .wiz-hint{font-size:12px;color:var(--text-light);margin:-4px 0 12px;}
+    @media(max-width:640px){.wiz-step-lbl{display:none;}.wiz-step-line{margin:0 6px;}}
     .del-row-btn{width:26px;height:26px;border-radius:5px;border:none;background:#fdedec;color:var(--danger);cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;}
     .del-row-btn:hover{background:#fad5d1;}
 
@@ -406,61 +423,87 @@
 
         </div>
 
-        <!-- FORM CẤP 3/4/KHÁC -->
+        <!-- FORM CẤP 3/4/KHÁC — WIZARD 3 BƯỚC -->
         <div id="formCap34" style="display:none;">
-          <div class="sec-div">Thông tin chung</div>
-          <div class="form-row cols3">
-            <div class="form-group">
-              <label>Ngày kiểm tra <span class="req">*</span></label>
-              <input type="date" class="inp" id="c34Ngay">
-            </div>
-            <div class="form-group">
-              <label>Nơi kiểm tra <span class="req">*</span></label>
-              <input type="text" class="inp" id="c34Noi" placeholder="Địa điểm / đơn vị...">
-            </div>
-            <div class="form-group" id="c34TenKhacWrap" style="display:none;">
-              <label>Tên loại kiểm tra <span class="req">*</span></label>
-              <input type="text" class="inp" id="c34TenKhac" placeholder="Nhập tên...">
+
+          <!-- Thanh tiến trình -->
+          <div class="wiz-steps">
+            <div class="wiz-step" id="wstep1" onclick="c34GoStep(1)"><div class="wiz-step-dot">1</div><div class="wiz-step-lbl">Thông tin chung</div></div>
+            <div class="wiz-step-line" id="wline1"></div>
+            <div class="wiz-step" id="wstep2" onclick="c34GoStep(2)"><div class="wiz-step-dot">2</div><div class="wiz-step-lbl">Đoàn kiểm tra</div></div>
+            <div class="wiz-step-line" id="wline2"></div>
+            <div class="wiz-step" id="wstep3" onclick="c34GoStep(3)"><div class="wiz-step-dot">3</div><div class="wiz-step-lbl">Vi phạm / Ghi nhận</div></div>
+          </div>
+
+          <!-- BƯỚC 1: Thông tin chung -->
+          <div class="wiz-panel" id="wpanel1">
+            <div class="sec-div">Bước 1 — Thông tin chung</div>
+            <div class="form-row cols3">
+              <div class="form-group">
+                <label>Ngày kiểm tra <span class="req">*</span></label>
+                <input type="date" class="inp" id="c34Ngay">
+              </div>
+              <div class="form-group">
+                <label>Nơi kiểm tra <span class="req">*</span></label>
+                <input type="text" class="inp" id="c34Noi" placeholder="Địa điểm / đơn vị...">
+              </div>
+              <div class="form-group" id="c34TenKhacWrap" style="display:none;">
+                <label>Tên loại kiểm tra <span class="req">*</span></label>
+                <input type="text" class="inp" id="c34TenKhac" placeholder="Nhập tên...">
+              </div>
             </div>
           </div>
 
-          <div class="sec-div">Đoàn kiểm tra</div>
-          <div class="table-wrap">
-            <table>
-              <thead><tr>
-                <th style="width:36px;">No</th>
-                <th style="min-width:180px;">Họ và tên</th>
-                <th style="min-width:160px;">Chức danh</th>
-                <th style="min-width:160px;">Vai trò</th>
-                <th style="width:42px;"></th>
-              </tr></thead>
-              <tbody id="doanBody"></tbody>
-            </table>
+          <!-- BƯỚC 2: Đoàn kiểm tra -->
+          <div class="wiz-panel" id="wpanel2" style="display:none;">
+            <div class="sec-div">Bước 2 — Đoàn kiểm tra</div>
+            <div class="wiz-hint">Bắt buộc tối thiểu 3 thành viên, mỗi người nhập đủ Họ tên, Chức danh và Vai trò.</div>
+            <div class="table-wrap">
+              <table>
+                <thead><tr>
+                  <th style="width:36px;">No</th>
+                  <th style="min-width:180px;">Họ và tên <span style="color:var(--danger)">*</span></th>
+                  <th style="min-width:160px;">Chức danh <span style="color:var(--danger)">*</span></th>
+                  <th style="min-width:160px;">Vai trò <span style="color:var(--danger)">*</span></th>
+                  <th style="width:42px;"></th>
+                </tr></thead>
+                <tbody id="doanBody"></tbody>
+              </table>
+            </div>
+            <div class="add-row-btn" onclick="addDoanRow()">＋ Thêm thành viên</div>
           </div>
-          <div class="add-row-btn" onclick="addDoanRow()">＋ Thêm thành viên</div>
 
-          <div class="sec-div" style="margin-top:22px;">Vi phạm / Ghi nhận</div>
-          <div class="table-wrap">
-            <table>
-              <thead><tr>
-                <th style="width:36px;">No</th>
-                <th style="min-width:280px;">Nội dung</th>
-                <th style="min-width:100px;">Vị trí</th>
-                <th style="min-width:140px;">Cơ sở viện dẫn</th>
-                <th style="min-width:150px;">Biện pháp khắc phục</th>
-                <th style="min-width:110px;">Thời hạn KP</th>
-                <th style="min-width:170px;">Tình trạng khắc phục</th>
-                <th style="min-width:200px;">Phân loại vi phạm</th>
-                <th style="width:42px;"></th>
-              </tr></thead>
-              <tbody id="c34VPBody"></tbody>
-            </table>
+          <!-- BƯỚC 3: Vi phạm / Ghi nhận -->
+          <div class="wiz-panel" id="wpanel3" style="display:none;">
+            <div class="sec-div">Bước 3 — Vi phạm / Ghi nhận</div>
+            <div class="wiz-hint">Nếu đợt kiểm tra không phát hiện vi phạm, có thể để trống và lưu.</div>
+            <div class="table-wrap">
+              <table>
+                <thead><tr>
+                  <th style="width:36px;">No</th>
+                  <th style="min-width:280px;">Nội dung</th>
+                  <th style="min-width:100px;">Vị trí</th>
+                  <th style="min-width:140px;">Cơ sở viện dẫn</th>
+                  <th style="min-width:150px;">Biện pháp khắc phục</th>
+                  <th style="min-width:110px;">Thời hạn KP</th>
+                  <th style="min-width:170px;">Tình trạng khắc phục</th>
+                  <th style="min-width:200px;">Phân loại vi phạm</th>
+                  <th style="width:42px;"></th>
+                </tr></thead>
+                <tbody id="c34VPBody"></tbody>
+              </table>
+            </div>
+            <div class="add-row-btn" onclick="addVPRow34()">＋ Thêm vi phạm / ghi nhận</div>
           </div>
-          <div class="add-row-btn" onclick="addVPRow34()">＋ Thêm vi phạm / ghi nhận</div>
 
-          <div style="display:flex;gap:10px;margin-top:16px;">
-            <button class="btn btn-success" onclick="saveCap34()"><svg class="lic-emoji" width="1.05em" height="1.05em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex-shrink:0" aria-hidden="true"><path d="M15.2 3a2 2 0 0 1 1.4.6l3.8 3.8a2 2 0 0 1 .6 1.4V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/><path d="M17 21v-7a1 1 0 0 0-1-1H8a1 1 0 0 0-1 1v7"/><path d="M7 3v4a1 1 0 0 0 1 1h7"/></svg> Lưu kiểm tra</button>
-            <button class="btn btn-outline" onclick="resetForm()">↺ Làm mới</button>
+          <!-- Điều hướng -->
+          <div class="wiz-nav">
+            <button class="btn btn-outline" id="wBtnBack" onclick="c34PrevStep()" style="visibility:hidden;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg> Quay lại</button>
+            <div class="wiz-nav-right">
+              <button class="btn btn-outline" onclick="resetForm()">↺ Làm mới</button>
+              <button class="btn btn-primary" id="wBtnNext" onclick="c34NextStep()">Tiếp theo <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg></button>
+              <button class="btn btn-success" id="wBtnSave" style="display:none;" onclick="saveCap34()"><svg class="lic-emoji" width="1.05em" height="1.05em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex-shrink:0" aria-hidden="true"><path d="M15.2 3a2 2 0 0 1 1.4.6l3.8 3.8a2 2 0 0 1 .6 1.4V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/><path d="M17 21v-7a1 1 0 0 0-1-1H8a1 1 0 0 0-1 1v7"/><path d="M7 3v4a1 1 0 0 0 1 1h7"/></svg> Lưu kiểm tra</button>
+            </div>
           </div>
         </div>
       </div>
@@ -963,7 +1006,91 @@ function selectCap(cap, forceShow){
   else{
     document.getElementById("formCap34").style.display="block";
     document.getElementById("c34TenKhacWrap").style.display=cap==="khac"?"flex":"none";
+    // luôn bắt đầu ở Bước 1 của wizard
+    c34MaxStep=1;
+    setWizStep(1);
   }
+}
+
+/* ═══════════════════════════════════════════════════
+   WIZARD CẤP 3/4/KHÁC — ĐIỀU HƯỚNG & VALIDATION
+═══════════════════════════════════════════════════ */
+var c34Step   = 1;   // bước đang hiển thị
+var c34MaxStep= 1;    // bước xa nhất đã mở khoá (cho phép bấm quay lại các bước ≤ giá trị này)
+
+// Hiển thị 1 bước, cập nhật thanh tiến trình & nút điều hướng. KHÔNG validate (giữ nguyên dữ liệu đã nhập).
+function setWizStep(n){
+  c34Step=n;
+  if(n>c34MaxStep) c34MaxStep=n;
+  for(var i=1;i<=3;i++){
+    var panel=document.getElementById("wpanel"+i);
+    if(panel) panel.style.display=(i===n)?"block":"none";
+    var step=document.getElementById("wstep"+i);
+    if(step){
+      step.classList.remove("active","done");
+      var dot=step.querySelector(".wiz-step-dot");
+      if(i===n){ step.classList.add("active"); if(dot) dot.textContent=String(i); }
+      else if(i<c34MaxStep || (i<n)){ step.classList.add("done"); if(dot) dot.textContent="✓"; }
+      else { if(dot) dot.textContent=String(i); }
+    }
+  }
+  var line1=document.getElementById("wline1"), line2=document.getElementById("wline2");
+  if(line1) line1.style.background=(c34MaxStep>=2||n>=2)?"var(--success)":"#e2e8f0";
+  if(line2) line2.style.background=(c34MaxStep>=3||n>=3)?"var(--success)":"#e2e8f0";
+
+  var back=document.getElementById("wBtnBack"), next=document.getElementById("wBtnNext"), sv=document.getElementById("wBtnSave");
+  if(back) back.style.visibility=(n>1)?"visible":"hidden";
+  if(next) next.style.display=(n<3)?"inline-flex":"none";
+  if(sv)   sv.style.display=(n===3)?"inline-flex":"none";
+}
+
+// Đi tới bước cụ thể (dùng khi bấm vào thanh tiến trình). Lùi: tự do. Tiến: phải qua validate các bước trước.
+function c34GoStep(n){
+  if(n===c34Step) return;
+  if(n<c34Step){ setWizStep(n); return; }        // quay lại: luôn cho phép, giữ dữ liệu
+  // tiến tới: validate lần lượt từ bước hiện tại đến n-1
+  for(var s=c34Step;s<n;s++){ if(!validateStep(s)) { setWizStep(s); return; } }
+  setWizStep(n);
+}
+
+function c34NextStep(){
+  if(!validateStep(c34Step)) return;
+  if(c34Step<3) setWizStep(c34Step+1);
+}
+function c34PrevStep(){ if(c34Step>1) setWizStep(c34Step-1); }
+
+// Validate 1 bước. Trả về true nếu hợp lệ.
+function validateStep(n){
+  if(n===1){
+    var ngay=document.getElementById("c34Ngay").value;
+    var noi=document.getElementById("c34Noi").value.trim();
+    if(!ngay){toast("Vui lòng chọn ngày kiểm tra.",false);document.getElementById("c34Ngay").focus();return false;}
+    if(!noi){toast("Vui lòng nhập nơi kiểm tra.",false);document.getElementById("c34Noi").focus();return false;}
+    if(currentCap==="khac"){
+      var tk=document.getElementById("c34TenKhac").value.trim();
+      if(!tk){toast("Vui lòng nhập tên loại kiểm tra.",false);document.getElementById("c34TenKhac").focus();return false;}
+    }
+    return true;
+  }
+  if(n===2){
+    var rows=document.querySelectorAll("#doanBody tr");
+    var valid=0;
+    for(var i=0;i<rows.length;i++){
+      var ten= (rows[i].querySelector(".dk-ten")   ||{}).value||"";
+      var chuc=(rows[i].querySelector(".dk-chuc")  ||{}).value||"";
+      var vt=  (rows[i].querySelector(".dk-vaitro")||{}).value||"";
+      ten=ten.trim(); chuc=chuc.trim();
+      // Bỏ qua dòng hoàn toàn trống; dòng có nhập dở phải nhập đủ 3 trường
+      if(!ten && !chuc && !vt) continue;
+      if(!ten){ toast("Đoàn kiểm tra dòng "+(i+1)+": thiếu Họ và tên.",false); rows[i].querySelector(".dk-ten").focus(); return false; }
+      if(!chuc){ toast("Đoàn kiểm tra dòng "+(i+1)+": thiếu Chức danh.",false); rows[i].querySelector(".dk-chuc").focus(); return false; }
+      if(!vt){ toast("Đoàn kiểm tra dòng "+(i+1)+": thiếu Vai trò.",false); rows[i].querySelector(".dk-vaitro").focus(); return false; }
+      valid++;
+    }
+    if(valid<3){ toast("Đoàn kiểm tra phải có tối thiểu 3 thành viên đủ thông tin.",false); return false; }
+    return true;
+  }
+  return true; // bước 3: không ràng buộc (cho phép 0 vi phạm)
 }
 
 /* ═══════════════════════════════════════════════════
@@ -1245,12 +1372,12 @@ function saveMonth(btn){
 ═══════════════════════════════════════════════════ */
 function saveCap34(){
   var u=currentUser();
+  // Chốt an toàn: đảm bảo Bước 1 & Bước 2 hợp lệ dù người dùng gọi lưu từ đâu.
+  if(!validateStep(1)){ setWizStep(1); return; }
+  if(!validateStep(2)){ setWizStep(2); return; }
   var ngay=document.getElementById("c34Ngay").value;
   var noi=document.getElementById("c34Noi").value.trim();
   var tenKhac=currentCap==="khac"?document.getElementById("c34TenKhac").value.trim():"";
-  if(!ngay){toast("Vui lòng chọn ngày kiểm tra.",false);return;}
-  if(!noi){toast("Vui lòng nhập nơi kiểm tra.",false);return;}
-  if(currentCap==="khac"&&!tenKhac){toast("Vui lòng nhập tên loại kiểm tra.",false);return;}
 
   // Validate báo cáo khắc phục
   var vpRows=document.querySelectorAll("#c34VPBody tr");
@@ -1316,7 +1443,9 @@ function resetForm(){
   if(st1) st1.style.display="block"; if(st2) st2.style.display="none";
   document.getElementById("c34Noi").value=""; document.getElementById("c34TenKhac").value="";
   document.getElementById("doanBody").innerHTML=""; document.getElementById("c34VPBody").innerHTML="";
-  addDoanRow(); addVPRow34();
+  // Khởi tạo sẵn 3 dòng đoàn kiểm tra (mức tối thiểu bắt buộc) + 1 dòng vi phạm
+  addDoanRow(); addDoanRow(); addDoanRow(); addVPRow34();
+  c34MaxStep=1; setWizStep(1);
   buildThangNamSelects();
   if(window.HSEDate)HSEDate.setToday(document.getElementById("c34Ngay"));else{var _t=new Date();document.getElementById("c34Ngay").value=_t.getFullYear()+"-"+String(_t.getMonth()+1).padStart(2,"0")+"-"+String(_t.getDate()).padStart(2,"0");}
 }
@@ -1941,13 +2070,16 @@ function editRecord(id,sheet){
     var doan=r.doanKT?(typeof r.doanKT==="string"?JSON.parse(r.doanKT):r.doanKT):[];
     document.getElementById("doanBody").innerHTML="";
     doan.forEach(function(d){addDoanRow(d);});
-    if(!doan.length) addDoanRow();
+    while(document.getElementById("doanBody").rows.length<3) addDoanRow();
 
     // Vi phạm
     var vps=r.violations?(typeof r.violations==="string"?JSON.parse(r.violations):r.violations):[];
     document.getElementById("c34VPBody").innerHTML="";
     vps.forEach(function(v){addVPRow34(v);});
     if(!vps.length) addVPRow34();
+
+    // Mở khoá toàn bộ bước (bản ghi cũ đã có dữ liệu), bắt đầu xem từ Bước 1
+    c34MaxStep=3; setWizStep(1);
   }
 
   toast("Đang chỉnh sửa bản ghi. Nhấn 💾 Lưu để cập nhật.");
