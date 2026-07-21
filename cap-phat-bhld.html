@@ -2309,6 +2309,7 @@ function cpnvRender(){
         '<button class="btn btn-outline btn-sm" onclick="cpnvAddDraft()">'+_ic('userplus',14)+' Thêm nhân viên mới</button>'+
         (toSend.length?'<button class="btn btn-success btn-sm" onclick="cpnvSubmit()">'+_ic('check',14)+' Gửi phê duyệt ('+toSend.length+')</button>':'')+
         (pendCount?'<span style="font-size:12.5px;color:var(--warning);display:inline-flex;align-items:center;gap:4px;">'+_ic('hour',14)+pendCount+' đang chờ duyệt</span>':'')+
+        ((_cpnvUnit==='Test'&&pendCount)?'<button class="btn btn-sm" style="background:#7c3aed;border:1px solid #7c3aed;color:#fff;" onclick="cpnvDemoApprove()" title="Giả lập Admin phê duyệt để mở bước tiếp theo — chỉ dùng cho đơn vị Test">'+_ic('check',14)+' Phê duyệt (demo)</button>':'')+
       '</div>';
     s1=(pendCount&&!toSend.length&&!_cpnvDrafts.length)?'cho_duyet':'dang_lam';
   }
@@ -2319,7 +2320,9 @@ function cpnvRender(){
   if(!approved.length){
     b2='<div style="display:flex;align-items:center;gap:6px;color:var(--text-light);font-size:13px;">'+_ic('lock',15)+'Sau khi Admin duyệt, phiếu sẽ hiện ở đây để xuất & trình ký. Nhân viên tự được đưa vào hệ thống (tính lịch cấp) khi Admin duyệt.</div>';
   } else {
-    b2='<div class="table-wrap"><table><thead><tr><th style="width:40px;text-align:center;">STT</th><th>Nhân viên</th><th>Chức danh</th><th>Đơn vị</th><th>Duyệt lúc</th><th style="text-align:center;">Xuất phiếu</th><th style="text-align:center;">Hoàn thành</th></tr></thead><tbody>'+
+    var _nvDemoNote=approved.some(function(p){return /\(demo\)/i.test(p.reviewedBy||'');})
+      ?'<div style="margin-bottom:10px;display:inline-flex;align-items:center;gap:5px;background:#f3e8ff;color:#7c3aed;border:1px dashed #c4a3f0;border-radius:6px;padding:2px 9px;font-size:11.5px;font-weight:600;">🧪 Có phiếu được phê duyệt giả lập (demo) — chỉ dùng để trình diễn luồng đơn vị Test</div>':'';
+    b2=_nvDemoNote+'<div class="table-wrap"><table><thead><tr><th style="width:40px;text-align:center;">STT</th><th>Nhân viên</th><th>Chức danh</th><th>Đơn vị</th><th>Duyệt lúc</th><th style="text-align:center;">Xuất phiếu</th><th style="text-align:center;">Hoàn thành</th></tr></thead><tbody>'+
       approved.map(function(p,i){return '<tr><td style="text-align:center;">'+(i+1)+'</td><td><strong>'+_escH(p.nvTen||'')+'</strong> <span style="color:var(--text-light);font-size:11px;">'+_escH(p.nvDanhSo||'')+'</span></td><td style="font-size:12.5px;">'+_escH(p.chucDanh||'')+'</td><td style="font-size:12.5px;">'+_escH(p.donVi||'')+'</td><td style="font-size:12px;color:var(--text-light);">'+(p.reviewedAt?new Date(p.reviewedAt).toLocaleDateString('vi-VN'):'')+'</td><td style="text-align:center;"><button class="btn btn-outline btn-sm" onclick="exportPhieuById(\''+p.id+'\',\'word\')">'+_ic('file',13)+' Word</button></td><td style="text-align:center;"><button class="btn btn-success btn-sm" onclick="cpnvComplete(\''+p.id+'\')">'+_ic('check',13)+' Đã hoàn thành</button></td></tr>';}).join('')+
       '</tbody></table></div>';
   }
@@ -3801,12 +3804,22 @@ function _dvtByTbId(tbId){
   return (g2&&g2.donVi)||'';
 }
 
-function approvePhieu(id){
-  if(!isAdmin()){showToast('Chỉ Admin mới có quyền phê duyệt.','error');return;}
+function approvePhieu(id,opts){
+  opts=opts||{};
+  const demo=!!opts.demo;
   const p=BHLD.lsGet('phieu_requests').find(x=>String(x.id)===String(id));if(!p)return;
-  if(!confirm(p.type==='quy'?`Phê duyệt phiếu quý này? (Thời hạn cấp phát sẽ được cập nhật khi người lập xuất phiếu ở Bước 3.)`:`Phê duyệt phiếu này? Hệ thống sẽ cập nhật tháng cấp tiếp theo cho nhân viên.`))return;
+  // Nút demo (admin ảo): chỉ cho đơn vị Test, bỏ chặn quyền admin để trình diễn luồng sau phê duyệt.
+  if(demo){
+    if(p.donVi!=='Test'){showToast('Nút phê duyệt demo chỉ áp dụng cho đơn vị Test.','error');return;}
+  } else if(!isAdmin()){showToast('Chỉ Admin mới có quyền phê duyệt.','error');return;}
+  if(!opts.noConfirm){
+    const cf=demo
+      ?(p.type==='quy'?'DEMO — Giả lập Admin phê duyệt phiếu quý (đơn vị Test)?\nDùng để trình diễn bước sau phê duyệt, KHÔNG phải phê duyệt thật.':'DEMO — Giả lập Admin phê duyệt phiếu nhân viên mới (đơn vị Test)?\nDùng để trình diễn bước sau phê duyệt, KHÔNG phải phê duyệt thật.')
+      :(p.type==='quy'?`Phê duyệt phiếu quý này? (Thời hạn cấp phát sẽ được cập nhật khi người lập xuất phiếu ở Bước 3.)`:`Phê duyệt phiếu này? Hệ thống sẽ cập nhật tháng cấp tiếp theo cho nhân viên.`);
+    if(!confirm(cf))return;
+  }
   const now=new Date().toISOString();
-  const reviewer=_getCurrentUserLabel();
+  const reviewer=demo?'Admin (demo)':_getCurrentUserLabel();
   const items=_parsePhieuItems(p.items);
 
   if(p.type==='nv_moi'){
@@ -3857,7 +3870,7 @@ function approvePhieu(id){
         `Phiếu quý ${p.quyStr} – ${p.donVi||''} đã được ${reviewer} phê duyệt.`,p.id);
     }
   }
-  showToast(p.type==='quy'?'✅ Đã phê duyệt phiếu quý!':'✅ Đã phê duyệt phiếu và cập nhật tháng cấp tiếp theo!');
+  if(!opts.noToast)showToast((demo?'✅ [DEMO] ':'✅ ')+(p.type==='quy'?'Đã phê duyệt phiếu quý!':'Đã phê duyệt phiếu và cập nhật tháng cấp tiếp theo!'));
   renderChoduyetTab();
   // Refresh trạng thái phiếu quý nếu đang xem
   if(p.type==='quy'){_renderQuyStatusBar(p.quyStr,p.donVi);}
@@ -3866,6 +3879,29 @@ function approvePhieu(id){
   const badge=document.getElementById('nvmoi-badge');if(badge){badge.textContent=nvMoiCount;badge.style.display=nvMoiCount?'inline':'none';}
 }
 
+// ─── Nút "Admin ảo" (demo) — chỉ đơn vị Test ───
+// Giả lập Admin phê duyệt ngay trong wizard để trình diễn bước sau phê duyệt (không cần admin thật).
+function cpwDemoApprove(){
+  if(typeof _cpwPhieu!=='function')return;
+  var phieu=_cpwPhieu(_cpwDonVi,_cpwQuy);
+  if(!phieu||phieu.status!=='pending'){showToast('Không có phiếu đang chờ để duyệt demo.','warning');return;}
+  approvePhieu(phieu.id,{demo:true});
+  if(typeof cpwRender==='function')cpwRender();
+}
+function cpnvDemoApprove(){
+  var pend=BHLD.lsGet('phieu_requests').filter(function(p){return p.type==='nv_moi'&&p.status==='pending'&&p.donVi==='Test';});
+  if(!pend.length){showToast('Không có phiếu nhân viên mới đang chờ để duyệt demo.','warning');return;}
+  if(!confirm('DEMO — Giả lập Admin phê duyệt '+pend.length+' phiếu nhân viên mới (đơn vị Test)?\nDùng để trình diễn bước sau phê duyệt, KHÔNG phải phê duyệt thật.'))return;
+  pend.forEach(function(p){approvePhieu(p.id,{demo:true,noConfirm:true,noToast:true});});
+  showToast('✅ [DEMO] Đã giả lập Admin duyệt '+pend.length+' phiếu nhân viên mới.');
+  if(typeof cpnvRender==='function')cpnvRender();
+}
+// Nhãn nhỏ đánh dấu phiếu được duyệt bằng nút demo (reviewer = "Admin (demo)")
+function _demoApprovedNote(phieu){
+  return (phieu&&/\(demo\)/i.test(phieu.reviewedBy||''))
+    ?'<div style="margin-top:8px;display:inline-flex;align-items:center;gap:5px;background:#f3e8ff;color:#7c3aed;border:1px dashed #c4a3f0;border-radius:6px;padding:2px 9px;font-size:11.5px;font-weight:600;">🧪 Phê duyệt giả lập (demo) — bởi '+_escH(phieu.reviewedBy||'')+'</div>'
+    :'';
+}
 function rejectPhieu(id){
   if(!isAdmin()){showToast('Chỉ Admin mới có quyền.','error');return;}
   const p=BHLD.lsGet('phieu_requests').find(x=>String(x.id)===String(id));if(!p)return;
@@ -4981,7 +5017,11 @@ function cpwRender(){
   html+=_cpwStepCard(3,'Chọn vật tư khác & gửi duyệt','pkg',s3,cpwStep3ExtraBody(s3,phieu));
   html+=_cpwStepCard(4,'Xuất phiếu & trình ký','file',s4,cpwStep4Body(s4,phieu));
   if(_cpwDonVi==='Test'&&typeof canEditUnit==='function'&&canEditUnit('Test')){
+    var _demoBtn=(phieu&&phieu.status==='pending')
+      ?'<button class="btn btn-sm" style="background:#7c3aed;border:1px solid #7c3aed;color:#fff;" onclick="cpwDemoApprove()" title="Giả lập Admin phê duyệt để mở bước tiếp theo — chỉ dùng cho đơn vị Test">'+_ic('check',15)+' Phê duyệt (demo)</button>'
+      :'';
     html+='<div style="margin-top:6px;display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;">'+
+      _demoBtn+
       '<button class="btn btn-outline btn-sm" onclick="cpwSaveTestBaseline()" title="Lưu danh sách + thông tin nhân viên Test hiện tại làm mặc định ban đầu">'+_ic('clip',15)+' Lưu làm mặc định ban đầu</button>'+
       '<button class="btn btn-outline btn-sm" style="color:var(--danger);border-color:#eab7b2;" onclick="cpwResetTest()" title="Khôi phục danh sách nhân viên Test theo bản mặc định đã lưu">'+_ic('undo',15)+' Trả về mặc định ban đầu</button>'+
     '</div>';
@@ -5023,13 +5063,14 @@ function cpwStep2Body(s2,phieu){
 function cpwStep3ExtraBody(s3,phieu){
   if(s3==='khoa')return '<div style="display:flex;align-items:center;gap:6px;font-size:13px;color:var(--text-light);">'+_ic('lock',15)+'Hoàn tất Bước 2 để mở bước này.</div>';
   if(s3==='cho_duyet')return '<div style="display:flex;align-items:center;gap:6px;color:var(--warning);font-size:13.5px;">'+_ic('hour',16)+'Phiếu đã gửi, đang chờ Admin duyệt. Bước 4 sẽ mở khi được duyệt.</div>';
-  if(s3==='dat')return '<div style="display:flex;align-items:center;gap:6px;color:var(--success);font-size:13.5px;">'+_ic('check',16)+'Phiếu đã được Admin duyệt.</div>';
+  if(s3==='dat')return '<div style="display:flex;align-items:center;gap:6px;color:var(--success);font-size:13.5px;">'+_ic('check',16)+'Phiếu đã được '+_escH((phieu&&phieu.reviewedBy)||'Admin')+' duyệt.</div>'+_demoApprovedNote(phieu);
   return '<p style="font-size:13.5px;color:var(--text-light);margin:0 0 10px;">Chọn thêm vật tư khác còn tồn kho (ngoài 8 nhóm định mức) để đưa vào đề nghị — cấp theo đơn vị. Sau đó <b>Gửi Admin phê duyệt</b> (gồm cả số lượng ở Bước 2).</p><div id="cpw-b3-host"></div>';
 }
 function cpwStep4Body(s3,phieu){
   if(s3==='khoa')return '<div style="display:flex;align-items:center;gap:6px;font-size:13px;color:var(--text-light);">'+_ic('lock',15)+'Hoàn tất Bước 3 (phiếu được duyệt) để mở bước này.</div>';
   if(s3==='xong')return '<div style="display:flex;align-items:center;gap:6px;color:var(--success);font-size:13.5px;">'+_ic('check',16)+'<span>Đã hoàn tất'+(_cpwState.hoanTatAt?' vào '+new Date(_cpwState.hoanTatAt).toLocaleDateString('vi-VN'):'')+'. Thời hạn cấp phát của nhân viên đã được cập nhật.</span></div>';
-  return '<p style="font-size:13.5px;color:var(--text-light);margin:0 0 12px;">Xuất phiếu để trình ký. Sau khi trình ký, xác nhận để hệ thống cập nhật thời hạn cấp phát mới cho nhân viên.</p>'+
+  return _demoApprovedNote(phieu)+
+    '<p style="font-size:13.5px;color:var(--text-light);margin:'+(_demoApprovedNote(phieu)?'8px':'0')+' 0 12px;">Xuất phiếu để trình ký. Sau khi trình ký, xác nhận để hệ thống cập nhật thời hạn cấp phát mới cho nhân viên.</p>'+
     '<div style="display:flex;gap:8px;flex-wrap:wrap;">'+
       '<button class="btn btn-outline btn-sm" onclick="cpwExport()">'+_ic('file',15)+' Xuất phiếu (Word)</button>'+
       '<button class="btn btn-outline btn-sm" style="color:#217346;border-color:#217346;" onclick="exportPhieuMatrixExcel(_cpwQuy,_cpwDonVi)">'+_ic('sheet',15)+' Excel ký nhận</button>'+
