@@ -110,15 +110,8 @@
     var canSeePass = !!(u && (u.role === "admin" || u.role === "user"));
     var state = { tasks: [], steps: {}, pass: {} };
 
-    var hintText = admin
-      ? "Bạn là <b>Admin</b>: thêm/sửa/xoá tác vụ, chỉnh sửa các bước hướng dẫn và xem mật khẩu."
-      : canSeePass
-        ? "Bạn đã đăng nhập: mật khẩu được che sẵn — bấm biểu tượng con mắt để hiện, hoặc sao chép."
-        : "";
-
     container.innerHTML =
       "<div class='page-title' style='display:flex;align-items:center;gap:9px'>"+ic("database",22)+"Nhập thông tin an toàn trên Svodka</div>"+
-      (hintText ? "<div class='sv-hint'>"+ic("info",16)+"<span>"+hintText+"</span></div>" : "")+
       "<div class='sv-toolbar'><div id='sv-status' style='font-size:12.5px;color:var(--text-muted,#6b7c93)'></div>"+
         (admin ? "<button class='sv-btn sv-btn-primary' id='sv-add'>"+ic("plus",16)+"Thêm tác vụ nhập</button>" : "")+
       "</div>"+
