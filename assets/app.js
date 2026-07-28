@@ -27,6 +27,7 @@
     { slug:"huan-luyen-dao-tao", title:"Huấn luyện - Đào tạo",        icon:"🎓", licon:"graduation-cap",   group:"ung-dung", sub:["Thống kê các loại đào tạo, huấn luyện","Kiểm tra kiến thức an toàn","Đào tạo nội bộ"] },
     { slug:"bao-chay-tu-dong",   title:"Báo cáo hệ thống báo cháy tự động", icon:"🔔", licon:"bell",       group:"ung-dung", sub:["Danh sách thiết bị báo cháy","Ghi nhận lỗi & khắc phục"] },
     { slug:"tra-cuu-atvsld",     title:"Tra cứu ATVSLĐ",              icon:"📚", licon:"book-open",       group:"ung-dung", sub:[] },
+    { slug:"nhap-svodka",        title:"Nhập thông tin an toàn trên Svodka", icon:"🗄️", licon:"database",  group:"ung-dung", sub:["Danh mục tác vụ nhập","Hướng dẫn nhập từng bước"] },
     { slug:"quan-tri-he-thong",  title:"Quản trị hệ thống",           icon:"🛡️", licon:"settings",         group:"admin",    sub:[], adminOnly:true }
   ];
 
@@ -206,7 +207,8 @@
     "key":'<path d="m15.5 7.5 2.3 2.3a1 1 0 0 0 1.4 0l2.1-2.1a1 1 0 0 0 0-1.4L19 4"/><path d="m21 2-9.6 9.6"/><circle cx="7.5" cy="15.5" r="5.5"/>',
     "book-open":'<path d="M12 7v14"/><path d="M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z"/>',
     "external-link":'<path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>',
-    "info":'<circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/>'
+    "info":'<circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/>',
+    "database":'<ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14a9 3 0 0 0 18 0V5"/><path d="M3 12a9 3 0 0 0 18 0"/>'
   };
   function lic(name, size){
     var p = ICON_PATHS[name]; if(!p) return "";
@@ -685,6 +687,16 @@
       if(!canView(u, slug)){ renderShell(slug, deniedNode()); return; }
       var atvsldContainer = renderShell(slug, el("div"));
       renderTraCuuAtvsld(atvsldContainer, u, isAdmin(u));
+      return;
+    }
+
+    // Trang Nhập thông tin an toàn trên Svodka: module riêng
+    if(slug === "nhap-svodka"){
+      if(!canView(u, slug)){ renderShell(slug, deniedNode()); return; }
+      var svContainer = renderShell(slug, el("div"));
+      if(typeof window.renderSvodka === "function"){
+        window.renderSvodka(svContainer, u, isAdmin(u));
+      }
       return;
     }
 
