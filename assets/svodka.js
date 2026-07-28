@@ -245,7 +245,7 @@
           var t = state.tasks.filter(function(x){return x.id===id;})[0];
           if(!t) return;
           if(!window.confirm("Xoá tác vụ \""+t.name+"\"? Các bước hướng dẫn và mật khẩu kèm theo cũng bị xoá.")) return;
-          DB.del(T_TACVU, id).then(reload).catch(function(e){ alert("Xoá thất bại: "+(e&&e.message||e)); });
+          DB.delete(T_TACVU, id).then(reload).catch(function(e){ alert("Xoá thất bại: "+(e&&e.message||e)); });
         });
       });
     }
@@ -342,7 +342,7 @@
         // 3) Xoá các bước cũ rồi ghi lại theo thứ tự mới
         .then(function(){
           var old = editing ? (state.steps[draft.id]||[]) : [];
-          return Promise.all(old.map(function(s){ return DB.del(T_BUOC, s.id); }));
+          return Promise.all(old.map(function(s){ return DB.delete(T_BUOC, s.id); }));
         })
         .then(function(){
           return Promise.all(cleanSteps.map(function(content,i){
