@@ -70,7 +70,8 @@
       ".sv-creds{display:flex;gap:22px;flex-wrap:wrap;margin:14px 0 4px;padding:12px 14px;background:#f6f9fe;border:1px solid #e2ebf7;border-radius:8px}"+
       ".sv-cred{display:flex;flex-direction:column;gap:3px;min-width:180px;max-width:100%}"+
       ".sv-cred label{font-size:11px;color:var(--text-muted,#6b7c93);font-weight:600;text-transform:uppercase;letter-spacing:.3px;display:flex;align-items:center;gap:5px}"+
-      ".sv-val{font-size:13.5px;font-family:'Consolas',monospace;display:flex;align-items:center;gap:8px;word-break:break-all}"+
+      ".sv-val{font-size:13.5px;font-weight:700;color:var(--text,#1a2535);font-family:'Consolas',monospace;display:flex;align-items:center;gap:8px;word-break:break-all}"+
+      ".sv-val a{font-weight:700}"+
       ".sv-icobtn{border:1px solid var(--border,#cdd6e8);background:#fff;border-radius:6px;width:28px;height:28px;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text-muted,#6b7c93)}"+
       ".sv-icobtn:hover{background:#eef3fb;color:var(--primary,#003087)}"+
       ".sv-masked{letter-spacing:2px;color:var(--text-muted,#6b7c93)}"+
@@ -79,7 +80,7 @@
       ".sv-flow{display:flex;align-items:stretch;flex-wrap:wrap;gap:6px 0}"+
       ".sv-step{background:#fff;border:1.5px solid var(--border,#cdd6e8);border-top:3px solid var(--primary-light,#0060B6);border-radius:9px;padding:11px 14px 12px;max-width:250px;min-width:150px;position:relative;flex:1}"+
       ".sv-step .n{position:absolute;top:-11px;left:12px;background:var(--primary,#003087);color:#fff;font-size:11px;font-weight:700;width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center}"+
-      ".sv-step .t{font-size:13px;line-height:1.5;margin-top:6px}"+
+      ".sv-step .t{font-size:13.5px;line-height:1.55;margin-top:6px;color:var(--text,#1a2535);font-weight:500}"+
       ".sv-arr{display:flex;align-items:center;color:var(--primary-light,#0060B6);padding:0 4px}"+
       ".sv-empty{text-align:center;color:var(--text-muted,#6b7c93);padding:40px 20px;background:#fff;border:1px dashed var(--border,#cdd6e8);border-radius:10px}"+
       ".sv-empty svg{opacity:.5;margin-bottom:10px}"+
@@ -109,16 +110,16 @@
     var canSeePass = !!(u && (u.role === "admin" || u.role === "user"));
     var state = { tasks: [], steps: {}, pass: {} };
 
+    var hintText = admin
+      ? "Bạn là <b>Admin</b>: thêm/sửa/xoá tác vụ, chỉnh sửa các bước hướng dẫn và xem mật khẩu."
+      : canSeePass
+        ? "Bạn đã đăng nhập: mật khẩu được che sẵn — bấm biểu tượng con mắt để hiện, hoặc sao chép."
+        : "";
+
     container.innerHTML =
       "<div class='page-title' style='display:flex;align-items:center;gap:9px'>"+ic("database",22)+"Nhập thông tin an toàn trên Svodka</div>"+
-      "<div class='page-desc'>Nơi lưu các trang nhập thông tin an toàn lên hệ thống Svodka. Xem hướng dẫn từng bước rồi mở trang tương ứng để nhập.</div>"+
-      "<div class='sv-hint'>"+ic("info",16)+"<span>"+
-        (admin
-          ? "Bạn là <b>Admin</b>: thêm/sửa/xoá tác vụ, chỉnh sửa các bước hướng dẫn và xem mật khẩu."
-          : canSeePass
-            ? "Bạn đã đăng nhập: mật khẩu được che sẵn — bấm biểu tượng con mắt để hiện, hoặc sao chép."
-            : "Chế độ xem: bạn xem được hướng dẫn và link. Mật khẩu chỉ hiển thị khi đăng nhập tài khoản nội bộ.")+
-      "</span></div>"+
+      "<div class='page-desc'>Nơi lưu các trang nhập thông tin an toàn lên hệ thống Svodka.</div>"+
+      (hintText ? "<div class='sv-hint'>"+ic("info",16)+"<span>"+hintText+"</span></div>" : "")+
       "<div class='sv-toolbar'><div id='sv-status' style='font-size:12.5px;color:var(--text-muted,#6b7c93)'></div>"+
         (admin ? "<button class='sv-btn sv-btn-primary' id='sv-add'>"+ic("plus",16)+"Thêm tác vụ nhập</button>" : "")+
       "</div>"+
@@ -186,9 +187,6 @@
     }
 
     function taskCard(t){
-      var linkHtml = isValidLink(t.link)
-        ? "<a class='sv-open' href='"+esc(t.link)+"' target='_blank' rel='noopener'>"+ic("external-link",15)+"Mở trang nhập</a>"
-        : "";
       var adminActs = admin
         ? "<button class='sv-btn sv-btn-ghost sv-btn-sm' data-edit='"+t.id+"'>"+ic("square-pen",15)+"Sửa</button>"+
           "<button class='sv-btn sv-btn-danger sv-btn-sm' data-del='"+t.id+"'>"+ic("trash-2",15)+"Xoá</button>"
@@ -199,7 +197,7 @@
       return "<div class='sv-task'>"+
         "<div class='sv-head'>"+
           "<div class='sv-name'>"+ic("database",18)+esc(t.name)+"</div>"+
-          "<div class='sv-acts'>"+linkHtml+adminActs+"</div>"+
+          "<div class='sv-acts'>"+adminActs+"</div>"+
         "</div>"+
         "<div class='sv-creds'>"+
           linkRow+
