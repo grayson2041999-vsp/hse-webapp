@@ -1152,12 +1152,23 @@ function _cacheUserCPW(u){
   localStorage.setItem('hse_session',JSON.stringify(u.username));
   return u;
 }
-/* Vẽ lại toàn bộ UI phụ thuộc quyền sau khi hồ sơ được cập nhật */
+/* Vẽ lại toàn bộ UI phụ thuộc quyền sau khi hồ sơ được cập nhật.
+   ⚠️ PHẢI gọi cpUpdateApproveTile(): thẻ "Phê duyệt" + badge số mục chờ duyệt
+   chỉ hiện khi isAdmin()===true. Nếu lúc vẽ lần đầu cache còn chưa biết user là
+   admin thì thẻ bị ẩn và sẽ KHÔNG bao giờ hiện lại nếu không vẽ lại ở đây. */
 function refreshRoleDependentUI(){
   try{ renderHeaderUser(); }catch(e){}
   try{ renderUnitPicker(); }catch(e){}
   try{ applyEditMode(); }catch(e){}
   try{ _updateNotifBadge(); }catch(e){}
+  try{ cpUpdateApproveTile(); }catch(e){}
+  // Tab "Chờ duyệt" trong trang Phiếu yêu cầu (chỉ admin)
+  try{
+    var tab=document.getElementById('phieu-tab-choduyet');
+    if(tab) tab.style.display=isAdmin()?'block':'none';
+    var pg=document.getElementById('page-phieu-yeu-cau');
+    if(isAdmin()&&pg&&pg.classList.contains('active')&&typeof renderChoduyetTab==='function') renderChoduyetTab();
+  }catch(e){}
 }
 function hydrateCurrentUser(){
   return _sbReadyCPW().then(function(sb){
@@ -4944,6 +4955,12 @@ document.addEventListener('DOMContentLoaded',()=>{
         renderUnitPicker();
         if(_currentUnit){ renderTableNV(); renderNhomPanel(_currentUnit); }
         _updateNotifBadge();
+        // Cập nhật thẻ "Phê duyệt" + badge số mục chờ duyệt trên trang chủ.
+        // (Trước đây thiếu dòng này → sau khi pull về phiếu/thay đổi mới,
+        //  admin vẫn thấy badge cũ hoặc thẻ bị ẩn, tưởng là không có gì chờ duyệt.)
+        if(typeof cpUpdateApproveTile==='function')cpUpdateApproveTile();
+        var _tabCD=document.getElementById('phieu-tab-choduyet');
+        if(_tabCD)_tabCD.style.display=isAdmin()?'block':'none';
         if(typeof renderChoduyetTab==='function'&&isAdmin())renderChoduyetTab();
       })
       .catch(function(){ _nvSyncing=false; renderUnitPicker(); /* silent fail — không hiện lỗi */ });
