@@ -118,7 +118,6 @@
 
     container.innerHTML =
       "<div class='page-title' style='display:flex;align-items:center;gap:9px'>"+ic("database",22)+"Nhập thông tin an toàn trên Svodka</div>"+
-      "<div class='page-desc'>Nơi lưu các trang nhập thông tin an toàn lên hệ thống Svodka.</div>"+
       (hintText ? "<div class='sv-hint'>"+ic("info",16)+"<span>"+hintText+"</span></div>" : "")+
       "<div class='sv-toolbar'><div id='sv-status' style='font-size:12.5px;color:var(--text-muted,#6b7c93)'></div>"+
         (admin ? "<button class='sv-btn sv-btn-primary' id='sv-add'>"+ic("plus",16)+"Thêm tác vụ nhập</button>" : "")+
@@ -146,7 +145,7 @@
         buoc.forEach(function(b){ (state.steps[b.tacvu_id] = state.steps[b.tacvu_id] || []).push(b); });
         state.pass = {};
         mk.forEach(function(m){ state.pass[m.tacvu_id] = m.password || ""; });
-        statusEl.textContent = tacvu.length + " tác vụ nhập";
+        statusEl.textContent = "";
         draw();
       }).catch(function(e){
         statusEl.textContent = "";
