@@ -219,6 +219,7 @@ function currentUser(){
 function isAdmin(u){return u&&u.role==="admin";}
 function canEdit(u){
   if(!u)return false;
+  if(u.active===false)return false;
   if(u.role==="admin")return true;
   if(u.role==="viewer")return false;
   return (u.perms||[]).indexOf("moi-truong")!==-1;
@@ -226,7 +227,67 @@ function canEdit(u){
 function roleLabel(r){return r==="admin"?"Admin":(r==="viewer"?"Viewer":"User");}
 
 // ── Logout (đăng nhập thực hiện ở trang Tổng quan) ──
-function doLogout(){localStorage.removeItem(K_SESS);location.reload();}
+function doLogout(){
+  localStorage.removeItem(K_SESS);
+  var sb=window.HSE_SB;
+  if(sb&&sb.auth){ sb.auth.signOut().then(function(){location.reload();}).catch(function(){location.reload();}); }
+  else location.reload();
+}
+
+/* ═══════════════════════════════════════════════════
+   ĐỒNG BỘ QUYỀN SAU KHI app.js HYDRATE XONG
+   ───────────────────────────────────────────────────
+   app.js nạp hồ sơ từ bảng `profiles` một cách BẤT ĐỒNG BỘ nhưng
+   không phát sự kiện nào khi xong. Trang đã vẽ UI bằng cache cũ và
+   không vẽ lại → user vừa được cấp quyền vẫn thấy "chỉ có quyền xem"
+   ở lần vào đầu tiên. Khối dưới tự đọc lại `profiles` rồi vẽ lại UI.
+═══════════════════════════════════════════════════ */
+function _sbReadyMT(){
+  return new Promise(function(resolve,reject){
+    if(window.HSE_SB) return resolve(window.HSE_SB);
+    var to=setTimeout(function(){reject(new Error("Supabase chưa sẵn sàng"));},8000);
+    window.addEventListener("hse-sb-ready",function(){clearTimeout(to);resolve(window.HSE_SB);},{once:true});
+  });
+}
+function _profileToUserMT(p){
+  return { id:p.id, username:p.username, fullname:p.fullname||"", danhSo:p.danhSo||"",
+    role:p.role||"viewer", perms:p.perms||[], capPhatUnits:p.capPhatUnits||[],
+    active:p.active, pendingApproval:p.pendingApproval, created:p.created };
+}
+function _cacheUserMT(u){
+  var arr=lsLoad(K_USERS,[])||[];
+  var i=arr.findIndex(function(x){return String(x.id)===String(u.id);});
+  if(i>=0) arr[i]=u; else arr.push(u);
+  localStorage.setItem(K_USERS,JSON.stringify(arr));
+  localStorage.setItem(K_SESS,JSON.stringify(u.username));
+  return u;
+}
+function refreshRoleDependentUI(){
+  if(typeof window.__pnLogout==="undefined"){ try{ buildTopbar(); }catch(e){} }
+  var u=currentUser();
+  var desc=document.getElementById("pageDesc");
+  if(desc){
+    if(!u) desc.textContent='Bạn đang xem ở chế độ khách.';
+    else if(canEdit(u)) desc.textContent='Bạn có quyền nhập và chỉnh sửa số liệu xử lý chất thải.';
+    else desc.textContent='Bạn chỉ có quyền xem số liệu xử lý chất thải.';
+  }
+  try{ renderTable(); }catch(e){}
+}
+function hydrateCurrentUser(){
+  return _sbReadyMT().then(function(sb){
+    return sb.auth.getSession().then(function(r){
+      var sess=r&&r.data&&r.data.session;
+      if(!sess||!sess.user){ localStorage.removeItem(K_SESS); refreshRoleDependentUI(); return null; }
+      return sb.from("profiles").select("*").eq("id",sess.user.id).maybeSingle().then(function(res){
+        if(res.error||!res.data){ console.warn("[MT] Không đọc được profiles:",res.error&&res.error.message); return null; }
+        var u=_cacheUserMT(_profileToUserMT(res.data));
+        if(typeof DB!=="undefined"&&DB.setUser) DB.setUser(u.username);
+        refreshRoleDependentUI();
+        return u;
+      });
+    });
+  }).catch(function(e){ console.warn("[MT] hydrate:",e&&e.message||e); return null; });
+}
 
 // ── Sidebar ──
 (function buildSidebar(){
@@ -574,6 +635,14 @@ window.addEventListener("DOMContentLoaded",function(){
   }
 
   safePull();
+
+  // Đồng bộ quyền thật từ Supabase → vẽ lại UI khi có kết quả
+  hydrateCurrentUser();
+  _sbReadyMT().then(function(sb){
+    sb.auth.onAuthStateChange(function(ev){
+      if(ev==="SIGNED_IN"||ev==="SIGNED_OUT"||ev==="TOKEN_REFRESHED"||ev==="USER_UPDATED") hydrateCurrentUser();
+    });
+  }).catch(function(){});
 });
 </script>
   <script src="assets/lucide-icons.js"></script>

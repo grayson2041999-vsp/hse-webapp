@@ -881,7 +881,10 @@ function toast(msg, ok){
    AUTH
 ═══════════════════════════════════════════════════ */
 function getUsers(){return load(K_USERS,[]);}
-function findUser(un){return getUsers().find(function(u){return u.username===un;})||null;}
+function findUser(un){
+  var k=String(un||"").trim().toLowerCase();
+  return getUsers().find(function(u){return String(u.username||"").trim().toLowerCase()===k;})||null;
+}
 function currentUser(){
   var raw=load(K_SESS,null);
   if(!raw) return null;
@@ -892,6 +895,7 @@ function currentUser(){
 function isAdmin(u){return u&&u.role==="admin";}
 function canInputCap(u,cap){
   if(!u||u.role==="viewer") return false;
+  if(u.active===false) return false;
   if(u.role==="admin") return ["cap3","cap4","khac"].indexOf(cap)>=0;
   if(u.role==="user"){
     if((u.perms||[]).indexOf(SLUG)<0) return false;
@@ -2105,7 +2109,71 @@ document.addEventListener("click",function(e){
   document.querySelectorAll(".modal-bg.open").forEach(function(el){if(e.target===el)el.classList.remove("open");});
 });
 
-function doLogout(){localStorage.removeItem(K_SESS);location.reload();}
+function doLogout(){
+  localStorage.removeItem(K_SESS);
+  var sb=window.HSE_SB;
+  if(sb&&sb.auth){ sb.auth.signOut().then(function(){location.reload();}).catch(function(){location.reload();}); }
+  else location.reload();
+}
+
+/* ═══════════════════════════════════════════════════
+   HYDRATE HỒ SƠ NGƯỜI DÙNG TỪ SUPABASE
+   ───────────────────────────────────────────────────
+   Trang này KHÔNG nạp assets/app.js nên trước đây chỉ đọc cache
+   localStorage lúc parse. Hậu quả: user vừa được Admin cấp quyền
+   (lưu ở bảng `profiles`) nhưng cache trên máy còn cũ/rỗng →
+   canInputCap()/canAccess() trả false → không nhập được.
+═══════════════════════════════════════════════════ */
+function _sbReadyKT(){
+  return new Promise(function(resolve,reject){
+    if(window.HSE_SB) return resolve(window.HSE_SB);
+    var to=setTimeout(function(){reject(new Error("Supabase chưa sẵn sàng"));},8000);
+    window.addEventListener("hse-sb-ready",function(){clearTimeout(to);resolve(window.HSE_SB);},{once:true});
+  });
+}
+function _profileToUserKT(p){
+  return { id:p.id, username:p.username, fullname:p.fullname||"", danhSo:p.danhSo||"",
+    role:p.role||"viewer", perms:p.perms||[], capPhatUnits:p.capPhatUnits||[],
+    active:p.active, pendingApproval:p.pendingApproval, created:p.created };
+}
+function _cacheUserKT(u){
+  var arr=getUsers();
+  var i=arr.findIndex(function(x){return String(x.id)===String(u.id);});
+  if(i>=0) arr[i]=u; else arr.push(u);
+  save(K_USERS,arr); save(K_SESS,u.username);
+  return u;
+}
+/* Vẽ lại toàn bộ UI phụ thuộc quyền sau khi hồ sơ được cập nhật */
+function refreshRoleDependentUI(){
+  var u=currentUser();
+  buildSidebar();
+  buildTopbar();
+  var tb=document.getElementById("tabBtnNhap");
+  if(tb) tb.style.display=canAnyInput(u)?"":"none";
+  buildCapSelector();
+  // Chỉ đánh giá lại quyền của cấp đang chọn khi tab "Nhập mới" đang mở,
+  // tránh reset form khi người dùng đang nhập dở.
+  var paneNhap=document.getElementById("tab-nhap");
+  if(paneNhap&&paneNhap.classList.contains("active")&&typeof currentCap!=="undefined"&&currentCap){
+    selectCap(currentCap);
+  }
+  renderList();
+}
+function hydrateCurrentUser(){
+  return _sbReadyKT().then(function(sb){
+    return sb.auth.getSession().then(function(r){
+      var sess=r&&r.data&&r.data.session;
+      if(!sess||!sess.user){ localStorage.removeItem(K_SESS); refreshRoleDependentUI(); return null; }
+      return sb.from("profiles").select("*").eq("id",sess.user.id).maybeSingle().then(function(res){
+        if(res.error||!res.data){ console.warn("[KTCC] Không đọc được profiles:",res.error&&res.error.message); return null; }
+        var u=_cacheUserKT(_profileToUserKT(res.data));
+        if(typeof DB!=="undefined") DB.setUser(u.username);
+        refreshRoleDependentUI();
+        return u;
+      });
+    });
+  }).catch(function(e){ console.warn("[KTCC] hydrate:",e&&e.message||e); return null; });
+}
 
 /* ═══════════════════════════════════════════════════
    INIT
@@ -2126,6 +2194,14 @@ function init(){
   initBaoCaoFilters();
   switchTab("baocao");
   loadData(); // fetch Sheets → tự gọi renderList() + renderBaoCao() khi xong
+
+  // Đồng bộ quyền thật từ Supabase (async) → vẽ lại UI khi có kết quả
+  hydrateCurrentUser();
+  _sbReadyKT().then(function(sb){
+    sb.auth.onAuthStateChange(function(ev){
+      if(ev==="SIGNED_IN"||ev==="SIGNED_OUT"||ev==="TOKEN_REFRESHED"||ev==="USER_UPDATED") hydrateCurrentUser();
+    });
+  }).catch(function(){});
 }
 
 document.addEventListener("DOMContentLoaded",init);
