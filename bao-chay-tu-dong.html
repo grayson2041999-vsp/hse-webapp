@@ -42,12 +42,6 @@
     /* TABS */
     .page-title{font-size:20px;font-weight:700;color:var(--primary);margin-bottom:4px;}
     .page-desc{font-size:12.5px;color:var(--text-light);margin-bottom:20px;}
-    .tab-bar{display:flex;border-bottom:2px solid var(--border);margin-bottom:22px;}
-    .tab-btn{padding:10px 22px;font-size:13.5px;font-weight:600;color:var(--text-light);cursor:pointer;border:none;background:none;border-bottom:2.5px solid transparent;margin-bottom:-2px;transition:all .15s;}
-    .tab-btn:hover{color:var(--primary);}
-    .tab-btn.active{color:var(--primary);border-bottom-color:var(--primary);}
-    .tab-pane{display:none;}
-    .tab-pane.active{display:block;}
 
     /* BUTTONS */
     .btn{display:inline-flex;align-items:center;gap:6px;padding:7px 16px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;border:none;transition:all .15s;}
@@ -132,48 +126,6 @@
     .wip h3{font-size:15px;font-weight:700;color:var(--primary);margin-bottom:8px;}
     .wip p{font-size:13px;color:var(--text-light);}
 
-    /* ZONE GRID – Phương tiện CC & CNCH */
-    .zone-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;max-width:900px;}
-    .zone-card{background:#fff;border-radius:12px;box-shadow:0 2px 10px rgba(0,0,0,0.08);
-      padding:24px 16px;text-align:center;cursor:pointer;border:2px solid transparent;
-      transition:all .18s;position:relative;overflow:hidden;}
-    .zone-card::before{content:'';position:absolute;top:0;left:0;right:0;height:4px;
-      background:linear-gradient(90deg,var(--primary),var(--primary-light));}
-    .zone-card:hover{border-color:var(--primary-light);box-shadow:0 4px 18px rgba(0,96,182,0.18);
-      transform:translateY(-2px);}
-    .zone-card:active{transform:translateY(0);}
-    .zone-card .zone-icon{font-size:32px;margin-bottom:10px;display:block;}
-    .zone-card .zone-num{position:absolute;top:10px;right:12px;font-size:11px;font-weight:700;
-      color:var(--primary-light);background:#dceaf7;border-radius:20px;padding:2px 8px;}
-    .zone-card .zone-name{font-size:13.5px;font-weight:700;color:var(--primary);
-      margin-bottom:6px;line-height:1.4;}
-    .zone-card .zone-count{font-size:12px;color:var(--text-light);}
-    .zone-card .zone-count span{font-weight:700;color:var(--primary-light);}
-    /* Hàng cuối 2 ô: căn giữa */
-    .zone-grid-last{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;max-width:900px;margin-top:0;}
-    .zone-grid-last .zone-card:last-child:nth-child(2){grid-column:2;}
-
-    /* ZONE VIEW – sơ đồ khu vực */
-    .zone-view{display:none;}
-    .zone-view.active{display:block;}
-    .zone-view-header{display:flex;align-items:center;gap:12px;margin-bottom:18px;}
-    .zone-back-btn{background:#dceaf7;border:none;color:var(--primary);font-size:13px;font-weight:700;
-      padding:7px 16px;border-radius:8px;cursor:pointer;display:flex;align-items:center;gap:6px;}
-    .zone-back-btn:hover{background:#b8d4ef;}
-    .zone-view-title{font-size:16px;font-weight:700;color:var(--primary);}
-    .zone-diagram-wrap{background:#fff;border-radius:10px;box-shadow:0 2px 8px rgba(0,0,0,0.07);
-      padding:24px;min-height:340px;display:flex;align-items:center;justify-content:center;
-      border:2px dashed var(--border);position:relative;}
-    .zone-diagram-placeholder{text-align:center;color:var(--text-light);}
-    .zone-diagram-placeholder .ic{font-size:40px;margin-bottom:12px;}
-    .zone-diagram-placeholder p{font-size:13px;}
-
-    /* MARKER */
-    #zoneDiagramWrap{overflow:hidden;}
-    #zoneDiagramWrap.has-diagram{padding:0;border:1.5px solid var(--border);min-height:auto;display:block;width:100%;}
-    #zoneDiagramWrap svg{display:block;width:100%;height:auto;cursor:crosshair;}
-    .zone-edit-hint{background:#dceaf7;border-left:4px solid var(--primary);padding:8px 14px;
-      border-radius:0 8px 8px 0;font-size:12.5px;color:var(--primary);margin-bottom:12px;display:none;}
 
     /* TOAST */
     #toast{position:fixed;bottom:24px;right:24px;padding:10px 18px;border-radius:8px;font-size:13px;font-weight:600;box-shadow:0 4px 16px rgba(0,0,0,0.2);z-index:999;display:none;color:#fff;}
@@ -225,13 +177,8 @@
     <div class="page-title"><svg class="lic-emoji" width="1.05em" height="1.05em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex-shrink:0" aria-hidden="true"><path d="M10.268 21a2 2 0 0 0 3.464 0"/><path d="M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326"/></svg> Báo cáo hệ thống báo cháy tự động</div>
     <div class="page-desc" id="pageDesc"></div>
 
-    <div class="tab-bar" style="display:none">
-      <button class="tab-btn active" onclick="switchTab('bctd')"><svg class="lic-emoji" width="1.05em" height="1.05em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex-shrink:0" aria-hidden="true"><path d="M10.268 21a2 2 0 0 0 3.464 0"/><path d="M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326"/></svg> Hệ thống báo cháy tự động</button>
-      <button class="tab-btn" onclick="switchTab('phuongtien')"><svg class="lic-emoji" width="1.05em" height="1.05em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex-shrink:0" aria-hidden="true"><path d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2"/><path d="M15 18H9"/><path d="M19 18h2a1 1 0 0 0 1-1v-3.65a1 1 0 0 0-.22-.624l-3.48-4.35A1 1 0 0 0 17.52 8H14"/><circle cx="17" cy="18" r="2"/><circle cx="7" cy="18" r="2"/></svg> Phương tiện CC & CNCH</button>
-    </div>
-
     <!-- TAB 1: HỆ THỐNG BCTD -->
-    <div class="tab-pane active" id="tab-bctd">
+    <div id="tab-bctd">
 
       <!-- ADMIN: QUẢN LÝ THIẾT BỊ -->
       <div id="adminDeviceSection" style="display:none">
@@ -284,42 +231,6 @@
       </div>
     </div>
 
-    <!-- TAB 2: PHƯƠNG TIỆN CC & CNCH -->
-    <div class="tab-pane" id="tab-phuongtien">
-
-      <!-- GRID 11 KHU VỰC -->
-      <div id="zoneGrid">
-        <div class="page-title" style="font-size:15px;margin-bottom:6px;"><svg class="lic-emoji" width="1.05em" height="1.05em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex-shrink:0" aria-hidden="true"><path d="M14.106 5.553a2 2 0 0 0 1.788 0l3.659-1.83A1 1 0 0 1 21 4.619v12.764a1 1 0 0 1-.553.894l-4.553 2.277a2 2 0 0 1-1.788 0l-4.212-2.106a2 2 0 0 0-1.788 0l-3.659 1.83A1 1 0 0 1 3 19.381V6.618a1 1 0 0 1 .553-.894l4.553-2.277a2 2 0 0 1 1.788 0z"/><path d="M15 5.764v15"/><path d="M9 3.236v15"/></svg> Chọn khu vực quản lý</div>
-        <div class="page-desc" style="margin-bottom:18px;">Nhấn vào một khu vực để xem sơ đồ và quản lý phương tiện CC & CNCH.</div>
-
-        <!-- Hàng 1–3: 9 ô -->
-        <div class="zone-grid" id="zoneGridMain"></div>
-        <!-- Hàng 4: 2 ô cuối, căn giữa -->
-        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;max-width:900px;margin-top:16px;" id="zoneGridLast"></div>
-      </div>
-
-      <!-- ZONE VIEW (sơ đồ khu vực) -->
-      <div id="zoneView" class="zone-view">
-        <div class="zone-view-header">
-          <button class="zone-back-btn" onclick="closeZoneView()">← Quay lại</button>
-          <div style="flex:1">
-            <div class="zone-view-title" id="zoneViewTitle"></div>
-            <div style="font-size:12px;color:var(--text-light);margin-top:2px;" id="zoneViewSub"></div>
-          </div>
-          <div id="zoneAdminBar" style="display:flex;gap:8px;align-items:center;"></div>
-        </div>
-        <div class="zone-edit-hint" id="zoneEditHint"><svg class="lic-emoji" width="1.05em" height="1.05em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex-shrink:0" aria-hidden="true"><path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5"/><path d="M9 18h6"/><path d="M10 22h4"/></svg> Nhấn vào sơ đồ để đặt điểm phương tiện CC & CNCH.</div>
-        <div class="zone-diagram-wrap" id="zoneDiagramWrap">
-          <div class="zone-diagram-placeholder">
-            <div class="ic"><svg class="lic-emoji" width="1.05em" height="1.05em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex-shrink:0" aria-hidden="true"><path d="M14.106 5.553a2 2 0 0 0 1.788 0l3.659-1.83A1 1 0 0 1 21 4.619v12.764a1 1 0 0 1-.553.894l-4.553 2.277a2 2 0 0 1-1.788 0l-4.212-2.106a2 2 0 0 0-1.788 0l-3.659 1.83A1 1 0 0 1 3 19.381V6.618a1 1 0 0 1 .553-.894l4.553-2.277a2 2 0 0 1 1.788 0z"/><path d="M15 5.764v15"/><path d="M9 3.236v15"/></svg></div>
-            <p>Sơ đồ khu vực đang được xây dựng.</p>
-          </div>
-        </div>
-        <div id="zoneMarkerList" style="margin-top:16px;"></div>
-      </div>
-
-    </div>
-
   </main>
 </div>
 
@@ -347,60 +258,6 @@
     <div class="modal-footer">
       <button class="btn btn-outline" onclick="closeDeviceModal()">Hủy</button>
       <button class="btn btn-primary" onclick="saveDevice()"><svg class="lic-emoji" width="1.05em" height="1.05em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex-shrink:0" aria-hidden="true"><path d="M15.2 3a2 2 0 0 1 1.4.6l3.8 3.8a2 2 0 0 1 .6 1.4V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/><path d="M17 21v-7a1 1 0 0 0-1-1H8a1 1 0 0 0-1 1v7"/><path d="M7 3v4a1 1 0 0 0 1 1h7"/></svg> Lưu</button>
-    </div>
-  </div>
-</div>
-
-<!-- MODAL THÊM PHƯƠNG TIỆN (click trên sơ đồ) -->
-<div class="modal-bg" id="markerModalBg">
-  <div class="modal" style="width:420px">
-    <div class="modal-head">
-      <h3 id="markerModalTitle">Thêm phương tiện CC & CNCH</h3>
-      <button class="modal-close" onclick="closeMarkerModal()">×</button>
-    </div>
-    <div class="modal-body">
-      <div class="form-row full" style="margin-bottom:14px">
-        <div class="form-group">
-          <label>Loại phương tiện <span class="req">*</span></label>
-          <select class="inp" id="markerType"></select>
-        </div>
-      </div>
-      <div class="form-row" style="margin-bottom:14px">
-        <div class="form-group">
-          <label>Số lượng <span class="req">*</span></label>
-          <input class="inp" id="markerQty" type="number" min="1" value="1" placeholder="1">
-        </div>
-        <div class="form-group">
-          <label>Ghi chú</label>
-          <input class="inp" id="markerNote" placeholder="VD: hành lang tầng 2...">
-        </div>
-      </div>
-    </div>
-    <div class="modal-footer">
-      <button class="btn btn-outline" onclick="closeMarkerModal()">Hủy</button>
-      <button class="btn btn-primary" onclick="confirmSaveMarker()"><svg class="lic-emoji" width="1.05em" height="1.05em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex-shrink:0" aria-hidden="true"><path d="M15.2 3a2 2 0 0 1 1.4.6l3.8 3.8a2 2 0 0 1 .6 1.4V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/><path d="M17 21v-7a1 1 0 0 0-1-1H8a1 1 0 0 0-1 1v7"/><path d="M7 3v4a1 1 0 0 0 1 1h7"/></svg> Lưu</button>
-    </div>
-  </div>
-</div>
-
-<!-- MODAL QUẢN LÝ DANH MỤC PHƯƠNG TIỆN (Admin) -->
-<div class="modal-bg" id="ptTypeModalBg">
-  <div class="modal" style="width:480px">
-    <div class="modal-head">
-      <h3><svg class="lic-emoji" width="1.05em" height="1.05em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex-shrink:0" aria-hidden="true"><path d="M9.671 4.136a2.34 2.34 0 0 1 4.659 0 2.34 2.34 0 0 0 3.319 1.915 2.34 2.34 0 0 1 2.33 4.033 2.34 2.34 0 0 0 0 3.831 2.34 2.34 0 0 1-2.33 4.033 2.34 2.34 0 0 0-3.319 1.915 2.34 2.34 0 0 1-4.659 0 2.34 2.34 0 0 0-3.32-1.915 2.34 2.34 0 0 1-2.33-4.033 2.34 2.34 0 0 0 0-3.831A2.34 2.34 0 0 1 6.35 6.051a2.34 2.34 0 0 0 3.319-1.915"/><circle cx="12" cy="12" r="3"/></svg> Danh mục phương tiện CC & CNCH</h3>
-      <button class="modal-close" onclick="closePTTypeModal()">×</button>
-    </div>
-    <div class="modal-body">
-      <div class="info-box" style="margin-bottom:14px">Danh mục này áp dụng cho tất cả khu vực trong toàn bộ hệ thống.</div>
-      <div style="display:flex;gap:8px;margin-bottom:14px;">
-        <input class="inp" id="newPTTypeName" placeholder="Nhập tên loại phương tiện mới..." style="flex:1"
-          onkeydown="if(event.key==='Enter')addPTType()">
-        <button class="btn btn-primary" onclick="addPTType()">+ Thêm</button>
-      </div>
-      <div id="ptTypeList"></div>
-    </div>
-    <div class="modal-footer">
-      <button class="btn btn-primary" onclick="closePTTypeModal()"><svg class="lic-emoji" width="1.05em" height="1.05em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex-shrink:0" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg> Xong</button>
     </div>
   </div>
 </div>
@@ -469,7 +326,7 @@
 var MENU=[
   {slug:"tong-quan",title:"Tổng quan",icon:"📊"},
   {slug:"tai-nan-su-co",title:"Tai nạn - Sự cố",icon:"⚠️"},
-  {slug:"pccc-cnch",title:"PCCC & CNCH",icon:"🧯"},
+  {slug:"bao-chay-tu-dong",title:"Báo cáo HTBCTĐ",icon:"🔔"},
   {slug:"cap-phat-bhld",title:"Cấp phát BHLĐ",icon:"🦺"},
   {slug:"huan-luyen-dao-tao",title:"Huấn luyện - Đào tạo",icon:"🎓"},
   {slug:"sop",title:"SOP",icon:"📑"},
@@ -503,28 +360,43 @@ function fmtDate(s){
   return p.length===3?p[2]+"/"+p[1]+"/"+p[0]:s;
 }
 
-/* ---- AUTH ---- */
-function seedUsers(){
-  var u=load(K_USERS,null);
-  if(!u||!u.length){
-    save(K_USERS,[{id:"1",username:"admin",password:"admin123",fullname:"Quản trị viên",
-      role:"admin",perms:MENU.map(function(m){return m.slug;}),active:true}]);
-  }
-}
+/* ---- AUTH ----
+   Phương án B: tài khoản thật nằm trong Supabase Auth, role/perms nằm ở bảng
+   `profiles`. localStorage (hse_users / hse_session) CHỈ là cache để UI đọc
+   đồng bộ. Trang này là trang standalone (không nạp assets/app.js) nên phải
+   TỰ hydrate hồ sơ từ Supabase — xem hydrateCurrentUser() ở cuối file.
+   ⚠️ KHÔNG seed admin giả ở localStorage: nó sẽ ghi đè/che mất hồ sơ thật. */
+function seedUsers(){ return getUsers(); }
 function getUsers(){return load(K_USERS,[]);}
-function findUser(un){var us=getUsers();for(var i=0;i<us.length;i++)if(us[i].username===un)return us[i];return null;}
+function findUser(un){
+  var us=getUsers(), k=String(un||"").trim().toLowerCase();
+  for(var i=0;i<us.length;i++){
+    if(String(us[i].username||"").trim().toLowerCase()===k) return us[i];
+  }
+  return null;
+}
 function currentUser(){var un=load(K_SESS,null);return un?findUser(un):null;}
 function isAdmin(u){return u&&u.role==="admin";}
+
+/* Slug quyền của trang này. */
+
+var PAGE_PERMS=["bao-chay-tu-dong"];
+function hasPagePerm(u){
+  var p=u&&u.perms||[];
+  for(var i=0;i<PAGE_PERMS.length;i++) if(p.indexOf(PAGE_PERMS[i])>=0) return true;
+  return false;
+}
 function canEdit(u){
   if(!u) return false;
+  if(u.active===false) return false;
   if(u.role==="viewer") return false;
   if(u.role==="admin") return true;
-  return (u.perms||[]).indexOf("bao-chay-tu-dong") >= 0;
+  return hasPagePerm(u);
 }
 function canView(u){
   if(!u)return true;
   if(u.role==="admin")return true;
-  return (u.perms||[]).indexOf("bao-chay-tu-dong")>=0;
+  return hasPagePerm(u);
 }
 
 /* ---- SIDEBAR ---- */
@@ -533,7 +405,7 @@ function buildSidebar(){
   var html='<nav style="flex:1;padding-top:8px">';
   MENU.forEach(function(m){
     if(m.adminOnly&&(!u||u.role!=="admin"))return;
-    var active=m.slug==="pccc-cnch"?" active":"";
+    var active=m.slug==="bao-chay-tu-dong"?" active":"";
     html+='<a class="nav-item'+active+'" href="'+m.slug+'.html">'+m.title.toUpperCase()+'</a>';
   });
   html+='</nav>';
@@ -560,19 +432,18 @@ function buildTopbar(){
   else desc.textContent='Bạn chỉ có quyền xem trang này.';
 }
 
-/* ---- TABS ---- */
-function switchTab(tab){
-  document.querySelectorAll('.tab-btn').forEach(function(b,i){
-    b.classList.toggle('active',(tab==='bctd'?i===0:i===1));
-  });
-  document.getElementById('tab-bctd').classList.toggle('active',tab==='bctd');
-  document.getElementById('tab-phuongtien').classList.toggle('active',tab==='phuongtien');
-  if(tab==='bctd'){ populateMonthFilter();populateSystemFilter(); renderErrorLog(); updateLockUI(); }
-}
-
 /* ---- DATA ---- */
 function getDevices(){return load(K_DEVICES,[]);}
-function getErrors(){return load(K_ERRORS,[]);}
+/* Chuẩn hoá month/year về số: dữ liệu kéo từ Sheets/Supabase có thể là chuỗi ("7","2026")
+   khiến các phép so sánh === với số bị sai (báo cáo không tìm thấy bản ghi). */
+function getErrors(){
+  return load(K_ERRORS,[]).map(function(e){
+    if(e&&(typeof e.month==="string"||typeof e.year==="string")){
+      e.month=parseInt(e.month,10); e.year=parseInt(e.year,10);
+    }
+    return e;
+  });
+}
 
 /* saveDevices / saveErrors: chỉ lưu localStorage, Sheets được xử lý riêng theo từng thao tác */
 function saveDevices(data){ save(K_DEVICES, data); }
@@ -606,49 +477,6 @@ function safePullLockedMonths(){
       save(K_LOCKED, r||[]);
       updateLockUI();
       renderErrorLog();
-    }
-  }).catch(function(){});
-}
-
-var SH_PT_TYPES   = "pt_cc_cnch_types";
-var SH_PT_MARKERS = "pt_cc_cnch_markers";
-
-function safePullPTTypes(){
-  if(!DB||!DB.isReady()) return;
-  DB.getAll(SH_PT_TYPES).then(function(r){
-    if(r&&r.length){
-      // Sheets có data → cập nhật localStorage
-      savePTTypes(r.map(function(x){return x.name;}));
-    } else {
-      // Sheets trống → seed toàn bộ danh mục hiện tại (gồm defaults) lên Sheets
-      var types=getPTTypes();
-      var now=new Date().toISOString();
-      var rows=types.map(function(name){
-        return {id:uid(),name:name,createdBy:'system',createdAt:now};
-      });
-      DB.bulkWrite(SH_PT_TYPES,rows).catch(function(){});
-    }
-  }).catch(function(){});
-}
-
-function safePullPTMarkers(){
-  if(!DB||!DB.isReady()) return;
-  DB.getAll(SH_PT_MARKERS).then(function(r){
-    if(r&&r.length){
-      // Gom markers theo zoneId
-      var grouped={};
-      r.forEach(function(m){
-        if(!grouped[m.zoneId]) grouped[m.zoneId]=[];
-        grouped[m.zoneId].push(m);
-      });
-      save(K_PT, grouped);
-      // Cập nhật UI nếu đang mở zone view
-      var zv=document.getElementById("zoneView");
-      if(zv&&zv.classList.contains("active")){
-        var zoneId=zv.dataset.zoneId;
-        if(zoneId){ renderMarkers(zoneId); renderMarkerList(zoneId); }
-      }
-      buildZoneGrid();
     }
   }).catch(function(){});
 }
@@ -693,7 +521,7 @@ function toggleLockMonth(){
   if(locked){
     if(!confirm("Mở khoá Tháng "+fm+"/"+fy+"? User sẽ có thể chỉnh sửa lại dữ liệu tháng này.")) return;
     var lockId="lock-"+fm+"-"+fy;
-    var newArr=getLockedMonths().filter(function(x){ return !(x.month===fm&&x.year===fy); });
+    var newArr=getLockedMonths().filter(function(x){ return !(String(x.month)===String(fm)&&String(x.year)===String(fy)); });
     save(K_LOCKED, newArr);
     // Xóa khỏi Sheets
     if(typeof DB!=="undefined"&&DB.isReady()){
@@ -1300,7 +1128,12 @@ function setupRoleUI(){
   updateLockUI();
 }
 
-function doLogout(){localStorage.removeItem(K_SESS);location.reload();}
+function doLogout(){
+  localStorage.removeItem(K_SESS);
+  var sb=window.HSE_SB;
+  if(sb&&sb.auth){ sb.auth.signOut().then(function(){location.reload();}).catch(function(){location.reload();}); }
+  else location.reload();
+}
 
 document.getElementById("deviceModalBg").addEventListener("click",function(e){if(e.target===this)closeDeviceModal();});
 
@@ -1319,8 +1152,6 @@ function showToast(msg,type){
    BÁO CÁO – MODAL + GENERATE DOCX
    ================================================================ */
 document.getElementById("reportModalBg").addEventListener("click",function(e){if(e.target===this)closeReportModal();});
-document.getElementById("markerModalBg").addEventListener("click",function(e){if(e.target===this)closeMarkerModal();});
-document.getElementById("ptTypeModalBg").addEventListener("click",function(e){if(e.target===this)closePTTypeModal();});
 
 function openReportModal(){
   populateReportSelects();
@@ -1350,7 +1181,7 @@ function populateReportSelects(){
 function previewReportData(){
   var m=parseInt(document.getElementById("rMonth").value);
   var y=parseInt(document.getElementById("rYear").value);
-  var errors=getErrors().filter(function(e){return e.month===m&&e.year===y;});
+  var errors=getErrors().filter(function(e){return parseInt(e.month,10)===m&&parseInt(e.year,10)===y;});
   var devices=getDevices();
   var prev=document.getElementById("reportPreview");
   if(!errors.length){
@@ -1380,7 +1211,7 @@ function generateReport(){
   var preparedBy=(document.getElementById("rPreparedBy").value||"").trim();
   if(!preparedBy){showToast("⚠️ Vui lòng nhập tên người thực hiện","warning");return;}
 
-  var errors=getErrors().filter(function(e){return e.month===m&&e.year===y;});
+  var errors=getErrors().filter(function(e){return parseInt(e.month,10)===m&&parseInt(e.year,10)===y;});
   var devices=getDevices();
   var newDevices=(document.getElementById("rNewDevices").value||"").trim();
   var noSystem=(document.getElementById("rNoSystem").value||"").trim();
@@ -1716,554 +1547,57 @@ function manualSync(){
 }
 
 /* ================================================================
-   PHƯƠNG TIỆN CC & CNCH – ZONE GRID
+   HYDRATE HỒ SƠ NGƯỜI DÙNG TỪ SUPABASE
+   ----------------------------------------------------------------
+   Trang này KHÔNG nạp assets/app.js, nên trước đây nó chỉ đọc cache
+   localStorage tại thời điểm parse. Hậu quả: user vừa được Admin cấp
+   quyền (lưu ở bảng `profiles` trên Supabase) nhưng cache trên máy còn
+   cũ / rỗng → canEdit() trả false → trang báo "chỉ có quyền xem".
+   Khối dưới đây lấy phiên Supabase, đọc lại `profiles`, ghi vào cache
+   rồi VẼ LẠI phần UI phụ thuộc quyền.
    ================================================================ */
-var ZONES=[
-  {id:"z1",  icon:"🏢", name:"Toà nhà điều hành"},
-  {id:"z2",  icon:"🛢️", name:"Trạm nhiên liệu và các kho trong khu vực"},
-  {id:"z3",  icon:"📦", name:"Các kho cảng"},
-  {id:"z4",  icon:"🏭", name:"Các kho trung tâm"},
-  {id:"z5",  icon:"🏗️", name:"Khu kho 1700"},
-  {id:"z6",  icon:"⚙️", name:"Khu vực bãi sắt, kho thông minh, kho axetylen"},
-  {id:"z7",  icon:"🚢", name:"Cảng biển"},
-  {id:"z8",  icon:"🚗", name:"Các gara"},
-  {id:"z9",  icon:"🔧", name:"Xưởng sửa chữa ô tô"},
-  {id:"z10", icon:"⚒️", name:"Xưởng sửa chữa cơ khí"},
-  {id:"z11", icon:"💨", name:"Khu kho trạm oxy"}
-];
-
-var K_PT = "hse_phuongtien_markers"; // localStorage key
-
-function getPTMarkers(zoneId){
-  var all=load(K_PT,{});
-  return all[zoneId]||[];
-}
-
-function countPT(zoneId){
-  return getPTMarkers(zoneId).length;
-}
-
-function buildZoneGrid(){
-  var main=document.getElementById("zoneGridMain");
-  var last=document.getElementById("zoneGridLast");
-  if(!main||!last) return;
-
-  // 9 ô đầu
-  main.innerHTML=ZONES.slice(0,9).map(function(z,i){
-    var cnt=countPT(z.id);
-    return '<div class="zone-card" onclick="openZoneView(\''+z.id+'\')" title="'+z.name+'">'+
-      '<span class="zone-num">'+(i+1)+'</span>'+
-      '<div class="zone-name">'+z.name+'</div>'+
-      '<div class="zone-count">Phương tiện: <span>'+cnt+'</span></div>'+
-    '</div>';
-  }).join("");
-
-  // 2 ô cuối, căn giữa (để trống cột 1, dùng cột 2 và 3)
-  last.innerHTML=
-    '<div></div>'+
-    ZONES.slice(9).map(function(z,i){
-      var cnt=countPT(z.id);
-      return '<div class="zone-card" onclick="openZoneView(\''+z.id+'\')" title="'+z.name+'">'+
-        '<span class="zone-num">'+(10+i)+'</span>'+
-        '<div class="zone-name">'+z.name+'</div>'+
-        '<div class="zone-count">Phương tiện: <span>'+cnt+'</span></div>'+
-      '</div>';
-    }).join("");
-}
-
-function openZoneView(zoneId){
-  var zone=ZONES.find(function(z){return z.id===zoneId;});
-  if(!zone) return;
-  document.getElementById("zoneGrid").style.display="none";
-  document.getElementById("zoneViewTitle").textContent=zone.name;
-  document.getElementById("zoneViewSub").textContent="Sơ đồ khu vực • Quản lý phương tiện CC & CNCH";
-  document.getElementById("zoneView").classList.add("active");
-  document.getElementById("zoneView").dataset.zoneId=zoneId;
-  buildZoneToolbar(zoneId);
-  renderZoneDiagram(zoneId);
-}
-
-function closeZoneView(){
-  document.getElementById("zoneView").classList.remove("active");
-  document.getElementById("zoneGrid").style.display="";
-  buildZoneGrid(); // cập nhật số lượng
-}
-
-/* ================================================================
-   PHƯƠNG TIỆN CC & CNCH – DANH MỤC & MARKER SYSTEM
-   ================================================================ */
-var K_PT_TYPES = "hse_pt_types";
-
-var DEFAULT_PT_TYPES = [
-  "Bình chữa cháy CO₂",
-  "Bình chữa cháy bột ABC",
-  "Bình chữa cháy bọt AFFF",
-  "Xe đẩy chữa cháy",
-  "Vòi rồng chữa cháy",
-  "Trụ nước chữa cháy",
-  "Hộp / Tủ PCCC",
-  "Mặt nạ phòng độc",
-  "Dụng cụ phá dỡ CNCH",
-  "AED – Máy khử rung tim"
-];
-
-function getPTTypes(){
-  var s=load(K_PT_TYPES,null);
-  return (s&&s.length)?s:DEFAULT_PT_TYPES.slice();
-}
-function savePTTypes(arr){ save(K_PT_TYPES,arr); }
-
-function getZoneMarkers(zoneId){
-  var all=load(K_PT,{});
-  return all[zoneId]||[];
-}
-function saveZoneMarkers(zoneId,markers){
-  var all=load(K_PT,{});
-  all[zoneId]=markers;
-  save(K_PT,all);
-}
-
-/* ---- SVG HELPER ---- */
-function _floorWindows(wy,wh,indices){
-  var xs=[70,170,270,370,470,570];
-  return indices.reduce(function(acc,i){
-    return acc
-      +'<rect x="'+xs[i]+'" y="'+wy+'" width="60" height="'+wh+'" fill="#a8c8f0" stroke="#6b9fd4" stroke-width="1" rx="2"/>'
-      +'<line x1="'+(xs[i]+30)+'" y1="'+wy+'" x2="'+(xs[i]+30)+'" y2="'+(wy+wh)+'" stroke="#6b9fd4" stroke-width="0.5"/>'
-      +'<line x1="'+xs[i]+'" y1="'+(wy+Math.round(wh/2))+'" x2="'+(xs[i]+60)+'" y2="'+(wy+Math.round(wh/2))+'" stroke="#6b9fd4" stroke-width="0.5"/>';
-  },'');
-}
-
-/* ---- SVG: TÒA NHÀ ĐIỀU HÀNH (chiếu đứng) ---- */
-function svgZ1(){
-  return '<svg id="zoneSvg" viewBox="0 0 700 410" xmlns="http://www.w3.org/2000/svg" style="display:block;width:100%;height:auto;">'
-  // Nền trời
-  +'<rect x="0" y="0" width="700" height="410" fill="#eef3fb"/>'
-  // Mặt đất
-  +'<rect x="0" y="373" width="700" height="37" fill="#c5d0e0"/>'
-  +'<line x1="0" y1="373" x2="700" y2="373" stroke="#6b7c93" stroke-width="1.5"/>'
-  +'<text x="350" y="395" font-family="Segoe UI,Arial" font-size="11" fill="#6b7c93" text-anchor="middle">— Mặt đất —</text>'
-  // Bóng đổ tòa nhà
-  +'<rect x="33" y="91" width="642" height="284" fill="#b8c8de"/>'
-  // Thân tòa nhà (5 tầng)
-  +'<rect x="30" y="88" width="640" height="285" fill="#dde6f3" stroke="#003087" stroke-width="2"/>'
-  // Phân cách tầng
-  +'<line x1="30" y1="145" x2="670" y2="145" stroke="#003087" stroke-width="1" opacity="0.3"/>'
-  +'<line x1="30" y1="202" x2="670" y2="202" stroke="#003087" stroke-width="1" opacity="0.3"/>'
-  +'<line x1="30" y1="259" x2="670" y2="259" stroke="#003087" stroke-width="1" opacity="0.3"/>'
-  +'<line x1="30" y1="316" x2="670" y2="316" stroke="#003087" stroke-width="1" opacity="0.3"/>'
-  // Dải nhãn tầng trái
-  +'<rect x="30" y="88" width="38" height="285" fill="rgba(0,48,135,0.07)"/>'
-  +'<line x1="68" y1="88" x2="68" y2="373" stroke="#003087" stroke-width="0.75" opacity="0.35"/>'
-  // Mũ parapét
-  +'<rect x="26" y="82" width="648" height="10" fill="#003087" rx="1"/>'
-  // Bóng phòng kỹ thuật
-  +'<rect x="231" y="39" width="246" height="52" fill="#b8c8de"/>'
-  // Sân thượng – Phòng kỹ thuật
-  +'<rect x="228" y="36" width="244" height="52" fill="#cdd6e8" stroke="#003087" stroke-width="1.5"/>'
-  +'<text x="350" y="67" font-family="Segoe UI,Arial" font-size="11" fill="#003087" font-weight="600" text-anchor="middle">Phòng kỹ thuật (sân thượng)</text>'
-  // Cửa chính T1
-  +'<rect x="291" y="325" width="98" height="48" fill="#8ab4d9" stroke="#003087" stroke-width="1.5" rx="2"/>'
-  +'<line x1="340" y1="325" x2="340" y2="373" stroke="#003087" stroke-width="1" opacity="0.4"/>'
-  +'<rect x="326" y="354" width="10" height="5" fill="#003087" rx="2" opacity="0.6"/>'
-  +'<rect x="352" y="354" width="10" height="5" fill="#003087" rx="2" opacity="0.6"/>'
-  // Nhãn tầng
-  +'<text x="49" y="120" font-family="Segoe UI,Arial" font-size="11" fill="#003087" font-weight="700" text-anchor="middle">T.5</text>'
-  +'<text x="49" y="177" font-family="Segoe UI,Arial" font-size="11" fill="#003087" font-weight="700" text-anchor="middle">T.4</text>'
-  +'<text x="49" y="234" font-family="Segoe UI,Arial" font-size="11" fill="#003087" font-weight="700" text-anchor="middle">T.3</text>'
-  +'<text x="49" y="291" font-family="Segoe UI,Arial" font-size="11" fill="#003087" font-weight="700" text-anchor="middle">T.2</text>'
-  +'<text x="49" y="348" font-family="Segoe UI,Arial" font-size="11" fill="#003087" font-weight="700" text-anchor="middle">T.1</text>'
-  // Layer marker (JS sẽ inject vào đây)
-  +'<g id="markerLayer"></g>'
-  +'</svg>';
-}
-
-var ZONE_DIAGRAMS={ z1: svgZ1 };
-
-/* ---- RENDER ZONE DIAGRAM ---- */
-function renderZoneDiagram(zoneId){
-  var wrap=document.getElementById("zoneDiagramWrap");
-  var fn=ZONE_DIAGRAMS[zoneId];
-  if(!fn){
-    wrap.className="zone-diagram-wrap";
-    wrap.style.cssText="";
-    wrap.innerHTML='<div class="zone-diagram-placeholder"><div class="ic"><svg class="lic-emoji" width="1.05em" height="1.05em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex-shrink:0" aria-hidden="true"><path d="M14.106 5.553a2 2 0 0 0 1.788 0l3.659-1.83A1 1 0 0 1 21 4.619v12.764a1 1 0 0 1-.553.894l-4.553 2.277a2 2 0 0 1-1.788 0l-4.212-2.106a2 2 0 0 0-1.788 0l-3.659 1.83A1 1 0 0 1 3 19.381V6.618a1 1 0 0 1 .553-.894l4.553-2.277a2 2 0 0 1 1.788 0z"/><path d="M15 5.764v15"/><path d="M9 3.236v15"/></svg></div><p>Sơ đồ khu vực này đang được xây dựng.</p></div>';
-    return;
-  }
-  wrap.className="zone-diagram-wrap has-diagram";
-  wrap.innerHTML=fn();
-  var svg=wrap.querySelector('svg');
-  if(!svg) return;
-  svg.addEventListener('click',function(e){
-    var u=currentUser();
-    if(!canEdit(u)){showToast('⚠️ Bạn không có quyền thêm phương tiện','warning');return;}
-    var rect=svg.getBoundingClientRect();
-    var vb=svg.viewBox.baseVal;
-    var x=(e.clientX-rect.left)*(vb.width/rect.width);
-    var y=(e.clientY-rect.top)*(vb.height/rect.height);
-    openMarkerModal(zoneId,x,y);
-  });
-  renderMarkers(zoneId);
-  renderMarkerList(zoneId);
-}
-
-/* ---- RENDER MARKERS TRÊN SVG ---- */
-function renderMarkers(zoneId){
-  var layer=document.getElementById('markerLayer');
-  if(!layer) return;
-  var markers=getZoneMarkers(zoneId);
-  var u=currentUser();
-  var adm=isAdmin(u);
-
-  // Xóa markers cũ
-  while(layer.firstChild) layer.removeChild(layer.firstChild);
-
-  var NS='http://www.w3.org/2000/svg';
-  markers.forEach(function(m){
-    var canDel=adm||(u&&(u.fullname===m.createdBy||u.username===m.createdBy));
-
-    // Nhóm marker
-    var g=document.createElementNS(NS,'g');
-    g.style.cursor='pointer';
-
-    // Vòng tròn chính
-    var c=document.createElementNS(NS,'circle');
-    c.setAttribute('cx',m.x); c.setAttribute('cy',m.y); c.setAttribute('r','13');
-    c.setAttribute('fill','#C8102E'); c.setAttribute('stroke','#fff'); c.setAttribute('stroke-width','2');
-    c.setAttribute('opacity','0.92');
-    g.appendChild(c);
-
-    // Nhãn ký tự
-    var t=document.createElementNS(NS,'text');
-    t.setAttribute('x',m.x); t.setAttribute('y',m.y+4);
-    t.setAttribute('text-anchor','middle'); t.setAttribute('font-family','Arial');
-    t.setAttribute('font-size','11'); t.setAttribute('fill','#fff'); t.setAttribute('font-weight','bold');
-    t.style.pointerEvents='none';
-    t.textContent=(m.note||m.type||'').substring(0,3).toUpperCase();
-    g.appendChild(t);
-
-    // Tooltip title
-    var title=document.createElementNS(NS,'title');
-    title.textContent=m.type+' × '+(m.qty||1)+(m.note?' — '+m.note:'')+(m.createdBy?' ('+m.createdBy+')':'');
-    g.appendChild(title);
-
-    // Click → toast info
-    (function(marker){ g.addEventListener('click',function(e){
-      e.stopPropagation();
-      var msg='📍 '+marker.type+' × '+(marker.qty||1);
-      if(marker.note) msg+=' — '+marker.note;
-      if(marker.createdBy) msg+=' ('+marker.createdBy+')';
-      showToast(msg,'info');
-    }); })(m);
-
-    layer.appendChild(g);
-
-    // Nút xóa (chỉ admin hoặc người tạo)
-    if(canDel){
-      var dc=document.createElementNS(NS,'circle');
-      dc.setAttribute('cx',m.x+12); dc.setAttribute('cy',m.y-12); dc.setAttribute('r','8');
-      dc.setAttribute('fill','#002065'); dc.setAttribute('stroke','#fff'); dc.setAttribute('stroke-width','1.5');
-      dc.style.cursor='pointer';
-      (function(marker){ dc.addEventListener('click',function(e){
-        e.stopPropagation();
-        deleteMarkerById(zoneId,marker.id);
-      }); })(m);
-
-      var dx=document.createElementNS(NS,'text');
-      dx.setAttribute('x',m.x+12); dx.setAttribute('y',m.y-9);
-      dx.setAttribute('text-anchor','middle'); dx.setAttribute('font-family','Arial');
-      dx.setAttribute('font-size','12'); dx.setAttribute('fill','#fff');
-      dx.style.pointerEvents='none';
-      dx.textContent='×';
-
-      layer.appendChild(dc);
-      layer.appendChild(dx);
-    }
+function _sbReadyBCTD(){
+  return new Promise(function(resolve,reject){
+    if(window.HSE_SB) return resolve(window.HSE_SB);
+    var to=setTimeout(function(){reject(new Error("Supabase chưa sẵn sàng"));},8000);
+    window.addEventListener("hse-sb-ready",function(){clearTimeout(to);resolve(window.HSE_SB);},{once:true});
   });
 }
-
-function deleteMarkerById(zoneId,markerId){
-  if(!confirm('Xóa phương tiện này?')) return;
-  saveZoneMarkers(zoneId,getZoneMarkers(zoneId).filter(function(m){return m.id!==markerId;}));
-  renderMarkers(zoneId);
-  renderMarkerList(zoneId);
-  buildZoneGrid();
-  showToast('🗑️ Đã xóa phương tiện','danger');
-  // Sync lên Sheets
-  if(typeof DB!=="undefined"&&DB.isReady()){
-    DB.delete(SH_PT_MARKERS,markerId).catch(function(){});
-  }
+function _profileToUserBCTD(p){
+  return { id:p.id, username:p.username, fullname:p.fullname||"", danhSo:p.danhSo||"",
+    role:p.role||"viewer", perms:p.perms||[], capPhatUnits:p.capPhatUnits||[],
+    active:p.active, pendingApproval:p.pendingApproval, created:p.created };
 }
-
-/* ---- DANH SÁCH MARKER BÊN DƯỚI SƠ ĐỒ ---- */
-var _markerViewMode = 'summary'; // 'summary' | 'detail'
-
-function renderMarkerList(zoneId){
-  var wrap=document.getElementById('zoneMarkerList');
-  if(!wrap) return;
-  var markers=getZoneMarkers(zoneId);
-  var u=currentUser(); var adm=isAdmin(u);
-
-  if(!markers.length){
-    wrap.innerHTML='<div class="section-card"><div style="text-align:center;color:var(--text-light);padding:16px;font-style:italic;font-size:13px;">Chưa có phương tiện nào được đặt trong khu vực này.</div></div>';
-    return;
-  }
-
-  // Tính tổng số điểm và tổng số lượng
-  var totalQty=markers.reduce(function(s,m){return s+(m.qty||1);},0);
-
-  // Toggle button
-  var isSummary=(_markerViewMode==='summary');
-  var toggleBtn='<button class="btn btn-outline btn-sm" onclick="_markerViewMode=\''+(isSummary?'detail':'summary')+'\';renderMarkerList(\''+zoneId+'\')" style="font-size:12px;">'+(isSummary?'📋 Xem chi tiết':'📊 Xem tổng hợp')+'</button>';
-
-  var tableHtml='';
-
-  if(isSummary){
-    // Gom nhóm theo type
-    var grouped={};
-    markers.forEach(function(m){
-      if(!grouped[m.type]) grouped[m.type]={qty:0,notes:[],count:0};
-      grouped[m.type].qty+=(m.qty||1);
-      grouped[m.type].count++;
-      if(m.note) grouped[m.type].notes.push(m.note);
+function _cacheUserBCTD(u){
+  var arr=getUsers();
+  var i=arr.findIndex(function(x){return String(x.id)===String(u.id);});
+  if(i>=0) arr[i]=u; else arr.push(u);
+  save(K_USERS,arr);
+  save(K_SESS,u.username);
+  return u;
+}
+/* Vẽ lại toàn bộ UI phụ thuộc quyền sau khi hồ sơ được cập nhật */
+function refreshRoleDependentUI(){
+  buildSidebar();
+  buildTopbar();
+  setupRoleUI();
+  renderDevices();
+  renderErrorLog();
+}
+function hydrateCurrentUser(){
+  return _sbReadyBCTD().then(function(sb){
+    return sb.auth.getSession().then(function(r){
+      var sess=r&&r.data&&r.data.session;
+      if(!sess||!sess.user){ localStorage.removeItem(K_SESS); refreshRoleDependentUI(); return null; }
+      return sb.from("profiles").select("*").eq("id",sess.user.id).maybeSingle().then(function(res){
+        if(res.error||!res.data){ console.warn("[BCTD] Không đọc được profiles:",res.error&&res.error.message); return null; }
+        var u=_cacheUserBCTD(_profileToUserBCTD(res.data));
+        if(typeof DB!=="undefined") DB.setUser(u.username);
+        refreshRoleDependentUI();
+        return u;
+      });
     });
-    var sRows=Object.keys(grouped).map(function(type,i){
-      var g=grouped[type];
-      var notes=g.notes.length?g.notes.join('; '):'—';
-      return '<tr>'+
-        '<td style="color:var(--text-light);font-size:12px">'+(i+1)+'</td>'+
-        '<td style="font-weight:600">'+esc(type)+'</td>'+
-        '<td style="text-align:center;font-weight:700;color:var(--primary)">'+g.qty+'</td>'+
-        '<td style="font-size:12px;color:var(--text-light)">'+g.count+' vị trí</td>'+
-        '<td style="font-size:12px">'+esc(notes)+'</td>'+
-      '</tr>';
-    }).join('');
-    tableHtml='<div class="table-wrap" style="margin-bottom:0"><table>'+
-      '<thead><tr><th style="width:40px">#</th><th>Loại phương tiện</th><th style="width:80px">Tổng SL</th><th style="width:80px">Vị trí</th><th>Ghi chú</th></tr></thead>'+
-      '<tbody>'+sRows+'</tbody></table></div>';
-  } else {
-    // Chi tiết từng marker
-    var dRows=markers.map(function(m,i){
-      var canAct=adm||(u&&(u.fullname===m.createdBy||u.username===m.createdBy));
-      var btns=canAct?
-        '<button class="btn btn-edit btn-sm" onclick="openEditMarkerModal(\''+zoneId+'\',\''+m.id+'\')"><svg class="lic-emoji" width="1.05em" height="1.05em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex-shrink:0" aria-hidden="true"><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"/><path d="m15 5 4 4"/></svg></button> '+
-        '<button class="btn btn-danger btn-sm" onclick="deleteMarkerById(\''+zoneId+'\',\''+m.id+'\')"><svg class="lic-emoji" width="1.05em" height="1.05em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex-shrink:0" aria-hidden="true"><path d="M10 11v6"/><path d="M14 11v6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>':'';
-      return '<tr>'+
-        '<td style="color:var(--text-light);font-size:12px">'+(i+1)+'</td>'+
-        '<td style="font-weight:600">'+esc(m.type)+'</td>'+
-        '<td style="text-align:center;font-weight:700;color:var(--primary)">'+(m.qty||1)+'</td>'+
-        '<td>'+esc(m.note||'—')+'</td>'+
-        '<td style="font-size:12px;color:var(--text-light)">'+esc(m.createdBy||'—')+'</td>'+
-        '<td style="white-space:nowrap">'+btns+'</td></tr>';
-    }).join('');
-    tableHtml='<div class="table-wrap" style="margin-bottom:0"><table>'+
-      '<thead><tr><th style="width:40px">#</th><th>Loại phương tiện</th><th style="width:80px">Số lượng</th><th>Ghi chú</th><th>Người nhập</th><th style="width:90px"></th></tr></thead>'+
-      '<tbody>'+dRows+'</tbody></table></div>';
-  }
-
-  wrap.innerHTML='<div class="section-card">'+
-    '<div class="section-card-head">'+
-      '<div class="section-card-title"><svg class="lic-emoji" width="1.05em" height="1.05em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex-shrink:0" aria-hidden="true"><rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M12 11h4"/><path d="M12 16h4"/><path d="M8 11h.01"/><path d="M8 16h.01"/></svg> Phương tiện trong khu vực <span style="font-size:12px;font-weight:400;color:var(--text-light);margin-left:6px;">('+markers.length+' vị trí · '+totalQty+' thiết bị)</span></div>'+
-      toggleBtn+
-    '</div>'+
-    tableHtml+
-    '</div>';
-}
-
-/* ---- ZONE TOOLBAR ---- */
-function buildZoneToolbar(zoneId){
-  var bar=document.getElementById('zoneAdminBar');
-  var hint=document.getElementById('zoneEditHint');
-  if(!bar) return;
-  var u=currentUser();
-  hint.style.display=canEdit(u)?'block':'none';
-  bar.innerHTML=isAdmin(u)?
-    '<button class="btn btn-outline btn-sm" onclick="openPTTypeModal()"><svg class="lic-emoji" width="1.05em" height="1.05em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex-shrink:0" aria-hidden="true"><path d="M9.671 4.136a2.34 2.34 0 0 1 4.659 0 2.34 2.34 0 0 0 3.319 1.915 2.34 2.34 0 0 1 2.33 4.033 2.34 2.34 0 0 0 0 3.831 2.34 2.34 0 0 1-2.33 4.033 2.34 2.34 0 0 0-3.319 1.915 2.34 2.34 0 0 1-4.659 0 2.34 2.34 0 0 0-3.32-1.915 2.34 2.34 0 0 1-2.33-4.033 2.34 2.34 0 0 0 0-3.831A2.34 2.34 0 0 1 6.35 6.051a2.34 2.34 0 0 0 3.319-1.915"/><circle cx="12" cy="12" r="3"/></svg> Quản lý danh mục</button>':'';
-}
-
-/* ---- MARKER MODAL ---- */
-var _mkPending={zoneId:null,x:0,y:0,editId:null};
-function openMarkerModal(zoneId,x,y,editId){
-  _mkPending={zoneId:zoneId,x:x,y:y,editId:editId||null};
-  var types=getPTTypes();
-  document.getElementById('markerType').innerHTML=types.map(function(t){
-    return '<option value="'+esc(t)+'">'+esc(t)+'</option>';
-  }).join('');
-  var existing=editId?getZoneMarkers(zoneId).find(function(m){return m.id===editId;}):null;
-  document.getElementById('markerModalTitle').textContent=editId?'Sửa phương tiện CC & CNCH':'Thêm phương tiện CC & CNCH';
-  document.getElementById('markerType').value=existing?existing.type:(types[0]||'');
-  document.getElementById('markerQty').value=existing?(existing.qty||1):1;
-  document.getElementById('markerNote').value=existing?(existing.note||''):'';
-  document.getElementById('markerModalBg').classList.add('open');
-  setTimeout(function(){document.getElementById('markerQty').focus();},80);
-}
-function openEditMarkerModal(zoneId,markerId){
-  var m=getZoneMarkers(zoneId).find(function(x){return x.id===markerId;});
-  if(!m) return;
-  openMarkerModal(zoneId,m.x,m.y,markerId);
-}
-function closeMarkerModal(){document.getElementById('markerModalBg').classList.remove('open');}
-function confirmSaveMarker(){
-  var type=document.getElementById('markerType').value;
-  var qty=parseInt(document.getElementById('markerQty').value)||1;
-  var note=(document.getElementById('markerNote').value||'').trim();
-  if(!type){showToast('⚠️ Chọn loại phương tiện','warning');return;}
-  if(qty<1){showToast('⚠️ Số lượng phải ≥ 1','warning');return;}
-  var u=currentUser();
-  var zoneId=_mkPending.zoneId;
-  var isEdit=!!_mkPending.editId;
-  var arr=getZoneMarkers(zoneId);
-
-  if(isEdit){
-    // Cập nhật record hiện có
-    var idx=arr.findIndex(function(m){return m.id===_mkPending.editId;});
-    if(idx<0){showToast('⚠️ Không tìm thấy bản ghi','warning');return;}
-    arr[idx]=Object.assign({},arr[idx],{
-      type:type, qty:qty, note:note,
-      updatedBy:u?(u.fullname||u.username):'Khách',
-      updatedAt:new Date().toISOString()
-    });
-    var updated=arr[idx];
-    saveZoneMarkers(zoneId,arr);
-    closeMarkerModal();
-    renderMarkers(zoneId);
-    renderMarkerList(zoneId);
-    showToast('✅ Đã cập nhật: '+type,'success');
-    // Sync lên Sheets
-    if(typeof DB!=="undefined"&&DB.isReady()){
-      DB.update(SH_PT_MARKERS,updated.id,updated)
-        .catch(function(e){
-          // Nếu chưa có trên Sheets thì insert
-          if(e&&e.message&&e.message.indexOf('tìm thấy')>=0)
-            return DB.insert(SH_PT_MARKERS,updated);
-          throw e;
-        })
-        .then(function(){_dbToast(true,'Phương tiện');})
-        .catch(function(e){_dbToast(false,e&&e.message||'');});
-    }
-  } else {
-    // Thêm mới
-    var m={id:uid(),zoneId:zoneId,type:type,qty:qty,note:note,
-      x:Math.round(_mkPending.x),y:Math.round(_mkPending.y),
-      createdBy:u?(u.fullname||u.username):'Khách',
-      createdAt:new Date().toISOString()};
-    arr.push(m);
-    saveZoneMarkers(zoneId,arr);
-    closeMarkerModal();
-    renderMarkers(zoneId);
-    renderMarkerList(zoneId);
-    buildZoneGrid();
-    showToast('✅ Đã thêm: '+type,'success');
-    // Sync lên Sheets
-    if(typeof DB!=="undefined"&&DB.isReady()){
-      DB.insert(SH_PT_MARKERS,m)
-        .then(function(){_dbToast(true,'Phương tiện');})
-        .catch(function(e){_dbToast(false,e&&e.message||'');});
-    }
-  }
-}
-
-/* ---- PT TYPE MODAL (Admin) ---- */
-function openPTTypeModal(){
-  renderPTTypes();
-  document.getElementById('newPTTypeName').value='';
-  document.getElementById('ptTypeModalBg').classList.add('open');
-}
-function closePTTypeModal(){
-  document.getElementById('ptTypeModalBg').classList.remove('open');
-}
-function renderPTTypes(){
-  var types=getPTTypes();
-  var wrap=document.getElementById('ptTypeList');
-  if(!types.length){
-    wrap.innerHTML='<div style="color:var(--text-light);text-align:center;padding:12px;font-style:italic">Chưa có loại phương tiện nào.</div>';
-    return;
-  }
-  wrap.innerHTML='<div class="table-wrap" style="margin-bottom:0"><table>'+
-    '<thead><tr><th style="width:36px">#</th><th>Tên loại phương tiện</th><th style="width:90px"></th></tr></thead><tbody>'+
-    types.map(function(t,i){
-      var safeT=esc(t);
-      return '<tr id="ptrow-'+i+'">'+
-        '<td style="color:var(--text-light);font-size:12px">'+(i+1)+'</td>'+
-        '<td id="ptcell-'+i+'">'+safeT+'</td>'+
-        '<td style="white-space:nowrap">'+
-          '<button class="btn btn-edit btn-sm" onclick="startEditPTType('+i+',\''+safeT+'\')"><svg class="lic-emoji" width="1.05em" height="1.05em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex-shrink:0" aria-hidden="true"><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"/><path d="m15 5 4 4"/></svg></button> '+
-          '<button class="btn btn-danger btn-sm" onclick="deletePTType(\''+safeT+'\')"><svg class="lic-emoji" width="1.05em" height="1.05em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex-shrink:0" aria-hidden="true"><path d="M10 11v6"/><path d="M14 11v6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>'+
-        '</td></tr>';
-    }).join('')+'</tbody></table></div>';
-}
-
-function startEditPTType(idx,oldName){
-  var cell=document.getElementById('ptcell-'+idx);
-  if(!cell) return;
-  cell.innerHTML='<div style="display:flex;gap:6px;align-items:center;">'+
-    '<input id="ptEditInp-'+idx+'" class="inp" style="padding:4px 8px;font-size:13px;flex:1" value="'+esc(oldName)+'" onkeydown="if(event.key===\'Enter\')confirmEditPTType('+idx+',\''+esc(oldName)+'\');if(event.key===\'Escape\')renderPTTypes();">'+
-    '<button class="btn btn-primary btn-sm" onclick="confirmEditPTType('+idx+',\''+esc(oldName)+'\')"><svg class="lic-emoji" width="1.05em" height="1.05em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex-shrink:0" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></button>'+
-    '<button class="btn btn-outline btn-sm" onclick="renderPTTypes()"><svg class="lic-emoji" width="1.05em" height="1.05em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex-shrink:0" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>'+
-  '</div>';
-  setTimeout(function(){
-    var inp=document.getElementById('ptEditInp-'+idx);
-    if(inp){inp.focus();inp.select();}
-  },50);
-}
-
-function confirmEditPTType(idx,oldName){
-  var inp=document.getElementById('ptEditInp-'+idx);
-  if(!inp) return;
-  var newName=(inp.value||'').trim();
-  if(!newName){showToast('⚠️ Tên không được để trống','warning');return;}
-  if(newName===oldName){renderPTTypes();return;}
-  var types=getPTTypes();
-  if(types.indexOf(newName)>=0){showToast('⚠️ Tên này đã tồn tại','warning');return;}
-  var i=types.indexOf(oldName);
-  if(i<0){showToast('⚠️ Không tìm thấy loại cần sửa','warning');return;}
-  types[i]=newName;
-  savePTTypes(types);
-  renderPTTypes();
-  showToast('✅ Đã đổi tên thành: '+newName,'success');
-  // Sync lên Sheets: tìm record theo tên cũ rồi update
-  if(typeof DB!=="undefined"&&DB.isReady()){
-    DB.getAll(SH_PT_TYPES).then(function(r){
-      var found=r&&r.find(function(x){return x.name===oldName;});
-      if(found){
-        DB.update(SH_PT_TYPES,found.id,{name:newName})
-          .then(function(){_dbToast(true,'Danh mục');})
-          .catch(function(e){_dbToast(false,e&&e.message||'');});
-      }
-    }).catch(function(){});
-  }
-}
-function addPTType(){
-  var name=(document.getElementById('newPTTypeName').value||'').trim();
-  if(!name){showToast('⚠️ Nhập tên loại phương tiện','warning');return;}
-  var types=getPTTypes();
-  if(types.indexOf(name)>=0){showToast('⚠️ Loại này đã tồn tại','warning');return;}
-  types.push(name);
-  savePTTypes(types);
-  document.getElementById('newPTTypeName').value='';
-  renderPTTypes();
-  showToast('✅ Đã thêm: '+name,'success');
-  // Sync lên Sheets
-  if(typeof DB!=="undefined"&&DB.isReady()){
-    var u=currentUser();
-    var item={id:uid(),name:name,createdBy:u?(u.fullname||u.username):'Admin',createdAt:new Date().toISOString()};
-    DB.insert(SH_PT_TYPES,item)
-      .then(function(){_dbToast(true,'Danh mục');})
-      .catch(function(e){_dbToast(false,e&&e.message||'');});
-  }
-}
-function deletePTType(name){
-  if(!confirm('Xóa loại "'+name+'"?')) return;
-  savePTTypes(getPTTypes().filter(function(t){return t!==name;}));
-  renderPTTypes();
-  showToast('🗑️ Đã xóa','danger');
-  // Sync lên Sheets: xóa theo name (tìm id trước)
-  if(typeof DB!=="undefined"&&DB.isReady()){
-    DB.getAll(SH_PT_TYPES).then(function(r){
-      var found=r&&r.find(function(x){return x.name===name;});
-      if(found) DB.delete(SH_PT_TYPES,found.id).catch(function(){});
-    }).catch(function(){});
-  }
+  }).catch(function(e){ console.warn("[BCTD] hydrate:",e&&e.message||e); return null; });
 }
 
 /* ---- INIT ---- */
@@ -2279,15 +1613,21 @@ setupRoleUI();
 populateMonthFilter();populateSystemFilter();
 renderDevices();
 renderErrorLog();
-buildZoneGrid();
+
+// Đồng bộ quyền thật từ Supabase (async) → vẽ lại UI khi có kết quả
+hydrateCurrentUser();
+// Quyền thay đổi khi đăng nhập/đăng xuất/refresh token ở tab khác
+_sbReadyBCTD().then(function(sb){
+  sb.auth.onAuthStateChange(function(ev){
+    if(ev==="SIGNED_IN"||ev==="SIGNED_OUT"||ev==="TOKEN_REFRESHED"||ev==="USER_UPDATED") hydrateCurrentUser();
+  });
+}).catch(function(){});
 // Pull từ Sheets
 setTimeout(function(){
   if(typeof DB==="undefined"||!DB.isReady()) return;
   safePullDevices();
   safePullErrors();
   safePullLockedMonths();
-  safePullPTTypes();
-  safePullPTMarkers();
 },1500);
 </script>
   <script src="assets/lucide-icons.js"></script>

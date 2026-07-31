@@ -1117,8 +1117,72 @@ function getCentralUser(){
     var un=JSON.parse(raw);
     if(!un)return null;
     const users=JSON.parse(localStorage.getItem('hse_users')||'[]');
-    return users.find(u=>u.username===un)||null;
+    const k=String(un).trim().toLowerCase();
+    return users.find(u=>String(u.username||'').trim().toLowerCase()===k)||null;
   }catch(e){return null;}
+}
+
+/* ═══════════════════════════════════════════════════
+   HYDRATE HỒ SƠ NGƯỜI DÙNG TỪ SUPABASE
+   ───────────────────────────────────────────────────
+   Trang này KHÔNG nạp assets/app.js nên trước đây chỉ đọc cache
+   localStorage (hse_users / hse_session) lúc parse. Hậu quả: Admin
+   cấp quyền / gán đơn vị cấp phát (lưu ở bảng `profiles`, gồm cả
+   `capPhatUnits`) nhưng cache trên máy user còn cũ → canEditUnit()
+   trả false → trang ở chế độ chỉ xem, không thao tác được.
+═══════════════════════════════════════════════════ */
+function _sbReadyCPW(){
+  return new Promise(function(resolve,reject){
+    if(window.HSE_SB) return resolve(window.HSE_SB);
+    var to=setTimeout(function(){reject(new Error('Supabase chưa sẵn sàng'));},8000);
+    window.addEventListener('hse-sb-ready',function(){clearTimeout(to);resolve(window.HSE_SB);},{once:true});
+  });
+}
+function _profileToUserCPW(p){
+  return { id:p.id, username:p.username, fullname:p.fullname||'', danhSo:p.danhSo||'',
+    role:p.role||'viewer', perms:p.perms||[], capPhatUnits:p.capPhatUnits||[],
+    active:p.active, pendingApproval:p.pendingApproval, created:p.created };
+}
+function _cacheUserCPW(u){
+  var arr=[];
+  try{ arr=JSON.parse(localStorage.getItem('hse_users')||'[]')||[]; }catch(e){ arr=[]; }
+  var i=arr.findIndex(function(x){return String(x.id)===String(u.id);});
+  if(i>=0) arr[i]=u; else arr.push(u);
+  localStorage.setItem('hse_users',JSON.stringify(arr));
+  localStorage.setItem('hse_session',JSON.stringify(u.username));
+  return u;
+}
+/* Vẽ lại toàn bộ UI phụ thuộc quyền sau khi hồ sơ được cập nhật.
+   ⚠️ PHẢI gọi cpUpdateApproveTile(): thẻ "Phê duyệt" + badge số mục chờ duyệt
+   chỉ hiện khi isAdmin()===true. Nếu lúc vẽ lần đầu cache còn chưa biết user là
+   admin thì thẻ bị ẩn và sẽ KHÔNG bao giờ hiện lại nếu không vẽ lại ở đây. */
+function refreshRoleDependentUI(){
+  try{ renderHeaderUser(); }catch(e){}
+  try{ renderUnitPicker(); }catch(e){}
+  try{ applyEditMode(); }catch(e){}
+  try{ _updateNotifBadge(); }catch(e){}
+  try{ cpUpdateApproveTile(); }catch(e){}
+  // Tab "Chờ duyệt" trong trang Phiếu yêu cầu (chỉ admin)
+  try{
+    var tab=document.getElementById('phieu-tab-choduyet');
+    if(tab) tab.style.display=isAdmin()?'block':'none';
+    var pg=document.getElementById('page-phieu-yeu-cau');
+    if(isAdmin()&&pg&&pg.classList.contains('active')&&typeof renderChoduyetTab==='function') renderChoduyetTab();
+  }catch(e){}
+}
+function hydrateCurrentUser(){
+  return _sbReadyCPW().then(function(sb){
+    return sb.auth.getSession().then(function(r){
+      var sess=r&&r.data&&r.data.session;
+      if(!sess||!sess.user){ localStorage.removeItem('hse_session'); refreshRoleDependentUI(); return null; }
+      return sb.from('profiles').select('*').eq('id',sess.user.id).maybeSingle().then(function(res){
+        if(res.error||!res.data){ console.warn('[BHLD] Không đọc được profiles:',res.error&&res.error.message); return null; }
+        var u=_cacheUserCPW(_profileToUserCPW(res.data));
+        refreshRoleDependentUI();
+        return u;
+      });
+    });
+  }).catch(function(e){ console.warn('[BHLD] hydrate:',e&&e.message||e); return null; });
 }
 function isAdmin(){
   const u=getCentralUser();
@@ -1127,6 +1191,7 @@ function isAdmin(){
 function canEditUnit(donVi){
   const u=getCentralUser();
   if(!u)return false;
+  if(u.active===false)return false;
   if(u.role==='admin')return true;
   if(u.role==='viewer')return false;
   return Array.isArray(u.capPhatUnits)&&u.capPhatUnits.includes(donVi);
@@ -4070,6 +4135,7 @@ ${sections}
   <td style="width:34%;text-align:center;padding:4pt 4pt 52pt;"><strong>Thủ kho</strong></td>
   <td style="width:33%;text-align:center;padding:4pt 4pt 52pt;"><strong>Lãnh đạo đơn vị</strong></td>
 </tr></table>
+<table style="width:100%;margin-top:12pt;"><tr><td style="width:34%;padding:4pt 4pt 52pt;"><strong>Người phụ trách đơn vị</strong></td><td style="width:66%;"></td></tr></table>
 </body></html>`;
 }
 
@@ -4858,6 +4924,14 @@ document.addEventListener('DOMContentLoaded',()=>{
   // Áp dụng edit mode ban đầu (chưa chọn đơn vị)
   applyEditMode();
 
+  // Đồng bộ quyền thật (role + capPhatUnits) từ Supabase → vẽ lại UI khi có kết quả
+  hydrateCurrentUser();
+  _sbReadyCPW().then(function(sb){
+    sb.auth.onAuthStateChange(function(ev){
+      if(ev==='SIGNED_IN'||ev==='SIGNED_OUT'||ev==='TOKEN_REFRESHED'||ev==='USER_UPDATED') hydrateCurrentUser();
+    });
+  }).catch(function(){});
+
   // ── Auto-pull từ Google Sheets (silent) ──
   // Chỉ chạy nếu đã cấu hình URL đồng bộ
   if(BHLD.getUrl()){
@@ -4882,6 +4956,12 @@ document.addEventListener('DOMContentLoaded',()=>{
         renderUnitPicker();
         if(_currentUnit){ renderTableNV(); renderNhomPanel(_currentUnit); }
         _updateNotifBadge();
+        // Cập nhật thẻ "Phê duyệt" + badge số mục chờ duyệt trên trang chủ.
+        // (Trước đây thiếu dòng này → sau khi pull về phiếu/thay đổi mới,
+        //  admin vẫn thấy badge cũ hoặc thẻ bị ẩn, tưởng là không có gì chờ duyệt.)
+        if(typeof cpUpdateApproveTile==='function')cpUpdateApproveTile();
+        var _tabCD=document.getElementById('phieu-tab-choduyet');
+        if(_tabCD)_tabCD.style.display=isAdmin()?'block':'none';
         if(typeof renderChoduyetTab==='function'&&isAdmin())renderChoduyetTab();
       })
       .catch(function(){ _nvSyncing=false; renderUnitPicker(); /* silent fail — không hiện lỗi */ });

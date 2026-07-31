@@ -285,7 +285,7 @@
 var MENU = [
   {slug:"tong-quan",          title:"Tổng quan",                   icon:"📊"},
   {slug:"tai-nan-su-co",      title:"Tai nạn - Sự cố",             icon:"⚠️"},
-  {slug:"pccc-cnch",          title:"PCCC & CNCH",                 icon:"🧯"},
+  {slug:"bao-chay-tu-dong",   title:"Báo cáo HTBCTĐ",              icon:"🔔"},
   {slug:"cap-phat-bhld",      title:"Cấp phát BHLĐ",               icon:"🦺"},
   {slug:"huan-luyen-dao-tao", title:"Huấn luyện - Đào tạo",        icon:"🎓"},
   {slug:"sop",                title:"SOP",                         icon:"📑"},
@@ -311,19 +311,25 @@ function esc(s){return String(s==null?"":s).replace(/[&<>"]/g,function(c){return
 function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,6);}
 function fmtDate(s){if(!s)return"—";if(typeof s==="string"&&s.indexOf("T")>=0)s=s.split("T")[0];if(s instanceof Date)s=window.HSEDate?HSEDate.toISO(s):(s.getFullYear()+"-"+String(s.getMonth()+1).padStart(2,"0")+"-"+String(s.getDate()).padStart(2,"0"));var p=String(s).split("-");return p.length===3?p[2]+"/"+p[1]+"/"+p[0]:s;}
 
-/* -------- AUTH -------- */
-function seedUsers(){
-  var u=load(K_USERS,null);
-  if(!u||!u.length){
-    save(K_USERS,[{id:"1",username:"admin",password:"admin123",fullname:"Quản trị viên",role:"admin",perms:MENU.map(function(m){return m.slug;}),active:true}]);
-  }
-}
+/* -------- AUTH --------
+   Phương án B: tài khoản thật ở Supabase Auth, role/perms ở bảng `profiles`.
+   localStorage (hse_users / hse_session) CHỈ là cache. Trang standalone này
+   không nạp assets/app.js nên phải TỰ hydrate — xem hydrateCurrentUser().
+   ⚠️ KHÔNG seed admin giả: sẽ ghi đè/che mất hồ sơ thật và là lỗ hổng bảo mật. */
+function seedUsers(){ return getUsers(); }
 function getUsers(){return load(K_USERS,[]);}
-function findUser(un){var us=getUsers();for(var i=0;i<us.length;i++)if(us[i].username===un)return us[i];return null;}
+function findUser(un){
+  var us=getUsers(), k=String(un||"").trim().toLowerCase();
+  for(var i=0;i<us.length;i++){
+    if(String(us[i].username||"").trim().toLowerCase()===k) return us[i];
+  }
+  return null;
+}
 function currentUser(){var un=load(K_SESS,null);return un?findUser(un):null;}
 function isAdmin(u){return u&&u.role==="admin";}
 function canEdit(u){
   if(!u) return false;
+  if(u.active===false) return false;
   if(u.role==="viewer") return false;
   if(u.role==="admin") return true;
   // User: phải có quyền "ke-hoach" trong danh sách perms
@@ -600,7 +606,12 @@ function savePageLinks(){
   save("hse_ke_hoach_links",allLinks);
 }
 
-function doLogout(){localStorage.removeItem(K_SESS);location.reload();}
+function doLogout(){
+  localStorage.removeItem(K_SESS);
+  var sb=window.HSE_SB;
+  if(sb&&sb.auth){ sb.auth.signOut().then(function(){location.reload();}).catch(function(){location.reload();}); }
+  else location.reload();
+}
 
 document.getElementById("viewCompletionModalBg").addEventListener("click",function(e){if(e.target===this)closeViewCompletionModal();});
 
@@ -995,6 +1006,54 @@ function planSave(type){
   showToast("✅ Đã lưu công việc","success");
 }
 
+/* ================================================================
+   HYDRATE HỒ SƠ NGƯỜI DÙNG TỪ SUPABASE
+   ----------------------------------------------------------------
+   Trang này KHÔNG nạp assets/app.js nên trước đây chỉ đọc cache
+   localStorage lúc parse → user vừa được cấp quyền vẫn bị coi là
+   "chỉ xem". Khối dưới lấy phiên Supabase, đọc lại `profiles`,
+   ghi vào cache rồi VẼ LẠI phần UI phụ thuộc quyền.
+   ================================================================ */
+function _sbReadyKH(){
+  return new Promise(function(resolve,reject){
+    if(window.HSE_SB) return resolve(window.HSE_SB);
+    var to=setTimeout(function(){reject(new Error("Supabase chưa sẵn sàng"));},8000);
+    window.addEventListener("hse-sb-ready",function(){clearTimeout(to);resolve(window.HSE_SB);},{once:true});
+  });
+}
+function _profileToUserKH(p){
+  return { id:p.id, username:p.username, fullname:p.fullname||"", danhSo:p.danhSo||"",
+    role:p.role||"viewer", perms:p.perms||[], capPhatUnits:p.capPhatUnits||[],
+    active:p.active, pendingApproval:p.pendingApproval, created:p.created };
+}
+function _cacheUserKH(u){
+  var arr=getUsers();
+  var i=arr.findIndex(function(x){return String(x.id)===String(u.id);});
+  if(i>=0) arr[i]=u; else arr.push(u);
+  save(K_USERS,arr); save(K_SESS,u.username);
+  return u;
+}
+function refreshRoleDependentUI(){
+  buildSidebar();
+  buildTopbar();
+  renderPlan();
+}
+function hydrateCurrentUser(){
+  return _sbReadyKH().then(function(sb){
+    return sb.auth.getSession().then(function(r){
+      var sess=r&&r.data&&r.data.session;
+      if(!sess||!sess.user){ localStorage.removeItem(K_SESS); refreshRoleDependentUI(); return null; }
+      return sb.from("profiles").select("*").eq("id",sess.user.id).maybeSingle().then(function(res){
+        if(res.error||!res.data){ console.warn("[KH] Không đọc được profiles:",res.error&&res.error.message); return null; }
+        var u=_cacheUserKH(_profileToUserKH(res.data));
+        if(typeof DB!=="undefined") DB.setUser(u.username);
+        refreshRoleDependentUI();
+        return u;
+      });
+    });
+  }).catch(function(e){ console.warn("[KH] hydrate:",e&&e.message||e); return null; });
+}
+
 /* -------- INIT -------- */
 seedUsers();
 // Khởi động DB (dùng cùng URL đã cấu hình trong Quản trị hệ thống)
@@ -1006,6 +1065,14 @@ if(typeof DB!=="undefined"){
 buildSidebar();
 buildTopbar();
 renderPlan();
+
+// Đồng bộ quyền thật từ Supabase (async) → vẽ lại UI khi có kết quả
+hydrateCurrentUser();
+_sbReadyKH().then(function(sb){
+  sb.auth.onAuthStateChange(function(ev){
+    if(ev==="SIGNED_IN"||ev==="SIGNED_OUT"||ev==="TOKEN_REFRESHED"||ev==="USER_UPDATED") hydrateCurrentUser();
+  });
+}).catch(function(){});
 // Gửi lại các thao tác còn tồn (offline) rồi pull dữ liệu mới sau 1.5s
 setTimeout(function(){
   var _fl=(typeof DB!=="undefined"&&DB.flushOutbox)
