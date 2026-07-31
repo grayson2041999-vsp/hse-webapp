@@ -503,43 +503,28 @@ function fmtDate(s){
   return p.length===3?p[2]+"/"+p[1]+"/"+p[0]:s;
 }
 
-/* ---- AUTH ----
-   Phương án B: tài khoản thật nằm trong Supabase Auth, role/perms nằm ở bảng
-   `profiles`. localStorage (hse_users / hse_session) CHỈ là cache để UI đọc
-   đồng bộ. Trang này là trang standalone (không nạp assets/app.js) nên phải
-   TỰ hydrate hồ sơ từ Supabase — xem hydrateCurrentUser() ở cuối file.
-   ⚠️ KHÔNG seed admin giả ở localStorage: nó sẽ ghi đè/che mất hồ sơ thật. */
-function seedUsers(){ return getUsers(); }
-function getUsers(){return load(K_USERS,[]);}
-function findUser(un){
-  var us=getUsers(), k=String(un||"").trim().toLowerCase();
-  for(var i=0;i<us.length;i++){
-    if(String(us[i].username||"").trim().toLowerCase()===k) return us[i];
+/* ---- AUTH ---- */
+function seedUsers(){
+  var u=load(K_USERS,null);
+  if(!u||!u.length){
+    save(K_USERS,[{id:"1",username:"admin",password:"admin123",fullname:"Quản trị viên",
+      role:"admin",perms:MENU.map(function(m){return m.slug;}),active:true}]);
   }
-  return null;
 }
+function getUsers(){return load(K_USERS,[]);}
+function findUser(un){var us=getUsers();for(var i=0;i<us.length;i++)if(us[i].username===un)return us[i];return null;}
 function currentUser(){var un=load(K_SESS,null);return un?findUser(un):null;}
 function isAdmin(u){return u&&u.role==="admin";}
-
-/* Slug quyền của trang này. Chấp nhận cả slug module cha "pccc-cnch"
-   để tương thích các tài khoản được cấp quyền theo module cũ. */
-var PAGE_PERMS=["bao-chay-tu-dong","pccc-cnch"];
-function hasPagePerm(u){
-  var p=u&&u.perms||[];
-  for(var i=0;i<PAGE_PERMS.length;i++) if(p.indexOf(PAGE_PERMS[i])>=0) return true;
-  return false;
-}
 function canEdit(u){
   if(!u) return false;
-  if(u.active===false) return false;
   if(u.role==="viewer") return false;
   if(u.role==="admin") return true;
-  return hasPagePerm(u);
+  return (u.perms||[]).indexOf("bao-chay-tu-dong") >= 0;
 }
 function canView(u){
   if(!u)return true;
   if(u.role==="admin")return true;
-  return hasPagePerm(u);
+  return (u.perms||[]).indexOf("bao-chay-tu-dong")>=0;
 }
 
 /* ---- SIDEBAR ---- */
@@ -1315,12 +1300,7 @@ function setupRoleUI(){
   updateLockUI();
 }
 
-function doLogout(){
-  localStorage.removeItem(K_SESS);
-  var sb=window.HSE_SB;
-  if(sb&&sb.auth){ sb.auth.signOut().then(function(){location.reload();}).catch(function(){location.reload();}); }
-  else location.reload();
-}
+function doLogout(){localStorage.removeItem(K_SESS);location.reload();}
 
 document.getElementById("deviceModalBg").addEventListener("click",function(e){if(e.target===this)closeDeviceModal();});
 
@@ -2286,63 +2266,6 @@ function deletePTType(name){
   }
 }
 
-/* ================================================================
-   HYDRATE HỒ SƠ NGƯỜI DÙNG TỪ SUPABASE
-   ----------------------------------------------------------------
-   Trang này KHÔNG nạp assets/app.js, nên trước đây nó chỉ đọc cache
-   localStorage tại thời điểm parse. Hậu quả: user vừa được Admin cấp
-   quyền (lưu ở bảng `profiles` trên Supabase) nhưng cache trên máy còn
-   cũ / rỗng → canEdit() trả false → trang báo "chỉ có quyền xem".
-   Khối dưới đây lấy phiên Supabase, đọc lại `profiles`, ghi vào cache
-   rồi VẼ LẠI phần UI phụ thuộc quyền.
-   ================================================================ */
-function _sbReadyBCTD(){
-  return new Promise(function(resolve,reject){
-    if(window.HSE_SB) return resolve(window.HSE_SB);
-    var to=setTimeout(function(){reject(new Error("Supabase chưa sẵn sàng"));},8000);
-    window.addEventListener("hse-sb-ready",function(){clearTimeout(to);resolve(window.HSE_SB);},{once:true});
-  });
-}
-function _profileToUserBCTD(p){
-  return { id:p.id, username:p.username, fullname:p.fullname||"", danhSo:p.danhSo||"",
-    role:p.role||"viewer", perms:p.perms||[], capPhatUnits:p.capPhatUnits||[],
-    active:p.active, pendingApproval:p.pendingApproval, created:p.created };
-}
-function _cacheUserBCTD(u){
-  var arr=getUsers();
-  var i=arr.findIndex(function(x){return String(x.id)===String(u.id);});
-  if(i>=0) arr[i]=u; else arr.push(u);
-  save(K_USERS,arr);
-  save(K_SESS,u.username);
-  return u;
-}
-/* Vẽ lại toàn bộ UI phụ thuộc quyền sau khi hồ sơ được cập nhật */
-function refreshRoleDependentUI(){
-  buildSidebar();
-  buildTopbar();
-  setupRoleUI();
-  renderDevices();
-  renderErrorLog();
-  // Tab "Phương tiện": vẽ lại thanh công cụ khu vực nếu đang mở 1 khu vực
-  var zv=document.getElementById("zoneView");
-  if(zv&&zv.classList.contains("active")&&zv.dataset.zoneId) buildZoneToolbar(zv.dataset.zoneId);
-}
-function hydrateCurrentUser(){
-  return _sbReadyBCTD().then(function(sb){
-    return sb.auth.getSession().then(function(r){
-      var sess=r&&r.data&&r.data.session;
-      if(!sess||!sess.user){ localStorage.removeItem(K_SESS); refreshRoleDependentUI(); return null; }
-      return sb.from("profiles").select("*").eq("id",sess.user.id).maybeSingle().then(function(res){
-        if(res.error||!res.data){ console.warn("[BCTD] Không đọc được profiles:",res.error&&res.error.message); return null; }
-        var u=_cacheUserBCTD(_profileToUserBCTD(res.data));
-        if(typeof DB!=="undefined") DB.setUser(u.username);
-        refreshRoleDependentUI();
-        return u;
-      });
-    });
-  }).catch(function(e){ console.warn("[BCTD] hydrate:",e&&e.message||e); return null; });
-}
-
 /* ---- INIT ---- */
 seedUsers();
 if(typeof DB!=="undefined"){
@@ -2357,15 +2280,6 @@ populateMonthFilter();populateSystemFilter();
 renderDevices();
 renderErrorLog();
 buildZoneGrid();
-
-// Đồng bộ quyền thật từ Supabase (async) → vẽ lại UI khi có kết quả
-hydrateCurrentUser();
-// Quyền thay đổi khi đăng nhập/đăng xuất/refresh token ở tab khác
-_sbReadyBCTD().then(function(sb){
-  sb.auth.onAuthStateChange(function(ev){
-    if(ev==="SIGNED_IN"||ev==="SIGNED_OUT"||ev==="TOKEN_REFRESHED"||ev==="USER_UPDATED") hydrateCurrentUser();
-  });
-}).catch(function(){});
 // Pull từ Sheets
 setTimeout(function(){
   if(typeof DB==="undefined"||!DB.isReady()) return;
