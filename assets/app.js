@@ -15,7 +15,6 @@
   var MENU = [
     { slug:"tong-quan",          title:"Tổng quan",                   icon:"📊", licon:"layout-dashboard", group:"theo-doi", sub:["Số giờ làm việc an toàn","Tai nạn, sự cố gần nhất"] },
     { slug:"tai-nan-su-co",      title:"Tai nạn - Sự cố",             icon:"⚠️", licon:"triangle-alert",   group:"theo-doi", sub:["Giờ công lao động an toàn","Ghi nhận tai nạn - sự cố"] },
-    { slug:"pccc-cnch",          title:"PCCC & CNCH",                 icon:"🧯", licon:"flame",            group:"theo-doi", sub:["Phương tiện CC & CNCH"] },
     { slug:"sop",                title:"SOP",                         icon:"📑", licon:"file-text",        group:"theo-doi", sub:[], adminEditOnly:true },
     { slug:"kiem-tra-cac-cap",   title:"Kiểm tra các cấp",            icon:"🔍", licon:"list-checks",      group:"theo-doi", sub:["Số lượng kiểm tra các cấp","Ghi nhận các lỗi vào hệ thống","Ghi nhận hành động khắc phục, thời hạn"] },
     { slug:"quan-ly-thiet-bi",   title:"Quản lý thiết bị",            icon:"⚙️", licon:"wrench",           group:"theo-doi", sub:["Thiết bị nâng","Bình áp lực"] },
@@ -27,6 +26,7 @@
     { slug:"huan-luyen-dao-tao", title:"Huấn luyện - Đào tạo",        icon:"🎓", licon:"graduation-cap",   group:"ung-dung", sub:["Thống kê các loại đào tạo, huấn luyện","Kiểm tra kiến thức an toàn","Đào tạo nội bộ"] },
     { slug:"bao-chay-tu-dong",   title:"Báo cáo hệ thống báo cháy tự động", icon:"🔔", licon:"bell",       group:"ung-dung", sub:["Danh sách thiết bị báo cháy","Ghi nhận lỗi & khắc phục"] },
     { slug:"tra-cuu-atvsld",     title:"Tra cứu ATVSLĐ",              icon:"📚", licon:"book-open",       group:"ung-dung", sub:[] },
+    { slug:"nhap-svodka",        title:"Nhập thông tin an toàn trên Svodka", icon:"🗄️", licon:"database",  group:"ung-dung", sub:["Danh mục tác vụ nhập","Hướng dẫn nhập từng bước"] },
     { slug:"quan-tri-he-thong",  title:"Quản trị hệ thống",           icon:"🛡️", licon:"settings",         group:"admin",    sub:[], adminOnly:true }
   ];
 
@@ -144,7 +144,7 @@
 
   /* -------- TOAST DÙNG CHUNG --------
      Trước đây showToast chỉ được định nghĩa trong một vài trang standalone
-     (ke-hoach.html, pccc-cnch.html, cap-phat-bhld.html). Ở index.html (nơi
+     (ke-hoach.html, bao-chay-tu-dong.html, cap-phat-bhld.html). Ở index.html (nơi
      có tab Quản trị hệ thống) không có showToast → mọi thao tác thêm/sửa/xoá/
      khoá user gọi showToast trong bước đồng bộ Sheets sẽ ném ReferenceError,
      khiến admin không nhận được phản hồi. Định nghĩa 1 bản tự chứa ở đây để
@@ -176,7 +176,7 @@
   /* -------- ĐIỀU HƯỚNG --------
      Trang nhẹ (shell) render qua index.html#slug; trang nghiệp vụ lớn mở file .html riêng */
   var STANDALONE_PAGES = {
-    "tai-nan-su-co":1, "pccc-cnch":1, "kiem-tra-cac-cap":1, "moi-truong":1,
+    "tai-nan-su-co":1, "kiem-tra-cac-cap":1, "moi-truong":1,
     "ke-hoach":1, "cap-phat-bhld":1, "kham-suc-khoe":1, "bao-chay-tu-dong":1
   };
   function pageHref(slug){
@@ -206,7 +206,8 @@
     "key":'<path d="m15.5 7.5 2.3 2.3a1 1 0 0 0 1.4 0l2.1-2.1a1 1 0 0 0 0-1.4L19 4"/><path d="m21 2-9.6 9.6"/><circle cx="7.5" cy="15.5" r="5.5"/>',
     "book-open":'<path d="M12 7v14"/><path d="M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z"/>',
     "external-link":'<path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>',
-    "info":'<circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/>'
+    "info":'<circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/>',
+    "database":'<ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14a9 3 0 0 0 18 0V5"/><path d="M3 12a9 3 0 0 0 18 0"/>'
   };
   function lic(name, size){
     var p = ICON_PATHS[name]; if(!p) return "";
@@ -685,6 +686,16 @@
       if(!canView(u, slug)){ renderShell(slug, deniedNode()); return; }
       var atvsldContainer = renderShell(slug, el("div"));
       renderTraCuuAtvsld(atvsldContainer, u, isAdmin(u));
+      return;
+    }
+
+    // Trang Nhập thông tin an toàn trên Svodka: module riêng
+    if(slug === "nhap-svodka"){
+      if(!canView(u, slug)){ renderShell(slug, deniedNode()); return; }
+      var svContainer = renderShell(slug, el("div"));
+      if(typeof window.renderSvodka === "function"){
+        window.renderSvodka(svContainer, u, isAdmin(u));
+      }
       return;
     }
 
@@ -1303,7 +1314,7 @@
         approveWrap.style.display="block";
         approveChk.checked=false;
         // Fix 5: gợi ý phân quyền mặc định khi duyệt (chọn sẵn các trang cơ bản)
-        var defaultPerms=["tong-quan","pccc-cnch","cap-phat-bhld","huan-luyen-dao-tao",
+        var defaultPerms=["tong-quan","bao-chay-tu-dong","cap-phat-bhld","huan-luyen-dao-tao",
           "kiem-tra-cac-cap","quan-ly-thiet-bi",
           "kham-suc-khoe","moi-truong",
           "quan-ly-nha-thau","ke-hoach"];

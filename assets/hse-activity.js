@@ -170,7 +170,7 @@
   // Bảng gốc → trang mở khi bấm vào một hoạt động (bấm-để-nhảy)
   var REF_PAGE = {
     ke_hoach_mot_lan: "ke-hoach.html", ke_hoach_lap_lai: "ke-hoach.html",
-    pccc_devices: "pccc-cnch.html", pccc_errors: "pccc-cnch.html",
+    pccc_devices: "bao-chay-tu-dong.html", pccc_errors: "bao-chay-tu-dong.html",
     hl_nhansu: "index.html#huan-luyen-dao-tao", sop: "index.html#sop",
     phieu_requests: "cap-phat-bhld.html", cap_phat_tien_trinh: "cap-phat-bhld.html",
     nhanvien: "cap-phat-bhld.html"

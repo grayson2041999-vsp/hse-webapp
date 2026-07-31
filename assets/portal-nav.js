@@ -3,7 +3,7 @@
    - Ẩn sidebar cũ, giãn nội dung full màn hình
    - Chèn nút "← Trang chủ" vào topbar/header
    - Đổi tiêu đề module sang icon Lucide + tên chuẩn
-   Dùng chung cho: tai-nan-su-co, pccc-cnch, kiem-tra-cac-cap,
+   Dùng chung cho: tai-nan-su-co, bao-chay-tu-dong, kiem-tra-cac-cap,
    moi-truong, ke-hoach, cap-phat-bhld, kham-suc-khoe
    ========================================================= */
 (function(){
@@ -26,7 +26,6 @@
 
   var MAP = {
     "tai-nan-su-co":   { icon:"triangle-alert", title:"Tai nạn - Sự cố" },
-    "pccc-cnch":       { icon:"flame",          title:"PCCC & CNCH" },
     "kiem-tra-cac-cap":{ icon:"list-checks",    title:"Kiểm tra các cấp" },
     "moi-truong":      { icon:"recycle",        title:"Xử lý chất thải" },
     "ke-hoach":        { icon:"calendar-days",  title:"Kế hoạch" },
