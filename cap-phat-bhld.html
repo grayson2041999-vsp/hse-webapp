@@ -4162,10 +4162,13 @@ function exportPhieuNVMoiExcel(){
     items.forEach(it=>{
       const key=`nvmoi_${nv.id}_${it.tbId}`;
       const saved=(window._nvMoiEdits&&window._nvMoiEdits[key])||{};
-      dataRows.push([stt++,nv.ten,nv.danhSo||'',nv.chucDanh,nv.boPhan||'',ngayStr,it.ten,it.ma||'',it.donVi,it.soLuong,saved.thucTe!==undefined?saved.thucTe:'',saved.ghiChu||'']);
+      dataRows.push([stt++,nv.ten,nv.danhSo||'',nv.chucDanh,nv.boPhan||'',ngayStr,it.ten,it.ma||'',it.donVi,_xlNum(it.soLuong),_xlNum(saved.thucTe!==undefined?saved.thucTe:''),saved.ghiChu||'']);
     });
   });
-  const ws=XLSX.utils.aoa_to_sheet([[`Phiếu cấp BHLĐ lần đầu – Nhân viên mới – Ngày: ${new Date().toLocaleDateString('vi-VN')}`],[],headers,...dataRows]);
+  // tiêu đề + dòng trống + header => dữ liệu bắt đầu ở dòng Excel số 4
+  const _tot=_xlTotalRow(12,[9,10],'TỔNG CỘNG',6);
+  const ws=XLSX.utils.aoa_to_sheet([[`Phiếu cấp BHLĐ lần đầu – Nhân viên mới – Ngày: ${new Date().toLocaleDateString('vi-VN')}`],[],headers,...dataRows,_tot]);
+  _xlSetTotals(ws,4+dataRows.length,[9,10],4,3+dataRows.length);
   ws['!cols']=[{wch:5},{wch:26},{wch:12},{wch:28},{wch:22},{wch:12},{wch:30},{wch:16},{wch:8},{wch:10},{wch:10},{wch:24}];
   const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'NV mới');
   XLSX.writeFile(wb,`PhieuNVMoi_${new Date().toISOString().slice(0,10)}.xlsx`);
@@ -4343,6 +4346,39 @@ async function exportDinhMucWord(){
   showToast('✅ Đã xuất file định mức Word!');
 }
 
+/* ===== Helper Excel: ép kiểu số & dựng dòng tổng cộng =====
+   Lý do: input.value và cột numeric của Supabase đều trả về chuỗi.
+   SheetJS suy kiểu ô theo typeof, chuỗi -> ô text -> Excel không SUM được. */
+function _xlNum(v){
+  if(v===''||v===null||v===undefined) return '';
+  var n=Number(v);
+  return (typeof v==='boolean'||isNaN(n)) ? v : n;
+}
+/* Dựng dòng TỔNG CỘNG (giá trị tạm = 0) cho các cột chỉ định.
+   nCols: tổng số cột; cols: mảng chỉ số cột (0-based) cần cộng. */
+function _xlTotalRow(nCols,cols,label,labelCol){
+  var row=[];for(var i=0;i<nCols;i++)row.push('');
+  row[labelCol||0]=label||'TỔNG CỘNG';
+  cols.forEach(function(c){row[c]=0;});
+  return row;
+}
+/* Gắn công thức SUM() thật vào dòng tổng SAU KHI đã tạo worksheet.
+   aoa_to_sheet không nhận ô dạng object nên phải ghi trực tiếp vào ws.
+   totalRow/r1/r2: số dòng Excel (1-based). */
+function _xlSetTotals(ws,totalRow,cols,r1,r2){
+  if(!ws||r2<r1)return ws;
+  cols.forEach(function(c){
+    var L=XLSX.utils.encode_col(c), sum=0;
+    // Tính sẵn kết quả: Excel chỉ tính lại công thức khi thấy cần, nếu để giá trị
+    // đệm bằng 0 thì mở file lên có thể thấy 0 cho tới khi bấm tính lại thủ công.
+    for(var r=r1;r<=r2;r++){ var cc=ws[L+r]; if(cc&&cc.t==='n'&&typeof cc.v==='number')sum+=cc.v; }
+    var addr=L+totalRow, cell=ws[addr];
+    if(!cell){cell={};ws[addr]=cell;}
+    cell.t='n'; cell.v=sum; cell.f='SUM('+L+r1+':'+L+r2+')'; delete cell.w; delete cell.z;
+  });
+  return ws;
+}
+
 function exportChiTietExcel(){
   if(typeof XLSX==='undefined'){showToast('⚠️ Thư viện Excel chưa tải.','error');return;}
   const sel=document.getElementById('bc-quy');if(!sel||!sel.value){showToast('⚠️ Vui lòng chọn quý!','warning');return;}
@@ -4350,8 +4386,12 @@ function exportChiTietExcel(){
   const{rows}=computeQuyData(quyStr,filterDonVi);const qData=phieuData[quyStr]||{};
   const headers=['STT','Họ và Tên','Danh số','Chức danh','Đơn vị','Trang bị','Theo định mức','Thực tế','Ghi chú'];
   const dataRows=[];let stt=1;
-  rows.forEach(r=>{r.items.forEach(it=>{const key=`${r.nv.id}_${it.tbId}`;const saved=qData[key]||{};dataRows.push([stt++,r.nv.ten,r.nv.danhSo,r.nv.chucDanh,r.nv.boPhan||'',it.ten,it.soLuong,saved.thucTe!==undefined?saved.thucTe:'',saved.ghiChu||'']);});});
-  const ws=XLSX.utils.aoa_to_sheet([[`Phiếu cấp phát BHLĐ – ${quyStr}${filterDonVi?' – '+filterDonVi:''}`,],[`Xuất ngày: ${new Date().toLocaleDateString('vi-VN')}`],[],headers,...dataRows]);
+  rows.forEach(r=>{r.items.forEach(it=>{const key=`${r.nv.id}_${it.tbId}`;const saved=qData[key]||{};dataRows.push([stt++,r.nv.ten,r.nv.danhSo,r.nv.chucDanh,r.nv.boPhan||'',it.ten,_xlNum(it.soLuong),_xlNum(saved.thucTe!==undefined?saved.thucTe:''),saved.ghiChu||'']);});});
+  // 3 dòng đầu (tiêu đề, ngày xuất, trống) + 1 dòng header => dữ liệu bắt đầu ở dòng Excel số 5
+  const _r1=5, _r2=4+dataRows.length;
+  const _tot=_xlTotalRow(9,[6,7],'TỔNG CỘNG',5);
+  const ws=XLSX.utils.aoa_to_sheet([[`Phiếu cấp phát BHLĐ – ${quyStr}${filterDonVi?' – '+filterDonVi:''}`,],[`Xuất ngày: ${new Date().toLocaleDateString('vi-VN')}`],[],headers,...dataRows,_tot]);
+  _xlSetTotals(ws,_r2+1,[6,7],_r1,_r2);
   ws['!cols']=[{wch:5},{wch:26},{wch:12},{wch:28},{wch:22},{wch:28},{wch:12},{wch:12},{wch:24}];
   const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Phiếu yêu cầu');XLSX.writeFile(wb,`ChiTietCapPhat_${quyStr.replace('/','_')}.xlsx`);showToast('✅ Đã xuất file Excel!');
 }
@@ -4422,24 +4462,36 @@ function exportPhieuMatrixExcel(quyArg,dvArg){
         var tv=(saved.thucTe!==undefined&&saved.thucTe!=='')?Number(saved.thucTe):0;
         if(!tv)return;
         if(SIZED[c[0]]){ var code=_matrixCode(it.ten); vals.push(tv>1?(code+' ×'+tv):code); }
-        else { vals.push(String(tv)); }
+        else { vals.push(tv); }
       });
-      row[col]=vals.join(', ');
+      // Nhóm có cỡ (quần áo/giày/QA thợ hàn) buộc phải là chữ vì chứa mã cỡ (VD: L52).
+      // Nhóm còn lại chỉ là số lượng -> giữ nguyên kiểu số để Excel SUM được.
+      row[col]=(!SIZED[c[0]]&&vals.length===1)?vals[0]:vals.join(', ');
     });
     aoa.push(row);
   });
+  // Dòng tổng cộng cho các cột số lượng thuần (Mũ, Kính, Áo mưa, Găng tay, Khẩu trang).
+  // Bỏ qua Quần áo/Giày/QA thợ hàn vì các cột đó chứa mã cỡ, không cộng được.
+  var _sumCols=[]; CATS.forEach(function(c,i){ if(!SIZED[c[0]])_sumCols.push(3+i*2); });
+  var _r1=13, _r2=12+stt, _totRow=0;   // dữ liệu bắt đầu ngay sau 2 dòng header (dòng Excel 11-12)
+  if(stt>0){ aoa.push(_xlTotalRow(nCols,_sumCols,'TỔNG CỘNG',2)); _totRow=aoa.length; }
   aoa.push(pad());
   var lg=pad(); lg[0]='Ghi chú: Quần áo — L: Liền, R: Rời, N: Nữ. Giày — T: Thấp cổ, C: Cao cổ, U: Ủng da. QA thợ hàn — H: Bộ đồ hàn. Số sau chữ là cỡ (VD: L52 = Bộ liền quần cỡ 52). Các cột Mũ, Kính, Áo mưa, Găng tay, Khẩu trang ghi số lượng cấp.';
   aoa.push(lg); merges.push({s:{r:aoa.length-1,c:0},e:{r:aoa.length-1,c:lastC}});
   // Mục "Vật tư khác" (cấp theo đơn vị, ngoài 8 nhóm định mức)
   var _extra=(dv&&typeof _cpwExtraGet==='function')?_cpwExtraGet(quyStr,dv).filter(function(s){return Number(s.soLuong)>0;}):[];
+  var _exR1=0,_exTotRow=0;
   if(_extra.length){
     aoa.push(pad());
     var eh=pad(); eh[0]='VẬT TƯ KHÁC CẤP PHÁT (ngoài định mức)'; aoa.push(eh); merges.push({s:{r:aoa.length-1,c:0},e:{r:aoa.length-1,c:lastC}});
     var ehh=pad(); ehh[0]='STT'; ehh[1]='Mã vật tư'; ehh[2]='Tên vật tư'; ehh[3]='ĐVT'; ehh[4]='SL cấp'; ehh[5]='Ghi chú'; ehh[6]='Ký nhận'; aoa.push(ehh);
-    _extra.forEach(function(ex,i){ var row=pad(); row[0]=i+1; row[1]=ex.ma||''; row[2]=ex.ten||''; row[3]=ex.donVi||''; row[4]=ex.soLuong; row[5]=(ex.ghiChu&&String(ex.ghiChu).trim())?String(ex.ghiChu).trim():''; aoa.push(row); });
+    _exR1=aoa.length+1;   // dòng Excel đầu tiên của bảng vật tư khác
+    _extra.forEach(function(ex,i){ var row=pad(); row[0]=i+1; row[1]=ex.ma||''; row[2]=ex.ten||''; row[3]=ex.donVi||''; row[4]=_xlNum(ex.soLuong); row[5]=(ex.ghiChu&&String(ex.ghiChu).trim())?String(ex.ghiChu).trim():''; aoa.push(row); });
+    aoa.push(_xlTotalRow(nCols,[4],'TỔNG CỘNG',2)); _exTotRow=aoa.length;
   }
   var ws=XLSX.utils.aoa_to_sheet(aoa); ws['!merges']=merges;
+  if(_totRow) _xlSetTotals(ws,_totRow,_sumCols,_r1,_r2);
+  if(_exTotRow) _xlSetTotals(ws,_exTotRow,[4],_exR1,_exR1+_extra.length-1);
   var cols=[{wch:5},{wch:12},{wch:24}]; CATS.forEach(function(){cols.push({wch:9});cols.push({wch:9});}); ws['!cols']=cols;
   var wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,ws,'Cấp phát');
   XLSX.writeFile(wb,'CapPhat_'+quyStr.replace('/','_')+'_'+dv.replace(/[\/\\?*\[\]:\s]+/g,'-')+'.xlsx');
@@ -4451,13 +4503,15 @@ function exportTonKhoExcel(){
   daNhomTB.forEach(nhom=>{
     daDanhMuc.filter(d=>d.nhomId==nhom.id).forEach(dm=>{
       stt++;
-      rows.push([stt, dm.ten, dm.donVi||nhom.donVi||'', daTonKho[dm.id]||0]);
+      rows.push([stt, dm.ten, dm.donVi||nhom.donVi||'', _xlNum(daTonKho[dm.id]||0)]);
     });
   });
   if(!rows.length){showToast('Chưa có dữ liệu tồn kho.','warning');return;}
   const ngay=new Date().toLocaleDateString('vi-VN');
-  const aoa=[['BÁO CÁO TỒN KHO TRANG BỊ BHLĐ & PTBVCN'],['Ngày xuất: '+ngay],[],['STT','Tên trang bị','Đơn vị tính','Số lượng tồn kho'],...rows];
+  // tiêu đề + ngày xuất + dòng trống + header => dữ liệu bắt đầu ở dòng Excel số 5
+  const aoa=[['BÁO CÁO TỒN KHO TRANG BỊ BHLĐ & PTBVCN'],['Ngày xuất: '+ngay],[],['STT','Tên trang bị','Đơn vị tính','Số lượng tồn kho'],...rows,_xlTotalRow(4,[3],'TỔNG CỘNG',1)];
   const ws=XLSX.utils.aoa_to_sheet(aoa);
+  _xlSetTotals(ws,5+rows.length,[3],5,4+rows.length);
   ws['!cols']=[{wch:6},{wch:42},{wch:14},{wch:18}];
   const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Tồn kho');
   XLSX.writeFile(wb,`TonKho_BHLD_${new Date().toISOString().slice(0,10)}.xlsx`);
@@ -4849,8 +4903,13 @@ function exportNhuCauExcel(){
   const data=window._nhucauData;const quyList=window._nhucauQuyList;if(!data||!data.length){showToast('Chưa có dữ liệu.','error');return;}
   if(typeof XLSX==='undefined'){showToast('⚠️ Thư viện Excel chưa tải.','error');return;}
   const header=['STT','Mã vật tư','Tên trang bị','ĐVT',...NHUCAU_UNITS,'Tổng nhu cầu','Tồn kho','Cần mua thêm'];
-  const rows=data.map((row,idx)=>[idx+1,row.ma||'',row.ten,row.dvUnit||'',...NHUCAU_UNITS.map(u=>row.perUnit[u]||0),row.tongNhuCau,row.tonKho,row.canMua]);
-  const ws=XLSX.utils.aoa_to_sheet([[`Nhu cầu mua sắm BHLĐ – ${quyList[0]} đến ${quyList[3]}`],[`Xuất ngày: ${new Date().toLocaleDateString('vi-VN')}`],[],header,...rows]);
+  const rows=data.map((row,idx)=>[idx+1,row.ma||'',row.ten,row.dvUnit||'',...NHUCAU_UNITS.map(u=>_xlNum(row.perUnit[u]||0)),_xlNum(row.tongNhuCau),_xlNum(row.tonKho),_xlNum(row.canMua)]);
+  // cộng tất cả cột số: các đơn vị + Tổng nhu cầu + Tồn kho + Cần mua thêm
+  const _nC=4+NHUCAU_UNITS.length+3, _sumCols=[];
+  for(let c=4;c<_nC;c++)_sumCols.push(c);
+  const _tot=_xlTotalRow(_nC,_sumCols,'TỔNG CỘNG',2);
+  const ws=XLSX.utils.aoa_to_sheet([[`Nhu cầu mua sắm BHLĐ – ${quyList[0]} đến ${quyList[3]}`],[`Xuất ngày: ${new Date().toLocaleDateString('vi-VN')}`],[],header,...rows,_tot]);
+  _xlSetTotals(ws,5+rows.length,_sumCols,5,4+rows.length);
   const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Nhu cầu');XLSX.writeFile(wb,`NhuCauMuaSam_${quyList[0]}_${quyList[3]}.xlsx`.replace(/\//g,'_'));showToast('📥 Đã tải file Excel!');
 }
 
