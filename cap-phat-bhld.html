@@ -4722,6 +4722,44 @@ function openModalKho(type){
   window._khoPreview=null;renderFormKho(type);document.getElementById('modal-kho').classList.add('open');
 }
 function closeModalKho(){document.getElementById('modal-kho').classList.remove('open');window._khoPreview=null;}
+/* ===== Tìm kiếm vật tư trong modal Nhập/Xuất kho =====
+   QUAN TRỌNG: chỉ ẩn/hiện bằng display, TUYỆT ĐỐI không xoá dòng khỏi DOM.
+   Lý do: xemTruocKho() đọc số lượng trực tiếp từ các ô input trong DOM,
+   xoá dòng đồng nghĩa xoá luôn số admin đã điền mà không hề báo. */
+function _khoNoAccent(s){
+  return String(s==null?'':s).toLowerCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+    .replace(/\u0111/g,'d');
+}
+function _khoLoc(){
+  var box=document.getElementById('kho-tim');
+  var q=_khoNoAccent(box?box.value:'').trim();
+  var onlyTon=document.getElementById('kho-an-ton0');
+  var anTon0=!!(onlyTon&&onlyTon.checked);
+  var rows=document.querySelectorAll('#modal-kho-body tr[data-kho-row]');
+  var conLai={}, hien=0;
+  rows.forEach(function(tr){
+    var inp=document.getElementById('kho-qty-'+tr.getAttribute('data-kho-row'));
+    var daDien=!!(inp&&inp.value!==''&&parseFloat(inp.value)>0);
+    var khop=!q||(tr.getAttribute('data-kho-find')||'').indexOf(q)>=0;
+    if(anTon0&&Number(tr.getAttribute('data-kho-ton'))<=0)khop=false;
+    // Dòng đã điền số luôn được hiện, để admin không tưởng là mất dữ liệu
+    var show=khop||daDien;
+    tr.style.display=show?'':'none';
+    tr.style.background=(daDien&&!khop)?'#FFF8E1':'';
+    if(show){hien++;conLai[tr.getAttribute('data-kho-grp')]=1;}
+  });
+  // Ẩn tiêu đề nhóm nếu nhóm đó không còn dòng nào hiện
+  document.querySelectorAll('#modal-kho-body tr[data-kho-hdr]').forEach(function(tr){
+    tr.style.display=conLai[tr.getAttribute('data-kho-hdr')]?'':'none';
+  });
+  var info=document.getElementById('kho-tim-info');
+  if(info)info.textContent=(q||anTon0)?('Đang hiện '+hien+'/'+rows.length+' vật tư'):(rows.length+' vật tư');
+  var empty=document.getElementById('kho-tim-empty');
+  if(empty)empty.style.display=hien?'none':'block';
+}
+function _khoXoaTim(){var b=document.getElementById('kho-tim');if(b){b.value='';b.focus();}_khoLoc();}
+
 function renderFormKho(type){
   const now=new Date();const thang=now.getMonth()+1;const nam=now.getFullYear();const label=type==='nhap'?'nhập':'xuất';
   const donViHtml=type==='xuat'?`<div class="form-group" style="grid-column:1/-1;"><label>Đơn vị nhận <span style="color:red">*</span></label><select id="kho-donvi-nhan"><option value="">-- Chọn đơn vị nhận --</option>${UNIT_ORDER.map(u=>`<option value="${u}">${u}</option>`).join('')}<option value="Xuất khác">Xuất khác</option></select></div>`:'';
@@ -4729,8 +4767,8 @@ function renderFormKho(type){
   const itemRows=daNhomTB.map(nhom=>{
     const items=daDanhMuc.filter(d=>d.nhomId==nhom.id).sort((a,b)=>(a.thuTu||0)-(b.thuTu||0));
     if(!items.length)return'';
-    const header=`<tr style="background:#EDF1F8;"><td colspan="${colSpan}" style="font-weight:700;font-size:12px;color:var(--primary);padding:6px 10px;">${_ic('pkg',13)} ${_escH(nhom.ten)}</td></tr>`;
-    const rows=items.map(dm=>{const cur=daTonKho[dm.id]||0;return`<tr><td style="font-size:12px;color:var(--text-light);">${dm.ma||'—'}</td><td>${_escH(dm.ten)}</td><td style="text-align:center;">${dm.donVi||nhom.donVi||'—'}</td>${type==='xuat'?`<td style="text-align:center;color:${cur===0?'var(--danger)':'inherit'};font-weight:600;">${cur}</td>`:''}<td style="text-align:center;"><input type="number" min="0" step="1" value="" placeholder="0" id="kho-qty-${dm.id}" style="width:75px;text-align:center;padding:4px 6px;border:1px solid var(--border);border-radius:4px;" ${type==='xuat'?`max="${cur}"`:''}></td></tr>`;}).join('');
+    const header=`<tr data-kho-hdr="${nhom.id}" style="background:#EDF1F8;"><td colspan="${colSpan}" style="font-weight:700;font-size:12px;color:var(--primary);padding:6px 10px;">${_ic('pkg',13)} ${_escH(nhom.ten)}</td></tr>`;
+    const rows=items.map(dm=>{const cur=daTonKho[dm.id]||0;return`<tr data-kho-row="${dm.id}" data-kho-grp="${nhom.id}" data-kho-ton="${cur}" data-kho-find="${_escH(_khoNoAccent((dm.ma||'')+' '+dm.ten))}"><td style="font-size:12px;color:var(--text-light);">${dm.ma||'—'}</td><td>${_escH(dm.ten)}</td><td style="text-align:center;">${dm.donVi||nhom.donVi||'—'}</td>${type==='xuat'?`<td style="text-align:center;color:${cur===0?'var(--danger)':'inherit'};font-weight:600;">${cur}</td>`:''}<td style="text-align:center;"><input type="number" min="0" step="1" value="" placeholder="0" id="kho-qty-${dm.id}" style="width:75px;text-align:center;padding:4px 6px;border:1px solid var(--border);border-radius:4px;" ${type==='xuat'?`max="${cur}"`:''}></td></tr>`;}).join('');
     return header+rows;
   }).join('');
   document.getElementById('modal-kho-body').innerHTML=`<div style="padding:4px 0 12px;"><div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
@@ -4740,9 +4778,20 @@ function renderFormKho(type){
     <div class="form-group" style="grid-column:1/-1;"><label>Ghi chú</label><input id="kho-ghichu" type="text" placeholder="Ghi chú (tùy chọn)"></div>
   </div>
   <div style="font-weight:600;margin:14px 0 8px;font-size:13px;color:var(--primary);">Danh sách vật tư — điền số lượng cần ${label}:</div>
-  <div style="border:1px solid var(--border);border-radius:6px;overflow:hidden;"><div style="max-height:280px;overflow-y:auto;"><table style="margin:0;"><thead style="position:sticky;top:0;z-index:1;background:var(--bg);"><tr><th>Mã VT</th><th>Tên trang bị</th><th style="text-align:center;">ĐVT</th>${type==='xuat'?'<th style="text-align:center;">Tồn hiện tại</th>':''}<th style="text-align:center;">SL ${label}</th></tr></thead><tbody>${itemRows||'<tr><td colspan="5" style="text-align:center;color:var(--text-light);">Chưa có danh mục</td></tr>'}</tbody></table></div></div>
+  <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px;">
+    <div style="position:relative;flex:1;min-width:220px;">
+      <input id="kho-tim" type="text" autocomplete="off" placeholder="Tìm theo mã vật tư hoặc tên (không cần dấu)..." oninput="_khoLoc()" style="width:100%;padding:7px 30px 7px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;">
+      <button type="button" onclick="_khoXoaTim()" title="Xoá từ khoá" style="position:absolute;right:6px;top:50%;transform:translateY(-50%);border:none;background:none;cursor:pointer;color:var(--text-light);font-size:16px;line-height:1;padding:2px 4px;">×</button>
+    </div>
+    ${type==='xuat'?`<label style="display:flex;align-items:center;gap:6px;font-size:12.5px;color:var(--text-light);cursor:pointer;white-space:nowrap;"><input type="checkbox" id="kho-an-ton0" onchange="_khoLoc()" style="cursor:pointer;">Ẩn vật tư tồn = 0</label>`:''}
+    <span id="kho-tim-info" style="font-size:12px;color:var(--text-light);white-space:nowrap;"></span>
+  </div>
+  <div style="border:1px solid var(--border);border-radius:6px;overflow:hidden;"><div style="max-height:420px;overflow-y:auto;"><table style="margin:0;"><thead style="position:sticky;top:0;z-index:1;background:var(--bg);"><tr><th>Mã VT</th><th>Tên trang bị</th><th style="text-align:center;">ĐVT</th>${type==='xuat'?'<th style="text-align:center;">Tồn hiện tại</th>':''}<th style="text-align:center;">SL ${label}</th></tr></thead><tbody>${itemRows||'<tr><td colspan="5" style="text-align:center;color:var(--text-light);">Chưa có danh mục</td></tr>'}</tbody></table></div></div>
+  <div id="kho-tim-empty" style="display:none;padding:14px;text-align:center;color:var(--text-light);font-size:13px;">Không tìm thấy vật tư nào khớp từ khoá.</div>
   <div id="kho-form-error" style="color:var(--danger);font-size:13px;margin-top:8px;display:none;"></div>
   <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px;"><button class="btn btn-outline" onclick="closeModalKho()">Hủy</button><button class="btn btn-primary" onclick="xemTruocKho('${type}')">${_ic('eye',14)} Xem trước</button></div></div>`;
+  // Cập nhật bộ đếm "N vật tư" ngay khi mở form
+  if(typeof _khoLoc==='function')_khoLoc();
 }
 function xemTruocKho(type){
   const tenGD=(document.getElementById('kho-ten-gd')?.value||'').trim();const thang=parseInt(document.getElementById('kho-thang')?.value);const nam=parseInt(document.getElementById('kho-nam')?.value);const ghiChu=(document.getElementById('kho-ghichu')?.value||'').trim();const donViNhan=type==='xuat'?(document.getElementById('kho-donvi-nhan')?.value||''):null;const errEl=document.getElementById('kho-form-error');const label=type==='nhap'?'nhập':'xuất';
@@ -4761,7 +4810,7 @@ function xemTruocKho(type){
 }
 function quayLaiFormKho(type){
   const p=window._khoPreview;renderFormKho(type);if(!p)return;
-  setTimeout(()=>{if(document.getElementById('kho-ten-gd'))document.getElementById('kho-ten-gd').value=p.tenGD||'';if(document.getElementById('kho-thang'))document.getElementById('kho-thang').value=p.thang;if(document.getElementById('kho-nam'))document.getElementById('kho-nam').value=p.nam;if(document.getElementById('kho-ghichu'))document.getElementById('kho-ghichu').value=p.ghiChu||'';if(type==='xuat'&&p.donViNhan&&document.getElementById('kho-donvi-nhan'))document.getElementById('kho-donvi-nhan').value=p.donViNhan;p.items.forEach(it=>{const inp=document.getElementById(`kho-qty-${it.tbId}`);if(inp)inp.value=it.soLuong;});},0);
+  setTimeout(()=>{if(document.getElementById('kho-ten-gd'))document.getElementById('kho-ten-gd').value=p.tenGD||'';if(document.getElementById('kho-thang'))document.getElementById('kho-thang').value=p.thang;if(document.getElementById('kho-nam'))document.getElementById('kho-nam').value=p.nam;if(document.getElementById('kho-ghichu'))document.getElementById('kho-ghichu').value=p.ghiChu||'';if(type==='xuat'&&p.donViNhan&&document.getElementById('kho-donvi-nhan'))document.getElementById('kho-donvi-nhan').value=p.donViNhan;p.items.forEach(it=>{const inp=document.getElementById(`kho-qty-${it.tbId}`);if(inp)inp.value=it.soLuong;});if(typeof _khoLoc==='function')_khoLoc();},0);
 }
 function xacNhanKho(type){
   const p=window._khoPreview;if(!p||p.type!==type)return;
