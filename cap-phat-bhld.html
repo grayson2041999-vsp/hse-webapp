@@ -563,6 +563,7 @@
     <div class="admin-tab active" id="tk-tab-hientai" onclick="switchTonKhoTab('hientai')"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:5px" aria-hidden="true"><path d="M11 21.73a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73z"/><path d="M12 22V12"/><path d="m3.3 7 8.7 5 8.7-5"/></svg>Tồn kho hiện tại</div>
     <div class="admin-tab" id="tk-tab-nhap" onclick="switchTonKhoTab('nhap')"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:5px" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>Lịch sử nhập</div>
     <div class="admin-tab" id="tk-tab-xuat" onclick="switchTonKhoTab('xuat')"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:5px" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></svg>Lịch sử xuất</div>
+    <div class="admin-tab" id="tk-tab-dieuchinh" onclick="switchTonKhoTab('dieuchinh')"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:5px" aria-hidden="true"><line x1="21" x2="14" y1="4" y2="4"/><line x1="10" x2="3" y1="4" y2="4"/><line x1="21" x2="12" y1="12" y2="12"/><line x1="8" x2="3" y1="12" y2="12"/><line x1="21" x2="16" y1="20" y2="20"/><line x1="12" x2="3" y1="20" y2="20"/><line x1="14" x2="14" y1="2" y2="6"/><line x1="8" x2="8" y1="10" y2="14"/><line x1="16" x2="16" y1="18" y2="22"/></svg>Lịch sử điều chỉnh</div>
   </div>
 
   <div id="tk-search-bar" style="padding:12px 0 0;">
@@ -579,6 +580,7 @@
   <div id="tk-panel-hientai" style="padding-top:12px;"></div>
   <div id="tk-panel-nhap" style="padding-top:16px;display:none;"></div>
   <div id="tk-panel-xuat" style="padding-top:16px;display:none;"></div>
+  <div id="tk-panel-dieuchinh" style="padding-top:16px;display:none;"></div>
 </div>
 
 <!-- ============================
@@ -3022,7 +3024,8 @@ function _ic(n,s){var P={
   zap:'<path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z"/>',
   x:'<path d="M18 6 6 18"/><path d="m6 6 12 12"/>',
   hat:'<path d="M2 18a1 1 0 0 1-1-1v-2a1 1 0 0 1 1-1h20a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1"/><path d="M10 10V5a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v5"/><path d="M4 15v-3a6 6 0 0 1 6-6"/><path d="M14 6a6 6 0 0 1 6 6v3"/>',
-  userplus:'<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" x2="19" y1="8" y2="14"/><line x1="22" x2="16" y1="11" y2="11"/>'
+  userplus:'<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" x2="19" y1="8" y2="14"/><line x1="22" x2="16" y1="11" y2="11"/>',
+  adjust:'<line x1="21" x2="14" y1="4" y2="4"/><line x1="10" x2="3" y1="4" y2="4"/><line x1="21" x2="12" y1="12" y2="12"/><line x1="8" x2="3" y1="12" y2="12"/><line x1="21" x2="16" y1="20" y2="20"/><line x1="12" x2="3" y1="20" y2="20"/><line x1="14" x2="14" y1="2" y2="6"/><line x1="8" x2="8" y1="10" y2="14"/><line x1="16" x2="16" y1="18" y2="22"/>'
 };var p=P[n]||'';var sz=s||15;return '<svg width="'+sz+'" height="'+sz+'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;flex-shrink:0" aria-hidden="true">'+p+'</svg>';}
 function renderDanhMuc(){
   const wrap=document.getElementById('accordion-nhomtb');if(!wrap)return;
@@ -4399,7 +4402,7 @@ function exportChiTietExcel(){
 function renderTonKho(){
   const actEl=document.getElementById('ton-kho-actions');
   if(actEl){
-    const adminBtns=isAdmin()?`<button class="btn btn-primary" onclick="openModalKho('nhap')">${_ic('in',14)} Nhập kho</button><button class="btn btn-outline" onclick="openModalKho('xuat')">${_ic('out',14)} Xuất kho</button>`:'';
+    const adminBtns=isAdmin()?`<button class="btn btn-primary" onclick="openModalKho('nhap')">${_ic('in',14)} Nhập kho</button><button class="btn btn-outline" onclick="openModalKho('xuat')">${_ic('out',14)} Xuất kho</button><button class="btn btn-outline" onclick="openModalKho('dieuchinh')">${_ic('adjust',14)} Điều chỉnh</button>`:'';
     actEl.innerHTML=adminBtns+`<button class="btn btn-outline" onclick="exportTonKhoExcel()">${_ic('sheet',14)} Xuất Excel</button>`;
   }
   switchTonKhoTab('hientai');
@@ -4518,10 +4521,10 @@ function exportTonKhoExcel(){
   showToast('📥 Đã xuất file tồn kho Excel!');
 }
 function switchTonKhoTab(tab){
-  ['hientai','nhap','xuat'].forEach(t=>{document.getElementById(`tk-tab-${t}`)?.classList.toggle('active',t===tab);const panel=document.getElementById(`tk-panel-${t}`);if(panel)panel.style.display=t===tab?'':'none';});
+  ['hientai','nhap','xuat','dieuchinh'].forEach(t=>{document.getElementById(`tk-tab-${t}`)?.classList.toggle('active',t===tab);const panel=document.getElementById(`tk-panel-${t}`);if(panel)panel.style.display=t===tab?'':'none';});
   const searchBar=document.getElementById('tk-search-bar');if(searchBar)searchBar.style.display=tab==='hientai'?'':'none';
   if(tab!=='hientai'){const inp=document.getElementById('tk-search-input');if(inp)inp.value='';}
-  if(tab==='hientai')renderTonKhoBang();if(tab==='nhap')renderLichSuNhap();if(tab==='xuat')renderLichSuXuat();
+  if(tab==='hientai')renderTonKhoBang();if(tab==='nhap')renderLichSuNhap();if(tab==='xuat')renderLichSuXuat();if(tab==='dieuchinh')renderLichSuDieuChinh();
 }
 function renderTonKhoBang(){
   const el=document.getElementById('tk-panel-hientai');if(!el)return;
@@ -4576,9 +4579,21 @@ function filterTonKhoBang(q){
     row.style.display=(!term||ten.includes(term))?'':'none';
   });
 }
+/* ===== Phân loại dòng lịch sử =====
+   loai lưu trong dữ liệu: 'nhap' | 'xuat' | 'dc_nhap' | 'dc_xuat'
+   - 'nhap'/'xuat'    : nhập kho / xuất kho THẬT (dùng cho báo cáo cấp phát)
+   - 'dc_nhap'/'dc_xuat': dòng của giao dịch ĐIỀU CHỈNH, cố ý tách riêng để
+     các thống kê lọc theo 'xuat' không bị lẫn số liệu điều chỉnh. */
+function _lsLoai(r){return r.loai||r.type||'';}
+function _lsMatch(r,loai){
+  const l=_lsLoai(r);
+  return loai==='dieuchinh'?(l==='dc_nhap'||l==='dc_xuat'):l===loai;
+}
+// Chiều tác động lên tồn kho của một dòng lịch sử
+function _lsChieu(r){const l=_lsLoai(r);return(l==='nhap'||l==='dc_nhap')?'nhap':'xuat';}
 // Nhóm các dòng lich_su_nhap_xuat theo tenGiaoDich+thangGiaoDich
 function _groupLichSu(loai){
-  const rows=daTonKhoLichSu.filter(r=>(r.loai||r.type)===loai);
+  const rows=daTonKhoLichSu.filter(r=>_lsMatch(r,loai));
   const map={};
   rows.forEach(r=>{
     const key=r.tenGiaoDich+'|'+r.thangGiaoDich;
@@ -4626,16 +4641,49 @@ function renderLichSuXuat(){
   </tr>`).join('');
   el.innerHTML=`<div style="overflow-x:auto;"><table><thead><tr><th style="text-align:center;">STT</th><th>Tên giao dịch</th><th style="text-align:center;">Tháng</th><th>Đơn vị nhận</th><th style="text-align:center;">Số MH</th><th style="text-align:center;">Tổng SL</th><th>Người thực hiện</th><th>Ghi chú</th><th style="text-align:center;">Thao tác</th></tr></thead><tbody>${rows}</tbody></table></div>`;
 }
+function renderLichSuDieuChinh(){
+  const el=document.getElementById('tk-panel-dieuchinh');if(!el)return;
+  const groups=_groupLichSu('dieuchinh');
+  if(!groups.length){el.innerHTML='<p style="color:var(--text-light);text-align:center;padding:24px;">Chưa có lịch sử điều chỉnh tồn kho.</p>';return;}
+  const rows=groups.map((g,i)=>{
+    const tang=g.items.filter(x=>_lsChieu(x)==='nhap').reduce((s,x)=>s+(parseFloat(x.soLuong)||0),0);
+    const giam=g.items.filter(x=>_lsChieu(x)==='xuat').reduce((s,x)=>s+(parseFloat(x.soLuong)||0),0);
+    const chenh=tang-giam;
+    const chenhTxt=(chenh>0?'+':chenh<0?'−':'')+Math.abs(chenh);
+    return`<tr>
+    <td style="text-align:center;">${i+1}</td>
+    <td><strong>${_escH(g.tenGiaoDich)}</strong></td>
+    <td style="text-align:center;">${g.thangGiaoDich||'—'}</td>
+    <td style="text-align:center;">${g.items.length} mặt hàng</td>
+    <td style="text-align:center;font-weight:600;color:#2e7d32;">${tang?'+'+tang:'—'}</td>
+    <td style="text-align:center;font-weight:600;color:#c62828;">${giam?'−'+giam:'—'}</td>
+    <td style="text-align:center;font-weight:700;color:${chenh>0?'#2e7d32':chenh<0?'#c62828':'var(--text-light)'};">${chenhTxt}</td>
+    <td style="font-size:12px;">${_escH(g.nguoiThucHien||'—')}</td>
+    <td>${_escH(g.ghiChu||'—')}</td>
+    <td style="text-align:center;display:flex;gap:4px;justify-content:center;">
+      <button class="btn btn-sm btn-outline" onclick="xemChiTietGiaoDich('dieuchinh','${encodeURIComponent(g.tenGiaoDich+'|'+g.thangGiaoDich)}')">Chi tiết</button>
+      ${isAdmin()?`<button class="btn btn-sm btn-danger" onclick="hoanTacGiaoDich('dieuchinh','${encodeURIComponent(g.tenGiaoDich+'|'+g.thangGiaoDich)}')">${_ic('undo',14)} Hoàn tác</button>`:''}
+    </td>
+  </tr>`;}).join('');
+  el.innerHTML=`<div style="overflow-x:auto;"><table><thead><tr><th style="text-align:center;">STT</th><th>Tên giao dịch</th><th style="text-align:center;">Tháng</th><th style="text-align:center;">Số mặt hàng</th><th style="text-align:center;">Tổng tăng</th><th style="text-align:center;">Tổng giảm</th><th style="text-align:center;">Chênh lệch</th><th>Người thực hiện</th><th>Ghi chú</th><th style="text-align:center;">Thao tác</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+}
 function xemChiTietGiaoDich(loai,keyEncoded){
   const key=decodeURIComponent(keyEncoded);
   const [tenGD,thangGD]=key.split('|');
-  const items=daTonKhoLichSu.filter(r=>(r.loai||r.type)===loai&&r.tenGiaoDich===tenGD&&r.thangGiaoDich===thangGD);
+  const items=daTonKhoLichSu.filter(r=>_lsMatch(r,loai)&&r.tenGiaoDich===tenGD&&r.thangGiaoDich===thangGD);
   if(!items.length)return;
-  const label=loai==='nhap'?'nhập':'xuất';
+  const isDC=loai==='dieuchinh';
+  const label=loai==='nhap'?'nhập':loai==='xuat'?'xuất':'điều chỉnh';
   const donViNhan=items[0].donViNhan||'';
   const nguoi=items[0].nguoiThucHien||'';
   const ghiChu=items[0].ghiChu||'';
-  const rows=items.map(it=>`<tr><td style="font-size:12px;color:var(--text-light);">${it.maVatTu||'—'}</td><td>${_escH(it.tenTrangBi||it.tenTB||'—')}</td><td style="text-align:center;">${it.dvt||'—'}</td><td style="text-align:center;font-weight:700;">${it.soLuong}</td></tr>`).join('');
+  const rows=items.map(it=>{
+    const len=_lsChieu(it)==='nhap';
+    const slCell=isDC
+      ?`<td style="text-align:center;font-weight:700;color:${len?'#2e7d32':'#c62828'};">${len?'+':'−'}${it.soLuong}</td>`
+      :`<td style="text-align:center;font-weight:700;">${it.soLuong}</td>`;
+    return`<tr><td style="font-size:12px;color:var(--text-light);">${it.maVatTu||'—'}</td><td>${_escH(it.tenTrangBi||it.tenTB||'—')}</td><td style="text-align:center;">${it.dvt||'—'}</td>${isDC?`<td style="text-align:center;"><span style="background:${len?'#e8f5e9':'#fdecea'};color:${len?'#2e7d32':'#c62828'};padding:2px 8px;border-radius:12px;font-size:11px;">${len?'Nhập thêm':'Xuất bớt'}</span></td>`:''}${slCell}</tr>`;
+  }).join('');
   document.getElementById('modal-gd-title').textContent=`Chi tiết ${label}: ${tenGD}`;
   document.getElementById('modal-gd-body').innerHTML=`<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px;font-size:13px;background:#f4f8ff;padding:12px;border-radius:8px;">
     <div><strong>Tên giao dịch:</strong> ${_escH(tenGD)}</div>
@@ -4644,31 +4692,32 @@ function xemChiTietGiaoDich(loai,keyEncoded){
     ${nguoi?`<div><strong>Người thực hiện:</strong> ${nguoi}</div>`:''}
     ${ghiChu?`<div style="grid-column:1/-1;"><strong>Ghi chú:</strong> ${ghiChu}</div>`:''}
   </div>
-  <div style="overflow-x:auto;"><table><thead><tr><th>Mã VT</th><th>Tên trang bị</th><th style="text-align:center;">ĐVT</th><th style="text-align:center;">SL ${label}</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+  <div style="overflow-x:auto;"><table><thead><tr><th>Mã VT</th><th>Tên trang bị</th><th style="text-align:center;">ĐVT</th>${isDC?'<th style="text-align:center;">Chiều</th><th style="text-align:center;">Thay đổi</th>':`<th style="text-align:center;">SL ${label}</th>`}</tr></thead><tbody>${rows}</tbody></table></div>`;
   openModal('modal-gd');
 }
 function hoanTacGiaoDich(loai,keyEncoded){
   if(!isAdmin())return;
   const key=decodeURIComponent(keyEncoded);
   const [tenGD,thangGD]=key.split('|');
-  const items=daTonKhoLichSu.filter(r=>(r.loai||r.type)===loai&&r.tenGiaoDich===tenGD&&r.thangGiaoDich===thangGD);
+  const items=daTonKhoLichSu.filter(r=>_lsMatch(r,loai)&&r.tenGiaoDich===tenGD&&r.thangGiaoDich===thangGD);
   if(!items.length)return;
-  const label=loai==='nhap'?'nhập':'xuất';
-  // Kiểm tra tồn kho có đủ để hoàn tác không (chỉ cần check khi hoàn tác nhập → trừ tồn)
+  const label=loai==='nhap'?'nhập':loai==='xuat'?'xuất':'điều chỉnh';
+  // Hoàn tác = đảo chiều TỪNG dòng. Dòng đã làm tăng tồn thì khi hoàn tác sẽ bị trừ
+  // → chỉ những dòng đó mới có nguy cơ làm tồn âm.
   const loi=[];
-  if(loai==='nhap'){
-    items.forEach(it=>{
-      const cur=daTonKho[it.tbId]||0;
-      const sl=parseFloat(it.soLuong)||0;
-      if(cur<sl)loi.push(`"${it.tenTrangBi||it.tenTB}" (tồn: ${cur}, cần trừ: ${sl})`);
-    });
-  }
+  items.forEach(it=>{
+    if(_lsChieu(it)!=='nhap')return;
+    const cur=daTonKho[it.tbId]||0;
+    const sl=parseFloat(it.soLuong)||0;
+    if(cur<sl)loi.push(`"${it.tenTrangBi||it.tenTB}" (tồn: ${cur}, cần trừ: ${sl})`);
+  });
   const loiHtml=loi.length?`<div style="background:#fff3cd;border:1px solid #ffc107;border-radius:6px;padding:10px;margin-bottom:12px;font-size:13px;"><strong>⚠️ Cảnh báo:</strong> Các vật tư sau sẽ bị tồn âm nếu hoàn tác:<br>${loi.map(x=>`• ${x}`).join('<br>')}</div>`:'';
   const rows=items.map(it=>{
     const sl=parseFloat(it.soLuong)||0;
-    const after=loai==='nhap'?(daTonKho[it.tbId]||0)-sl:(daTonKho[it.tbId]||0)+sl;
+    const len=_lsChieu(it)==='nhap';
+    const after=len?(daTonKho[it.tbId]||0)-sl:(daTonKho[it.tbId]||0)+sl;
     const color=after<0?'color:#c0392b;font-weight:700':'';
-    return`<tr><td>${_escH(it.tenTrangBi||it.tenTB||'—')}</td><td style="text-align:center;">${loai==='nhap'?'−'+sl:'+'+sl}</td><td style="text-align:center;${color}">${after}</td></tr>`;
+    return`<tr><td>${_escH(it.tenTrangBi||it.tenTB||'—')}</td><td style="text-align:center;">${len?'−'+sl:'+'+sl}</td><td style="text-align:center;${color}">${after}</td></tr>`;
   }).join('');
   // Hiển thị modal xác nhận
   const modalHtml=`<div style="padding:4px 0 12px;">
@@ -4690,7 +4739,7 @@ function hoanTacGiaoDich(loai,keyEncoded){
 function xacNhanHoanTac(loai,keyEncoded){
   const key=decodeURIComponent(keyEncoded);
   const [tenGD,thangGD]=key.split('|');
-  const items=daTonKhoLichSu.filter(r=>(r.loai||r.type)===loai&&r.tenGiaoDich===tenGD&&r.thangGiaoDich===thangGD);
+  const items=daTonKhoLichSu.filter(r=>_lsMatch(r,loai)&&r.tenGiaoDich===tenGD&&r.thangGiaoDich===thangGD);
   if(!items.length)return;
   // Đảo ngược tồn kho
   items.forEach(it=>{
@@ -4699,7 +4748,7 @@ function xacNhanHoanTac(loai,keyEncoded){
     if(!tbId)return;
     const sl=parseFloat(it.soLuong)||0;
     const cur=daTonKho[tbId]||0;
-    daTonKho[tbId]=loai==='nhap'?Math.max(0,cur-sl):cur+sl;
+    daTonKho[tbId]=_lsChieu(it)==='nhap'?Math.max(0,cur-sl):cur+sl;
   });
   saveData('tonkho',daTonKho);
   const tkRowsHT=Object.entries(daTonKho).map(([id,soLuong])=>({id,soLuong}));
@@ -4707,18 +4756,18 @@ function xacNhanHoanTac(loai,keyEncoded){
   BHLD.push.bulkReplace('ton_kho',tkRowsHT);
   // Xóa các dòng lịch sử khỏi sheet và local
   items.forEach(it=>{BHLD.push.delete('lich_su_nhap_xuat',String(it.id));});
-  daTonKhoLichSu=daTonKhoLichSu.filter(r=>!((r.loai||r.type)===loai&&r.tenGiaoDich===tenGD&&r.thangGiaoDich===thangGD));
+  daTonKhoLichSu=daTonKhoLichSu.filter(r=>!(_lsMatch(r,loai)&&r.tenGiaoDich===tenGD&&r.thangGiaoDich===thangGD));
   saveData('tonkho-lichsu',daTonKhoLichSu);
   BHLD.lsSet('lich_su_nhap_xuat',daTonKhoLichSu);
   closeModal('modal-gd');
   showToast(`✅ Đã hoàn tác giao dịch "${tenGD}"!`);
   renderTonKhoBang();
-  if(loai==='nhap')renderLichSuNhap();else renderLichSuXuat();
+  if(loai==='nhap')renderLichSuNhap();else if(loai==='xuat')renderLichSuXuat();else renderLichSuDieuChinh();
 }
 
 function openModalKho(type){
-  if(!isAdmin()){showToast('Chỉ quản trị viên mới có quyền nhập/xuất kho.','error');return;}
-  document.getElementById('modal-kho-title').innerHTML=type==='nhap'?_ic('in',16)+' Nhập kho':_ic('out',16)+' Xuất kho';
+  if(!isAdmin()){showToast('Chỉ quản trị viên mới có quyền nhập/xuất/điều chỉnh kho.','error');return;}
+  document.getElementById('modal-kho-title').innerHTML=type==='nhap'?_ic('in',16)+' Nhập kho':type==='xuat'?_ic('out',16)+' Xuất kho':_ic('adjust',16)+' Điều chỉnh tồn kho';
   window._khoPreview=null;renderFormKho(type);document.getElementById('modal-kho').classList.add('open');
 }
 function closeModalKho(){document.getElementById('modal-kho').classList.remove('open');window._khoPreview=null;}
@@ -4739,8 +4788,11 @@ function _khoLoc(){
   var rows=document.querySelectorAll('#modal-kho-body tr[data-kho-row]');
   var conLai={}, hien=0;
   rows.forEach(function(tr){
-    var inp=document.getElementById('kho-qty-'+tr.getAttribute('data-kho-row'));
-    var daDien=!!(inp&&inp.value!==''&&parseFloat(inp.value)>0);
+    var _id=tr.getAttribute('data-kho-row');
+    var inp=document.getElementById('kho-qty-'+_id);
+    var inpX=document.getElementById('kho-qtyx-'+_id);   // chỉ có ở form Điều chỉnh
+    var _co=function(e){return !!(e&&e.value!==''&&parseFloat(e.value)>0);};
+    var daDien=_co(inp)||_co(inpX);
     var khop=!q||(tr.getAttribute('data-kho-find')||'').indexOf(q)>=0;
     if(anTon0&&Number(tr.getAttribute('data-kho-ton'))<=0)khop=false;
     // Dòng đã điền số luôn được hiện, để admin không tưởng là mất dữ liệu
@@ -4760,15 +4812,39 @@ function _khoLoc(){
 }
 function _khoXoaTim(){var b=document.getElementById('kho-tim');if(b){b.value='';b.focus();}_khoLoc();}
 
+/* Điều chỉnh: mỗi vật tư chỉ được điền 1 trong 2 cột (nhập HOẶC xuất).
+   Ô nào có số > 0 thì ô còn lại bị khoá và xoá trắng. */
+function _khoDcKhoa(id){
+  var inN=document.getElementById('kho-qty-'+id), inX=document.getElementById('kho-qtyx-'+id);
+  if(!inN||!inX)return;
+  var vN=parseFloat(inN.value)||0, vX=parseFloat(inX.value)||0;
+  function set(el,khoa){
+    el.disabled=khoa;
+    if(khoa){el.value='';el.style.background='#f0f0f0';el.style.cursor='not-allowed';}
+    else{el.style.background=(el.id.indexOf('kho-qtyx-')===0)?'#fdf5f5':'#f4fbf5';el.style.cursor='';}
+  }
+  if(vN>0){set(inX,true);set(inN,false);}
+  else if(vX>0){set(inN,true);set(inX,false);}
+  else{set(inN,false);set(inX,false);}
+}
 function renderFormKho(type){
-  const now=new Date();const thang=now.getMonth()+1;const nam=now.getFullYear();const label=type==='nhap'?'nhập':'xuất';
+  const now=new Date();const thang=now.getMonth()+1;const nam=now.getFullYear();
+  const isDC=type==='dieuchinh';
+  const label=type==='nhap'?'nhập':type==='xuat'?'xuất':'điều chỉnh';
   const donViHtml=type==='xuat'?`<div class="form-group" style="grid-column:1/-1;"><label>Đơn vị nhận <span style="color:red">*</span></label><select id="kho-donvi-nhan"><option value="">-- Chọn đơn vị nhận --</option>${UNIT_ORDER.map(u=>`<option value="${u}">${u}</option>`).join('')}<option value="Xuất khác">Xuất khác</option></select></div>`:'';
-  const colSpan=type==='xuat'?5:4;
+  const colSpan=isDC?6:(type==='xuat'?5:4);
   const itemRows=daNhomTB.map(nhom=>{
     const items=daDanhMuc.filter(d=>d.nhomId==nhom.id).sort((a,b)=>(a.thuTu||0)-(b.thuTu||0));
     if(!items.length)return'';
     const header=`<tr data-kho-hdr="${nhom.id}" style="background:#EDF1F8;"><td colspan="${colSpan}" style="font-weight:700;font-size:12px;color:var(--primary);padding:6px 10px;">${_ic('pkg',13)} ${_escH(nhom.ten)}</td></tr>`;
-    const rows=items.map(dm=>{const cur=daTonKho[dm.id]||0;return`<tr data-kho-row="${dm.id}" data-kho-grp="${nhom.id}" data-kho-ton="${cur}" data-kho-find="${_escH(_khoNoAccent((dm.ma||'')+' '+dm.ten))}"><td style="font-size:12px;color:var(--text-light);">${dm.ma||'—'}</td><td>${_escH(dm.ten)}</td><td style="text-align:center;">${dm.donVi||nhom.donVi||'—'}</td>${type==='xuat'?`<td style="text-align:center;color:${cur===0?'var(--danger)':'inherit'};font-weight:600;">${cur}</td>`:''}<td style="text-align:center;"><input type="number" min="0" step="1" value="" placeholder="0" id="kho-qty-${dm.id}" style="width:75px;text-align:center;padding:4px 6px;border:1px solid var(--border);border-radius:4px;" ${type==='xuat'?`max="${cur}"`:''}></td></tr>`;}).join('');
+    const rows=items.map(dm=>{
+      const cur=daTonKho[dm.id]||0;
+      const tonCell=(type==='xuat'||isDC)?`<td style="text-align:center;color:${cur===0?'var(--danger)':'inherit'};font-weight:600;">${cur}</td>`:'';
+      const inpCells=isDC
+        ?`<td style="text-align:center;"><input type="number" min="0" step="1" value="" placeholder="0" id="kho-qty-${dm.id}" oninput="_khoDcKhoa('${dm.id}')" style="width:70px;text-align:center;padding:4px 6px;border:1px solid #a5d6a7;border-radius:4px;background:#f4fbf5;"></td><td style="text-align:center;"><input type="number" min="0" step="1" max="${cur}" value="" placeholder="0" id="kho-qtyx-${dm.id}" oninput="_khoDcKhoa('${dm.id}')" style="width:70px;text-align:center;padding:4px 6px;border:1px solid #ef9a9a;border-radius:4px;background:#fdf5f5;"></td>`
+        :`<td style="text-align:center;"><input type="number" min="0" step="1" value="" placeholder="0" id="kho-qty-${dm.id}" style="width:75px;text-align:center;padding:4px 6px;border:1px solid var(--border);border-radius:4px;" ${type==='xuat'?`max="${cur}"`:''}></td>`;
+      return`<tr data-kho-row="${dm.id}" data-kho-grp="${nhom.id}" data-kho-ton="${cur}" data-kho-find="${_escH(_khoNoAccent((dm.ma||'')+' '+dm.ten))}"><td style="font-size:12px;color:var(--text-light);">${dm.ma||'—'}</td><td>${_escH(dm.ten)}</td><td style="text-align:center;">${dm.donVi||nhom.donVi||'—'}</td>${tonCell}${inpCells}</tr>`;
+    }).join('');
     return header+rows;
   }).join('');
   document.getElementById('modal-kho-body').innerHTML=`<div style="padding:4px 0 12px;"><div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
@@ -4778,15 +4854,16 @@ function renderFormKho(type){
     <div class="form-group" style="grid-column:1/-1;"><label>Ghi chú</label><input id="kho-ghichu" type="text" placeholder="Ghi chú (tùy chọn)"></div>
   </div>
   <div style="font-weight:600;margin:14px 0 8px;font-size:13px;color:var(--primary);">Danh sách vật tư — điền số lượng cần ${label}:</div>
+  ${isDC?`<div style="background:#fff8e1;border:1px solid #ffe082;border-radius:6px;padding:8px 12px;margin-bottom:8px;font-size:12.5px;color:#7a5c00;">Mỗi vật tư chỉ điền <strong>một trong hai</strong> cột: nhập thêm <strong>(+)</strong> hoặc xuất bớt <strong>(−)</strong>. Điền một ô thì ô còn lại tự khoá. SL xuất không được vượt tồn hiện tại.</div>`:''}
   <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px;">
     <div style="position:relative;flex:1;min-width:220px;">
       <input id="kho-tim" type="text" autocomplete="off" placeholder="Tìm theo mã vật tư hoặc tên (không cần dấu)..." oninput="_khoLoc()" style="width:100%;padding:7px 30px 7px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;">
       <button type="button" onclick="_khoXoaTim()" title="Xoá từ khoá" style="position:absolute;right:6px;top:50%;transform:translateY(-50%);border:none;background:none;cursor:pointer;color:var(--text-light);font-size:16px;line-height:1;padding:2px 4px;">×</button>
     </div>
-    ${type==='xuat'?`<label style="display:flex;align-items:center;gap:6px;font-size:12.5px;color:var(--text-light);cursor:pointer;white-space:nowrap;"><input type="checkbox" id="kho-an-ton0" onchange="_khoLoc()" style="cursor:pointer;">Ẩn vật tư tồn = 0</label>`:''}
+    ${(type==='xuat'||isDC)?`<label style="display:flex;align-items:center;gap:6px;font-size:12.5px;color:var(--text-light);cursor:pointer;white-space:nowrap;"><input type="checkbox" id="kho-an-ton0" onchange="_khoLoc()" style="cursor:pointer;">Ẩn vật tư tồn = 0</label>`:''}
     <span id="kho-tim-info" style="font-size:12px;color:var(--text-light);white-space:nowrap;"></span>
   </div>
-  <div style="border:1px solid var(--border);border-radius:6px;overflow:hidden;"><div style="max-height:420px;overflow-y:auto;"><table style="margin:0;"><thead style="position:sticky;top:0;z-index:1;background:var(--bg);"><tr><th>Mã VT</th><th>Tên trang bị</th><th style="text-align:center;">ĐVT</th>${type==='xuat'?'<th style="text-align:center;">Tồn hiện tại</th>':''}<th style="text-align:center;">SL ${label}</th></tr></thead><tbody>${itemRows||'<tr><td colspan="5" style="text-align:center;color:var(--text-light);">Chưa có danh mục</td></tr>'}</tbody></table></div></div>
+  <div style="border:1px solid var(--border);border-radius:6px;overflow:hidden;"><div style="max-height:420px;overflow-y:auto;"><table style="margin:0;"><thead style="position:sticky;top:0;z-index:1;background:var(--bg);"><tr><th>Mã VT</th><th>Tên trang bị</th><th style="text-align:center;">ĐVT</th>${(type==='xuat'||isDC)?'<th style="text-align:center;">Tồn hiện tại</th>':''}${isDC?'<th style="text-align:center;color:#2e7d32;">SL nhập (+)</th><th style="text-align:center;color:#c62828;">SL xuất (−)</th>':`<th style="text-align:center;">SL ${label}</th>`}</tr></thead><tbody>${itemRows||`<tr><td colspan="${colSpan}" style="text-align:center;color:var(--text-light);">Chưa có danh mục</td></tr>`}</tbody></table></div></div>
   <div id="kho-tim-empty" style="display:none;padding:14px;text-align:center;color:var(--text-light);font-size:13px;">Không tìm thấy vật tư nào khớp từ khoá.</div>
   <div id="kho-form-error" style="color:var(--danger);font-size:13px;margin-top:8px;display:none;"></div>
   <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px;"><button class="btn btn-outline" onclick="closeModalKho()">Hủy</button><button class="btn btn-primary" onclick="xemTruocKho('${type}')">${_ic('eye',14)} Xem trước</button></div></div>`;
@@ -4794,30 +4871,58 @@ function renderFormKho(type){
   if(typeof _khoLoc==='function')_khoLoc();
 }
 function xemTruocKho(type){
-  const tenGD=(document.getElementById('kho-ten-gd')?.value||'').trim();const thang=parseInt(document.getElementById('kho-thang')?.value);const nam=parseInt(document.getElementById('kho-nam')?.value);const ghiChu=(document.getElementById('kho-ghichu')?.value||'').trim();const donViNhan=type==='xuat'?(document.getElementById('kho-donvi-nhan')?.value||''):null;const errEl=document.getElementById('kho-form-error');const label=type==='nhap'?'nhập':'xuất';
+  const isDC=type==='dieuchinh';
+  const tenGD=(document.getElementById('kho-ten-gd')?.value||'').trim();const thang=parseInt(document.getElementById('kho-thang')?.value);const nam=parseInt(document.getElementById('kho-nam')?.value);const ghiChu=(document.getElementById('kho-ghichu')?.value||'').trim();const donViNhan=type==='xuat'?(document.getElementById('kho-donvi-nhan')?.value||''):null;const errEl=document.getElementById('kho-form-error');const label=type==='nhap'?'nhập':type==='xuat'?'xuất':'điều chỉnh';
   errEl.style.display='none';const showErr=(msg)=>{errEl.textContent=msg;errEl.style.display='block';};
   if(!tenGD)return showErr('⚠️ Vui lòng nhập tên giao dịch.');if(!thang||!nam)return showErr('⚠️ Vui lòng điền đủ tháng và năm.');if(type==='xuat'&&!donViNhan)return showErr('⚠️ Vui lòng chọn đơn vị nhận.');
   const items=[];let errMsg='';
-  for(const dm of daDanhMuc){const inp=document.getElementById(`kho-qty-${dm.id}`);const val=inp?parseFloat(inp.value):0;if(!val||val<=0)continue;if(type==='xuat'){const cur=daTonKho[dm.id]||0;if(val>cur){errMsg=`⚠️ SL xuất "${dm.ten}" (${val}) vượt tồn (${cur}).`;break;}}items.push({tbId:dm.id,maVatTu:dm.ma||'',tenTB:dm.ten,dvt:dm.donVi||'',soLuong:val});}
+  for(const dm of daDanhMuc){
+    const cur=daTonKho[dm.id]||0;
+    if(isDC){
+      const vN=parseFloat(document.getElementById(`kho-qty-${dm.id}`)?.value)||0;
+      const vX=parseFloat(document.getElementById(`kho-qtyx-${dm.id}`)?.value)||0;
+      if(vN>0&&vX>0){errMsg=`⚠️ "${dm.ten}": không được vừa nhập vừa xuất. Chỉ điền một trong hai cột.`;break;}
+      if(vX>cur){errMsg=`⚠️ SL xuất "${dm.ten}" (${vX}) vượt tồn (${cur}).`;break;}
+      if(vN<=0&&vX<=0)continue;
+      items.push({tbId:dm.id,maVatTu:dm.ma||'',tenTB:dm.ten,dvt:dm.donVi||'',soLuong:vN>0?vN:vX,chieu:vN>0?'nhap':'xuat'});
+    }else{
+      const inp=document.getElementById(`kho-qty-${dm.id}`);const val=inp?parseFloat(inp.value):0;
+      if(!val||val<=0)continue;
+      if(type==='xuat'&&val>cur){errMsg=`⚠️ SL xuất "${dm.ten}" (${val}) vượt tồn (${cur}).`;break;}
+      items.push({tbId:dm.id,maVatTu:dm.ma||'',tenTB:dm.ten,dvt:dm.donVi||'',soLuong:val,chieu:type});
+    }
+  }
   if(errMsg)return showErr(errMsg);if(!items.length)return showErr('⚠️ Chưa điền số lượng cho bất kỳ vật tư nào.');
   window._khoPreview={type,tenGD,thang,nam,ghiChu,donViNhan,items};
-  const rows=items.map(it=>{const cur=daTonKho[it.tbId]||0;const after=type==='nhap'?cur+it.soLuong:cur-it.soLuong;const color=type==='nhap'?'#27ae60':'#e74c3c';return`<tr><td>${it.tenTB}</td><td style="text-align:center;">${it.dvt}</td><td style="text-align:center;font-weight:700;color:${color};">${type==='nhap'?'+':'−'}${it.soLuong}</td><td style="text-align:center;">${cur}</td><td style="text-align:center;font-weight:700;">${after}</td></tr>`;}).join('');
+  const rows=items.map(it=>{const cur=daTonKho[it.tbId]||0;const len=it.chieu==='nhap';const after=len?cur+it.soLuong:cur-it.soLuong;const color=len?'#27ae60':'#e74c3c';return`<tr><td>${_escH(it.tenTB)}</td><td style="text-align:center;">${it.dvt}</td><td style="text-align:center;font-weight:700;color:${color};">${len?'+':'−'}${it.soLuong}</td><td style="text-align:center;">${cur}</td><td style="text-align:center;font-weight:700;color:${after===cur?'inherit':color};">${after}</td></tr>`;}).join('');
   const tongSL=items.reduce((s,x)=>s+x.soLuong,0);
-  document.getElementById('modal-kho-body').innerHTML=`<div style="padding:4px 0 12px;"><div style="background:#f0f8ff;border:1px solid #bee3f8;border-radius:8px;padding:12px 16px;margin-bottom:14px;"><div style="font-weight:700;font-size:13.5px;margin-bottom:8px;">${_ic('clip',14)} Thông tin giao dịch ${label}</div><div style="display:grid;grid-template-columns:repeat(2,1fr);gap:6px;font-size:13px;"><div style="grid-column:1/-1;"><span style="color:var(--text-light);">Tên GD:</span> <strong>${_escH(tenGD)}</strong></div><div><span style="color:var(--text-light);">Thời gian:</span> <strong>Tháng ${thang}/${nam}</strong></div>${type==='xuat'?`<div><span style="color:var(--text-light);">Đơn vị nhận:</span> <strong>${donViNhan}</strong></div>`:''}</div></div>
-  <div style="font-weight:600;margin-bottom:8px;font-size:13px;color:var(--primary);">Vật tư sẽ ${label} — ${items.length} mặt hàng, tổng <strong>${tongSL}</strong>:</div>
-  <div style="border:1px solid var(--border);border-radius:6px;overflow:hidden;max-height:280px;overflow-y:auto;"><table style="margin:0;"><thead style="position:sticky;top:0;background:var(--bg);"><tr><th>Tên trang bị</th><th style="text-align:center;">ĐVT</th><th style="text-align:center;">SL ${label}</th><th style="text-align:center;">Tồn trước</th><th style="text-align:center;">Tồn sau</th></tr></thead><tbody>${rows}</tbody></table></div>
+  const tangSL=items.filter(x=>x.chieu==='nhap').reduce((s,x)=>s+x.soLuong,0);
+  const giamSL=items.filter(x=>x.chieu==='xuat').reduce((s,x)=>s+x.soLuong,0);
+  const chenh=tangSL-giamSL;
+  // Dùng dấu trừ U+2212 cho đồng bộ với các cột +/− khác trên màn hình
+  const chenhTxt=(chenh>0?'+':chenh<0?'−':'')+Math.abs(chenh);
+  // Điều chỉnh: tóm tắt tăng / giảm / chênh lệch ròng so với tồn ban đầu
+  const summaryDC=isDC?`<div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px;">
+    <div style="flex:1;min-width:120px;background:#f4fbf5;border:1px solid #a5d6a7;border-radius:8px;padding:10px 14px;"><div style="font-size:11px;color:#2e7d32;">Tổng nhập thêm</div><div style="font-size:20px;font-weight:700;color:#2e7d32;">+${tangSL}</div><div style="font-size:11px;color:var(--text-light);">${items.filter(x=>x.chieu==='nhap').length} mặt hàng</div></div>
+    <div style="flex:1;min-width:120px;background:#fdf5f5;border:1px solid #ef9a9a;border-radius:8px;padding:10px 14px;"><div style="font-size:11px;color:#c62828;">Tổng xuất bớt</div><div style="font-size:20px;font-weight:700;color:#c62828;">−${giamSL}</div><div style="font-size:11px;color:var(--text-light);">${items.filter(x=>x.chieu==='xuat').length} mặt hàng</div></div>
+    <div style="flex:1;min-width:120px;background:#f4f8ff;border:1px solid #bee3f8;border-radius:8px;padding:10px 14px;"><div style="font-size:11px;color:var(--text-light);">Chênh lệch ròng</div><div style="font-size:20px;font-weight:700;color:${chenh>0?'#2e7d32':chenh<0?'#c62828':'var(--text-light)'};">${chenhTxt}</div><div style="font-size:11px;color:var(--text-light);">so với tồn ban đầu</div></div>
+  </div>`:'';
+  document.getElementById('modal-kho-body').innerHTML=`<div style="padding:4px 0 12px;"><div style="background:#f0f8ff;border:1px solid #bee3f8;border-radius:8px;padding:12px 16px;margin-bottom:14px;"><div style="font-weight:700;font-size:13.5px;margin-bottom:8px;">${_ic('clip',14)} Thông tin giao dịch ${label}</div><div style="display:grid;grid-template-columns:repeat(2,1fr);gap:6px;font-size:13px;"><div style="grid-column:1/-1;"><span style="color:var(--text-light);">Tên GD:</span> <strong>${_escH(tenGD)}</strong></div><div><span style="color:var(--text-light);">Thời gian:</span> <strong>Tháng ${thang}/${nam}</strong></div>${type==='xuat'?`<div><span style="color:var(--text-light);">Đơn vị nhận:</span> <strong>${donViNhan}</strong></div>`:''}${ghiChu?`<div style="grid-column:1/-1;"><span style="color:var(--text-light);">Ghi chú:</span> ${_escH(ghiChu)}</div>`:''}</div></div>
+  ${summaryDC}
+  <div style="font-weight:600;margin-bottom:8px;font-size:13px;color:var(--primary);">${isDC?`Vật tư sẽ điều chỉnh — <strong>${items.length}</strong> mặt hàng:`:`Vật tư sẽ ${label} — ${items.length} mặt hàng, tổng <strong>${tongSL}</strong>:`}</div>
+  <div style="border:1px solid var(--border);border-radius:6px;overflow:hidden;max-height:280px;overflow-y:auto;"><table style="margin:0;"><thead style="position:sticky;top:0;background:var(--bg);"><tr><th>Tên trang bị</th><th style="text-align:center;">ĐVT</th><th style="text-align:center;">${isDC?'Thay đổi':'SL '+label}</th><th style="text-align:center;">Tồn ${isDC?'ban đầu':'trước'}</th><th style="text-align:center;">Tồn ${isDC?'mới':'sau'}</th></tr></thead><tbody>${rows}</tbody></table></div>
   <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px;"><button class="btn btn-outline" onclick="quayLaiFormKho('${type}')">${_ic('back',14)} Quay lại</button><button class="btn btn-primary" onclick="xacNhanKho('${type}')">${_ic('check',14)} Xác nhận</button></div></div>`;
 }
 function quayLaiFormKho(type){
   const p=window._khoPreview;renderFormKho(type);if(!p)return;
-  setTimeout(()=>{if(document.getElementById('kho-ten-gd'))document.getElementById('kho-ten-gd').value=p.tenGD||'';if(document.getElementById('kho-thang'))document.getElementById('kho-thang').value=p.thang;if(document.getElementById('kho-nam'))document.getElementById('kho-nam').value=p.nam;if(document.getElementById('kho-ghichu'))document.getElementById('kho-ghichu').value=p.ghiChu||'';if(type==='xuat'&&p.donViNhan&&document.getElementById('kho-donvi-nhan'))document.getElementById('kho-donvi-nhan').value=p.donViNhan;p.items.forEach(it=>{const inp=document.getElementById(`kho-qty-${it.tbId}`);if(inp)inp.value=it.soLuong;});if(typeof _khoLoc==='function')_khoLoc();},0);
+  setTimeout(()=>{if(document.getElementById('kho-ten-gd'))document.getElementById('kho-ten-gd').value=p.tenGD||'';if(document.getElementById('kho-thang'))document.getElementById('kho-thang').value=p.thang;if(document.getElementById('kho-nam'))document.getElementById('kho-nam').value=p.nam;if(document.getElementById('kho-ghichu'))document.getElementById('kho-ghichu').value=p.ghiChu||'';if(type==='xuat'&&p.donViNhan&&document.getElementById('kho-donvi-nhan'))document.getElementById('kho-donvi-nhan').value=p.donViNhan;p.items.forEach(it=>{const id=(type==='dieuchinh'&&it.chieu==='xuat')?`kho-qtyx-${it.tbId}`:`kho-qty-${it.tbId}`;const inp=document.getElementById(id);if(inp)inp.value=it.soLuong;if(type==='dieuchinh'&&typeof _khoDcKhoa==='function')_khoDcKhoa(it.tbId);});if(typeof _khoLoc==='function')_khoLoc();},0);
 }
 function xacNhanKho(type){
   const p=window._khoPreview;if(!p||p.type!==type)return;
   const nguoi=(getCentralUser&&getCentralUser()?.name)||'';
   const thangGD=`T${p.thang}/${p.nam}`;
-  // Cập nhật tồn kho local
-  p.items.forEach(it=>{const cur=daTonKho[it.tbId]||0;daTonKho[it.tbId]=type==='nhap'?cur+it.soLuong:Math.max(0,cur-it.soLuong);});
+  // Cập nhật tồn kho local — điều chỉnh thì đảo theo chiều của TỪNG dòng
+  p.items.forEach(it=>{const cur=daTonKho[it.tbId]||0;const len=(it.chieu||type)==='nhap';daTonKho[it.tbId]=len?cur+it.soLuong:Math.max(0,cur-it.soLuong);});
   saveData('tonkho',daTonKho);
   // Sync ton_kho lên Sheet: ghi toàn bộ 1 lần (bulkWrite thay thế toàn bộ sheet)
   const tkRows=Object.entries(daTonKho).map(([id,soLuong])=>({id,soLuong}));
@@ -4828,7 +4933,8 @@ function xacNhanKho(type){
   const newRows=p.items.map(it=>({
     id:`${Date.now()}_${it.tbId}`,
     tenGiaoDich:p.tenGD,
-    loai:type,
+    // Điều chỉnh ghi loai riêng (dc_nhap / dc_xuat) để KHÔNG lẫn vào thống kê nhập/xuất kho thật
+    loai:type==='dieuchinh'?(it.chieu==='nhap'?'dc_nhap':'dc_xuat'):type,
     tbId:String(it.tbId),
     maVatTu:it.maVatTu||'',
     tenTrangBi:it.tenTB,
@@ -4842,7 +4948,10 @@ function xacNhanKho(type){
   BHLD.push.bulkAppend('lich_su_nhap_xuat',newRows);
   daTonKhoLichSu.unshift(...newRows);saveData('tonkho-lichsu',daTonKhoLichSu);
   BHLD.lsSet('lich_su_nhap_xuat',daTonKhoLichSu);
-  window._khoPreview=null;closeModalKho();showToast(`✅ Đã ${type==='nhap'?'nhập':'xuất'} kho thành công!`);renderTonKhoBang();
+  window._khoPreview=null;closeModalKho();
+  showToast(type==='dieuchinh'?'✅ Đã điều chỉnh tồn kho thành công!':`✅ Đã ${type==='nhap'?'nhập':'xuất'} kho thành công!`);
+  renderTonKhoBang();
+  if(type==='dieuchinh'&&document.getElementById('tk-tab-dieuchinh')?.classList.contains('active'))renderLichSuDieuChinh();
 }
 
 // ========= NHU CẦU MUA SẮM =========
