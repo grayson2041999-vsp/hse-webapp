@@ -573,15 +573,23 @@
     <div class="admin-tab" id="tk-tab-dieuchinh" onclick="switchTonKhoTab('dieuchinh')"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:5px" aria-hidden="true"><line x1="21" x2="14" y1="4" y2="4"/><line x1="10" x2="3" y1="4" y2="4"/><line x1="21" x2="12" y1="12" y2="12"/><line x1="8" x2="3" y1="12" y2="12"/><line x1="21" x2="16" y1="20" y2="20"/><line x1="12" x2="3" y1="20" y2="20"/><line x1="14" x2="14" y1="2" y2="6"/><line x1="8" x2="8" y1="10" y2="14"/><line x1="16" x2="16" y1="18" y2="22"/></svg>Lịch sử điều chỉnh</div>
   </div>
 
-  <div id="tk-search-bar" style="padding:12px 0 0;">
-    <div style="position:relative;max-width:360px;">
+  <div id="tk-search-bar" style="padding:12px 0 0;display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+    <div style="position:relative;flex:1;min-width:220px;max-width:360px;">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-light)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="position:absolute;left:12px;top:50%;transform:translateY(-50%);pointer-events:none;" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
     <input id="tk-search-input" type="text" placeholder="Tìm theo tên vật tư..."
-      oninput="filterTonKhoBang(this.value)"
+      oninput="filterTonKhoBang()"
       style="width:100%;padding:8px 14px 8px 36px;border:1px solid var(--border);border-radius:8px;font-size:13.5px;outline:none;"
       onfocus="this.style.borderColor='var(--primary-light)'"
       onblur="this.style.borderColor='var(--border)'">
     </div>
+    <select id="tk-filter-trangthai" onchange="filterTonKhoBang()" title="Lọc theo trạng thái tồn kho"
+      style="padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:13.5px;outline:none;background:#fff;cursor:pointer;min-width:160px;">
+      <option value="">Tất cả trạng thái</option>
+      <option value="con">Còn hàng</option>
+      <option value="saphet">Sắp hết (≤5)</option>
+      <option value="het">Hết hàng</option>
+    </select>
+    <span id="tk-filter-info" style="font-size:12.5px;color:var(--text-light);white-space:nowrap;"></span>
   </div>
 
   <div id="tk-panel-hientai" style="padding-top:12px;"></div>
@@ -4579,7 +4587,13 @@ function exportTonKhoExcel(){
 function switchTonKhoTab(tab){
   ['hientai','nhap','xuat','dieuchinh'].forEach(t=>{document.getElementById(`tk-tab-${t}`)?.classList.toggle('active',t===tab);const panel=document.getElementById(`tk-panel-${t}`);if(panel)panel.style.display=t===tab?'':'none';});
   const searchBar=document.getElementById('tk-search-bar');if(searchBar)searchBar.style.display=tab==='hientai'?'':'none';
-  if(tab!=='hientai'){const inp=document.getElementById('tk-search-input');if(inp)inp.value='';}
+  // Rời tab Tồn kho hiện tại thì xoá luôn cả từ khoá lẫn bộ lọc trạng thái,
+  // để lần sau quay lại không bị "mất" vật tư vì bộ lọc cũ còn sót.
+  if(tab!=='hientai'){
+    const inp=document.getElementById('tk-search-input');if(inp)inp.value='';
+    const sel=document.getElementById('tk-filter-trangthai');if(sel)sel.value='';
+    const info=document.getElementById('tk-filter-info');if(info)info.textContent='';
+  }
   if(tab==='hientai')renderTonKhoBang();if(tab==='nhap')renderLichSuNhap();if(tab==='xuat')renderLichSuXuat();if(tab==='dieuchinh')renderLichSuDieuChinh();
 }
 function renderTonKhoBang(){
@@ -4592,15 +4606,17 @@ function renderTonKhoBang(){
   const tableRows=daNhomTB.map(nhom=>{
     const items=_dmSorted(nhom.id);
     if(!items.length)return'';
-    const groupHeader=`<tr style="background:#EDF1F8;">
+    const groupHeader=`<tr data-tk-hdr="${nhom.id}" style="background:#EDF1F8;">
       <td colspan="6" style="font-weight:700;font-size:13px;color:var(--primary);padding:8px 12px;">${_ic('pkg',14)} ${_escH(nhom.ten)}</td>
     </tr>`;
     const itemRows=items.map(dm=>{
       stt++;
       const qty=daTonKho[dm.id]||0;
+      // Cùng ngưỡng với badge bên dưới và với 3 thẻ thống kê ở đầu bảng
+      const tt=qty<=0?'het':qty<=5?'saphet':'con';
       const _dot=(p)=>`<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:3px" aria-hidden="true">${p}</svg>`;
       const badge=qty<=0?`<span style="background:#f8d7da;color:#721c24;padding:2px 8px;border-radius:12px;font-size:11px;">${_dot('<path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/>')}Hết</span>`:qty<=5?`<span style="background:#fff3cd;color:#856404;padding:2px 8px;border-radius:12px;font-size:11px;">${_dot('<circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/>')}Sắp hết</span>`:`<span style="background:#d4edda;color:#155724;padding:2px 8px;border-radius:12px;font-size:11px;">${_dot('<path d="M21.801 10A10 10 0 1 1 17 3.335"/><path d="m9 11 3 3L22 4"/>')}Còn</span>`;
-      return`<tr data-ten="${dm.ten.toLowerCase()}">
+      return`<tr data-ten="${_escH(dm.ten.toLowerCase()).replace(/"/g,'&quot;')}" data-tt="${tt}" data-grp="${nhom.id}">
         <td style="text-align:center;color:var(--text-light);">${stt}</td>
         <td style="font-size:12px;color:var(--text-light);">${dm.ma||'—'}</td>
         <td>${_escH(dm.ten)}</td>
@@ -4623,17 +4639,32 @@ function renderTonKhoBang(){
     <th style="text-align:center;">ĐVT</th>
     <th style="text-align:center;">Tồn kho</th>
     <th style="text-align:center;">Trạng thái</th>
-  </tr></thead><tbody id="tk-hientai-tbody">${tableRows}</tbody></table></div>`;
-  const q=document.getElementById('tk-search-input')?.value||'';if(q)filterTonKhoBang(q);
+  </tr></thead><tbody id="tk-hientai-tbody">${tableRows}</tbody></table>
+  <div id="tk-empty" style="display:none;padding:24px;text-align:center;color:var(--text-light);font-size:13.5px;">Không có vật tư nào khớp bộ lọc.</div></div>`;
+  filterTonKhoBang();   // giữ nguyên từ khoá + trạng thái admin đang chọn khi bảng render lại
 }
-function filterTonKhoBang(q){
+/* Lọc bảng Tồn kho: kết hợp từ khoá và trạng thái (điều kiện AND).
+   Đọc thẳng từ 2 ô input nên gọi được từ bất kỳ đâu mà không cần truyền tham số. */
+function filterTonKhoBang(){
   const tbody=document.getElementById('tk-hientai-tbody');if(!tbody)return;
-  const term=q.trim().toLowerCase();
-  Array.from(tbody.querySelectorAll('tr')).forEach(row=>{
-    if(row.cells.length===1){row.style.display='';return;} // header nhóm luôn hiện
-    const ten=row.getAttribute('data-ten')||'';
-    row.style.display=(!term||ten.includes(term))?'':'none';
+  const term=(document.getElementById('tk-search-input')?.value||'').trim().toLowerCase();
+  const tt=document.getElementById('tk-filter-trangthai')?.value||'';
+  const conLai={};let hien=0,tong=0;
+  Array.from(tbody.querySelectorAll('tr[data-grp]')).forEach(row=>{
+    tong++;
+    const khopTen=!term||(row.getAttribute('data-ten')||'').includes(term);
+    const khopTT=!tt||row.getAttribute('data-tt')===tt;
+    const show=khopTen&&khopTT;
+    row.style.display=show?'':'none';
+    if(show){hien++;conLai[row.getAttribute('data-grp')]=1;}
   });
+  // Ẩn tiêu đề nhóm không còn dòng nào — tránh để lại hàng loạt header trống
+  Array.from(tbody.querySelectorAll('tr[data-tk-hdr]')).forEach(row=>{
+    row.style.display=conLai[row.getAttribute('data-tk-hdr')]?'':'none';
+  });
+  const empty=document.getElementById('tk-empty');if(empty)empty.style.display=hien?'none':'block';
+  const info=document.getElementById('tk-filter-info');
+  if(info)info.textContent=(term||tt)?`Hiện ${hien}/${tong} vật tư`:'';
 }
 /* ===== Phân loại dòng lịch sử =====
    loai lưu trong dữ liệu: 'nhap' | 'xuat' | 'dc_nhap' | 'dc_xuat'
