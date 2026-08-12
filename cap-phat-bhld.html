@@ -61,6 +61,13 @@
     .btn-danger { background: var(--danger); color: white; } .btn-danger:hover { background: #a93226; }
     .btn-outline { background: white; color: var(--primary); border: 1.5px solid var(--primary-light); } .btn-outline:hover { background: #dceaf7; }
     .btn-sm { padding: 5px 10px; font-size: 12px; }
+    /* ===== Nút xuất file — màu thương hiệu Office =====
+       Excel #217346 (xanh lá), Word #2B579A (xanh dương).
+       Icon dùng stroke="currentColor" nên tự ăn theo màu chữ của nút. */
+    .btn-xls { background: white; color: #217346; border: 1.5px solid #217346; }
+    .btn-xls:hover { background: #217346; color: #fff; }
+    .btn-doc { background: white; color: #2B579A; border: 1.5px solid #2B579A; }
+    .btn-doc:hover { background: #2B579A; color: #fff; }
     .btn-group { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
     .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; }
     .form-group { display: flex; flex-direction: column; gap: 5px; }
@@ -277,7 +284,7 @@
         <input id="cpns-search" class="search-input" type="search" autocomplete="off" placeholder="Tìm theo họ tên, danh số..." oninput="cpRenderNhanSu()" style="flex:1;min-width:240px;">
         <select id="cpns-donvi" onchange="cpnsOnUnitChange()" style="min-width:180px;"></select>
         <select id="cpns-chucdanh" onchange="cpRenderNhanSu()" style="min-width:200px;"></select>
-        <button class="btn btn-outline" id="cpns-export-btn" onclick="cpnsExportExcel()" disabled title="Chọn đơn vị để xuất Excel">⬇️ Xuất Excel</button>
+        <button class="btn btn-xls" id="cpns-export-btn" onclick="cpnsExportExcel()" disabled title="Chọn đơn vị để xuất Excel"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;flex-shrink:0" aria-hidden="true"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v5h5"/><path d="M8 13h2"/><path d="M14 13h2"/><path d="M8 17h2"/><path d="M14 17h2"/></svg>Xuất Excel</button>
       </div>
       <div id="cpns-count" style="font-size:12.5px;color:var(--text-light);margin-bottom:8px;"></div>
       <div id="cpns-nhom-bar" style="margin-bottom:10px;"></div>
@@ -421,7 +428,7 @@
   <button class="btn btn-outline" onclick="showPage('quan-ly-cap-phat')" style="padding:7px 16px;font-size:13px;margin-bottom:16px;">← Trang chủ</button>
   <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
     <div class="page-title" style="margin:0;"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0" aria-hidden="true"><path d="M21.3 15.3a2.4 2.4 0 0 1 0 3.4l-2.6 2.6a2.4 2.4 0 0 1-3.4 0L2.7 8.7a2.4 2.4 0 0 1 0-3.4l2.6-2.6a2.4 2.4 0 0 1 3.4 0Z"/><path d="m14.5 12.5 2-2"/><path d="m11.5 9.5 2-2"/><path d="m8.5 6.5 2-2"/><path d="m17.5 15.5 2-2"/></svg>Định mức cấp phát</div>
-    <button class="btn btn-primary" onclick="exportDinhMucWord()"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px" aria-hidden="true"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v5h5"/><path d="M16 13H8"/><path d="M16 17H8"/><path d="M10 9H8"/></svg>Xuất Word</button>
+    <button class="btn btn-doc" onclick="exportDinhMucWord()"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;flex-shrink:0" aria-hidden="true"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v5h5"/><path d="M16 13H8"/><path d="M16 17H8"/><path d="M10 9H8"/></svg>Xuất Word</button>
   </div>
   <div style="display:inline-flex;align-items:center;gap:8px;background:#EDF1F8;border-left:4px solid var(--primary);border-radius:6px;padding:9px 16px;margin-bottom:16px;font-size:13px;color:var(--text-light);">
     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0" aria-hidden="true"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v5h5"/><path d="M16 13H8"/><path d="M16 17H8"/><path d="M10 9H8"/></svg> Căn cứ tài liệu <strong style="color:var(--primary);">VSP-000-ATMT-411</strong>, phiên bản <strong style="color:var(--primary);">03</strong>
@@ -472,8 +479,8 @@
       </div>
       <div style="display:flex;gap:8px;margin-left:auto;flex-wrap:wrap;align-items:center;">
         <button class="btn btn-outline" onclick="fillTheoTinhMuc()" style="font-size:12.5px;border-color:var(--accent);color:var(--accent);"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px" aria-hidden="true"><path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z"/></svg>Điền theo định mức</button>
-        <button class="btn btn-primary" onclick="exportPhieuWord()"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px" aria-hidden="true"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v5h5"/><path d="M16 13H8"/><path d="M16 17H8"/><path d="M10 9H8"/></svg>Xuất Word</button>
-        <button class="btn btn-outline" onclick="exportChiTietExcel()"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px" aria-hidden="true"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v5h5"/><path d="M8 13h2"/><path d="M14 13h2"/><path d="M8 17h2"/><path d="M14 17h2"/></svg>Xuất Excel</button>
+        <button class="btn btn-doc" onclick="exportPhieuWord()"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;flex-shrink:0" aria-hidden="true"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v5h5"/><path d="M16 13H8"/><path d="M16 17H8"/><path d="M10 9H8"/></svg>Xuất Word</button>
+        <button class="btn btn-xls" onclick="exportChiTietExcel()"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;flex-shrink:0" aria-hidden="true"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v5h5"/><path d="M8 13h2"/><path d="M14 13h2"/><path d="M8 17h2"/><path d="M14 17h2"/></svg>Xuất Excel</button>
         <button class="btn btn-success" onclick="submitPhieuQuy()" id="btn-submit-quy"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>Gửi phê duyệt</button>
       </div>
     </div>
@@ -524,8 +531,8 @@
           <div class="card-title" style="margin:0;display:flex;align-items:center;gap:7px;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" x2="19" y1="8" y2="14"/><line x1="22" x2="16" y1="11" y2="11"/></svg>Phiếu cấp BHLĐ cho nhân viên mới</div>
           <div style="font-size:12px;color:var(--text-light);margin-top:4px;">Danh sách nhân viên chưa được cấp BHLĐ lần đầu</div>
         </div>
-        <button class="btn btn-outline" onclick="exportPhieuNVMoiWord()" id="btn-export-nvmoi" style="display:none;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px" aria-hidden="true"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v5h5"/><path d="M16 13H8"/><path d="M16 17H8"/><path d="M10 9H8"/></svg>Xuất Word</button>
-        <button class="btn btn-outline" onclick="exportPhieuNVMoiExcel()" style="display:none;" id="btn-export-nvmoi-xl"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px" aria-hidden="true"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v5h5"/><path d="M8 13h2"/><path d="M14 13h2"/><path d="M8 17h2"/><path d="M14 17h2"/></svg>Xuất Excel</button>
+        <button class="btn btn-doc" onclick="exportPhieuNVMoiWord()" id="btn-export-nvmoi" style="display:none;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;flex-shrink:0" aria-hidden="true"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v5h5"/><path d="M16 13H8"/><path d="M16 17H8"/><path d="M10 9H8"/></svg>Xuất Word</button>
+        <button class="btn btn-xls" onclick="exportPhieuNVMoiExcel()" style="display:none;" id="btn-export-nvmoi-xl"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;flex-shrink:0" aria-hidden="true"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v5h5"/><path d="M8 13h2"/><path d="M14 13h2"/><path d="M8 17h2"/><path d="M14 17h2"/></svg>Xuất Excel</button>
         <button class="btn btn-success" onclick="submitPhieuNVMoi()" id="btn-submit-nvmoi"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>Gửi phê duyệt</button>
       </div>
       <div id="nvmoi-empty" style="display:none;text-align:center;padding:40px;color:var(--text-light);">
@@ -590,7 +597,7 @@
   <button class="btn btn-outline" onclick="showPage('quan-ly-cap-phat')" style="padding:7px 16px;font-size:13px;margin-bottom:16px;">← Trang chủ</button>
   <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:20px;">
     <div class="page-title" style="margin:0;"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0" aria-hidden="true"><circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"/></svg>Nhu cầu mua sắm</div>
-    <button id="btn-export-nhucau" class="btn btn-outline" onclick="exportNhuCauExcel()" style="display:none;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px" aria-hidden="true"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v5h5"/><path d="M8 13h2"/><path d="M14 13h2"/><path d="M8 17h2"/><path d="M14 17h2"/></svg>Tải Excel</button>
+    <button id="btn-export-nhucau" class="btn btn-xls" onclick="exportNhuCauExcel()" style="display:none;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;flex-shrink:0" aria-hidden="true"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v5h5"/><path d="M8 13h2"/><path d="M14 13h2"/><path d="M8 17h2"/><path d="M14 17h2"/></svg>Xuất Excel</button>
   </div>
 
   <div style="background:#f8f9fa;border-radius:10px;padding:16px 20px;margin-bottom:18px;display:flex;flex-wrap:wrap;gap:14px;align-items:flex-end;">
@@ -917,8 +924,8 @@
     <div style="padding:10px 0 14px;">
       <p style="font-size:13px;color:var(--text-light);margin-bottom:18px;">Chọn định dạng file muốn xuất.</p>
       <div style="display:flex;flex-direction:column;gap:12px;">
-        <button class="btn btn-primary" onclick="exportNV_Excel()" style="font-size:14px;padding:13px 20px;justify-content:center;gap:10px;">📊 Xuất Excel (.xlsx)</button>
-        <button class="btn btn-outline" onclick="exportNV_PDF()" style="font-size:14px;padding:13px 20px;justify-content:center;gap:10px;">📄 Xuất HTML (lưu PDF)</button>
+        <button class="btn btn-xls" onclick="exportNV_Excel()" style="font-size:14px;padding:13px 20px;justify-content:center;gap:10px;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;flex-shrink:0" aria-hidden="true"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v5h5"/><path d="M8 13h2"/><path d="M14 13h2"/><path d="M8 17h2"/><path d="M14 17h2"/></svg>Xuất Excel (.xlsx)</button>
+        <button class="btn btn-outline" onclick="exportNV_PDF()" style="font-size:14px;padding:13px 20px;justify-content:center;gap:10px;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;flex-shrink:0" aria-hidden="true"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v5h5"/><path d="M16 13H8"/><path d="M16 17H8"/><path d="M10 9H8"/></svg>Xuất HTML (lưu PDF)</button>
       </div>
     </div>
   </div>
@@ -2391,7 +2398,7 @@ function cpnvRender(){
       ?'<div style="margin-bottom:10px;display:inline-flex;align-items:center;gap:5px;background:#f3e8ff;color:#7c3aed;border:1px dashed #c4a3f0;border-radius:6px;padding:2px 9px;font-size:11.5px;font-weight:600;">🧪 Có phiếu được phê duyệt giả lập (demo) — chỉ dùng để kiểm tra luồng làm việc đơn vị Test</div>':'';
     var _nvAttachNote='<div style="display:flex;align-items:flex-start;gap:9px;background:#fff8e1;border:1px solid #f2d98a;border-left:4px solid #e6a700;border-radius:8px;padding:11px 14px;margin-bottom:12px;font-size:13px;color:#7a5c00;line-height:1.5;">'+_ic('clip',17)+'<div>Khi trình ký eOffice, cần đính kèm <b>giấy giới thiệu nhân sự</b> hoặc <b>quyết định nhận nhân sự vào làm việc</b>.</div></div>';
     b2=_nvDemoNote+_nvAttachNote+'<div class="table-wrap"><table><thead><tr><th style="width:40px;text-align:center;">STT</th><th>Nhân viên</th><th>Chức danh</th><th>Đơn vị</th><th>Duyệt lúc</th><th style="text-align:center;">Xuất phiếu</th><th style="text-align:center;">Hoàn thành</th></tr></thead><tbody>'+
-      approved.map(function(p,i){return '<tr><td style="text-align:center;">'+(i+1)+'</td><td><strong>'+_escH(p.nvTen||'')+'</strong> <span style="color:var(--text-light);font-size:11px;">'+_escH(p.nvDanhSo||'')+'</span></td><td style="font-size:12.5px;">'+_escH(p.chucDanh||'')+'</td><td style="font-size:12.5px;">'+_escH(p.donVi||'')+'</td><td style="font-size:12px;color:var(--text-light);">'+(p.reviewedAt?new Date(p.reviewedAt).toLocaleDateString('vi-VN'):'')+'</td><td style="text-align:center;"><button class="btn btn-outline btn-sm" onclick="exportPhieuById(\''+p.id+'\',\'word\')">'+_ic('file',13)+' Word</button></td><td style="text-align:center;"><button class="btn btn-success btn-sm" onclick="cpnvComplete(\''+p.id+'\')">'+_ic('check',13)+' Đã hoàn thành</button></td></tr>';}).join('')+
+      approved.map(function(p,i){return '<tr><td style="text-align:center;">'+(i+1)+'</td><td><strong>'+_escH(p.nvTen||'')+'</strong> <span style="color:var(--text-light);font-size:11px;">'+_escH(p.nvDanhSo||'')+'</span></td><td style="font-size:12.5px;">'+_escH(p.chucDanh||'')+'</td><td style="font-size:12.5px;">'+_escH(p.donVi||'')+'</td><td style="font-size:12px;color:var(--text-light);">'+(p.reviewedAt?new Date(p.reviewedAt).toLocaleDateString('vi-VN'):'')+'</td><td style="text-align:center;"><button class="btn btn-doc btn-sm" onclick="exportPhieuById(\''+p.id+'\',\'word\')">'+_ic('file',13)+' Word</button></td><td style="text-align:center;"><button class="btn btn-success btn-sm" onclick="cpnvComplete(\''+p.id+'\')">'+_ic('check',13)+' Đã hoàn thành</button></td></tr>';}).join('')+
       '</tbody></table></div>';
   }
 
@@ -3816,7 +3823,7 @@ function renderChoduyetTab(){
         <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:10px;">
           <div><strong style="color:var(--primary);">${label}</strong><div style="font-size:12px;color:var(--text-light);margin-top:3px;">Gửi bởi: ${_escH(p.submittedBy||'—')} · ${_timeAgo(p.submittedAt)}</div></div>
           <div style="display:flex;gap:8px;flex-wrap:wrap;">
-            <button class="btn btn-outline btn-sm" onclick="exportPhieuById('${p.id}','word')">${_ic('file',14)} Xuất Word</button>
+            <button class="btn btn-doc btn-sm" onclick="exportPhieuById('${p.id}','word')">${_ic('file',14)} Xuất Word</button>
             <button class="btn btn-success btn-sm" onclick="approvePhieu('${p.id}')">${_ic('check',14)} Duyệt</button>
             <button class="btn btn-danger btn-sm" onclick="rejectPhieu('${p.id}')">${_ic('x',14)} Trả lại</button>
           </div>
@@ -4403,7 +4410,7 @@ function renderTonKho(){
   const actEl=document.getElementById('ton-kho-actions');
   if(actEl){
     const adminBtns=isAdmin()?`<button class="btn btn-primary" onclick="openModalKho('nhap')">${_ic('in',14)} Nhập kho</button><button class="btn btn-outline" onclick="openModalKho('xuat')">${_ic('out',14)} Xuất kho</button><button class="btn btn-outline" onclick="openModalKho('dieuchinh')">${_ic('adjust',14)} Điều chỉnh</button>`:'';
-    actEl.innerHTML=adminBtns+`<button class="btn btn-outline" onclick="exportTonKhoExcel()">${_ic('sheet',14)} Xuất Excel</button>`;
+    actEl.innerHTML=adminBtns+`<button class="btn btn-xls" onclick="exportTonKhoExcel()">${_ic('sheet',14)} Xuất Excel</button>`;
   }
   switchTonKhoTab('hientai');
 }
@@ -4854,7 +4861,6 @@ function renderFormKho(type){
     <div class="form-group" style="grid-column:1/-1;"><label>Ghi chú</label><input id="kho-ghichu" type="text" placeholder="Ghi chú (tùy chọn)"></div>
   </div>
   <div style="font-weight:600;margin:14px 0 8px;font-size:13px;color:var(--primary);">Danh sách vật tư — điền số lượng cần ${label}:</div>
-  ${isDC?`<div style="background:#fff8e1;border:1px solid #ffe082;border-radius:6px;padding:8px 12px;margin-bottom:8px;font-size:12.5px;color:#7a5c00;">Mỗi vật tư chỉ điền <strong>một trong hai</strong> cột: nhập thêm <strong>(+)</strong> hoặc xuất bớt <strong>(−)</strong>. Điền một ô thì ô còn lại tự khoá. SL xuất không được vượt tồn hiện tại.</div>`:''}
   <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px;">
     <div style="position:relative;flex:1;min-width:220px;">
       <input id="kho-tim" type="text" autocomplete="off" placeholder="Tìm theo mã vật tư hoặc tên (không cần dấu)..." oninput="_khoLoc()" style="width:100%;padding:7px 30px 7px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;">
@@ -5370,8 +5376,8 @@ function cpwStep4Body(s3,phieu){
   return _demoApprovedNote(phieu)+
     '<p style="font-size:13.5px;color:var(--text-light);margin:'+(_demoApprovedNote(phieu)?'8px':'0')+' 0 12px;">Xuất phiếu để trình ký. Sau khi trình ký, xác nhận để hệ thống cập nhật thời hạn cấp phát mới cho nhân viên.</p>'+
     '<div style="display:flex;gap:8px;flex-wrap:wrap;">'+
-      '<button class="btn btn-outline btn-sm" onclick="cpwExport()">'+_ic('file',15)+' Xuất phiếu (Word)</button>'+
-      '<button class="btn btn-outline btn-sm" style="color:#217346;border-color:#217346;" onclick="exportPhieuMatrixExcel(_cpwQuy,_cpwDonVi)">'+_ic('sheet',15)+' Excel ký nhận</button>'+
+      '<button class="btn btn-doc btn-sm" onclick="cpwExport()">'+_ic('file',15)+' Xuất phiếu (Word)</button>'+
+      '<button class="btn btn-xls btn-sm" onclick="exportPhieuMatrixExcel(_cpwQuy,_cpwDonVi)">'+_ic('sheet',15)+' Excel ký nhận</button>'+
       '<button class="btn btn-success btn-sm" onclick="cpwFinalize()">'+_ic('check',15)+' Xác nhận đã trình ký & Cập nhật thời hạn</button>'+
     '</div>';
 }
