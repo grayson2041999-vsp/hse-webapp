@@ -4617,7 +4617,7 @@ function renderTonKhoBang(){
       return`<tr data-ten="${_escH(dm.ten.toLowerCase()).replace(/"/g,'&quot;')}" data-tt="${tt}" data-grp="${nhom.id}">
         <td style="text-align:center;color:var(--text-light);">${stt}</td>
         <td style="font-size:12px;color:var(--text-light);">${dm.ma||'—'}</td>
-        <td>${_escH(dm.ten)}</td>
+        <td style="font-weight:600;color:var(--text);">${_escH(dm.ten)}</td>
         <td style="text-align:center;">${dm.donVi||nhom.donVi||'—'}</td>
         <td style="text-align:center;font-weight:700;font-size:15px;">${qty}</td>
         <td style="text-align:center;">${badge}</td>
