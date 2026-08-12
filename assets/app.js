@@ -134,6 +134,32 @@
     });
   }
 
+  /* =========================================================
+     QUAY LẠI TRANG CŨ SAU KHI ĐĂNG NHẬP
+     Form đăng nhập chỉ có ở trang chủ. Các trang con gửi người dùng sang
+     index.html?login=1&next=<trang-con>.html — modal tự mở, đăng nhập xong
+     quay lại đúng trang thay vì bỏ họ lại ở trang chủ.
+     ========================================================= */
+  // Chỉ chấp nhận tên file .html cùng thư mục. Chặn URL tuyệt đối,
+  // "//evil.com", "../" ... để không thành chỗ chuyển hướng mở.
+  function safeNext(raw){
+    var s = String(raw || "").trim();
+    if(!s) return "";
+    try { s = decodeURIComponent(s); } catch(e){ return ""; }
+    if(!/^[A-Za-z0-9._-]+\.html$/.test(s)) return "";
+    if(s.indexOf("..") >= 0) return "";
+    return s;
+  }
+  function loginNextTarget(){
+    try { return safeNext(new URLSearchParams(location.search).get("next")); }
+    catch(e){ return ""; }
+  }
+  // Gọi sau khi đăng nhập/đăng ký thành công
+  function afterLoginGo(){
+    var next = loginNextTarget();
+    if(next) location.href = next; else location.reload();
+  }
+
   /* -------- TIỆN ÍCH -------- */
   function $(s, r){ return (r||document).querySelector(s); }
   function el(tag, cls, html){ var e=document.createElement(tag); if(cls)e.className=cls; if(html!=null)e.innerHTML=html; return e; }
@@ -452,7 +478,7 @@
       if(btn){btn.disabled=true;btn.textContent="Đang kiểm tra...";}
       login($("#hse-lm-u").value, $("#hse-lm-p").value, function(r){
         if(btn){btn.disabled=false;btn.textContent="Đăng nhập";}
-        if(r.ok){ location.reload(); }
+        if(r.ok){ afterLoginGo(); }
         else{ var er=$("#hse-lm-err"); er.textContent=r.msg; er.style.display="block"; }
       });
     });
@@ -558,13 +584,17 @@
           '</div>'+
         '</div>';
     } else {
+      // Cùng bộ class .pn-viewer/.pn-login với các trang module (assets/header-auth.css)
+      // để header trông giống hệt nhau ở mọi trang. Ở đây form có sẵn nên mở modal
+      // tại chỗ thay vì điều hướng.
       userBoxHtml= activeSlug==="tong-quan"
         ? '<div class="user-box">'+
-            '<span class="viewer-notice">Chế độ xem</span>'+
-            '<button class="btn btn-sm btn-login-top" id="lo" style="display:inline-flex;align-items:center;gap:6px;">'+lic("lock",14)+' Đăng nhập</button>'+
+            '<span class="pn-viewer">Chế độ xem</span>'+
+            '<button class="pn-login" id="lo" title="Đăng nhập để thao tác và nhập liệu">'+lic("lock",14)+'<span>Đăng nhập</span></button>'+
           '</div>'
         : '<div class="user-box">'+
-            '<span class="viewer-notice">Chế độ xem</span>'+
+            '<span class="pn-viewer">Chế độ xem</span>'+
+            '<button class="pn-login" id="lo" title="Đăng nhập để thao tác và nhập liệu">'+lic("lock",14)+'<span>Đăng nhập</span></button>'+
           '</div>';
     }
 
@@ -620,9 +650,15 @@
       if(doiMkBtn) doiMkBtn.addEventListener("click", function(){ if(profileDrop)profileDrop.style.display="none"; openDoiMatKhau(); });
       var editProfileBtn = document.getElementById("btn-edit-profile");
       if(editProfileBtn) editProfileBtn.addEventListener("click", function(){ if(profileDrop)profileDrop.style.display="none"; openEditProfile(); });
-    } else if(activeSlug==="tong-quan") {
+    } else {
+      // Chưa đăng nhập — #lo giờ là nút Đăng nhập trên MỌI trang, không riêng Tổng quan
       ensureLoginModal();
-      $("#lo").addEventListener("click", openLoginModal);
+      var loBtn = $("#lo");
+      if(loBtn) loBtn.addEventListener("click", openLoginModal);
+      // Đến từ nút Đăng nhập ở trang module (?login=1) → mở sẵn modal
+      try{
+        if(new URLSearchParams(location.search).get("login")==="1") openLoginModal();
+      }catch(e){}
     }
     return content;
   }

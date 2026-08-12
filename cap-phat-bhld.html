@@ -9,6 +9,8 @@
   <script type="module" src="assets/supabase-config.js"></script>
   <script src="assets/bhld-sync.js"></script>
 <script src="assets/hse-activity.js"></script>
+  <!-- Khối tài khoản trên header dùng chung với các trang khác (xem file để biết lý do) -->
+  <link rel="stylesheet" href="assets/header-auth.css">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
@@ -1379,14 +1381,17 @@ function renderHeaderUser(){
   const el=document.getElementById('header-user-info');
   if(!el)return;
   if(!u){
-    el.innerHTML=`<span style="font-size:12px;color:rgba(255,255,255,0.7);">Chưa đăng nhập</span>
-      <a href="index.html" style="font-size:12px;padding:5px 12px;background:rgba(255,255,255,0.15);color:white;border:1.5px solid rgba(255,255,255,0.4);border-radius:7px;text-decoration:none;">🔐 Đăng nhập</a>`;
+    // Dùng chung chữ "Chế độ xem" + kiểu nút với các trang khác (assets/portal-nav.js).
+    // Form đăng nhập chỉ có ở trang chủ, nên nút mang theo ?next= để quay lại đây.
+    const href=(typeof __pnLoginHref==='function')?__pnLoginHref():'index.html?login=1&next=cap-phat-bhld.html';
+    el.innerHTML=`<span class="pn-viewer">Chế độ xem</span>
+      <a class="pn-login" href="${href}" title="Đăng nhập để thao tác và nhập liệu"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0" aria-hidden="true"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg><span>Đăng nhập</span></a>`;
     return;
   }
   const roleColor=u.role==='admin'?'#C8102E':u.role==='viewer'?'#6b7c93':'#1a7a3c';
   const roleLabel=u.role==='admin'?'ADMIN':u.role==='viewer'?'VIEWER':'USER';
-  el.innerHTML=`<span style="font-size:13px;color:white;font-weight:600;">👤 ${u.fullname||u.username}</span>
-    <span style="background:${roleColor};color:#fff;font-size:11px;font-weight:700;padding:2px 9px;border-radius:10px;">${roleLabel}</span>`;
+  // Cùng khuôn .pn-user/.pn-chip với các trang khác, icon Lucide thay emoji 👤
+  el.innerHTML=`<span class="pn-user"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0" aria-hidden="true"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg><span>${_escH(u.fullname||u.username)}</span><span class="pn-chip" style="background:${roleColor};">${roleLabel}</span></span>`;
 }
 
 // ── applyEditMode: ẩn/hiện nút theo quyền đơn vị hiện tại ──

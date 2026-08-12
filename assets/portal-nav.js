@@ -21,7 +21,8 @@
     "settings":'<path d="M9.671 4.136a2.34 2.34 0 0 1 4.659 0 2.34 2.34 0 0 0 3.319 1.915 2.34 2.34 0 0 1 2.33 4.033 2.34 2.34 0 0 0 0 3.831 2.34 2.34 0 0 1-2.33 4.033 2.34 2.34 0 0 0-3.319 1.915 2.34 2.34 0 0 1-4.659 0 2.34 2.34 0 0 0-3.32-1.915 2.34 2.34 0 0 1-2.33-4.033 2.34 2.34 0 0 0 0-3.831A2.34 2.34 0 0 1 6.35 6.051a2.34 2.34 0 0 0 3.319-1.915"/><circle cx="12" cy="12" r="3"/>',
     "user":'<path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>',
     "log-out":'<path d="m16 17 5-5-5-5"/><path d="M21 12H9"/><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>',
-    "bell":'<path d="M10.268 21a2 2 0 0 0 3.464 0"/><path d="M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326"/>'
+    "bell":'<path d="M10.268 21a2 2 0 0 0 3.464 0"/><path d="M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326"/>',
+    "lock":'<rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>'
   };
 
   var MAP = {
@@ -58,22 +59,57 @@
     '.pn-right{display:flex;align-items:center;gap:8px}'+
     '.pn-gear{position:relative;display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;'+
       'border-radius:7px;color:#fff;background:rgba(255,255,255,.15);border:1.5px solid rgba(255,255,255,.3);text-decoration:none;transition:.15s}'+
-    '.pn-gear:hover{background:rgba(255,255,255,.28)}'+
-    '.pn-user{display:inline-flex;align-items:center;gap:7px;color:#fff;background:rgba(255,255,255,.15);'+
-      'border:1.5px solid rgba(255,255,255,.3);padding:5px 12px;border-radius:7px;font-size:12.5px;font-weight:600;white-space:nowrap}'+
-    '.pn-chip{padding:1px 8px;border-radius:10px;font-size:11px;font-weight:700;color:#fff}'+
-    '.pn-logout{display:inline-flex;align-items:center;gap:6px;color:#fff;background:rgba(255,255,255,.15);'+
-      'border:1.5px solid rgba(255,255,255,.3);padding:5px 12px;border-radius:7px;font-size:12.5px;font-weight:600;cursor:pointer;transition:.15s}'+
-    '.pn-logout:hover{background:rgba(255,255,255,.28)}'+
-    '.pn-viewer{font-size:11.5px;color:#fff;background:rgba(255,255,255,.12);padding:4px 10px;border-radius:20px;border:1px solid rgba(255,255,255,.25)}';
+    '.pn-gear:hover{background:rgba(255,255,255,.28)}';
   var st = document.createElement("style");
   st.textContent = css;
   document.head.appendChild(st);
+
+  /* Khối tài khoản (.pn-viewer/.pn-login/.pn-user/.pn-chip/.pn-logout) nằm ở
+     assets/header-auth.css để cap-phat-bhld.html — trang không dùng portal-nav —
+     nạp được đúng cùng một bộ style. Không chép lại vào đây. */
+  var lnk = document.createElement("link");
+  lnk.rel = "stylesheet";
+  lnk.href = "assets/header-auth.css";
+  document.head.appendChild(lnk);
 
   var slug = (location.pathname.split("/").pop() || "").replace(".html", "");
   var info = MAP[slug];
 
   function esc(s){ return String(s==null?"":s).replace(/[&<>"]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c];}); }
+
+  /* Form đăng nhập chỉ nằm ở trang chủ. Nút ở trang con mang theo ?next=<trang này>
+     để app.js mở sẵn modal rồi trả người dùng về đúng chỗ đang xem. */
+  function pnLoginHref(){
+    var f = location.pathname.split("/").pop() || "";
+    if(!/^[A-Za-z0-9._-]+\.html$/.test(f)) f = "";
+    return "index.html?login=1" + (f ? "&next=" + encodeURIComponent(f) : "");
+  }
+  function pnLoginBtn(){
+    return '<a class="pn-login" href="'+pnLoginHref()+'" title="Đăng nhập để thao tác và nhập liệu">'+
+             svg("lock",14)+'<span>Đăng nhập</span></a>';
+  }
+  window.__pnLoginHref = pnLoginHref;   // cap-phat-bhld.html dùng lại cho header riêng của nó
+
+  /* Vẽ khối tài khoản ở góc phải topbar — bản chuẩn dùng cho MỌI trang module */
+  function pnRenderRight(){
+    var right = document.getElementById("topbarRight");
+    if(!right) return;
+    var u = pnUser();
+    var gear = (u && u.role==="admin")
+      ? '<a href="index.html#quan-tri-he-thong" class="pn-gear" title="Quản trị hệ thống" aria-label="Quản trị hệ thống">'+svg("settings",18)+'</a>'
+      : '';
+    var box;
+    if(u){
+      box = '<div class="pn-user">'+svg("user",15)+'<span>'+esc(u.fullname||u.username)+'</span>'+
+              '<span class="pn-chip" style="background:'+roleColor(u.role)+'">'+roleLabel(u.role)+'</span>'+
+            '</div>'+
+            '<button class="pn-logout" onclick="__pnLogout()">'+svg("log-out",15)+'<span>Đăng xuất</span></button>';
+    } else {
+      box = '<span class="pn-viewer">Chế độ xem</span>' + pnLoginBtn();
+    }
+    right.className = "pn-right";
+    right.innerHTML = gear + box;
+  }
   function pnUser(){
     try{
       var un=JSON.parse(localStorage.getItem("hse_session")||"null");
@@ -135,21 +171,11 @@
     /* 4) Chuẩn hoá khung phải: gear Quản trị (admin) + user-box Lucide + logout */
     var right = document.getElementById("topbarRight");
     if(right){
-      var u = pnUser();
-      var gear = (u && u.role==="admin")
-        ? '<a href="index.html#quan-tri-he-thong" class="pn-gear" title="Quản trị hệ thống" aria-label="Quản trị hệ thống">'+svg("settings",18)+'</a>'
-        : '';
-      var box;
-      if(u){
-        box = '<div class="pn-user">'+svg("user",15)+'<span>'+esc(u.fullname||u.username)+'</span>'+
-                '<span class="pn-chip" style="background:'+roleColor(u.role)+'">'+roleLabel(u.role)+'</span>'+
-              '</div>'+
-              '<button class="pn-logout" onclick="__pnLogout()">'+svg("log-out",15)+'<span>Đăng xuất</span></button>';
-      } else {
-        box = '<span class="pn-viewer">Chế độ xem</span>';
-      }
-      right.className = "pn-right";
-      right.innerHTML = gear + box;
+      pnRenderRight();
+      /* Mỗi trang module có buildTopbar() riêng, gọi lại sau khi đăng nhập/đăng xuất
+         và sẽ ghi đè khung phải bằng bản cũ (thiếu nút Đăng nhập, khác kiểu).
+         Thay hẳn bằng bản chuẩn để mọi trang chỉ còn MỘT cách vẽ khối tài khoản. */
+      window.buildTopbar = pnRenderRight;
     } else {
       /* cap-phat-bhld dùng khung .header riêng — chỉ chèn gear cạnh user-box sẵn có */
       var hu = document.getElementById("header-user-info");
