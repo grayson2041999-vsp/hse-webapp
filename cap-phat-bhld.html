@@ -1059,7 +1059,27 @@ function _migrateDanhMucNhomId(){
   });
   if(changed){saveData('danhmuc',daDanhMuc);BHLD.lsSet('danh_muc',daDanhMuc);}
 }
+/* ── Migration: chuẩn hoá `thuTu` cho danh mục ──
+   Dữ liệu cũ có vật tư chưa từng được sắp xếp nên thuTu rỗng/0/trùng nhau.
+   Khi đó thứ tự hiển thị phụ thuộc thứ tự dòng trả về từ Sheet → không ổn định.
+   Hàm này đánh lại 1..n cho những nhóm chưa chuẩn, giữ nguyên thứ tự đang thấy.
+   `push=true` mới ghi lên Sheet (chỉ admin, sau khi pull xong). */
+function _migrateDanhMucThuTu(push){
+  const changed=[];
+  daNhomTB.forEach(function(nhom){
+    const g=daDanhMuc.filter(d=>d.nhomId==nhom.id).sort(_dmSortFn);
+    if(!g.length)return;
+    // Đã là 1,2,3...n liên tục thì bỏ qua, tránh ghi thừa lên Sheet mỗi lần tải trang
+    if(g.every(function(x,i){return Number(x.thuTu)===i+1;}))return;
+    g.forEach(function(x,i){x.thuTu=i+1;changed.push(x);});
+  });
+  if(!changed.length)return 0;
+  saveData('danhmuc',daDanhMuc);BHLD.lsSet('danh_muc',daDanhMuc);
+  if(push){changed.forEach(function(x){try{BHLD.push.insert('danh_muc',x).catch(function(){});}catch(e){}});}
+  return changed.length;
+}
 _migrateDanhMucNhomId();
+_migrateDanhMucThuTu(false);   // chuẩn hoá cục bộ; chưa biết quyền nên chưa ghi lên Sheet
 _migrateDinhMucV2();
 
 // Danh sách chức danh mặc định (seed) — luôn có trong dropdown dù chưa có định mức
@@ -3034,12 +3054,37 @@ function _ic(n,s){var P={
   userplus:'<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" x2="19" y1="8" y2="14"/><line x1="22" x2="16" y1="11" y2="11"/>',
   adjust:'<line x1="21" x2="14" y1="4" y2="4"/><line x1="10" x2="3" y1="4" y2="4"/><line x1="21" x2="12" y1="12" y2="12"/><line x1="8" x2="3" y1="12" y2="12"/><line x1="21" x2="16" y1="20" y2="20"/><line x1="12" x2="3" y1="20" y2="20"/><line x1="14" x2="14" y1="2" y2="6"/><line x1="8" x2="8" y1="10" y2="14"/><line x1="16" x2="16" y1="18" y2="22"/>'
 };var p=P[n]||'';var sz=s||15;return '<svg width="'+sz+'" height="'+sz+'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;flex-shrink:0" aria-hidden="true">'+p+'</svg>';}
+/* ===== Thứ tự vật tư — MỘT nguồn sự thật duy nhất =====
+   Admin sắp xếp vật tư ở tab Danh mục (moveDanhMuc ghi vào trường `thuTu`).
+   Mọi màn hình hiển thị danh mục PHẢI đi qua _dmSorted()/_dmSortFn() để thứ tự
+   luôn khớp nhau: Danh mục, Tồn kho, Excel tồn kho, form & xem trước
+   nhập/xuất/điều chỉnh, Nhu cầu mua sắm.
+   Không tự viết .filter(...).sort(...) rời rạc ở chỗ khác. */
+function _dmSortFn(a,b){
+  const ta=Number(a&&a.thuTu)||0, tb=Number(b&&b.thuTu)||0;
+  if(ta!==tb)return ta-tb;
+  // Cùng thuTu (hoặc cùng chưa có) → giữ nguyên thứ tự gốc nhờ sort ổn định của JS
+  return 0;
+}
+// Danh mục của 1 nhóm, đã sắp đúng thứ tự admin đặt
+function _dmSorted(nhomId){
+  return daDanhMuc.filter(d=>d.nhomId==nhomId).sort(_dmSortFn);
+}
+// Toàn bộ danh mục, gom theo nhóm (thứ tự nhóm = thứ tự daNhomTB) rồi tới thuTu
+function _dmAllSorted(){
+  const out=[];
+  daNhomTB.forEach(nhom=>{_dmSorted(nhom.id).forEach(dm=>out.push(dm));});
+  // Vật tư mồ côi (nhomId không khớp nhóm nào) vẫn phải xuất hiện, xếp cuối
+  const seen=new Set(out.map(d=>String(d.id)));
+  daDanhMuc.forEach(d=>{if(!seen.has(String(d.id)))out.push(d);});
+  return out;
+}
 function renderDanhMuc(){
   const wrap=document.getElementById('accordion-nhomtb');if(!wrap)return;
   const admin=isAdmin();
   if(!daNhomTB.length){wrap.innerHTML='<p style="color:var(--text-light);padding:16px 0;">Chưa có nhóm trang bị nào.</p>';return;}
   wrap.innerHTML=daNhomTB.map(nhom=>{
-    const items=daDanhMuc.filter(d=>d.nhomId==nhom.id).sort((a,b)=>(a.thuTu||0)-(b.thuTu||0));
+    const items=_dmSorted(nhom.id);
     const isOpen=_expandedNhomIds.has(String(nhom.id));
     const loaiBadge=nhom.loaiCo==='quan_ao'?'<span class="badge badge-blue" style="font-size:11px;">Cỡ quần áo</span>':nhom.loaiCo==='giay'?'<span class="badge badge-blue" style="font-size:11px;">Cỡ giày</span>':'';
     const detailRows=items.map((d,idx)=>`<tr>
@@ -3080,15 +3125,19 @@ function toggleNhomTB(id){
 function moveDanhMuc(id,dir){
   if(!isAdmin())return;
   const cur=daDanhMuc.find(x=>x.id==id);if(!cur)return;
-  const group=daDanhMuc.filter(x=>x.nhomId==cur.nhomId).sort((a,b)=>(a.thuTu||0)-(b.thuTu||0));
-  group.forEach((x,i)=>{x.thuTu=i+1;});
+  const group=_dmSorted(cur.nhomId);
   const idx=group.findIndex(x=>x.id==id);
   const swapIdx=idx+dir;
-  if(swapIdx<0||swapIdx>=group.length)return;
-  const tmp=group[idx].thuTu;group[idx].thuTu=group[swapIdx].thuTu;group[swapIdx].thuTu=tmp;
+  if(idx<0||swapIdx<0||swapIdx>=group.length)return;
+  // Hoán đổi vị trí rồi đánh lại thuTu = 1..n cho CẢ nhóm
+  const tmp=group[idx];group[idx]=group[swapIdx];group[swapIdx]=tmp;
+  const changed=[];
+  group.forEach((x,i)=>{const moi=i+1;if(x.thuTu!==moi){x.thuTu=moi;changed.push(x);}});
+  // QUAN TRỌNG: đẩy MỌI dòng có thuTu thay đổi lên Sheet, không chỉ 2 dòng hoán đổi.
+  // Trước đây chỉ đẩy 2 dòng nên các vật tư còn lại được đánh số lại trong bộ nhớ
+  // mà không bao giờ ghi xuống → thứ tự trôi sau khi tải lại dữ liệu.
   // Upsert cả dòng (trang bị mặc định có thể chưa có trên DB nên update theo id không khớp)
-  BHLD.push.insert('danh_muc',group[idx]).catch(function(){});
-  BHLD.push.insert('danh_muc',group[swapIdx]).catch(function(){});
+  changed.forEach(function(x){BHLD.push.insert('danh_muc',x).catch(function(){});});
   saveData('danhmuc',daDanhMuc);BHLD.lsSet('danh_muc',daDanhMuc);
   renderDanhMuc();
 }
@@ -4511,7 +4560,7 @@ function exportTonKhoExcel(){
   if(typeof XLSX==='undefined'){showToast('⚠️ Thư viện Excel chưa tải.','error');return;}
   let stt=0;const rows=[];
   daNhomTB.forEach(nhom=>{
-    daDanhMuc.filter(d=>d.nhomId==nhom.id).forEach(dm=>{
+    _dmSorted(nhom.id).forEach(dm=>{
       stt++;
       rows.push([stt, dm.ten, dm.donVi||nhom.donVi||'', _xlNum(daTonKho[dm.id]||0)]);
     });
@@ -4541,7 +4590,7 @@ function renderTonKhoBang(){
   const sapHet=daDanhMuc.filter(dm=>{const q=daTonKho[dm.id]||0;return q>0&&q<=5;}).length;
   let stt=0;
   const tableRows=daNhomTB.map(nhom=>{
-    const items=daDanhMuc.filter(d=>d.nhomId==nhom.id);
+    const items=_dmSorted(nhom.id);
     if(!items.length)return'';
     const groupHeader=`<tr style="background:#EDF1F8;">
       <td colspan="6" style="font-weight:700;font-size:13px;color:var(--primary);padding:8px 12px;">${_ic('pkg',14)} ${_escH(nhom.ten)}</td>
@@ -4841,7 +4890,7 @@ function renderFormKho(type){
   const donViHtml=type==='xuat'?`<div class="form-group" style="grid-column:1/-1;"><label>Đơn vị nhận <span style="color:red">*</span></label><select id="kho-donvi-nhan"><option value="">-- Chọn đơn vị nhận --</option>${UNIT_ORDER.map(u=>`<option value="${u}">${u}</option>`).join('')}<option value="Xuất khác">Xuất khác</option></select></div>`:'';
   const colSpan=isDC?6:(type==='xuat'?5:4);
   const itemRows=daNhomTB.map(nhom=>{
-    const items=daDanhMuc.filter(d=>d.nhomId==nhom.id).sort((a,b)=>(a.thuTu||0)-(b.thuTu||0));
+    const items=_dmSorted(nhom.id);
     if(!items.length)return'';
     const header=`<tr data-kho-hdr="${nhom.id}" style="background:#EDF1F8;"><td colspan="${colSpan}" style="font-weight:700;font-size:12px;color:var(--primary);padding:6px 10px;">${_ic('pkg',13)} ${_escH(nhom.ten)}</td></tr>`;
     const rows=items.map(dm=>{
@@ -4882,7 +4931,7 @@ function xemTruocKho(type){
   errEl.style.display='none';const showErr=(msg)=>{errEl.textContent=msg;errEl.style.display='block';};
   if(!tenGD)return showErr('⚠️ Vui lòng nhập tên giao dịch.');if(!thang||!nam)return showErr('⚠️ Vui lòng điền đủ tháng và năm.');if(type==='xuat'&&!donViNhan)return showErr('⚠️ Vui lòng chọn đơn vị nhận.');
   const items=[];let errMsg='';
-  for(const dm of daDanhMuc){
+  for(const dm of _dmAllSorted()){
     const cur=daTonKho[dm.id]||0;
     if(isDC){
       const vN=parseFloat(document.getElementById(`kho-qty-${dm.id}`)?.value)||0;
@@ -5046,7 +5095,11 @@ function _computeNhuCauData(quyList){
     });
   });
   window._nhucauMissing=Object.values(_missSet).sort((a,b)=>((a.boPhan||'').localeCompare(b.boPhan||'','vi'))||((a.ten||'').localeCompare(b.ten||'','vi')));
-  return Object.values(map).map(row=>{const tongNhuCau=NHUCAU_UNITS.reduce((s,u)=>s+(row.perUnit[u]||0),0);const tonKho=daTonKho[row.tbId]||0;const canMua=Math.max(0,tongNhuCau-tonKho);return{...row,tongNhuCau,tonKho,canMua};}).filter(row=>row.tongNhuCau>0).sort((a,b)=>a.ten.localeCompare(b.ten,'vi'));
+  // Xếp theo đúng thứ tự admin đặt ở tab Danh mục (không xếp A→Z nữa) để đối chiếu
+  // với bảng Tồn kho cho dễ. Vật tư không nằm trong danh mục thì đẩy xuống cuối.
+  const _order={};_dmAllSorted().forEach((d,i)=>{_order[String(d.id)]=i;});
+  const _pos=r=>{const i=_order[String(r.tbId)];return i===undefined?1e9:i;};
+  return Object.values(map).map(row=>{const tongNhuCau=NHUCAU_UNITS.reduce((s,u)=>s+(row.perUnit[u]||0),0);const tonKho=daTonKho[row.tbId]||0;const canMua=Math.max(0,tongNhuCau-tonKho);return{...row,tongNhuCau,tonKho,canMua};}).filter(row=>row.tongNhuCau>0).sort((a,b)=>(_pos(a)-_pos(b))||a.ten.localeCompare(b.ten,'vi'));
 }
 function _renderNhuCauTable(data,quyList){
   const el=document.getElementById('nhucau-result');
@@ -5170,6 +5223,8 @@ document.addEventListener('DOMContentLoaded',()=>{
         const lsk=BHLD.lsGet('lich_su_nhap_xuat'); if(lsk.length){ daTonKhoLichSu=lsk; saveData('tonkho-lichsu',lsk); }
         const nhom=BHLD.lsGet('nhom_nv');    if(nhom.length){ daGroups=nhom; saveData('nhom-nv',nhom); }
         const ntb=BHLD.lsGet('nhom_tb');     if(ntb.length){ daNhomTB=ntb; saveData('nhomtb',ntb); }
+        // Dữ liệu danh mục vừa về từ Sheet — chuẩn hoá thuTu và ghi ngược lên (chỉ admin)
+        try{ _migrateDanhMucThuTu(typeof isAdmin==='function'&&isAdmin()); }catch(e){}
         const cd=BHLD.lsGet('chuc_danh');    if(cd.length){ daChucDanh=cd; saveData('chucdanh',cd); }
         const ql=BHLD.lsGet('quy_list');    if(ql.length){ const startRec=ql.find(r=>r.id==='quy_start')||ql[0]; if(startRec?.quyStr){ daQuyList=_quyListFrom(startRec.quyStr,8); saveData('quy-list',daQuyList); localStorage.setItem('bhld_quy_start',startRec.quyStr); }}
         // Rebuild nhomId từ nhomNoiBo (sheet không lưu nhomId)
