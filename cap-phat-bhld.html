@@ -582,13 +582,6 @@
       onfocus="this.style.borderColor='var(--primary-light)'"
       onblur="this.style.borderColor='var(--border)'">
     </div>
-    <select id="tk-filter-trangthai" onchange="filterTonKhoBang()" title="Lọc theo trạng thái tồn kho"
-      style="padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:13.5px;outline:none;background:#fff;cursor:pointer;min-width:160px;">
-      <option value="">Tất cả trạng thái</option>
-      <option value="con">Còn hàng</option>
-      <option value="saphet">Sắp hết (≤5)</option>
-      <option value="het">Hết hàng</option>
-    </select>
     <span id="tk-filter-info" style="font-size:12.5px;color:var(--text-light);white-space:nowrap;"></span>
   </div>
 
@@ -596,6 +589,10 @@
   <div id="tk-panel-nhap" style="padding-top:16px;display:none;"></div>
   <div id="tk-panel-xuat" style="padding-top:16px;display:none;"></div>
   <div id="tk-panel-dieuchinh" style="padding-top:16px;display:none;"></div>
+
+  <!-- Menu lọc của cột Trạng thái. Đặt ngoài bảng + position:fixed để không bị
+       khung cuộn ngang của bảng cắt mất khi bảng ngắn. -->
+  <div id="tk-tt-menu" style="display:none;position:fixed;z-index:60;background:#fff;border:1px solid var(--border);border-radius:8px;box-shadow:0 6px 20px rgba(0,0,0,.14);min-width:180px;padding:4px;text-align:left;"></div>
 </div>
 
 <!-- ============================
@@ -4591,7 +4588,8 @@ function switchTonKhoTab(tab){
   // để lần sau quay lại không bị "mất" vật tư vì bộ lọc cũ còn sót.
   if(tab!=='hientai'){
     const inp=document.getElementById('tk-search-input');if(inp)inp.value='';
-    const sel=document.getElementById('tk-filter-trangthai');if(sel)sel.value='';
+    _tkLocTT='';
+    if(typeof _tkDongLocMenu==='function')_tkDongLocMenu();
     const info=document.getElementById('tk-filter-info');if(info)info.textContent='';
   }
   if(tab==='hientai')renderTonKhoBang();if(tab==='nhap')renderLichSuNhap();if(tab==='xuat')renderLichSuXuat();if(tab==='dieuchinh')renderLichSuDieuChinh();
@@ -4638,17 +4636,70 @@ function renderTonKhoBang(){
     <th>Tên trang bị BHLĐ</th>
     <th style="text-align:center;">ĐVT</th>
     <th style="text-align:center;">Tồn kho</th>
-    <th style="text-align:center;">Trạng thái</th>
+    <th style="text-align:center;white-space:nowrap;">Trạng thái ${_tkLocBtnHtml()}</th>
   </tr></thead><tbody id="tk-hientai-tbody">${tableRows}</tbody></table>
   <div id="tk-empty" style="display:none;padding:24px;text-align:center;color:var(--text-light);font-size:13.5px;">Không có vật tư nào khớp bộ lọc.</div></div>`;
   filterTonKhoBang();   // giữ nguyên từ khoá + trạng thái admin đang chọn khi bảng render lại
 }
+/* ===== Bộ lọc trạng thái nằm ngay trên tiêu đề cột "Trạng thái" ===== */
+let _tkLocTT='';   // '' = tất cả | 'con' | 'saphet' | 'het'
+const _TK_TT=[
+  {v:'',      nhan:'Tất cả',        mau:'var(--text)'},
+  {v:'con',   nhan:'Còn hàng',      mau:'#155724'},
+  {v:'saphet',nhan:'Sắp hết (≤5)',  mau:'#856404'},
+  {v:'het',   nhan:'Hết hàng',      mau:'#721c24'}
+];
+// Nút mũi tên cạnh chữ "Trạng thái"; đổi màu + hiện chấm khi đang lọc
+function _tkLocBtnHtml(){
+  const dangLoc=!!_tkLocTT;
+  const mau=dangLoc?'var(--primary)':'var(--text-light)';
+  return`<button type="button" id="tk-tt-btn" onclick="_tkToggleLocMenu(event)" title="${dangLoc?'Đang lọc: '+_TK_TT.find(x=>x.v===_tkLocTT).nhan:'Lọc theo trạng thái'}"
+    style="border:none;background:${dangLoc?'#dceaf7':'transparent'};cursor:pointer;padding:2px 4px;border-radius:5px;color:${mau};vertical-align:-3px;line-height:1;margin-left:2px;">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+  </button>`;
+}
+function _tkRenderLocMenu(){
+  const m=document.getElementById('tk-tt-menu');if(!m)return;
+  m.innerHTML=_TK_TT.map(function(o){
+    const chon=o.v===_tkLocTT;
+    return`<div onclick="_tkSetLoc('${o.v}',event)" style="display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:6px;cursor:pointer;font-size:13px;font-weight:${chon?'600':'400'};color:${o.mau};background:${chon?'#eef4fb':'transparent'};white-space:nowrap;"
+      onmouseover="this.style.background='#f2f6fb'" onmouseout="this.style.background='${chon?'#eef4fb':'transparent'}'">
+      <span style="width:14px;display:inline-flex;color:var(--primary);">${chon?'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>':''}</span>
+      ${o.nhan}
+    </div>`;
+  }).join('');
+}
+function _tkToggleLocMenu(ev){
+  if(ev)ev.stopPropagation();
+  const m=document.getElementById('tk-tt-menu'),b=document.getElementById('tk-tt-btn');
+  if(!m||!b)return;
+  if(m.style.display==='block'){m.style.display='none';return;}
+  _tkRenderLocMenu();
+  m.style.display='block';
+  const r=b.getBoundingClientRect(),w=m.offsetWidth||180,h=m.offsetHeight||160;
+  // Canh mép phải nút, tự lật lên trên nếu bên dưới không đủ chỗ
+  m.style.left=Math.max(8,Math.min(r.right-w,window.innerWidth-w-8))+'px';
+  m.style.top=((window.innerHeight-r.bottom>h+12)?r.bottom+6:Math.max(8,r.top-h-6))+'px';
+}
+function _tkDongLocMenu(){const m=document.getElementById('tk-tt-menu');if(m)m.style.display='none';}
+function _tkSetLoc(v,ev){
+  if(ev)ev.stopPropagation();
+  _tkLocTT=v;
+  _tkDongLocMenu();
+  const b=document.getElementById('tk-tt-btn');
+  if(b)b.outerHTML=_tkLocBtnHtml();   // vẽ lại nút để đổi màu theo trạng thái lọc
+  filterTonKhoBang();
+}
+document.addEventListener('click',_tkDongLocMenu);
+document.addEventListener('keydown',function(e){if(e.key==='Escape')_tkDongLocMenu();});
+window.addEventListener('resize',_tkDongLocMenu);
+window.addEventListener('scroll',_tkDongLocMenu,true);
 /* Lọc bảng Tồn kho: kết hợp từ khoá và trạng thái (điều kiện AND).
-   Đọc thẳng từ 2 ô input nên gọi được từ bất kỳ đâu mà không cần truyền tham số. */
+   Đọc thẳng từ ô tìm kiếm + biến _tkLocTT nên gọi được từ bất kỳ đâu. */
 function filterTonKhoBang(){
   const tbody=document.getElementById('tk-hientai-tbody');if(!tbody)return;
   const term=(document.getElementById('tk-search-input')?.value||'').trim().toLowerCase();
-  const tt=document.getElementById('tk-filter-trangthai')?.value||'';
+  const tt=_tkLocTT;
   const conLai={};let hien=0,tong=0;
   Array.from(tbody.querySelectorAll('tr[data-grp]')).forEach(row=>{
     tong++;
