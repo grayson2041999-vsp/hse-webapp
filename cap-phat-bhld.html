@@ -4200,11 +4200,10 @@ function _buildNVMoiWordHtml(nvList,editsMap){
 <p style="text-align:center;font-size:12pt;margin-bottom:14pt;">Cấp lần đầu cho nhân viên mới &nbsp;·&nbsp; Ngày xuất: ${dateStr}</p>
 ${sections}
 <table style="width:100%;margin-top:26pt;"><tr>
-  <td style="width:33%;text-align:center;padding:4pt 4pt 52pt;"><strong>Trưởng phòng KTVT</strong></td>
-  <td style="width:34%;text-align:center;padding:4pt 4pt 52pt;"><strong>Thủ kho</strong></td>
-  <td style="width:33%;text-align:center;padding:4pt 4pt 52pt;"><strong>Lãnh đạo đơn vị</strong></td>
+  <td style="width:50%;text-align:center;padding:4pt 4pt 52pt;"><strong>Trưởng phòng KTVT</strong></td>
+  <td style="width:50%;text-align:center;padding:4pt 4pt 52pt;"><strong>Lãnh đạo đơn vị</strong></td>
 </tr></table>
-<table style="width:100%;margin-top:12pt;"><tr><td style="width:34%;padding:4pt 4pt 52pt;"><strong>Người phụ trách đơn vị</strong></td><td style="width:66%;"></td></tr></table>
+<p style="margin-top:14pt;"><strong>Thực hiện:</strong> ${_escH(_getCurrentUserLabel())}</p>
 </body></html>`;
 }
 
@@ -4265,7 +4264,8 @@ function exportPhieuById(id,format){
 <p style="text-align:center;font-weight:bold;font-size:14pt;margin-bottom:2pt;">PHIẾU YÊU CẦU CẤP BẢO HỘ LAO ĐỘNG</p>
 <p style="text-align:center;font-weight:bold;font-size:12pt;margin-bottom:14pt;">${quyLabel}</p>
 <table style="width:100%;"><thead><tr><th rowspan="2" style="${th}width:5%;">STT</th><th rowspan="2" style="${th}width:14%;">Mã vật tư</th><th rowspan="2" style="${th}width:37%;">Tên vật tư</th><th rowspan="2" style="${th}width:9%;">ĐVT</th><th colspan="2" style="${th}width:19%;">Số lượng</th><th rowspan="2" style="${th}width:16%;">Ghi chú</th></tr><tr><th style="${th}">Yêu cầu</th><th style="${th}">Thực xuất</th></tr></thead><tbody>${dataRows}</tbody></table>
-<table style="width:100%;margin-top:26pt;"><tr><td style="width:33%;text-align:center;padding:4pt 4pt 52pt;"><strong>Trưởng phòng KTVT</strong></td><td style="width:34%;text-align:center;padding:4pt 4pt 52pt;"><strong>Thủ kho</strong></td><td style="width:33%;text-align:center;padding:4pt 4pt 52pt;"><strong>Lãnh đạo đơn vị</strong></td></tr></table>
+<table style="width:100%;margin-top:26pt;"><tr><td style="width:50%;text-align:center;padding:4pt 4pt 52pt;"><strong>Trưởng phòng KTVT</strong></td><td style="width:50%;text-align:center;padding:4pt 4pt 52pt;"><strong>Lãnh đạo đơn vị</strong></td></tr></table>
+<p style="margin-top:14pt;"><strong>Thực hiện:</strong> ${_escH(_getCurrentUserLabel())}</p>
 </body></html>`;
     const blob=new Blob(['﻿',html],{type:'application/msword'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=`phieu-${p.quyStr.replace('/','_')}-${(p.donVi||'').replace(/\s+/g,'-')}.doc`;a.click();setTimeout(()=>URL.revokeObjectURL(url),2000);showToast('✅ Xuất Word thành công!');
   }
@@ -4371,8 +4371,8 @@ function exportPhieuWord(){
 <p style="text-align:center;font-weight:bold;font-size:14pt;margin-bottom:2pt;">PHIẾU YÊU CẦU CẤP BẢO HỘ LAO ĐỘNG</p>
 <p style="text-align:center;font-weight:bold;font-size:12pt;margin-bottom:14pt;">${quyLabel}</p>
 <table style="width:100%;"><thead><tr><th rowspan="2" style="${th}width:5%;">STT</th><th rowspan="2" style="${th}width:14%;">Mã vật tư</th><th rowspan="2" style="${th}width:37%;">Tên vật tư</th><th rowspan="2" style="${th}width:9%;">ĐVT</th><th colspan="2" style="${th}width:19%;">Số lượng</th><th rowspan="2" style="${th}width:16%;">Ghi chú</th></tr><tr><th style="${th}">Yêu cầu</th><th style="${th}">Thực xuất</th></tr></thead><tbody>${dataRows}</tbody></table>
-<table style="width:100%;margin-top:26pt;"><tr><td style="width:33%;text-align:center;padding:4pt 4pt 52pt;"><strong>Trưởng phòng KTVT</strong></td><td style="width:34%;text-align:center;padding:4pt 4pt 52pt;"><strong>Thủ kho</strong></td><td style="width:33%;text-align:center;padding:4pt 4pt 52pt;"><strong>Lãnh đạo đơn vị</strong></td></tr></table>
-<table style="width:100%;margin-top:12pt;"><tr><td style="width:34%;padding:4pt 4pt 52pt;"><strong>Người phụ trách đơn vị</strong></td><td style="width:66%;"></td></tr></table>
+<table style="width:100%;margin-top:26pt;"><tr><td style="width:50%;text-align:center;padding:4pt 4pt 52pt;"><strong>Trưởng phòng KTVT</strong></td><td style="width:50%;text-align:center;padding:4pt 4pt 52pt;"><strong>Lãnh đạo đơn vị</strong></td></tr></table>
+<p style="margin-top:14pt;"><strong>Thực hiện:</strong> ${_escH(_getCurrentUserLabel())}</p>
 </body></html>`;
   const blob=new Blob(['﻿',html],{type:'application/msword'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=`phieu-bhld-${quyStr.replace('/','_')}-${filterDonVi.replace(/\s+/g,'-')}.doc`;a.click();setTimeout(()=>URL.revokeObjectURL(url),2000);showToast(`✅ Đã xuất phiếu Word – ${quyStr} – ${filterDonVi}!`);
 }
