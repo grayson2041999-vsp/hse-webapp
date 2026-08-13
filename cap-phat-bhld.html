@@ -3778,7 +3778,15 @@ function submitPhieuQuy(){
 }
 
 function _getCurrentUserLabel(){
-  try{const un=localStorage.getItem('hse_session');if(!un)return'anonymous';const users=JSON.parse(localStorage.getItem('hse_users')||'[]');const u=users.find(x=>x.username===un);return u?(u.fullname||u.username):un;}catch(e){return'anonymous';}
+  /* ⚠️ hse_session được app.js lưu qua JSON.stringify nên giá trị thô là '"vannt.sd"'
+     (có dấu nháy). Phải dùng getCentralUser() để parse + tra cứu hse_users,
+     nếu không sẽ không khớp username và trả về chuỗi có nháy kép. */
+  try{
+    var u=getCentralUser();
+    if(u) return u.fullname||u.username||'anonymous';
+    var raw=localStorage.getItem('hse_session');
+    return raw?String(JSON.parse(raw)||'anonymous'):'anonymous';
+  }catch(e){return'anonymous';}
 }
 
 function _renderQuyStatusBar(quyStr,donVi){
