@@ -552,8 +552,12 @@
       <div id="choduyet-list"></div>
     </div>
     <div class="card" style="margin-top:16px;">
-      <div class="card-title" style="margin-bottom:14px;display:flex;align-items:center;gap:7px;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>Phiếu đã phê duyệt (20 phiếu gần nhất)</div>
-      <div id="daduyet-list"><div style="text-align:center;padding:20px;color:var(--text-light);">Đang tải...</div></div>
+      <div class="card-title" style="margin-bottom:14px;display:flex;align-items:center;gap:7px;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>Lịch sử phê duyệt <span id="daduyet-count" style="font-weight:400;font-size:13px;color:var(--text-light);"></span></div>
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">
+        <input type="text" id="daduyet-search" oninput="renderDaduyetList()" placeholder="Tìm theo tên nhân viên, đơn vị, quý, người duyệt..." style="flex:1;padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;font-family:inherit;">
+        <button class="btn btn-sm" onclick="daduyetClearSearch()" style="white-space:nowrap;">Xoá lọc</button>
+      </div>
+      <div id="daduyet-list" style="max-height:600px;overflow-y:auto;"><div style="text-align:center;padding:20px;color:var(--text-light);">Đang tải...</div></div>
     </div>
   </div>
 </div>
@@ -3845,7 +3849,6 @@ function renderChoduyetTab(){
   if(!isAdmin()){document.getElementById('choduyet-list').innerHTML='<div style="padding:20px;color:var(--text-light);">Chỉ Admin mới có quyền phê duyệt.</div>';document.getElementById('daduyet-list').innerHTML='';return;}
   const all=BHLD.lsGet('phieu_requests');
   const pending=all.filter(p=>p.status==='pending');
-  const handled=all.filter(p=>p.status==='approved').sort((a,b)=>new Date(b.reviewedAt||b.createdAt)-new Date(a.reviewedAt||a.createdAt)).slice(0,20);
   // Thay đổi nhân sự chờ duyệt
   const allChanges=BHLD.lsGet('pending_changes');
   const pendingChanges=allChanges.filter(c=>c.status==='pending');
@@ -3899,34 +3902,82 @@ function renderChoduyetTab(){
       </div>`;
     }).join('');
   }
-  // Đã xử lý — gộp phiếu + thay đổi nhân sự đã xử lý
-  const daduyetEl=document.getElementById('daduyet-list');
-  const handledChanges=allChanges.filter(c=>c.status==='approved'||c.status==='rejected');
-  const handledItems=[
-    ...handled.map(p=>({kind:'phieu',rec:p})),
-    ...handledChanges.map(c=>({kind:'change',rec:c}))
-  ].sort((a,b)=>new Date(b.rec.reviewedAt||b.rec.createdAt||0)-new Date(a.rec.reviewedAt||a.rec.createdAt||0)).slice(0,30);
-  if(!handledItems.length){daduyetEl.innerHTML='<div style="padding:20px;color:var(--text-light);">Chưa có mục nào được xử lý.</div>';}
-  else{
-    daduyetEl.innerHTML=handledItems.map(h=>{
-      const r=h.rec;const isApproved=r.status==='approved';
-      let label;
-      if(h.kind==='phieu')label=r.type==='nv_moi'?`NV mới: ${_escH(r.nvTen||'')} – ${_escH(r.donVi||'')}`:`Phiếu quý ${r.quyStr} – ${_escH(r.donVi||'')}`;
-      else label=`${({add:'Thêm',edit:'Sửa',delete:'Xoá'})[r.type]||'Thay đổi'} NS: ${_escH(r.nvTen||'')} – ${_escH(r.donVi||'')}`;
-      const reasonTip=(!isApproved&&r.rejectReason)?` title="Lý do: ${_escH(r.rejectReason)}"`:'';
-      return `<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-bottom:1px solid var(--border);font-size:13px;"${reasonTip}>
-        <span>${label}</span>
-        <div style="display:flex;align-items:center;gap:12px;">
-          <span class="badge ${isApproved?'badge-green':'badge-red'}">${isApproved?_ic('check',13)+' Đã duyệt':_ic('x',13)+' Từ chối'}</span>
-          <span style="font-size:12px;color:var(--text-light);">${r.reviewedBy||''} · ${_timeAgo(r.reviewedAt)}</span>
-        </div>
-      </div>`;
-    }).join('');
-  }
+  // Đã xử lý — render riêng để ô tìm kiếm gõ lại không phải dựng lại khối "chờ duyệt"
+  renderDaduyetList();
   // Cập nhật badge (phiếu + thay đổi)
   const totalPending=pending.length+pendingChanges.length;
   const badge=document.getElementById('choduyet-badge');
   if(badge){badge.textContent=totalPending;badge.style.display=totalPending?'inline':'none';}
+}
+
+/* ═══════════════════════════════════════════════════
+   LỊCH SỬ PHÊ DUYỆT — hiển thị toàn bộ + tìm kiếm tự do
+   ───────────────────────────────────────────────────
+   Tách khỏi renderChoduyetTab() để mỗi lần gõ vào ô tìm kiếm chỉ vẽ lại
+   danh sách lịch sử, không dựng lại khối "chờ duyệt" (tránh mất trạng thái
+   cuộn / các nút đang bấm dở ở khối trên).
+   Lưu ý: phiếu bị TỪ CHỐI không nằm ở đây — rejectPhieu() xoá hẳn record.
+   Chỉ pending_changes mới có bản ghi status='rejected'.
+═══════════════════════════════════════════════════ */
+function _daduyetNoAccent(s){
+  return String(s==null?'':s).toLowerCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+    .replace(/\u0111/g,'d');
+}
+function daduyetClearSearch(){
+  const box=document.getElementById('daduyet-search');
+  if(box){box.value='';renderDaduyetList();box.focus();}
+}
+function renderDaduyetList(){
+  const daduyetEl=document.getElementById('daduyet-list');
+  if(!daduyetEl)return;
+  const countEl=document.getElementById('daduyet-count');
+  const all=BHLD.lsGet('phieu_requests');
+  const allChanges=BHLD.lsGet('pending_changes');
+  const handled=all.filter(p=>p.status==='approved');
+  const handledChanges=allChanges.filter(c=>c.status==='approved'||c.status==='rejected');
+  // Gộp 2 nguồn, mới nhất lên đầu — KHÔNG cắt bớt, hiển thị toàn bộ
+  const handledItems=[
+    ...handled.map(p=>({kind:'phieu',rec:p})),
+    ...handledChanges.map(c=>({kind:'change',rec:c}))
+  ].sort((a,b)=>new Date(b.rec.reviewedAt||b.rec.createdAt||0)-new Date(a.rec.reviewedAt||a.rec.createdAt||0));
+
+  const q=_daduyetNoAccent((document.getElementById('daduyet-search')||{}).value||'').trim();
+  const rows=handledItems.map(h=>{
+    const r=h.rec;const isApproved=r.status==='approved';
+    let label;
+    if(h.kind==='phieu')label=r.type==='nv_moi'?`NV mới: ${_escH(r.nvTen||'')} – ${_escH(r.donVi||'')}`:`Phiếu quý ${r.quyStr} – ${_escH(r.donVi||'')}`;
+    else label=`${({add:'Thêm',edit:'Sửa',delete:'Xoá'})[r.type]||'Thay đổi'} NS: ${_escH(r.nvTen||'')} – ${_escH(r.donVi||'')}`;
+    // Chuỗi tìm kiếm gộp mọi trường văn bản: tên NV, đơn vị, quý, người duyệt,
+    // người gửi, loại mục — gõ chữ nào khớp chữ đó, không cần chọn cột.
+    const hay=_daduyetNoAccent([r.nvTen,r.donVi,r.quyStr,r.reviewedBy,r.submittedBy,r.chucDanh,
+      h.kind==='phieu'?(r.type==='nv_moi'?'nhan vien moi':'phieu quy'):'thay doi nhan su',
+      isApproved?'da duyet':'tu choi'].filter(Boolean).join(' '));
+    return {hay,isApproved,label,rec:r};
+  }).filter(x=>!q||x.hay.includes(q));
+
+  if(countEl){
+    countEl.textContent=q
+      ?`— ${rows.length}/${handledItems.length} mục`
+      :(handledItems.length?`— ${handledItems.length} mục`:'');
+  }
+  if(!handledItems.length){
+    daduyetEl.innerHTML='<div style="padding:20px;color:var(--text-light);">Chưa có mục nào được xử lý.</div>';return;
+  }
+  if(!rows.length){
+    daduyetEl.innerHTML='<div style="padding:20px;color:var(--text-light);">Không tìm thấy mục nào khớp từ khoá.</div>';return;
+  }
+  daduyetEl.innerHTML=rows.map(x=>{
+    const r=x.rec;
+    const reasonTip=(!x.isApproved&&r.rejectReason)?` title="Lý do: ${_escH(r.rejectReason)}"`:'';
+    return `<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-bottom:1px solid var(--border);font-size:13px;"${reasonTip}>
+      <span>${x.label}</span>
+      <div style="display:flex;align-items:center;gap:12px;">
+        <span class="badge ${x.isApproved?'badge-green':'badge-red'}">${x.isApproved?_ic('check',13)+' Đã duyệt':_ic('x',13)+' Từ chối'}</span>
+        <span style="font-size:12px;color:var(--text-light);">${_escH(r.reviewedBy||'')} · ${_timeAgo(r.reviewedAt)}</span>
+      </div>
+    </div>`;
+  }).join('');
 }
 
 function _parsePhieuItems(itemsJson){if(Array.isArray(itemsJson))return itemsJson;try{return JSON.parse(itemsJson||'[]');}catch(e){return[];}}
