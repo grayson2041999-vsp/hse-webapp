@@ -117,6 +117,33 @@ check('bulkWrite(sop) → vẫn giữ not-in id', delS && delS.not && delS.not[1
 calls=[]; await DB.testConnection();
 check('testConnection() → dùng "SOP" chứ không phải sop', last().table==='SOP', last().table);
 
+console.log('\n── Sáu bảng đổi tên đợt 6 ──');
+const doiTen = {
+  ksk:            'KhamSucKhoe',
+  moi_truong:     'XuLyChatThai',
+  nha_thau:       'NhaThau',
+  binh_ap_luc:    'ThietBi_BinhApLuc',
+  kiem_tra_cap12: 'KiemTraCacCap_12',
+  kiem_tra_cap34: 'KiemTraCacCap_34'
+};
+for (const [cu, moi] of Object.entries(doiTen)) {
+  calls=[]; await DB.getAll(cu);
+  check('getAll('+cu+') → "'+moi+'"', last().table===moi, last().table);
+  check('  '+cu+' không bị gắn bộ lọc thừa', last().filters.length===0, last().filters);
+}
+
+// bulkWrite là chỗ nguy hiểm nhất: các bảng này KHÔNG dùng chung bảng vật lý
+// nên phạm vi xoá phải là toàn bảng, không được có điều kiện lọc nào thêm.
+calls=[]; await DB.bulkWrite('kiem_tra_cap12', [{id:'k1'},{id:'k2'}]);
+const upK  = calls.find(c=>c.ops.includes('upsert'));
+const delK = calls.find(c=>c.ops.includes('delete'));
+check('bulkWrite(kiem_tra_cap12) → upsert đúng bảng', upK && upK.table==='KiemTraCacCap_12', upK && upK.table);
+check('bulkWrite(kiem_tra_cap12) → xoá không bị giới hạn thừa', delK && delK.filters.length===0, delK && delK.filters);
+
+// cap12 và cap34 là hai bảng RIÊNG, thao tác bên này không được chạm bên kia
+calls=[]; await DB.delete('kiem_tra_cap34','x9');
+check('delete(cap34) → đúng bảng cap34, không đụng cap12', last().table==='KiemTraCacCap_34', last().table);
+
 console.log('\n── Không ảnh hưởng bảng khác ──');
 calls=[]; await DB.update('hl_settings','huanluyen',{ warn_days:30 });
 check('hl_settings vẫn dùng PK "loai" làm khoá', last().eq.some(e=>e[0]==='loai'&&e[1]==='huanluyen'), last().eq);

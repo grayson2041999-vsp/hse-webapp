@@ -53,7 +53,14 @@ var DB = (function () {
     tnsc_gio_cong:    "TaiNan-SuCo_GioCong",
     tnsc_su_kien:     "TaiNan-SuCo_SuKien",
     // Trang SOP: đổi tên thành chữ hoa. Với Postgres "SOP" khác sop.
-    sop:              "SOP"
+    sop:              "SOP",
+    // Năm trang nhỏ, mỗi trang chỉ đổi tên bảng, không gộp gì.
+    ksk:              "KhamSucKhoe",
+    moi_truong:       "XuLyChatThai",
+    nha_thau:         "NhaThau",
+    binh_ap_luc:      "ThietBi_BinhApLuc",
+    kiem_tra_cap12:   "KiemTraCacCap_12",
+    kiem_tra_cap34:   "KiemTraCacCap_34"
   };
 
   function _map(sheet) {
