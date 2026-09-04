@@ -60,7 +60,20 @@ var DB = (function () {
     nha_thau:         "NhaThau",
     binh_ap_luc:      "ThietBi_BinhApLuc",
     kiem_tra_cap12:   "KiemTraCacCap_12",
-    kiem_tra_cap34:   "KiemTraCacCap_34"
+    kiem_tra_cap34:   "KiemTraCacCap_34",
+    // Svodka — svodka_matkhau có khoá chính riêng "tacvu_id" (xem PK ở trên).
+    svodka_tacvu:       "Svodka_TacVu",
+    svodka_buoc:        "Svodka_Buoc",
+    svodka_matkhau:     "Svodka_MatKhau",
+    // Huấn luyện - Đào tạo. Tên có gạch ngang -> trong SQL luôn phải có nháy kép.
+    // hl_settings có khoá chính riêng "loai" (xem PK ở trên), khoá đó tra theo
+    // TÊN LOGIC nên đổi tên bảng không ảnh hưởng gì.
+    hl_nhansu:          "HuanLuyen-DaoTao_NhanSu",
+    hl_settings:        "HuanLuyen-DaoTao_CaiDat",
+    // Báo cáo hệ thống báo cháy tự động.
+    pccc_devices:       "HTBCTD_ThietBi",
+    pccc_errors:        "HTBCTD_Loi",
+    pccc_locked_months: "HTBCTD_ThangDaKhoa"
     // ⚠️ 15 bảng của trang Cấp phát BHLĐ (nhanvien, danh_muc, phieu_requests...)
     //    KHÔNG nằm ở đây. Trang đó không dùng db.js — nó có bảng ánh xạ riêng
     //    trong assets/bhld-sync.js. Đừng sao chép qua lại, sẽ lệch nhau.

@@ -146,11 +146,41 @@ check('bulkWrite(kiem_tra_cap12) → xoá không bị giới hạn thừa', delK
 calls=[]; await DB.delete('kiem_tra_cap34','x9');
 check('delete(cap34) → đúng bảng cap34, không đụng cap12', last().table==='KiemTraCacCap_34', last().table);
 
-console.log('\n── Không ảnh hưởng bảng khác ──');
+console.log('\n── Svodka / Huấn luyện / Báo cháy (đợt 8) ──');
+const dot8 = {
+  svodka_tacvu:       'Svodka_TacVu',
+  svodka_buoc:        'Svodka_Buoc',
+  svodka_matkhau:     'Svodka_MatKhau',
+  hl_nhansu:          'HuanLuyen-DaoTao_NhanSu',
+  hl_settings:        'HuanLuyen-DaoTao_CaiDat',
+  pccc_devices:       'HTBCTD_ThietBi',
+  pccc_errors:        'HTBCTD_Loi',
+  pccc_locked_months: 'HTBCTD_ThangDaKhoa'
+};
+for (const [cu, moi] of Object.entries(dot8)) {
+  calls=[]; await DB.getAll(cu);
+  check(cu.padEnd(19) + '→ ' + moi, last().table===moi, last().table);
+}
+
+console.log('\n── Khoá chính đặc biệt vẫn đúng sau khi đổi tên ──');
+// Đây là chỗ dễ hỏng nhất: khoá chính được tra theo TÊN LOGIC (hl_settings),
+// không theo tên bảng vật lý. Đổi tên bảng không được làm lệch chuyện này.
 calls=[]; await DB.update('hl_settings','huanluyen',{ warn_days:30 });
-check('hl_settings vẫn dùng PK "loai" làm khoá', last().eq.some(e=>e[0]==='loai'&&e[1]==='huanluyen'), last().eq);
-check('hl_settings KHÔNG bị gắn filter', last().filters.length===0, last().filters);
-check('hl_settings không bị đổi tên bảng', last().table==='hl_settings', last().table);
+check('hl_settings → bảng "HuanLuyen-DaoTao_CaiDat"', last().table==='HuanLuyen-DaoTao_CaiDat', last().table);
+check('hl_settings → vẫn khoá theo cột "loai"', last().eq.some(e=>e[0]==='loai'&&e[1]==='huanluyen'), last().eq);
+check('hl_settings → không bị gắn bộ lọc thừa', last().filters.length===0, last().filters);
+
+calls=[]; await DB.update('svodka_matkhau','tv1',{ password:'x' });
+check('svodka_matkhau → bảng "Svodka_MatKhau"', last().table==='Svodka_MatKhau', last().table);
+check('svodka_matkhau → vẫn khoá theo cột "tacvu_id"', last().eq.some(e=>e[0]==='tacvu_id'&&e[1]==='tv1'), last().eq);
+
+console.log('\n── Các bảng cố ý KHÔNG đổi tên ──');
+calls=[]; await DB.update('app_settings','theme',{ v:1 });
+check('app_settings giữ nguyên tên', last().table==='app_settings', last().table);
+check('app_settings vẫn khoá theo cột "key"', last().eq.some(e=>e[0]==='key'), last().eq);
+
+calls=[]; await DB.getAll('users');
+check('users → profiles (gắn Auth, không đổi)', last().table==='profiles', last().table);
 
 console.log('\n' + (fail===0 ? '🎉 TẤT CẢ ' + pass + ' KIỂM TRA ĐỀU ĐẠT' : '⚠️  ' + fail + ' lỗi / ' + (pass+fail) + ' kiểm tra'));
 process.exit(fail ? 1 : 0);
