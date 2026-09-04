@@ -1047,12 +1047,44 @@
   /* =========================================================
      RENDER: QUẢN TRỊ HỆ THỐNG (quản lý user + phân quyền)
      ========================================================= */
-  function renderAdmin(container){
-    container.innerHTML="";
-    container.appendChild(el("div","",
+  function renderAdmin(root){
+    root.innerHTML="";
+    root.appendChild(el("div","",
       '<div class="page-title" style="display:flex;align-items:center;gap:9px">'+lic("settings",22)+'Quản trị hệ thống</div>'+
-      '<div class="page-desc">Quản lý người dùng, vai trò và phân quyền truy cập từng trang.</div>'));
+      '<div class="page-desc">Quản lý người dùng, phân quyền truy cập và danh mục phòng/ban/đơn vị.</div>'));
 
+    /* ── Thanh tab: Người dùng · Danh mục đơn vị ── */
+    var tabBar = el("div");
+    tabBar.style.cssText="display:flex;gap:6px;border-bottom:2px solid var(--border);margin:4px 0 16px;flex-wrap:wrap";
+    tabBar.innerHTML=
+      '<button class="adm-tab on" data-tab="users">Người dùng &amp; phân quyền</button>'+
+      '<button class="adm-tab" data-tab="donvi">Danh mục đơn vị</button>';
+    root.appendChild(tabBar);
+    if(!document.getElementById("adm-tab-css")){
+      var _st=document.createElement("style"); _st.id="adm-tab-css";
+      _st.textContent=".adm-tab{background:none;border:none;border-bottom:2px solid transparent;margin-bottom:-2px;"+
+        "padding:9px 14px;font-size:13.5px;font-weight:600;color:var(--text-muted);cursor:pointer;font-family:inherit}"+
+        ".adm-tab:hover{color:var(--brand)}"+
+        ".adm-tab.on{color:var(--brand);border-bottom-color:var(--brand)}";
+      document.head.appendChild(_st);
+    }
+
+    var paneUsers = el("div"); root.appendChild(paneUsers);
+    var paneDonVi = el("div"); paneDonVi.style.display="none"; root.appendChild(paneDonVi);
+    var _donViDrawn = false;
+    Array.prototype.forEach.call(tabBar.querySelectorAll(".adm-tab"), function(b){
+      b.addEventListener("click", function(){
+        Array.prototype.forEach.call(tabBar.querySelectorAll(".adm-tab"), function(x){ x.classList.remove("on"); });
+        b.classList.add("on");
+        var isDV = b.getAttribute("data-tab")==="donvi";
+        paneUsers.style.display = isDV ? "none" : "";
+        paneDonVi.style.display = isDV ? "" : "none";
+        if(isDV && !_donViDrawn){ _donViDrawn = true; renderDonViAdmin(paneDonVi); }
+      });
+    });
+
+    // Từ đây trở xuống là phần "Người dùng" cũ — giữ nguyên, chỉ gắn vào khung tab.
+    var container = paneUsers;
     var bar = el("div","toolbar");
     bar.innerHTML='<div class="muted">Vai trò: <b>Admin</b> toàn quyền · <b>User</b> thao tác theo phân quyền · <b>Viewer</b> chỉ xem.</div>'+
       '<div class="spacer"></div><input class="inp" id="q" type="search" name="hse_user_search" autocomplete="off" placeholder="Tìm theo tên / tài khoản...">';
@@ -1253,6 +1285,308 @@
     var dbSection = el("div");
     container.appendChild(dbSection);
     renderDBSettings(dbSection);
+  }
+
+
+  /* =========================================================
+     QUẢN TRỊ — DANH MỤC PHÒNG / BAN / ĐƠN VỊ
+     ---------------------------------------------------------
+     Thay cho việc viết cứng danh sách đơn vị trong code từng trang.
+     Admin ở đây có thể:
+       · Thêm / sửa / ngừng / xoá đơn vị và sắp thứ tự hiển thị
+       · Chọn TRANG NÀO được dùng đơn vị nào trong droplist
+       · Bật/tắt mục "Khác" (nhập tên tự do) cho từng trang
+     Dữ liệu nằm ở bảng "DonVi" (supabase/don_vi.sql), truy cập qua
+     assets/don-vi.js (HSE_UNITS).
+     ========================================================= */
+  function renderDonViAdmin(pane){
+    if(typeof HSE_UNITS === "undefined"){
+      pane.innerHTML='<div class="table-wrap" style="padding:24px;text-align:center" class="muted">'+
+        'Chưa nạp <b>assets/don-vi.js</b> — không thể quản lý danh mục đơn vị.</div>';
+      return;
+    }
+    var PG = HSE_UNITS.pages();
+    var showInactive = false;
+    // Ô tick trong modal nằm trong .field — cần ghi đè padding của ".field input"
+    var CB = 'style="width:16px;height:16px;padding:0;flex-shrink:0;accent-color:var(--brand)"';
+
+    pane.innerHTML =
+      '<div class="toolbar">'+
+        '<div class="muted" style="max-width:680px;line-height:1.65">Danh mục dùng chung cho mọi droplist đơn vị trong hệ thống. '+
+          'Tích ô ở cột của một trang để cho phép trang đó dùng đơn vị. '+
+          '<b>Mã</b> của mỗi đơn vị là cố định — đổi tên bao nhiêu lần cũng không làm mất dữ liệu cũ.</div>'+
+        '<div class="spacer"></div>'+
+        '<label class="muted" style="display:flex;align-items:center;gap:6px;cursor:pointer;white-space:nowrap">'+
+          '<input type="checkbox" id="dv-inactive" style="width:15px;height:15px"> Hiện cả đơn vị đã ngừng</label>'+
+      '</div>'+
+      '<div class="table-wrap"><table id="dv-tbl"></table></div>'+
+      '<div style="display:flex;justify-content:center;margin:16px 0 4px">'+
+        '<button class="btn btn-accent" id="dv-add">＋ Thêm đơn vị</button></div>'+
+      '<div id="dv-other"></div>';
+
+    var tbl      = pane.querySelector("#dv-tbl");
+    var otherBox = pane.querySelector("#dv-other");
+    pane.querySelector("#dv-inactive").addEventListener("change", function(){ showInactive=this.checked; draw(); });
+    pane.querySelector("#dv-add").addEventListener("click", function(){ openUnitModal(null); });
+
+    /* ── Bảng danh mục ── */
+    function draw(){
+      var rows = HSE_UNITS.all({ includeInactive: showInactive });
+      var html = '<thead><tr>'+
+        '<th style="width:32px">#</th>'+
+        '<th style="min-width:230px">Tên đơn vị</th>'+
+        '<th>Nhóm</th>'+
+        PG.map(function(p){
+          return '<th style="text-align:center;font-size:11.5px;line-height:1.35;min-width:92px">'+esc(p.title)+
+            (p.applied?'':'<br><span style="font-weight:500;color:var(--text-muted)">(chưa áp dụng)</span>')+'</th>';
+        }).join('')+
+        '<th>Trạng thái</th><th style="white-space:nowrap">Thao tác</th></tr></thead><tbody>';
+
+      rows.forEach(function(u,i){
+        html += '<tr'+(u.active?'':' style="opacity:.55"')+'>'+
+          '<td class="muted">'+(i+1)+'</td>'+
+          '<td><b>'+esc(u.ten)+'</b>'+
+            (u.he_thong?' <span class="badge" style="background:#eef1f4;color:var(--text-muted)">hệ thống</span>':'')+
+            '<div class="muted" style="font-size:11px;margin-top:2px">mã: <code>'+esc(u.ma)+'</code>'+
+              (u.ten_cu.length?' · tên cũ: '+esc(u.ten_cu.join(", ")):'')+'</div></td>'+
+          '<td class="muted">'+esc(HSE_UNITS.nhomLabel(u.nhom))+'</td>'+
+          PG.map(function(p){
+            var on = u.pages.indexOf(p.slug)>=0;
+            return '<td style="text-align:center"><input type="checkbox" class="dv-pg" data-ma="'+esc(u.ma)+'" '+
+              'data-slug="'+esc(p.slug)+'"'+(on?' checked':'')+' style="width:16px;height:16px;accent-color:var(--brand);cursor:pointer"></td>';
+          }).join('')+
+          '<td>'+(u.active
+            ? '<span class="badge badge-user">Hoạt động</span>'
+            : '<span class="badge badge-viewer">Đã ngừng</span>')+'</td>'+
+          '<td style="white-space:nowrap">'+
+            '<button class="btn btn-ghost btn-sm" data-act="up"   data-ma="'+esc(u.ma)+'" title="Lên trên"'+(i===0?' disabled':'')+'>▲</button> '+
+            '<button class="btn btn-ghost btn-sm" data-act="down" data-ma="'+esc(u.ma)+'" title="Xuống dưới"'+(i===rows.length-1?' disabled':'')+'>▼</button> '+
+            '<button class="btn btn-ghost btn-sm" data-act="edit" data-ma="'+esc(u.ma)+'">Sửa</button> '+
+            '<button class="btn btn-ghost btn-sm" data-act="toggle" data-ma="'+esc(u.ma)+'">'+(u.active?'Ngừng':'Bật lại')+'</button> '+
+            '<button class="btn btn-danger btn-sm" data-act="del" data-ma="'+esc(u.ma)+'">Xoá</button>'+
+          '</td></tr>';
+      });
+      if(!rows.length) html += '<tr><td colspan="'+(5+PG.length)+'" class="muted" style="text-align:center;padding:24px">Danh mục trống.</td></tr>';
+      tbl.innerHTML = html + '</tbody>';
+
+      Array.prototype.forEach.call(tbl.querySelectorAll(".dv-pg"), function(c){
+        c.addEventListener("change", function(){ togglePage(c.getAttribute("data-ma"), c.getAttribute("data-slug"), c.checked); });
+      });
+      Array.prototype.forEach.call(tbl.querySelectorAll("button[data-act]"), function(b){
+        b.addEventListener("click", function(){
+          var ma=b.getAttribute("data-ma"), act=b.getAttribute("data-act");
+          if(act==="edit")        openUnitModal(HSE_UNITS.byMa(ma));
+          else if(act==="toggle") toggleActive(ma);
+          else if(act==="del")    removeUnit(ma);
+          else                    move(ma, act==="up"?-1:1, rows);
+        });
+      });
+    }
+
+    /* ── Bật/tắt đơn vị cho một trang ── */
+    function togglePage(ma, slug, on){
+      var u = HSE_UNITS.byMa(ma); if(!u) return;
+      var pages = u.pages.filter(function(s){ return s!==slug; });
+      if(on) pages.push(slug);
+      var next = JSON.parse(JSON.stringify(u)); next.pages = pages;
+      HSE_UNITS.saveUnit(next).then(function(){
+        showToast(on ? 'Đã cho phép trang "'+pageTitle(slug)+'" dùng "'+u.ten+'".'
+                     : 'Đã bỏ "'+u.ten+'" khỏi trang "'+pageTitle(slug)+'".', "success");
+      }).catch(function(e){ showToast("Không lưu được: "+(e&&e.message||e), "error"); draw(); });
+    }
+    function pageTitle(slug){
+      for(var i=0;i<PG.length;i++) if(PG[i].slug===slug) return PG[i].title;
+      return slug;
+    }
+
+    /* ── Ngừng / bật lại ── */
+    function toggleActive(ma){
+      var u = HSE_UNITS.byMa(ma); if(!u) return;
+      var next = JSON.parse(JSON.stringify(u)); next.active = !u.active;
+      if(!next.active && !confirm('Ngừng hoạt động "'+u.ten+'"?\n\nĐơn vị sẽ biến mất khỏi mọi droplist, nhưng các bản ghi cũ vẫn đọc và hiển thị bình thường.')) return;
+      HSE_UNITS.saveUnit(next).then(function(){ draw(); showToast("Đã cập nhật trạng thái.", "success"); })
+        .catch(function(e){ showToast("Không lưu được: "+(e&&e.message||e), "error"); });
+    }
+
+    /* ── Đổi thứ tự hiển thị ── */
+    function move(ma, dir, rows){
+      var i = -1; rows.forEach(function(u,k){ if(u.ma===ma) i=k; });
+      var j = i + dir;
+      if(i<0 || j<0 || j>=rows.length) return;
+      var a = JSON.parse(JSON.stringify(rows[i]));
+      var b = JSON.parse(JSON.stringify(rows[j]));
+      var t = a.sort; a.sort = b.sort; b.sort = t;
+      if(a.sort === b.sort){ a.sort = (dir<0) ? b.sort-1 : b.sort+1; }
+      HSE_UNITS.saveUnit(a).then(function(){ return HSE_UNITS.saveUnit(b); })
+        .then(function(){ draw(); })
+        .catch(function(e){ showToast("Không lưu được thứ tự: "+(e&&e.message||e), "error"); draw(); });
+    }
+
+    /* ── Xoá hẳn (chỉ khi không còn bản ghi nào dùng) ── */
+    function removeUnit(ma){
+      var u = HSE_UNITS.byMa(ma); if(!u) return;
+      showToast('Đang kiểm tra dữ liệu đang dùng "'+u.ten+'"...', "info");
+      HSE_UNITS.renameScan(u.ten).then(function(scan){
+        if(scan.total>0){
+          alert('Không thể xoá "'+u.ten+'".\n\nCòn '+scan.total+' bản ghi đang dùng đơn vị này:\n'+
+            scan.hits.map(function(h){ return '· '+h.target.label+': '+h.rows.length; }).join("\n")+
+            '\n\nHãy dùng "Ngừng" để ẩn khỏi droplist mà vẫn giữ được báo cáo cũ.');
+          return;
+        }
+        if(!confirm('Xoá hẳn "'+u.ten+'" khỏi danh mục?\n\nKhông có bản ghi nào đang dùng đơn vị này.')) return;
+        HSE_UNITS.removeUnit(ma).then(function(){ draw(); showToast("Đã xoá đơn vị.", "success"); })
+          .catch(function(e){ showToast("Không xoá được: "+(e&&e.message||e), "error"); });
+      }).catch(function(e){ showToast("Không kiểm tra được: "+(e&&e.message||e), "error"); });
+    }
+
+    /* ── Modal thêm / sửa ── */
+    function openUnitModal(u){
+      var isNew = !u;
+      var bg = el("div","modal-bg");
+      bg.innerHTML =
+        '<div class="modal"><div class="modal-h"><h3>'+(isNew?"Thêm đơn vị":"Sửa đơn vị")+'</h3><button class="x" id="dvx">×</button></div>'+
+        '<div class="modal-b">'+
+          '<div class="field"><label>Tên đơn vị *</label>'+
+            '<input class="inp" id="dv_ten" style="width:100%" placeholder="VD: Phòng Kỹ thuật - Vật tư" value="'+esc(isNew?"":u.ten)+'"></div>'+
+          '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">'+
+            '<div class="field"><label>Nhóm</label><select class="inp" id="dv_nhom" style="width:100%">'+
+              '<option value="phong_ban">Phòng / Ban</option>'+
+              '<option value="don_vi_sx">Đơn vị sản xuất</option>'+
+              '<option value="he_thong">Đơn vị hệ thống</option></select></div>'+
+            '<div class="field"><label>Thứ tự hiển thị</label>'+
+              '<input class="inp" id="dv_sort" type="number" style="width:100%" value="'+(isNew?nextSort():u.sort)+'"></div>'+
+          '</div>'+
+          '<div class="field"><label>Trang được dùng đơn vị này</label>'+
+            '<div class="perm-grid" id="dv_pages" style="max-height:none;grid-template-columns:1fr 1fr"></div></div>'+
+          '<div class="field" style="display:flex;gap:18px;flex-wrap:wrap">'+
+            '<label class="perm-item" style="margin:0"><input type="checkbox" id="dv_active"'+(isNew||u.active?" checked":"")+' '+CB+'><span>Đang hoạt động</span></label>'+
+            '<label class="perm-item" style="margin:0"><input type="checkbox" id="dv_hethong"'+(!isNew&&u.he_thong?" checked":"")+' '+CB+'><span>Đơn vị hệ thống (ngoài 12 đơn vị chính thức)</span></label>'+
+          '</div>'+
+          '<div class="field"><label>Ghi chú</label><input class="inp" id="dv_ghichu" style="width:100%" value="'+esc(isNew?"":(u.ghi_chu||""))+'"></div>'+
+          (isNew ? '<div class="muted">Mã cố định sẽ được sinh tự động từ tên và không bao giờ thay đổi.</div>'
+                 : '<div class="muted">Mã cố định: <code>'+esc(u.ma)+'</code> — không thay đổi. '+
+                   'Đổi tên ở đây sẽ đề nghị cập nhật các bản ghi cũ mang tên cũ.'+
+                   (u.ten_cu.length?'<br>Tên cũ đã ghi nhận: '+esc(u.ten_cu.join(", ")):'')+'</div>')+
+        '</div>'+
+        '<div class="modal-f"><button class="btn btn-ghost" id="dvc">Huỷ</button><button class="btn btn-accent" id="dvs">Lưu</button></div></div>';
+      document.body.appendChild(bg);
+
+      var grid = bg.querySelector("#dv_pages");
+      grid.innerHTML = PG.map(function(p){
+        var on = !isNew && u.pages.indexOf(p.slug)>=0;
+        return '<label class="perm-item" style="align-items:flex-start"><input type="checkbox" value="'+esc(p.slug)+'"'+(on?" checked":"")+' '+CB+'>'+
+               '<span>'+esc(p.title)+'<br><span class="muted">'+esc(p.note)+(p.applied?"":" · chưa áp dụng")+'</span></span></label>';
+      }).join("");
+      if(!isNew) bg.querySelector("#dv_nhom").value = u.nhom;
+      bg.classList.add("open");
+      bg.querySelector("#dv_ten").focus();
+
+      function close(){ if(bg.parentNode) bg.parentNode.removeChild(bg); }
+      bg.querySelector("#dvx").addEventListener("click", close);
+      bg.querySelector("#dvc").addEventListener("click", close);
+      bg.addEventListener("click", function(e){ if(e.target===bg) close(); });
+
+      bg.querySelector("#dvs").addEventListener("click", function(){
+        var ten = bg.querySelector("#dv_ten").value.trim();
+        if(!ten){ alert("Vui lòng nhập tên đơn vị."); return; }
+        var trung = HSE_UNITS.resolve(ten);
+        if(trung && (isNew || trung.ma!==u.ma)){ alert('Tên "'+ten+'" đã trùng với đơn vị "'+trung.ten+'" trong danh mục.'); return; }
+
+        var pages = [];
+        Array.prototype.forEach.call(grid.querySelectorAll("input:checked"), function(c){ pages.push(c.value); });
+
+        var next = {
+          ma:       isNew ? HSE_UNITS.suggestMa(ten) : u.ma,
+          ten:      ten,
+          ten_cu:   isNew ? [] : u.ten_cu.slice(),
+          nhom:     bg.querySelector("#dv_nhom").value,
+          sort:     parseInt(bg.querySelector("#dv_sort").value,10) || 0,
+          active:   bg.querySelector("#dv_active").checked,
+          he_thong: bg.querySelector("#dv_hethong").checked,
+          pages:    pages,
+          ghi_chu:  bg.querySelector("#dv_ghichu").value.trim()
+        };
+
+        var tenCu = isNew ? "" : u.ten;
+        var doiTen = !isNew && HSE_UNITS.norm(tenCu) !== HSE_UNITS.norm(ten);
+        // Ghi nhận bí danh: dù có cập nhật được bản ghi cũ hay không, hệ thống
+        // vẫn tra ra đúng đơn vị từ tên cũ → báo cáo cũ không bị mồ côi.
+        if(doiTen && next.ten_cu.indexOf(tenCu)<0) next.ten_cu.push(tenCu);
+
+        HSE_UNITS.saveUnit(next).then(function(){
+          close(); draw();
+          showToast(isNew?"Đã thêm đơn vị.":"Đã lưu đơn vị.", "success");
+          if(doiTen) capNhatTenHangLoat(tenCu, ten);
+        }).catch(function(e){ alert("Không lưu được: "+(e&&e.message||e)); });
+      });
+    }
+
+    function nextSort(){
+      var a = HSE_UNITS.all({includeInactive:true});
+      var m = 0; a.forEach(function(u){ if(u.sort>m) m=u.sort; });
+      return m + 10;
+    }
+
+    /* ── Đổi tên hàng loạt trong dữ liệu cũ ── */
+    function capNhatTenHangLoat(tenCu, tenMoi){
+      showToast('Đang rà soát bản ghi cũ mang tên "'+tenCu+'"...', "info");
+      HSE_UNITS.renameScan(tenCu).then(function(scan){
+        if(scan.errors.length) console.warn("[DonVi] Không đọc được một số bảng khi rà soát:", scan.errors);
+        if(!scan.total){
+          showToast("Không có bản ghi cũ nào cần cập nhật.", "success");
+          return;
+        }
+        var chiTiet = scan.hits.map(function(h){ return "· "+h.target.label+": "+h.rows.length+" bản ghi"; }).join("\n");
+        var ok = confirm('Tìm thấy '+scan.total+' bản ghi đang mang tên cũ "'+tenCu+'":\n\n'+chiTiet+
+          '\n\nCập nhật tất cả sang "'+tenMoi+'"?\n\n'+
+          '(Bỏ qua cũng không sao: hệ thống vẫn hiểu đúng nhờ bí danh tên cũ, nhưng bản ghi sẽ vẫn hiển thị tên cũ.)');
+        if(!ok) return;
+        showToast("Đang cập nhật "+scan.total+" bản ghi...", "info");
+        HSE_UNITS.renameApply(scan, tenCu, tenMoi).then(function(res){
+          if(res.errors.length){
+            console.warn("[DonVi] Bản ghi cập nhật lỗi:", res.errors);
+            showToast("Đã cập nhật "+res.updated+"/"+scan.total+" bản ghi · "+res.errors.length+" bản ghi lỗi (xem Console).", "warning");
+          } else {
+            showToast("✅ Đã cập nhật "+res.updated+" bản ghi sang tên mới.", "success");
+          }
+        });
+      }).catch(function(e){
+        showToast("Không rà soát được dữ liệu cũ: "+(e&&e.message||e), "error");
+      });
+    }
+
+    /* ── Khối cấu hình mục "Khác" theo trang ── */
+    function drawOther(){
+      var cfg = HSE_UNITS.config(); if(!cfg.other) cfg.other = {};
+      otherBox.innerHTML =
+        '<div style="margin-top:24px;padding-top:18px;border-top:1px solid var(--border)">'+
+          '<h3 style="font-size:15px;font-weight:700;color:var(--brand);margin-bottom:6px">Cho phép nhập tên đơn vị tự do (mục "Khác")</h3>'+
+          '<p class="muted" style="margin:0 0 12px;line-height:1.6;max-width:680px">Bật để người dùng chọn "Khác" rồi tự gõ tên — '+
+            'tiện khi phối hợp với đơn vị ngoài Xí nghiệp. Tắt thì chỉ chọn được các đơn vị trong danh mục, dữ liệu sạch hơn.</p>'+
+          '<div class="perm-grid" id="dv-other-grid" style="max-height:none;grid-template-columns:1fr 1fr"></div>'+
+        '</div>';
+      var g = otherBox.querySelector("#dv-other-grid");
+      g.innerHTML = PG.map(function(p){
+        return '<label class="perm-item"><input type="checkbox" data-slug="'+esc(p.slug)+'"'+(cfg.other[p.slug]?" checked":"")+' '+CB+'>'+
+               '<span>'+esc(p.title)+(p.applied?"":' <span class="muted">(chưa áp dụng)</span>')+'</span></label>';
+      }).join("");
+      Array.prototype.forEach.call(g.querySelectorAll("input"), function(c){
+        c.addEventListener("change", function(){
+          var next = HSE_UNITS.config(); if(!next.other) next.other = {};
+          next.other[c.getAttribute("data-slug")] = c.checked;
+          HSE_UNITS.saveConfig(next).then(function(){ showToast("Đã lưu cấu hình.", "success"); })
+            .catch(function(e){ showToast("Không lưu được: "+(e&&e.message||e), "error"); });
+        });
+      });
+    }
+
+    draw(); drawOther();
+    // Tải xong danh mục từ Supabase (hoặc admin ở máy khác vừa sửa) → vẽ lại
+    HSE_UNITS.onChange(function(){
+      if(!document.body.contains(tbl)) return;
+      draw(); drawOther();
+    });
+    HSE_UNITS.refresh();
   }
 
   function buildModal(){

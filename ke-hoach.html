@@ -269,7 +269,9 @@
 <div id="toast" style="position:fixed;bottom:24px;right:24px;background:var(--primary);color:#fff;padding:10px 18px;border-radius:8px;font-size:13px;font-weight:600;box-shadow:0 4px 16px rgba(0,0,0,0.2);z-index:999;display:none;transition:opacity .3s;"></div>
 
 <script type="module" src="assets/supabase-config.js"></script>
-<script src="assets/db.js?v=20260904"></script>
+<script src="assets/db.js?v=20260904b"></script>
+<!-- Danh mục Phòng/Ban/Đơn vị dùng chung (nạp SAU db.js) -->
+<script src="assets/don-vi.js?v=20260904b"></script>
 <script src="assets/hse-activity.js"></script>
 <script>
 /* ============================================================
@@ -443,27 +445,60 @@ function viewCompletion(id){
 function closeViewCompletionModal(){
   document.getElementById("viewCompletionModalBg").classList.remove("open");
 }
-var UNIT_LIST = [
-  "Cảng biển",
-  "Căn cứ Kho - Giao nhận",
-  "Xưởng sửa chữa",
-  "Đội xe VTHH&PTTBCD",
-  "Đội xe VCHK",
-  "Phòng Kỹ thuật - Vật tư",
-  "Khác"
-];
+/* =========================================================
+   ĐƠN VỊ — lấy từ DANH MỤC DÙNG CHUNG (assets/don-vi.js)
+   Trước đây danh sách này viết cứng ngay tại đây (UNIT_LIST). Nay do Admin
+   quản lý ở Quản trị hệ thống → Danh mục đơn vị. Trang chỉ hỏi:
+     · HSE_UNITS.list("ke-hoach")      → các đơn vị được gán cho trang này
+     · HSE_UNITS.allowOther("ke-hoach")→ có cho nhập tên tự do ("Khác") không
+   Bản ghi vẫn lưu TÊN đơn vị như cũ nên dữ liệu cũ đọc bình thường.
+   ========================================================= */
+function unitBase(){
+  return window.HSE_UNITS ? HSE_UNITS.list("ke-hoach") : [];
+}
+function unitAllowOther(){
+  return window.HSE_UNITS ? HSE_UNITS.allowOther("ke-hoach") : true;
+}
+function unitNorm(v){
+  return window.HSE_UNITS ? HSE_UNITS.norm(v) : String(v==null?"":v).trim().toLowerCase();
+}
+/* Giá trị đã lưu → tên hiện hành (đơn vị có thể đã được Admin đổi tên) */
+function unitCanon(v){
+  return window.HSE_UNITS ? HSE_UNITS.label(v) : String(v==null?"":v);
+}
+function unitInBase(v){
+  var k = unitNorm(v);
+  return unitBase().some(function(u){ return unitNorm(u)===k; });
+}
 
+/* Droplist 1 lựa chọn (Đơn vị chủ trì).
+   Giá trị lạ (không có trong danh mục):
+     · nếu trang cho phép "Khác" → hiện ô nhập tự do như trước;
+     · nếu không → vẫn giữ trong droplist kèm ghi chú "(không còn dùng)",
+       để mở bản ghi cũ ra sửa không làm mất dữ liệu. */
 function unitDropdown(id, val){
-  var isKhac = val && UNIT_LIST.slice(0,-1).indexOf(val) < 0 && val !== "";
-  var selVal = isKhac ? "Khác" : (val || "");
+  var base = unitBase();
+  var allowOther = unitAllowOther();
+  var cur = unitCanon(val || "");
+  var known = !!cur && unitInBase(cur);
+  var isKhac = !!cur && !known && allowOther;
+  var legacy = (!!cur && !known && !allowOther) ? cur : "";
+  var selVal = isKhac ? "Khác" : (known ? cur : legacy);
+
+  var items = base.slice();
+  if(legacy) items.push(legacy);
+  if(allowOther) items.push("Khác");
+
   var opts = '<option value="">-- Chọn đơn vị --</option>' +
-    UNIT_LIST.map(function(u){
-      return '<option value="'+esc(u)+'"'+(selVal===u?' selected':'')+'>'+esc(u)+'</option>';
+    items.map(function(u){
+      var lbl = (legacy && u===legacy) ? (u+" (không còn dùng)") : u;
+      return '<option value="'+esc(u)+'"'+(selVal===u?' selected':'')+'>'+esc(lbl)+'</option>';
     }).join("");
+
   return '<select class="inp" id="'+id+'Sel" onchange="toggleUnitInput(\''+id+'\')">'+opts+'</select>'+
     '<input class="inp" id="'+id+'Custom" placeholder="Nhập tên đơn vị..." '+
-      'style="margin-top:6px;display:'+(selVal==="Khác"?"block":"none")+'" '+
-      'value="'+(isKhac?esc(val):"")+'">';
+      'style="margin-top:6px;display:'+(isKhac?"block":"none")+'" '+
+      'value="'+(isKhac?esc(cur):"")+'">';
 }
 
 function toggleUnitInput(id){
@@ -486,23 +521,32 @@ function unitValue(id){
 
 /* --- Đơn vị phối hợp: checkbox nhiều lựa chọn --- */
 function unitMultiCheck(id, vals){
-  // vals: mảng string đã lưu
-  var arr = Array.isArray(vals) ? vals : (vals ? [vals] : []);
-  var hasKhac = arr.some(function(v){ return UNIT_LIST.slice(0,-1).indexOf(v) < 0 && v !== ""; });
-  var khacVal = hasKhac ? arr.filter(function(v){ return UNIT_LIST.slice(0,-1).indexOf(v) < 0 && v !== ""; }).join(", ") : "";
-  var khacChecked = hasKhac;
+  var arr = (Array.isArray(vals) ? vals : (vals ? [vals] : []))
+              .filter(Boolean).map(unitCanon);
+  var base = unitBase();
+  var allowOther = unitAllowOther();
+  var ngoai = arr.filter(function(v){ return !unitInBase(v); });  // ngoài danh mục
+
+  var items = base.slice();
+  var legacy = [];
+  if(!allowOther && ngoai.length){ legacy = ngoai; items = items.concat(ngoai); }
+  if(allowOther) items.push("Khác");
+
+  var khacChecked = allowOther && ngoai.length > 0;
+  var khacVal = khacChecked ? ngoai.join(", ") : "";
+
   var html = '<div style="border:1.5px solid var(--border);border-radius:8px;padding:8px 10px;background:#f8f9fd;display:flex;flex-direction:column;gap:4px;">';
-  UNIT_LIST.forEach(function(u){
-    var checked;
-    if(u === "Khác") checked = khacChecked;
-    else checked = arr.indexOf(u) >= 0;
+  items.forEach(function(u){
+    var checked = (u === "Khác") ? khacChecked
+                 : arr.some(function(v){ return unitNorm(v)===unitNorm(u); });
+    var lbl = (legacy.indexOf(u)>=0) ? (u+" (không còn dùng)") : u;
     html += '<label style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:3px 4px;border-radius:5px;" '+
               'onmouseover="this.style.background=\'#dceaf7\'" onmouseout="this.style.background=\'transparent\'">' +
               '<input type="checkbox" name="'+id+'_chk" value="'+esc(u)+'" '+
                 (checked ? 'checked' : '')+
                 (u==="Khác" ? ' onchange="toggleMultiKhac(\''+id+'\')"' : '')+
                 ' style="accent-color:var(--primary);width:14px;height:14px;cursor:pointer;">'+
-              '<span style="font-size:13px">'+esc(u)+'</span>'+
+              '<span style="font-size:13px">'+esc(lbl)+'</span>'+
             '</label>';
   });
   html += '<input class="inp" id="'+id+'KhacVal" placeholder="Nhập tên đơn vị khác..." '+
@@ -1038,6 +1082,15 @@ if(typeof DB!=="undefined"){
 }
 buildTopbar();
 renderPlan();
+
+/* Danh mục đơn vị tải xong từ Supabase (hoặc Admin vừa sửa) → vẽ lại droplist.
+   Trước đó droplist đã hiện ngay nhờ cache/seed trong assets/don-vi.js. */
+if(window.HSE_UNITS){
+  HSE_UNITS.onChange(function(){
+    if(_ie) return;   // đang nhập dở một dòng → không vẽ lại kẻo mất nội dung
+    renderPlan();
+  });
+}
 
 // Đồng bộ quyền thật từ Supabase (async) → vẽ lại UI khi có kết quả
 hydrateCurrentUser();

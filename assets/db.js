@@ -22,7 +22,7 @@ var DB = (function () {
   var _autoSyncTimer = null;
 
   /* ─── Bảng không dùng cột "id" làm khoá chính ─── */
-  var PK = { hl_settings: "loai", app_settings: "key", svodka_matkhau: "tacvu_id" };
+  var PK = { hl_settings: "loai", app_settings: "key", svodka_matkhau: "tacvu_id", don_vi: "ma" };
   function pkOf(t) { return PK[t] || "id"; }
 
   /* =========================================================
@@ -76,7 +76,10 @@ var DB = (function () {
     pccc_locked_months: "HTBCTD_ThangDaKhoa",
     // Kho key-value, hiện chỉ phục vụ tab Tra cứu ATVSLĐ.
     // Khoá chính là cột "key" (xem PK ở trên) — tra theo tên logic nên không đổi.
-    app_settings:       "TraCuuATVSLD"
+    app_settings:       "TraCuuATVSLD",
+    // Danh mục Phòng/Ban/Đơn vị dùng chung — khoá chính là "ma" (xem PK ở trên).
+    // Nguồn: supabase/don_vi.sql · truy cập qua assets/don-vi.js (HSE_UNITS).
+    don_vi:             "DonVi"
     // ⚠️ 15 bảng của trang Cấp phát BHLĐ (nhanvien, danh_muc, phieu_requests...)
     //    KHÔNG nằm ở đây. Trang đó không dùng db.js — nó có bảng ánh xạ riêng
     //    trong assets/bhld-sync.js. Đừng sao chép qua lại, sẽ lệch nhau.
