@@ -85,8 +85,17 @@
       .then(function(res){
         if(res.error||!res.data) return null;
         var u=_profileToUser(res.data);
-        var arr=getUsers(); var i=arr.findIndex(function(x){return String(x.id)===String(u.id);});
-        if(i>=0) arr[i]=u; else arr.push(u); setUsers(arr);
+        // Loại MỌI mục trùng: theo id HOẶC theo username (bỏ qua hoa/thường).
+        // Chỉ so theo id là chưa đủ — mục cũ cùng username nhưng khác id sẽ ở
+        // lại đầu mảng, và findUser() tra theo username lấy đúng mục cũ đó,
+        // khiến người đã được cấp quyền vẫn bị coi là chỉ xem.
+        var arr=getUsers();
+        var _un=String(u.username||"").trim().toLowerCase();
+        arr=arr.filter(function(x){
+          return String(x.id)!==String(u.id) &&
+                 String(x.username||"").trim().toLowerCase()!==_un;
+        });
+        arr.push(u); setUsers(arr);
         save(K_SESS, u.username);
         return u;
       });
