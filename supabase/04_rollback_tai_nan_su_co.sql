@@ -16,7 +16,8 @@ commit;
 
 notify pgrst, 'reload schema';
 
-/* Sau đó khôi phục code:
+/* Sau đó khôi phục code về commit trước khi đổi tên:
      cd ~/Documents/GitHub/hse-webapp
-     cp assets/db.js.bak_truoc_doi_ten_tnsc assets/db.js
+     git log --oneline -- assets/db.js     # tìm commit trước khi đổi tên
+     git checkout <commit> -- assets/db.js
 */

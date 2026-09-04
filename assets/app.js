@@ -15,7 +15,10 @@
   var MENU = [
     { slug:"tong-quan",          title:"Tổng quan",                   icon:"📊", licon:"layout-dashboard", group:"theo-doi", sub:["Số giờ làm việc an toàn","Tai nạn, sự cố gần nhất"] },
     { slug:"tai-nan-su-co",      title:"Tai nạn - Sự cố",             icon:"⚠️", licon:"triangle-alert",   group:"theo-doi", sub:["Giờ công lao động an toàn","Ghi nhận tai nạn - sự cố"] },
-    { slug:"sop",                title:"SOP",                         icon:"📑", licon:"file-text",        group:"theo-doi", sub:[], adminEditOnly:true },
+    { slug:"sop",                title:"SOP",                         icon:"📑", licon:"file-text",        group:"theo-doi", sub:[], adminEditOnly:true,
+      // title  = nhãn ngắn cho ô trang chủ, menu và danh sách phân quyền
+      // pageTitle = tên đầy đủ, chỉ dùng cho tiêu đề lớn trên đầu trang
+      pageTitle:"Quy trình vận hành tiêu chuẩn (SOP)" },
     { slug:"kiem-tra-cac-cap",   title:"Kiểm tra các cấp",            icon:"🔍", licon:"list-checks",      group:"theo-doi", sub:["Số lượng kiểm tra các cấp","Ghi nhận các lỗi vào hệ thống","Ghi nhận hành động khắc phục, thời hạn"] },
     { slug:"quan-ly-thiet-bi",   title:"Quản lý thiết bị",            icon:"⚙️", licon:"wrench",           group:"theo-doi", sub:["Thiết bị nâng","Bình áp lực"] },
     { slug:"kham-suc-khoe",      title:"Khám sức khoẻ nghề nghiệp",   icon:"🩺", licon:"stethoscope",      group:"theo-doi", sub:["Theo dõi khám sức khoẻ nghề nghiệp","Theo dõi khám bệnh nghề nghiệp"] },
@@ -755,7 +758,7 @@
     }
 
     wrap.appendChild(el("div","",
-      '<div class="page-title" style="display:flex;align-items:center;gap:9px">'+(m.licon?lic(m.licon,22):"")+esc(m.title)+'</div>'+
+      '<div class="page-title" style="display:flex;align-items:center;gap:9px">'+(m.licon?lic(m.licon,22):"")+esc(m.pageTitle||m.title)+'</div>'+
       '<div class="page-desc">'+descText+'</div>'));
 
     // Widget kế hoạch tháng này
@@ -1879,7 +1882,7 @@
       ? 'Bạn có quyền thêm, chỉnh sửa và xoá tài liệu SOP.'
       : 'Bạn chỉ có quyền xem danh sách tài liệu SOP.';
     container.appendChild(el("div","",
-      '<div class="page-title"><svg class="lic-emoji" width="1.05em" height="1.05em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex-shrink:0" aria-hidden="true"><path d="M6 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.704.706l3.588 3.588A2.4 2.4 0 0 1 20 8v12a2 2 0 0 1-2 2z"/><path d="M14 2v5a1 1 0 0 0 1 1h5"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/></svg> SOP</div>'+
+      '<div class="page-title"><svg class="lic-emoji" width="1.05em" height="1.05em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex-shrink:0" aria-hidden="true"><path d="M6 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.704.706l3.588 3.588A2.4 2.4 0 0 1 20 8v12a2 2 0 0 1-2 2z"/><path d="M14 2v5a1 1 0 0 0 1 1h5"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/></svg> '+esc((menuBySlug("sop")||{}).pageTitle||"SOP")+'</div>'+
       '<div class="page-desc">'+esc(descText)+'</div>'));
 
     // ── Toolbar: tìm kiếm + lọc đơn vị + nút thêm (admin) ──

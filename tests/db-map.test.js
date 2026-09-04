@@ -101,6 +101,22 @@ check('update(tnsc_su_kien) → không thêm điều kiện lọc thừa', last(
 calls=[]; await DB.delete('tnsc_gio_cong','abc');
 check('delete(tnsc_gio_cong) → chỉ khoá theo id', last().filters.length===0 && last().eq.some(e=>e[0]==='id'), last());
 
+console.log('\n── SOP (đổi tên hoa/thường) ──');
+calls=[]; await DB.getAll('sop');
+check('getAll(sop) → bảng "SOP" viết hoa', last().table==='SOP', last().table);
+check('getAll(sop) → không lọc', last().filters.length===0, last().filters);
+
+calls=[]; await DB.bulkWrite('sop', [{id:'s1',ma:'QT-01'},{id:'s2',ma:'QT-02'}]);
+const upS = calls.find(c=>c.ops.includes('upsert'));
+const delS = calls.find(c=>c.ops.includes('delete'));
+check('bulkWrite(sop) → upsert vào "SOP"', upS && upS.table==='SOP', upS && upS.table);
+check('bulkWrite(sop) → xoá KHÔNG bị giới hạn thừa', delS && delS.filters.length===0, delS && delS.filters);
+check('bulkWrite(sop) → vẫn giữ not-in id', delS && delS.not && delS.not[1]==='in', delS && delS.not);
+
+// Đây là lỗi đã sửa: testConnection từng hardcode from("sop"), bỏ qua lớp ánh xạ
+calls=[]; await DB.testConnection();
+check('testConnection() → dùng "SOP" chứ không phải sop', last().table==='SOP', last().table);
+
 console.log('\n── Không ảnh hưởng bảng khác ──');
 calls=[]; await DB.update('hl_settings','huanluyen',{ warn_days:30 });
 check('hl_settings vẫn dùng PK "loai" làm khoá', last().eq.some(e=>e[0]==='loai'&&e[1]==='huanluyen'), last().eq);

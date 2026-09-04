@@ -51,7 +51,9 @@ var DB = (function () {
     // Trang Tai nạn - Sự cố: chỉ đổi tên, vẫn là 2 bảng riêng biệt.
     // Tên có dấu gạch ngang -> trong SQL luôn phải đặt nháy kép.
     tnsc_gio_cong:    "TaiNan-SuCo_GioCong",
-    tnsc_su_kien:     "TaiNan-SuCo_SuKien"
+    tnsc_su_kien:     "TaiNan-SuCo_SuKien",
+    // Trang SOP: đổi tên thành chữ hoa. Với Postgres "SOP" khác sop.
+    sop:              "SOP"
   };
 
   function _map(sheet) {
@@ -273,7 +275,7 @@ var DB = (function () {
   /* ─── Kiểm tra kết nối ─── */
   function testConnection() {
     return _ready().then(function (sb) {
-      return sb.from("sop").select("id", { count: "exact", head: true });
+      return sb.from(tbl("sop")).select("id", { count: "exact", head: true });
     }).then(function (res) {
       if (res.error) throw new Error(res.error.message);
       return { ok: true, count: res.count };

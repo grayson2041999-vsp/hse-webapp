@@ -23,10 +23,6 @@
     *{box-sizing:border-box;margin:0;padding:0;}
     body{font-family:'Segoe UI',Arial,sans-serif;background:var(--bg);color:var(--text);font-size:13.5px;}
     .layout{display:flex;min-height:100vh;}
-    .sidebar{width:230px;background:var(--primary);position:fixed;top:0;left:0;bottom:0;z-index:90;display:flex;flex-direction:column;overflow-y:auto;}
-    .nav-item{display:flex;align-items:center;gap:10px;padding:10px 18px;color:rgba(255,255,255,0.72);font-size:11px;letter-spacing:.5px;font-weight:600;border-left:3px solid transparent;transition:all .15s;text-decoration:none;}
-    .nav-item:hover{background:rgba(255,255,255,0.08);color:#fff;}
-    .nav-item.active{background:rgba(0,32,101,0.45);border-left-color:var(--accent);color:#fff;font-weight:600;}
     .main{margin-left:230px;padding:76px 28px 40px;}
     .topbar{background:linear-gradient(135deg,#003087 0%,#0060B6 100%);border-bottom:3px solid var(--accent);color:#fff;height:58px;display:flex;align-items:center;justify-content:space-between;padding:0 24px;position:fixed;top:0;left:230px;right:0;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,0.25);}
     .topbar-right{display:flex;align-items:center;gap:10px;}
@@ -118,7 +114,6 @@
 <script src="assets/hse-activity.js"></script>
 
 <div class="layout">
-  <nav class="sidebar" id="sidebarNav"></nav>
   <div style="flex:1;">
     <div class="topbar">
       <div>
@@ -290,32 +285,6 @@ function hydrateCurrentUser(){
 }
 
 // ── Sidebar ──
-(function buildSidebar(){
-  var LINKS=[
-    {href:"index.html#tong-quan",         icon:"📊", label:"Tổng quan"},
-    {href:"tai-nan-su-co.html",           icon:"⚠️", label:"Tai nạn - Sự cố"},
-    {href:"bao-chay-tu-dong.html",        icon:"🔔", label:"Báo cáo HTBCTĐ"},
-    {href:"cap-phat-bhld.html",           icon:"🦺", label:"Cấp phát BHLĐ"},
-    {href:"index.html#huan-luyen-dao-tao",icon:"🎓", label:"Huấn luyện - Đào tạo"},
-    {href:"index.html#sop",               icon:"📑", label:"SOP"},
-    {href:"kiem-tra-cac-cap.html",        icon:"🔍", label:"Kiểm tra các cấp"},
-    {href:"index.html#quan-ly-thiet-bi",  icon:"⚙️", label:"Quản lý thiết bị"},
-    {href:"kham-suc-khoe.html",           icon:"🩺", label:"Khám sức khoẻ nghề nghiệp"},
-    {href:"moi-truong.html",              icon:"🌿", label:"Xử lý chất thải", active:true},
-    {href:"index.html#quan-ly-nha-thau",  icon:"👷", label:"Quản lý nhà thầu"},
-    {href:"ke-hoach.html",                icon:"🗓️", label:"Kế hoạch"},
-    {href:"index.html#quan-tri-he-thong", icon:"🛡️", label:"Quản trị hệ thống", adminOnly:true},
-  ];
-  var u=currentUser();
-  var nav=document.getElementById("sidebarNav");
-  if(!nav)return;
-  var html='';
-  LINKS.forEach(function(l){
-    if(l.adminOnly && !isAdmin(u)) return;
-    html+='<a href="'+l.href+'" class="nav-item'+(l.active?' active':'')+'">'+esc(l.label.toUpperCase())+'</a>';
-  });
-  nav.innerHTML=html;
-})();
 
 // ── Topbar ──
 function buildTopbar(){

@@ -26,11 +26,7 @@
 
     /* ===== LAYOUT ===== */
     .layout{display:flex;min-height:100vh;}
-    .sidebar{width:230px;background:var(--primary);position:fixed;top:0;left:0;bottom:0;z-index:90;display:flex;flex-direction:column;overflow-y:auto;}
     .nav{flex:1;}
-    .nav-item{display:flex;align-items:center;gap:10px;padding:10px 18px;color:rgba(255,255,255,0.72);cursor:pointer;font-size:11px;letter-spacing:.5px;font-weight:600;border-left:3px solid transparent;transition:all 0.15s;text-decoration:none;}
-    .nav-item:hover{background:rgba(255,255,255,0.08);color:#fff;}
-    .nav-item.active{background:rgba(0,32,101,0.45);border-left-color:var(--accent);color:#fff;font-weight:600;}
     .main{margin-left:230px;padding:76px 28px 32px;min-height:100vh;}
 
     /* ===== TOPBAR ===== */
@@ -220,7 +216,6 @@
 
     /* ===== RESPONSIVE ===== */
     @media(max-width:768px){
-      .sidebar{transform:translateX(-100%);}
       .main{margin-left:0;padding:72px 14px 24px;}
       .topbar{left:0;}
       .form-row{grid-template-columns:1fr;}
@@ -236,7 +231,6 @@
 
 <div class="layout">
   <!-- SIDEBAR -->
-  <aside class="sidebar" id="sidebar"></aside>
 
   <!-- TOPBAR -->
   <header class="topbar">
@@ -282,22 +276,6 @@
    KẾ HOẠCH – Inline JS
    ============================================================ */
 
-var MENU = [
-  {slug:"tong-quan",          title:"Tổng quan",                   icon:"📊"},
-  {slug:"tai-nan-su-co",      title:"Tai nạn - Sự cố",             icon:"⚠️"},
-  {slug:"bao-chay-tu-dong",   title:"Báo cáo HTBCTĐ",              icon:"🔔"},
-  {slug:"cap-phat-bhld",      title:"Cấp phát BHLĐ",               icon:"🦺"},
-  {slug:"huan-luyen-dao-tao", title:"Huấn luyện - Đào tạo",        icon:"🎓"},
-  {slug:"sop",                title:"SOP",                         icon:"📑"},
-  {slug:"kiem-tra-cac-cap",   title:"Kiểm tra các cấp",            icon:"🔍"},
-  {slug:"quan-ly-thiet-bi",   title:"Quản lý thiết bị",            icon:"⚙️"},
-  {slug:"kham-suc-khoe",      title:"Khám sức khoẻ",               icon:"🩺"},
-  {slug:"moi-truong",         title:"Môi trường",                  icon:"🌿"},
-  {slug:"quan-ly-nha-thau",   title:"Quản lý nhà thầu",            icon:"👷"},
-  {slug:"ke-hoach",           title:"Kế hoạch",                    icon:"🗓️"},
-  {slug:"bao-cao",            title:"Báo cáo",                     icon:"📈"},
-  {slug:"quan-tri-he-thong",  title:"Quản trị hệ thống",           icon:"🛡️",adminOnly:true}
-];
 
 var K_USERS    = "hse_users";
 var K_SESS     = "hse_session";
@@ -337,18 +315,6 @@ function canEdit(u){
 }
 
 /* -------- SIDEBAR -------- */
-function buildSidebar(){
-  var u=currentUser();
-  var aside=document.getElementById("sidebar");
-  var html='<nav class="nav" style="padding-top:8px">';
-  MENU.forEach(function(m){
-    if(m.adminOnly&&(!u||u.role!=="admin"))return;
-    var active=m.slug==="ke-hoach"?" active":"";
-    html+='<a class="nav-item'+active+'" href="'+m.slug+'.html">'+m.title.toUpperCase()+'</a>';
-  });
-  html+='</nav>';
-  aside.innerHTML=html;
-}
 
 /* -------- TOPBAR -------- */
 function buildTopbar(){
@@ -1034,7 +1000,6 @@ function _cacheUserKH(u){
   return u;
 }
 function refreshRoleDependentUI(){
-  buildSidebar();
   buildTopbar();
   renderPlan();
 }
@@ -1062,7 +1027,6 @@ if(typeof DB!=="undefined"){
   var _u=currentUser();
   if(_u) DB.setUser(_u.username);
 }
-buildSidebar();
 buildTopbar();
 renderPlan();
 

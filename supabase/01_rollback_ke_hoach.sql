@@ -60,6 +60,7 @@ drop table if exists public."KeHoach";
 
 notify pgrst, 'reload schema';
 
-/* Sau đó khôi phục assets/db.js:
-     cp assets/db.js.bak_truoc_gop_kehoach assets/db.js
-   (hoặc: git checkout -- assets/db.js) */
+/* Sau đó khôi phục code về commit trước khi gộp:
+     cd ~/Documents/GitHub/hse-webapp
+     git log --oneline -- assets/db.js     # tìm commit trước khi gộp
+     git checkout <commit> -- assets/db.js */
