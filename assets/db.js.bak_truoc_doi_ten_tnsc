@@ -47,11 +47,7 @@ var DB = (function () {
     users:            "profiles",
     // Hai loại kế hoạch dùng chung bảng "KeHoach", phân biệt bằng cột loai.
     ke_hoach_mot_lan: { table: "KeHoach", filter: { loai: "mot_lan" } },
-    ke_hoach_lap_lai: { table: "KeHoach", filter: { loai: "lap_lai" } },
-    // Trang Tai nạn - Sự cố: chỉ đổi tên, vẫn là 2 bảng riêng biệt.
-    // Tên có dấu gạch ngang -> trong SQL luôn phải đặt nháy kép.
-    tnsc_gio_cong:    "TaiNan-SuCo_GioCong",
-    tnsc_su_kien:     "TaiNan-SuCo_SuKien"
+    ke_hoach_lap_lai: { table: "KeHoach", filter: { loai: "lap_lai" } }
   };
 
   function _map(sheet) {

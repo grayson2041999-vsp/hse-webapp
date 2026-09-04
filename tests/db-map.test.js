@@ -83,6 +83,24 @@ check('bulkWrite → mọi dòng đều có loai', up && up.payload.every(r=>r.l
 check('bulkWrite → XOÁ bị giới hạn trong loai=mot_lan', del && hasFilter(del,{loai:'mot_lan'}), del && del.filters);
 check('bulkWrite → vẫn giữ điều kiện not-in id', del && del.not && del.not[1]==='in', del && del.not);
 
+console.log('\n── Tai nạn - Sự cố (chỉ đổi tên) ──');
+calls=[]; await DB.getAll('tnsc_gio_cong');
+check('getAll(tnsc_gio_cong) → "TaiNan-SuCo_GioCong"', last().table==='TaiNan-SuCo_GioCong', last().table);
+check('getAll(tnsc_gio_cong) → KHÔNG lọc (2 bảng riêng)', last().filters.length===0, last().filters);
+
+calls=[]; await DB.getAll('tnsc_su_kien');
+check('getAll(tnsc_su_kien) → "TaiNan-SuCo_SuKien"', last().table==='TaiNan-SuCo_SuKien', last().table);
+
+calls=[]; await DB.insert('tnsc_su_kien', { ten:'thu', loai:'tai_nan_lao_dong' });
+check('insert(tnsc_su_kien) → đúng bảng', last().table==='TaiNan-SuCo_SuKien', last().table);
+check('insert → cột loai sẵn có KHÔNG bị ghi đè', last().payload.loai==='tai_nan_lao_dong', last().payload);
+
+calls=[]; await DB.update('tnsc_su_kien','id9',{ ten:'sua' });
+check('update(tnsc_su_kien) → không thêm điều kiện lọc thừa', last().filters.length===0, last().filters);
+
+calls=[]; await DB.delete('tnsc_gio_cong','abc');
+check('delete(tnsc_gio_cong) → chỉ khoá theo id', last().filters.length===0 && last().eq.some(e=>e[0]==='id'), last());
+
 console.log('\n── Không ảnh hưởng bảng khác ──');
 calls=[]; await DB.update('hl_settings','huanluyen',{ warn_days:30 });
 check('hl_settings vẫn dùng PK "loai" làm khoá', last().eq.some(e=>e[0]==='loai'&&e[1]==='huanluyen'), last().eq);
