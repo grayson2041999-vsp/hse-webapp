@@ -377,7 +377,7 @@
         <button class="btn btn-outline" onclick="openExportNV()">⬇️ Xuất thông tin</button>
       </div>
       <div class="search-bar">
-        <input class="search-input" id="search-nv" type="text" placeholder="Tìm theo danh số, họ và tên, chức danh..." oninput="onSearchNV(this.value)" oncompositionend="onSearchNV(this.value)">
+        <input class="search-input" id="search-nv" type="search" name="tim-nv" autocomplete="off" placeholder="Tìm theo danh số, họ và tên, chức danh..." oninput="onSearchNV(this.value)" oncompositionend="onSearchNV(this.value)">
         <select id="filter-bp" onchange="onFilterBPChange()" style="display:none;"></select>
       </div>
       <div class="table-wrap">
@@ -439,7 +439,7 @@
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;gap:10px;flex-wrap:wrap;">
       <h3 style="margin:0;font-size:15px;font-weight:700;color:var(--primary);">Chức danh</h3>
       <div style="display:flex;gap:8px;">
-        <input class="search-input" id="search-dinhmuc" type="text" placeholder="Tìm chức danh..." oninput="renderDinhMuc()" style="min-width:200px;">
+        <input class="search-input" id="search-dinhmuc" type="search" name="tim-dinhmuc" autocomplete="off" placeholder="Tìm chức danh..." oninput="renderDinhMuc()" style="min-width:200px;">
         <button class="btn btn-primary btn-sm edit-only" id="btn-add-chucdanh" onclick="openModalChucDanh()" style="display:none;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px" aria-hidden="true"><path d="M5 12h14"/><path d="M12 5v14"/></svg>Thêm chức danh</button>
       </div>
     </div>
@@ -554,7 +554,7 @@
     <div class="card" style="margin-top:16px;">
       <div class="card-title" style="margin-bottom:14px;display:flex;align-items:center;gap:7px;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>Lịch sử phê duyệt <span id="daduyet-count" style="font-weight:400;font-size:13px;color:var(--text-light);"></span></div>
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">
-        <input type="text" id="daduyet-search" oninput="renderDaduyetList()" placeholder="Tìm theo tên nhân viên, đơn vị, quý, người duyệt..." style="flex:1;padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;font-family:inherit;">
+        <input type="search" name="tim-daduyet" autocomplete="off" id="daduyet-search" oninput="renderDaduyetList()" placeholder="Tìm theo tên nhân viên, đơn vị, quý, người duyệt..." style="flex:1;padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;font-family:inherit;">
         <button class="btn btn-sm" onclick="daduyetClearSearch()" style="white-space:nowrap;">Xoá lọc</button>
       </div>
       <div id="daduyet-list" style="max-height:600px;overflow-y:auto;"><div style="text-align:center;padding:20px;color:var(--text-light);">Đang tải...</div></div>

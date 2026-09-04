@@ -714,7 +714,7 @@
     tableCard.className = "hl-card";
     tableCard.innerHTML =
       '<div class="hl-card-h">' +
-        '<input type="text" class="hl-search" id="hl-search-' + key + '" placeholder="Tìm kiếm...">' +
+        '<input type="search" name="tim-hl" autocomplete="off" class="hl-search" id="hl-search-' + key + '" placeholder="Tìm kiếm...">' +
       '</div>' +
       '<div id="hl-dupwarn-' + key + '" class="hl-dupwarn" style="display:none"></div>' +
       (_canEdit && !_batchMode ? '<div class="hl-toolbar" style="padding:8px 18px;"><span class="hl-hint">✎ Bấm bút chì ở cột Thao tác để sửa dòng · ⣿ Kéo hàng để đổi thứ tự · ＋ Nhập vào dòng cuối rồi bấm ✓ (hoặc Enter) để thêm nhân sự (khi không tìm kiếm)</span></div>' : '') +

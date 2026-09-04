@@ -1888,7 +1888,7 @@
     // ── Toolbar: tìm kiếm + lọc đơn vị + nút thêm (admin) ──
     var bar = el("div","toolbar");
     bar.innerHTML =
-      '<input class="inp" id="sop-q" placeholder="Tìm theo mã hoặc tên SOP..." style="min-width:220px">'+
+      '<input class="inp" id="sop-q" type="search" name="tim-sop" autocomplete="off" placeholder="Tìm theo mã hoặc tên SOP..." style="min-width:220px">'+
       '<select class="inp" id="sop-filter-dv" style="min-width:180px">'+
         '<option value="">— Tất cả đơn vị —</option>'+
       '</select>'+
