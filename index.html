@@ -55,7 +55,18 @@
     }
 
     window.addEventListener("hashchange", route);
-    route();
+
+    // supabase-config.js là <script type="module"> nên trình duyệt HOÃN nó lại,
+    // chỉ chạy sau khi đọc xong HTML. Nếu route() chạy ngay tại đây thì các trang
+    // hỏi DB.isReady() sẽ thấy "chưa sẵn sàng" và BỎ QUA LUÔN việc tải dữ liệu
+    // (chúng chỉ hỏi một lần, không thử lại) → danh sách trống trên máy chưa có cache.
+    // DOMContentLoaded theo chuẩn luôn đợi module chạy xong, nên đợi nó là đủ.
+    // Cách này cũng khớp với 7 trang riêng lẻ vốn đã khởi động bằng DOMContentLoaded.
+    if (document.readyState === "loading") {
+      document.addEventListener("DOMContentLoaded", route, { once: true });
+    } else {
+      route();
+    }
   })();
   </script>
 </body>
