@@ -424,7 +424,12 @@ function _dbToast(ok, msg){
 function safePullDevices(){
   if(!DB||!DB.isReady()) return;
   DB.getAll("pccc_devices").then(function(r){
-    if(r&&r.length){ save(K_DEVICES,r); renderDevices(); populateSystemFilter(); }
+    // renderErrorLog() ĐỌC danh sách thiết bị: rỗng thì nó in "Chưa có hệ thống
+    // nào được tạo" rồi thoát. Ba hàm safePull* chạy song song, thứ tự về không
+    // đoán trước được — nếu nhánh lỗi hoặc nhánh tháng-đã-khoá về TRƯỚC nhánh
+    // này, thông báo sai đó đã bị in ra và không còn gì vẽ lại. Nên sau khi có
+    // thiết bị phải vẽ lại nhật ký lỗi, đừng chỉ vẽ bảng thiết bị.
+    if(r&&r.length){ save(K_DEVICES,r); renderDevices(); populateSystemFilter(); renderErrorLog(); }
   }).catch(function(){});
 }
 function safePullErrors(){
