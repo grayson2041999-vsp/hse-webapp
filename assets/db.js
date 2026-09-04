@@ -61,6 +61,9 @@ var DB = (function () {
     binh_ap_luc:      "ThietBi_BinhApLuc",
     kiem_tra_cap12:   "KiemTraCacCap_12",
     kiem_tra_cap34:   "KiemTraCacCap_34"
+    // ⚠️ 15 bảng của trang Cấp phát BHLĐ (nhanvien, danh_muc, phieu_requests...)
+    //    KHÔNG nằm ở đây. Trang đó không dùng db.js — nó có bảng ánh xạ riêng
+    //    trong assets/bhld-sync.js. Đừng sao chép qua lại, sẽ lệch nhau.
   };
 
   function _map(sheet) {

@@ -38,10 +38,27 @@ var BHLD = (function () {
      ⚠️  Kênh realtime dùng sai tên bảng thì KHÔNG BÁO LỖI, chỉ lặng lẽ
          không nhận được sự kiện nào. Đừng bao giờ viết cứng tên bảng.
 
-     Hiện chưa đổi tên bảng nào — bảng này đang để trống có chủ đích.
+     ⚠️  db.js có bảng ánh xạ RIÊNG của nó. 15 bảng dưới đây KHÔNG có
+         trong đó, vì trang Cấp phát BHLĐ không dùng db.js. Đừng sao chép
+         qua lại giữa hai file — mỗi file quản tên bảng mà nó thực sự gọi.
      ========================================================= */
   var TABLE_MAP = {
-    // ví dụ khi đổi tên:  nhanvien: "CapPhatBHLD_NhanVien",
+    nhanvien:            "CapPhatBHLD_NhanVien",
+    danh_muc:            "CapPhatBHLD_DanhMuc",
+    dinh_muc:            "CapPhatBHLD_DinhMuc",
+    chuc_danh:           "CapPhatBHLD_ChucDanh",
+    lich_su_nhap_xuat:   "CapPhatBHLD_LichSuNhapXuat",
+    cap_phat_tien_trinh: "CapPhatBHLD_TienTrinh",
+    nhom_nv:             "CapPhatBHLD_NhomNhanVien",
+    nhom_tb:             "CapPhatBHLD_NhomTrangBi",
+    notifications:       "CapPhatBHLD_ThongBao",
+    pending_changes:     "CapPhatBHLD_ChoDuyet",
+    phieu_requests:      "CapPhatBHLD_PhieuYeuCau",
+    quy_list:            "CapPhatBHLD_DanhSachQuy",
+    size_chart:          "CapPhatBHLD_BangSize",
+    ton_kho:             "CapPhatBHLD_TonKho",
+    test_baseline:       "CapPhatBHLD_Test"
+    // profiles KHÔNG đổi tên — gắn với Supabase Auth.
   };
   function tbl(sheet) { return TABLE_MAP[sheet] || sheet; }
 

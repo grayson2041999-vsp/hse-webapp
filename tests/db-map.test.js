@@ -50,8 +50,10 @@ check('getAll(mot_lan) → lọc loai=mot_lan', hasFilter(last(), {loai:'mot_lan
 calls=[]; await DB.getAll('ke_hoach_lap_lai');
 check('getAll(lap_lai) → lọc loai=lap_lai', hasFilter(last(), {loai:'lap_lai'}), last().filters);
 
-calls=[]; await DB.getAll('nhanvien');
-check('getAll(nhanvien) → không đổi, không lọc', last().table==='nhanvien' && last().filters.length===0, last());
+// Lưu ý: KHÔNG dùng nhanvien/danh_muc... làm ví dụ "bảng không đổi tên" nữa —
+// chúng đã được đổi tên trong bhld-sync.js (xem tests/bhld-map.test.js).
+calls=[]; await DB.getAll('app_settings');
+check('getAll(app_settings) → không đổi, không lọc', last().table==='app_settings' && last().filters.length===0, last());
 
 calls=[]; await DB.getAll('users');
 check('getAll(users) → profiles (ánh xạ cũ còn nguyên)', last().table==='profiles', last().table);
