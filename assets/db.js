@@ -73,7 +73,10 @@ var DB = (function () {
     // Báo cáo hệ thống báo cháy tự động.
     pccc_devices:       "HTBCTD_ThietBi",
     pccc_errors:        "HTBCTD_Loi",
-    pccc_locked_months: "HTBCTD_ThangDaKhoa"
+    pccc_locked_months: "HTBCTD_ThangDaKhoa",
+    // Kho key-value, hiện chỉ phục vụ tab Tra cứu ATVSLĐ.
+    // Khoá chính là cột "key" (xem PK ở trên) — tra theo tên logic nên không đổi.
+    app_settings:       "TraCuuATVSLD"
     // ⚠️ 15 bảng của trang Cấp phát BHLĐ (nhanvien, danh_muc, phieu_requests...)
     //    KHÔNG nằm ở đây. Trang đó không dùng db.js — nó có bảng ánh xạ riêng
     //    trong assets/bhld-sync.js. Đừng sao chép qua lại, sẽ lệch nhau.

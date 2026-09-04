@@ -50,10 +50,12 @@ check('getAll(mot_lan) → lọc loai=mot_lan', hasFilter(last(), {loai:'mot_lan
 calls=[]; await DB.getAll('ke_hoach_lap_lai');
 check('getAll(lap_lai) → lọc loai=lap_lai', hasFilter(last(), {loai:'lap_lai'}), last().filters);
 
-// Lưu ý: KHÔNG dùng nhanvien/danh_muc... làm ví dụ "bảng không đổi tên" nữa —
-// chúng đã được đổi tên trong bhld-sync.js (xem tests/bhld-map.test.js).
-calls=[]; await DB.getAll('app_settings');
-check('getAll(app_settings) → không đổi, không lọc', last().table==='app_settings' && last().filters.length===0, last());
+// Phép thử này kiểm tra HÀNH VI DỰ PHÒNG: sheet không có trong TABLE_MAP thì
+// tên được truyền thẳng qua. Cố ý dùng một tên hư cấu — mọi bảng thật đều có
+// thể bị đổi tên trong tương lai, và phép thử sẽ lại sai như đã xảy ra 2 lần.
+calls=[]; await DB.getAll('bang_hu_cau_khong_bao_gio_co');
+check('sheet lạ → truyền thẳng, không lọc',
+      last().table==='bang_hu_cau_khong_bao_gio_co' && last().filters.length===0, last());
 
 calls=[]; await DB.getAll('users');
 check('getAll(users) → profiles (ánh xạ cũ còn nguyên)', last().table==='profiles', last().table);
@@ -174,10 +176,11 @@ calls=[]; await DB.update('svodka_matkhau','tv1',{ password:'x' });
 check('svodka_matkhau → bảng "Svodka_MatKhau"', last().table==='Svodka_MatKhau', last().table);
 check('svodka_matkhau → vẫn khoá theo cột "tacvu_id"', last().eq.some(e=>e[0]==='tacvu_id'&&e[1]==='tv1'), last().eq);
 
+calls=[]; await DB.update('app_settings','notebooklm_atvsld',{ value:'x' });
+check('app_settings → bảng "TraCuuATVSLD"', last().table==='TraCuuATVSLD', last().table);
+check('app_settings → vẫn khoá theo cột "key"', last().eq.some(e=>e[0]==='key'), last().eq);
+
 console.log('\n── Các bảng cố ý KHÔNG đổi tên ──');
-calls=[]; await DB.update('app_settings','theme',{ v:1 });
-check('app_settings giữ nguyên tên', last().table==='app_settings', last().table);
-check('app_settings vẫn khoá theo cột "key"', last().eq.some(e=>e[0]==='key'), last().eq);
 
 calls=[]; await DB.getAll('users');
 check('users → profiles (gắn Auth, không đổi)', last().table==='profiles', last().table);
