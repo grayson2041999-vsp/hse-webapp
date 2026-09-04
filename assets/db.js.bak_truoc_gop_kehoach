@@ -25,52 +25,9 @@ var DB = (function () {
   var PK = { hl_settings: "loai", app_settings: "key", svodka_matkhau: "tacvu_id" };
   function pkOf(t) { return PK[t] || "id"; }
 
-  /* =========================================================
-     ÁNH XẠ "sheet" (tên logic dùng trong code) → bảng thật trên Postgres
-     ---------------------------------------------------------
-     Hai cách khai báo:
-       'sheet': 'ten_bang'                       → chỉ đổi tên bảng
-       'sheet': { table: 'TenBang',
-                  filter: { cot: 'giá trị' } }   → nhiều sheet chung 1 bảng
-
-     'filter' làm hai việc, luôn đi cùng nhau:
-       • ĐỌC — tự thêm điều kiện lọc vào mọi truy vấn select
-       • GHI — tự gắn thêm cột đó vào dữ liệu insert / update / bulkWrite
-     Nhờ vậy các trang nghiệp vụ (ke-hoach.html, app.js) và
-     hse-activity.js KHÔNG phải sửa một dòng nào.
-
-     ⚠️  Tên bảng có chữ hoa phải viết ĐÚNG CHỮ ở đây ("KeHoach"),
-         vì PostgREST so khớp phân biệt hoa thường.
-     ========================================================= */
-  var TABLE_MAP = {
-    // users được quản lý qua Supabase Auth + bảng profiles.
-    users:            "profiles",
-    // Hai loại kế hoạch dùng chung bảng "KeHoach", phân biệt bằng cột loai.
-    ke_hoach_mot_lan: { table: "KeHoach", filter: { loai: "mot_lan" } },
-    ke_hoach_lap_lai: { table: "KeHoach", filter: { loai: "lap_lai" } }
-  };
-
-  function _map(sheet) {
-    var m = TABLE_MAP[sheet];
-    if (!m) return { table: sheet, filter: null };
-    return (typeof m === "string") ? { table: m, filter: null } : m;
-  }
-  function tbl(sheet) { return _map(sheet).table; }
-  function filterOf(sheet) { return _map(sheet).filter || null; }
-
-  /** Giới hạn query trong đúng nhóm của sheet (select / update / delete) */
-  function _scope(q, sheet) {
-    var f = filterOf(sheet);
-    return f ? q.match(f) : q;
-  }
-  /** Gắn cột phân loại vào dữ liệu trước khi ghi lên server */
-  function _stamp(obj, sheet) {
-    var f = filterOf(sheet);
-    if (!f || !obj || typeof obj !== "object") return obj;
-    var o = Object.assign({}, obj);
-    for (var k in f) o[k] = f[k];
-    return o;
-  }
+  /* ─── Ánh xạ "sheet" cũ → bảng Postgres ─── */
+  //  users được quản lý qua Supabase Auth + bảng profiles.
+  function tbl(sheet) { return sheet === "users" ? "profiles" : sheet; }
 
   /* ─── Lấy supabase client (đợi supabase-config.js sẵn sàng) ─── */
   function _ready() {
@@ -111,7 +68,7 @@ var DB = (function () {
      ========================================================= */
   function getAll(sheet, where) {
     return _ready().then(function (sb) {
-      var q = _scope(sb.from(tbl(sheet)).select("*"), sheet);
+      var q = sb.from(tbl(sheet)).select("*");
       if (where && typeof where === "object") q = q.match(where);
       return q;
     }).then(function (res) {
@@ -123,7 +80,7 @@ var DB = (function () {
 
   function getById(sheet, id) {
     return _ready().then(function (sb) {
-      return _scope(sb.from(tbl(sheet)).select("*"), sheet).eq(pkOf(sheet), id).maybeSingle();
+      return sb.from(tbl(sheet)).select("*").eq(pkOf(sheet), id).maybeSingle();
     }).then(function (res) {
       if (res.error) throw new Error(res.error.message);
       if (!res.data) throw new Error("Không tìm thấy record id=" + id);
@@ -135,7 +92,7 @@ var DB = (function () {
      PUBLIC API — ghi
      ========================================================= */
   function insert(sheet, data) {
-    var obj = _stamp(Object.assign({}, data), sheet);
+    var obj = Object.assign({}, data);
     if (pkOf(sheet) === "id" && !obj.id) obj.id = genId();
     var id = obj[pkOf(sheet)];
     return _ready().then(function (sb) {
@@ -153,10 +110,10 @@ var DB = (function () {
   }
 
   function update(sheet, id, data) {
-    var patch = _stamp(Object.assign({}, data), sheet);
+    var patch = Object.assign({}, data);
     delete patch[pkOf(sheet)]; // không update khoá chính
     return _ready().then(function (sb) {
-      return _scope(sb.from(tbl(sheet)).update(patch).eq(pkOf(sheet), id), sheet).select().maybeSingle();
+      return sb.from(tbl(sheet)).update(patch).eq(pkOf(sheet), id).select().maybeSingle();
     }).then(function (res) {
       if (res.error) throw new Error(res.error.message);
       // Bản ghi chưa tồn tại trên server (vd: tạo lúc offline) -> chèn mới thay vì bỏ qua
@@ -179,7 +136,7 @@ var DB = (function () {
 
   function del(sheet, id) {
     return _ready().then(function (sb) {
-      return _scope(sb.from(tbl(sheet)).delete().eq(pkOf(sheet), id), sheet);
+      return sb.from(tbl(sheet)).delete().eq(pkOf(sheet), id);
     }).then(function (res) {
       if (res.error) throw new Error(res.error.message);
       if (_cache[sheet]) _cache[sheet] = _cache[sheet].filter(function (r) { return String(r[pkOf(sheet)]) !== String(id); });
@@ -194,7 +151,7 @@ var DB = (function () {
   /** Ghi đè TOÀN BỘ bảng: upsert các dòng mới + xoá dòng không còn (giữ ngữ nghĩa bulkWrite cũ) */
   function bulkWrite(sheet, rows) {
     rows = (rows || []).map(function (r) {
-      var o = _stamp(Object.assign({}, r), sheet);
+      var o = Object.assign({}, r);
       if (pkOf(sheet) === "id" && !o.id) o.id = genId();
       return o;
     });
@@ -209,11 +166,8 @@ var DB = (function () {
       return sb.from(tbl(sheet)).upsert(rows, { onConflict: pk }).select();
     }).then(function (res) {
       if (res.error) throw new Error(res.error.message);
-      // Xoá các dòng server không còn trong danh sách mới.
-      // ⚠️ _scope() giới hạn việc xoá trong ĐÚNG nhóm của sheet này.
-      //    Thiếu nó, lưu "ke_hoach_mot_lan" sẽ xoá sạch "ke_hoach_lap_lai"
-      //    vì hai sheet dùng chung bảng "KeHoach".
-      var delQ = _scope(sbRef.from(tbl(sheet)).delete(), sheet);
+      // Xoá các dòng server không còn trong danh sách mới
+      var delQ = sbRef.from(tbl(sheet)).delete();
       if (keepIds.length) delQ = delQ.not(pk, "in", "(" + keepIds.map(function (x) { return JSON.stringify(x); }).join(",") + ")");
       return delQ.then(function () { return res; });
     }).then(function () {
