@@ -121,7 +121,25 @@
   }
   function roleLabel(r){ return r==="admin"?"Admin":(r==="viewer"?"Viewer":"User"); }
   function roleColor(r){ return r==="admin"?"#C8102E":(r==="viewer"?"#6b7c93":"#1a7a3c"); }
-  window.__pnLogout = function(){ try{ localStorage.removeItem("hse_session"); }catch(e){} location.reload(); };
+  /* Đăng xuất.
+     portal-nav THAY hẳn khung phải của thanh tiêu đề, nên nút "Đăng xuất" gốc
+     của từng trang bị xoá và mọi lần bấm đều rơi vào đây. Bản cũ chỉ xoá
+     hse_session trong localStorage mà KHÔNG gọi sb.auth.signOut(), nên phiên
+     Supabase vẫn còn: tải lại trang, hydrateCurrentUser() thấy phiên hợp lệ,
+     lấy lại hồ sơ rồi ghi hse_session trở lại → bấm Đăng xuất mà vẫn đăng nhập.
+     Nay ưu tiên gọi doLogout() của chính trang (cả 6 trang standalone đều có
+     và đều gọi signOut đúng); không có thì tự làm đủ các bước. */
+  window.__pnLogout = function(){
+    if (typeof window.doLogout === "function") { window.doLogout(); return; }
+    try{ localStorage.removeItem("hse_session"); }catch(e){}
+    var sb = window.HSE_SB;
+    if (sb && sb.auth && typeof sb.auth.signOut === "function") {
+      sb.auth.signOut().then(function(){ location.reload(); })
+                       .catch(function(){ location.reload(); });
+    } else {
+      location.reload();
+    }
+  };
 
   function run(){
     /* 1) Nút quay về trang chủ — chỉ chèn nếu trang chưa có link về trang chủ */
