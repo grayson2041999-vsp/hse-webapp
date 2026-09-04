@@ -1215,7 +1215,7 @@ function hydrateCurrentUser(){
     return sb.auth.getSession().then(function(r){
       var sess=r&&r.data&&r.data.session;
       if(!sess||!sess.user){ localStorage.removeItem('hse_session'); refreshRoleDependentUI(); return null; }
-      return sb.from('profiles').select('*').eq('id',sess.user.id).maybeSingle().then(function(res){
+      return sb.from(BHLD.tbl('profiles')).select('*').eq('id',sess.user.id).maybeSingle().then(function(res){
         if(res.error||!res.data){ console.warn('[BHLD] Không đọc được profiles:',res.error&&res.error.message); return null; }
         var u=_cacheUserCPW(_profileToUserCPW(res.data));
         refreshRoleDependentUI();
@@ -1558,7 +1558,7 @@ function cpOpenSizeChart(){
   // Tải lại từ server mỗi lần mở tab (để user/viewer thấy ngay dữ liệu admin đã thêm)
   try{
     if(window.HSE_SB){
-      window.HSE_SB.from('size_chart').select('*').then(function(res){
+      window.HSE_SB.from(BHLD.tbl('size_chart')).select('*').then(function(res){
         if(!res.error&&Array.isArray(res.data)){ BHLD.lsSet('size_chart',res.data); scRender(); }
       });
     }
@@ -5475,14 +5475,14 @@ function cpwLoad(dv,q){
   var key=_cpwKey(dv,q);
   var def={id:key,donVi:dv,quyStr:q,daInDanhSach:false,b1TrangThai:'chua',b3TrangThai:'chua',hoanTatAt:null};
   var sb=_cpwSB();if(!sb)return Promise.resolve(def);
-  return sb.from('cap_phat_tien_trinh').select('*').eq('id',key).maybeSingle().then(function(r){
+  return sb.from(BHLD.tbl('cap_phat_tien_trinh')).select('*').eq('id',key).maybeSingle().then(function(r){
     if(r.error||!r.data)return def;return Object.assign(def,r.data);
   }).catch(function(){return def;});
 }
 function cpwSave(patch){
   Object.assign(_cpwState,patch,{updatedAt:new Date().toISOString(),createdBy:(typeof _getCurrentUsername==='function'?_getCurrentUsername():'')});
   var sb=_cpwSB();if(!sb)return Promise.resolve();
-  return sb.from('cap_phat_tien_trinh').upsert(Object.assign({},_cpwState),{onConflict:'id'}).then(function(){}).catch(function(e){showToast('⚠️ Lưu tiến trình lỗi: '+(e&&e.message||e),'error');});
+  return sb.from(BHLD.tbl('cap_phat_tien_trinh')).upsert(Object.assign({},_cpwState),{onConflict:'id'}).then(function(){}).catch(function(e){showToast('⚠️ Lưu tiến trình lỗi: '+(e&&e.message||e),'error');});
 }
 var _CPW_BADGE={dang_lam:['#dceaf7','#003087','Đang thực hiện','hour'],cho_duyet:['#fef5e4','#9a6700','Chờ Admin duyệt','hour'],dat:['#eafaf1','#1a7a3c','Đã xong','check'],khoa:['#f2f3f4','#888','Đang khoá','lock'],chua:['#f2f3f4','#666','Chưa làm','clip'],tra_ve:['#fdedec','#c0392b','Bị trả về','x'],san_sang:['#dceaf7','#003087','Sẵn sàng','right'],xong:['#eafaf1','#1a7a3c','Hoàn tất','check']};
 function _cpwBadge(s){var b=_CPW_BADGE[s]||_CPW_BADGE.chua;return '<span style="display:inline-flex;align-items:center;gap:4px;background:'+b[0]+';color:'+b[1]+';font-size:12px;font-weight:700;border-radius:20px;padding:3px 12px;">'+_ic(b[3],13)+b[2]+'</span>';}
@@ -6102,7 +6102,7 @@ function _cpwClearPhieuDataForTest(testNv){
 // ── Mặc định ban đầu cho chế độ Test (đồng bộ Supabase, bảng test_baseline) ──
 function _cpwTestBaselineLoad(){
   var sb=window.HSE_SB; if(!sb)return Promise.resolve(null);
-  return sb.from('test_baseline').select('*').eq('id','Test').maybeSingle().then(function(r){
+  return sb.from(BHLD.tbl('test_baseline')).select('*').eq('id','Test').maybeSingle().then(function(r){
     if(r.error||!r.data)return null;
     try{ var arr=JSON.parse(r.data.data||'[]'); return Array.isArray(arr)?arr:null; }catch(e){ return null; }
   }).catch(function(){ return null; });
@@ -6116,7 +6116,7 @@ function cpwSaveTestBaseline(){
   if(!confirm('Lưu '+testNv.length+' nhân viên Test hiện tại làm MẶC ĐỊNH BAN ĐẦU?\n\nLần sau bấm "Trả về mặc định ban đầu" sẽ khôi phục đúng danh sách + thông tin này. Bản mặc định cũ (nếu có) sẽ bị thay thế.'))return;
   var snapshot=testNv.map(function(n){return Object.assign({},n);});
   var row={id:'Test',data:JSON.stringify(snapshot),updatedBy:(typeof _getCurrentUserLabel==='function'?_getCurrentUserLabel():''),updatedAt:new Date().toISOString()};
-  sb.from('test_baseline').upsert(row,{onConflict:'id'}).then(function(res){
+  sb.from(BHLD.tbl('test_baseline')).upsert(row,{onConflict:'id'}).then(function(res){
     if(res.error)throw new Error(res.error.message);
     showToast('✅ Đã lưu mặc định ban đầu ('+snapshot.length+' nhân viên) cho chế độ Test.');
   }).catch(function(e){
@@ -6136,7 +6136,7 @@ function cpwResetTest(){
     var testNv=daNhanVien.filter(function(n){return n.boPhan==='Test';});
     _cpwClearPhieuDataForTest(testNv);
     var sb=window.HSE_SB;
-    if(sb)jobs.push(sb.from('cap_phat_tien_trinh').delete().eq('donVi','Test'));
+    if(sb)jobs.push(sb.from(BHLD.tbl('cap_phat_tien_trinh')).delete().eq('donVi','Test'));
     var finish=function(msg){
       Promise.all(jobs.map(function(j){return Promise.resolve(j).catch(function(){});})).then(function(){
         _cpwState=null;
@@ -6176,12 +6176,12 @@ function _cpwSetupRealtime(){
   var sb=window.HSE_SB; if(!sb||_cpwRtChannel)return;
   try{
     _cpwRtChannel=sb.channel('cap-phat-rt')
-      .on('postgres_changes',{event:'*',schema:'public',table:'nhanvien'},function(p){_cpwOnRealtime('nhanvien',p);})
-      .on('postgres_changes',{event:'*',schema:'public',table:'phieu_requests'},function(p){_cpwOnRealtime('phieu_requests',p);})
-      .on('postgres_changes',{event:'*',schema:'public',table:'pending_changes'},function(p){_cpwOnRealtime('pending_changes',p);})
-      .on('postgres_changes',{event:'*',schema:'public',table:'notifications'},function(p){_cpwOnRealtime('notifications',p);})
-      .on('postgres_changes',{event:'*',schema:'public',table:'nhom_nv'},function(p){_cpwOnRealtime('nhom_nv',p);})
-      .on('postgres_changes',{event:'*',schema:'public',table:'cap_phat_tien_trinh'},function(p){_cpwOnRealtime('cap_phat_tien_trinh',p);})
+      .on('postgres_changes',{event:'*',schema:'public',table:BHLD.tbl('nhanvien')},function(p){_cpwOnRealtime('nhanvien',p);})
+      .on('postgres_changes',{event:'*',schema:'public',table:BHLD.tbl('phieu_requests')},function(p){_cpwOnRealtime('phieu_requests',p);})
+      .on('postgres_changes',{event:'*',schema:'public',table:BHLD.tbl('pending_changes')},function(p){_cpwOnRealtime('pending_changes',p);})
+      .on('postgres_changes',{event:'*',schema:'public',table:BHLD.tbl('notifications')},function(p){_cpwOnRealtime('notifications',p);})
+      .on('postgres_changes',{event:'*',schema:'public',table:BHLD.tbl('nhom_nv')},function(p){_cpwOnRealtime('nhom_nv',p);})
+      .on('postgres_changes',{event:'*',schema:'public',table:BHLD.tbl('cap_phat_tien_trinh')},function(p){_cpwOnRealtime('cap_phat_tien_trinh',p);})
       .subscribe();
   }catch(e){ console.warn('[Realtime] setup lỗi:',e&&e.message||e); }
 }
@@ -6278,7 +6278,7 @@ function _rtRefreshNhanVien(){
   var sb=window.HSE_SB; if(!sb)return;
   function _do(){
     try{
-      sb.from('nhanvien').select('*').then(function(res){
+      sb.from(BHLD.tbl('nhanvien')).select('*').then(function(res){
         if(res&&!res.error&&Array.isArray(res.data)){ BHLD.lsSet('nhanvien',res.data); if(typeof _rtReloadNhanVien==='function')_rtReloadNhanVien(); }
       });
     }catch(e){ console.warn('[Realtime] refresh nhanvien lỗi:',e&&e.message||e); }

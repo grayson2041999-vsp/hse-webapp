@@ -27,6 +27,24 @@ var BHLD = (function () {
   // 'donVi' (ĐVT) của danh_muc được suy ra từ nhóm ở client, bảng server không có cột này.
   // LƯU Ý: 'donVi' của danh_muc NAY đã đồng bộ (cột "donVi" trên bảng danh_muc) — không strip nữa.
   //        → Cần chạy supabase/danh_muc_add_donvi.sql để tạo cột trước khi dùng.
+  /* =========================================================
+     ÁNH XẠ "sheet" (tên logic trong code) → bảng thật trên Postgres
+     ---------------------------------------------------------
+     Trang Cấp phát BHLĐ KHÔNG đi qua db.js, nên nó cần bảng ánh xạ
+     riêng của mình. Mọi chỗ chạm tên bảng — kể cả các lời gọi
+     sb.from() trực tiếp và 6 kênh realtime trong cap-phat-bhld.html —
+     đều phải đi qua hàm tbl() dưới đây (xuất ra ngoài thành BHLD.tbl).
+
+     ⚠️  Kênh realtime dùng sai tên bảng thì KHÔNG BÁO LỖI, chỉ lặng lẽ
+         không nhận được sự kiện nào. Đừng bao giờ viết cứng tên bảng.
+
+     Hiện chưa đổi tên bảng nào — bảng này đang để trống có chủ đích.
+     ========================================================= */
+  var TABLE_MAP = {
+    // ví dụ khi đổi tên:  nhanvien: "CapPhatBHLD_NhanVien",
+  };
+  function tbl(sheet) { return TABLE_MAP[sheet] || sheet; }
+
   var CLIENT_ONLY = { nhanvien: ['nhomId'] };
   function _stripClientOnly(sheet, obj) {
     var extra = CLIENT_ONLY[sheet];
@@ -77,7 +95,7 @@ var BHLD = (function () {
     var total = PULL_SHEETS.length, done = 0;
     return _ready().then(function (sb) {
       var promises = PULL_SHEETS.map(function (sheet) {
-        return sb.from(sheet).select('*').then(function (res) {
+        return sb.from(tbl(sheet)).select('*').then(function (res) {
           if (!res.error && Array.isArray(res.data)) lsSet(sheet, res.data);
           done++;
           if (typeof onProgress === 'function') onProgress(done, total, sheet);
@@ -99,7 +117,7 @@ var BHLD = (function () {
     if (_i >= 0) local[_i] = obj; else local.push(obj);
     lsSet(sheet, local);
     return _ready().then(function (sb) {
-      return sb.from(sheet).upsert(_stripClientOnly(sheet, obj), { onConflict: 'id' }).select();
+      return sb.from(tbl(sheet)).upsert(_stripClientOnly(sheet, obj), { onConflict: 'id' }).select();
     }).then(function (res) {
       if (res.error) throw new Error(res.error.message);
       return { ok: true, data: obj };
@@ -113,7 +131,7 @@ var BHLD = (function () {
     var idx = local.findIndex(function (r) { return String(r.id) === String(id); });
     if (idx >= 0) { local[idx] = Object.assign({}, local[idx], changes, { id: id }); lsSet(sheet, local); }
     return _ready().then(function (sb) {
-      return sb.from(sheet).update(_stripClientOnly(sheet, changes)).eq('id', id).select();
+      return sb.from(tbl(sheet)).update(_stripClientOnly(sheet, changes)).eq('id', id).select();
     }).then(function (res) {
       if (res.error) throw new Error(res.error.message);
       return { ok: true };
@@ -125,7 +143,7 @@ var BHLD = (function () {
     var local = lsGet(sheet);
     lsSet(sheet, local.filter(function (r) { return String(r.id) !== String(id); }));
     return _ready().then(function (sb) {
-      return sb.from(sheet).delete().eq('id', id);
+      return sb.from(tbl(sheet)).delete().eq('id', id);
     }).then(function (res) {
       if (res.error) throw new Error(res.error.message);
       return { ok: true };
@@ -138,8 +156,8 @@ var BHLD = (function () {
     var now = new Date().toISOString();
     rows.forEach(function (o) { if (!o.id) o.id = genId(); if (!o.createdAt) o.createdAt = now; });
     return _ready().then(function (sb) {
-      return sb.from(sheet).delete().not('id', 'is', null).then(function () {
-        return sb.from(sheet).upsert(rows, { onConflict: 'id' }).select();
+      return sb.from(tbl(sheet)).delete().not('id', 'is', null).then(function () {
+        return sb.from(tbl(sheet)).upsert(rows, { onConflict: 'id' }).select();
       });
     }).then(function (res) {
       if (res.error) throw new Error(res.error.message);
@@ -153,7 +171,7 @@ var BHLD = (function () {
     var now = new Date().toISOString();
     rows.forEach(function (o) { if (!o.id) o.id = genId(); if (!o.createdAt) o.createdAt = now; });
     return _ready().then(function (sb) {
-      return sb.from(sheet).insert(rows).select();
+      return sb.from(tbl(sheet)).insert(rows).select();
     }).then(function (res) {
       if (res.error) throw new Error(res.error.message);
       return { ok: true, count: rows.length };
@@ -162,7 +180,7 @@ var BHLD = (function () {
 
   function testConnection() {
     return _ready().then(function (sb) {
-      return sb.from('nhanvien').select('id', { count: 'exact', head: true });
+      return sb.from(tbl('nhanvien')).select('id', { count: 'exact', head: true });
     }).then(function (res) {
       if (res.error) throw new Error(res.error.message);
       return { ok: true, count: res.count };
@@ -172,6 +190,7 @@ var BHLD = (function () {
   return {
     getUrl: getUrl,
     setUrl: setUrl,
+    tbl: tbl,
     lsGet: lsGet,
     lsSet: lsSet,
     pull: pull,
