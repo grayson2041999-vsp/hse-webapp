@@ -193,8 +193,9 @@
     .bd-chip{width:11px;height:11px;border-radius:3px;margin-top:3px;}
     .bd-nm{font-size:12px;font-weight:600;color:var(--text);line-height:1.35;}
     .bd-loc{font-size:10.5px;color:var(--text-light);font-weight:400;}
-    .bd-pc{font-size:12px;font-weight:700;color:var(--text);
+    .bd-pc{font-size:12px;font-weight:700;color:var(--primary);
       font-variant-numeric:tabular-nums;white-space:nowrap;margin-top:1px;}
+    .bd-cnt{color:var(--text);}   /* số lỗi để đen, phần trăm vẫn xanh */
     .bd-none{color:var(--text-light);font-size:12px;padding:8px 0;}
   </style>
   <link rel="stylesheet" href="assets/flatpickr.min.css">
@@ -725,7 +726,7 @@ function renderBctdDash(){
                  (d.n?BAC[Math.min(ds.filter(function(x,j){return x.n>0&&j<i;}).length,BAC.length-1)]:'#e3e9f3')+'"></span>'+
                '<span><span class="bd-nm">'+esc(d.ten)+'</span>'+
                  (d.viTri?'<div class="bd-loc">'+esc(d.viTri)+'</div>':"")+'</span>'+
-               '<span class="bd-pc">'+pc+'% · '+d.n+'</span>'+
+               '<span class="bd-pc">'+pc+'% <span class="bd-cnt">· '+d.n+'</span></span>'+
              '</div>';
     }).join("");
     rows='<div class="bd-pie"><svg viewBox="0 0 120 120" role="img" '+
