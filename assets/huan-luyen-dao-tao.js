@@ -322,7 +322,7 @@
     gs.className = "hl-gsearch";
     gs.innerHTML =
       '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>' +
-      '<input type="text" id="hl-global-search" placeholder="Tra cứu nhân viên theo tên hoặc danh số — xem tất cả khoá học đã tham gia...">';
+      '<input type="text" id="hl-global-search" placeholder="Tra cứu nhân viên theo tên hoặc danh số...">';
     _container.appendChild(gs);
 
     var tabBar = _buildTabBar();
@@ -453,8 +453,6 @@
       /* Card */
       ".hl-card{background:var(--surface);border-radius:10px;",
       "box-shadow:0 1px 3px rgba(16,24,40,.08);margin-bottom:18px;overflow:hidden;}",
-      ".hl-card-h{padding:13px 18px;border-bottom:1px solid var(--border);",
-      "display:flex;align-items:center;justify-content:space-between;gap:12px;background:#f8fafd;}",
       ".hl-card-title{font-size:13.5px;font-weight:700;color:var(--brand);}",
       ".hl-card-b{padding:18px;}",
       /* Settings row */
@@ -568,9 +566,6 @@
       /* Toolbar */
       ".hl-toolbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:10px 18px;",
       "border-bottom:1px solid var(--border);background:#f8fafd;}",
-      ".hl-search{padding:6px 10px;border:1.5px solid var(--border);border-radius:7px;",
-      "font-size:12.5px;width:200px;}",
-      ".hl-search:focus{outline:none;border-color:var(--brand-light);}",
       ".hl-stfilter{display:block;margin-top:5px;width:100%;box-sizing:border-box;padding:3px 5px;",
       "font-size:11px;font-weight:600;border:1px solid var(--border);border-radius:5px;",
       "background:#fff;color:var(--text);cursor:pointer;}",
@@ -701,7 +696,6 @@
             'value="' + months + '" min="1" max="120" disabled>' +
           (_canEdit ? '<button class="hl-icon-btn" id="hl-months-edit-' + key + '" title="Bấm để sửa"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"/><path d="m15 5 4 4"/></svg></button>' : '') +
           '<span style="font-size:13px;color:var(--text-muted);">tháng</span>' +
-          '<span style="font-size:12px;color:var(--text-muted);font-style:italic;">– Áp dụng cho toàn bộ nhân sự trong mục này</span>' +
         '</div>' +
       '</div>';
     body.appendChild(settCard);
@@ -713,11 +707,8 @@
     var tableCard = document.createElement("div");
     tableCard.className = "hl-card";
     tableCard.innerHTML =
-      '<div class="hl-card-h">' +
-        '<input type="search" name="tim-hl" autocomplete="off" class="hl-search" id="hl-search-' + key + '" placeholder="Tìm kiếm...">' +
-      '</div>' +
       '<div id="hl-dupwarn-' + key + '" class="hl-dupwarn" style="display:none"></div>' +
-      (_canEdit && !_batchMode ? '<div class="hl-toolbar" style="padding:8px 18px;"><span class="hl-hint">✎ Bấm bút chì ở cột Thao tác để sửa dòng · ⣿ Kéo hàng để đổi thứ tự · ＋ Nhập vào dòng cuối rồi bấm ✓ (hoặc Enter) để thêm nhân sự (khi không tìm kiếm)</span></div>' : '') +
+      (_canEdit && !_batchMode ? '<div class="hl-toolbar" style="padding:8px 18px;"><span class="hl-hint">✎ Bấm bút chì ở cột Thao tác để sửa dòng · ⣿ Kéo hàng để đổi thứ tự · ＋ Nhập vào dòng cuối rồi bấm ✓ (hoặc Enter) để thêm nhân sự</span></div>' : '') +
       '<div class="hl-tw"><table><thead><tr>' +
         (_batchMode
           ? '<th style="width:36px;text-align:center"><input type="checkbox" id="hl-cb-all-' + key + '" title="Chọn tất cả đang hiển thị"></th>'
@@ -784,9 +775,6 @@
       if (warnSave) warnSave.addEventListener("click", doSaveWarn);
       warnInput.addEventListener("keydown", function (e) { if (e.key === "Enter") { e.preventDefault(); doSaveWarn(); } });
     }
-
-    var searchInput = document.getElementById("hl-search-" + key);
-    if (searchInput) searchInput.addEventListener("input", function () { _fillTable(key); });
 
     var stFilter = document.getElementById("hl-stfilter-" + key);
     if (stFilter) {
@@ -1015,8 +1003,10 @@
   function _fillTable(key) {
     var tbody = document.getElementById("hl-tbody-" + key);
     if (!tbody) return;
-    var searchEl = document.getElementById("hl-search-" + key);
-    var q = searchEl ? searchEl.value.toLowerCase() : "";
+    // Ô tìm kiếm riêng của từng mục đã bỏ — chỉ còn thanh tra cứu chung ở đầu trang.
+    // Giữ q rỗng để các điều kiện bên dưới (lọc chữ, kéo–thả, dòng thêm mới)
+    // hoạt động đúng như trạng thái "không tìm kiếm".
+    var q = "";
     var data = getData(key);
     var months = getMonths(key);
     var warnDays = getWarnDays(key);
