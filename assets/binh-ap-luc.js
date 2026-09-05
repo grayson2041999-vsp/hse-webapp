@@ -217,18 +217,22 @@
      Vẽ bằng SVG thuần, không cần thư viện ngoài.
 
      MÀU:
-     · Đơn vị  — bảng màu phân loại đã kiểm bằng validate_palette (all-pairs,
-       nền trắng): worst CVD ΔE 9.2, worst normal-vision ΔE 16.3. Chỉ 4 màu là
-       ngưỡng an toàn; đơn vị thứ 5 trở đi gộp vào "Khác" màu xám, KHÔNG sinh
-       thêm màu mới (màu sinh thêm sẽ lẫn với màu đã có khi nhìn qua mắt người
-       mù màu).
+     · Đơn vị  — tông PASTEL. Đây là mức nhạt TỐI ĐA còn qua được kiểm tra
+       (dò bằng validate_palette, all-pairs, nền trắng): làm nhạt thêm 33% từ
+       bộ màu gốc là ngưỡng cuối; nhạt hơn nữa thì cặp xanh dương↔ngọc tụt
+       xuống ΔE 13.9 — dưới sàn 15, mắt thường cũng khó phân biệt.
+       Ở mức này: worst normal-vision ΔE 15.9, worst CVD ΔE 7.2 (trong dải
+       6-8, hợp lệ vì đã có nhãn % trên lát và chú giải có chữ).
+       Pastel đổi lấy số lượng màu: chỉ còn 3 màu an toàn thay vì 4. Đơn vị
+       thứ 4 trở đi gộp vào "Khác" màu xám, KHÔNG sinh thêm màu mới — màu
+       sinh thêm chắc chắn lẫn với màu đã có khi nhìn qua mắt người mù màu.
      · Trạng thái — dùng đúng màu của badge trong bảng để người đọc nối được
        hai chỗ với nhau. Cặp đỏ↔xanh chỉ cách nhau ΔE 6.2 với người mù màu đỏ-lục,
        nên BẮT BUỘC có nhãn chữ trên lát cắt và trong chú giải — màu không bao
        giờ là kênh thông tin duy nhất.
      ══════════════════════════════════════════ */
-  var CHART_MAU_DONVI = ["#2a78d6", "#eb6834", "#1baf7a", "#4a3aa7"];
-  var CHART_MAU_KHAC  = "#94a3b8";
+  var CHART_MAU_DONVI = ["#6fa4e3", "#f29976", "#65c9a5"];
+  var CHART_MAU_KHAC  = "#c3ccd8";
   var CHART_MAU_TT = {
     "con-han": "#1a7a3c",   // khớp .kd-con-han
     "sap-han": "#e68900",   // khớp .kd-sap-han
@@ -278,6 +282,15 @@
     return { tong: all.length, donVi: donVi, trangThai: trangThai };
   }
 
+  /* Mực cho nhãn % trên lát: nền nhạt thì chữ đậm, nền đậm thì chữ trắng.
+     Pastel gần như luôn rơi vào nhóm cần chữ đậm. */
+  function _mucChu(hex) {
+    var r = parseInt(hex.substr(1, 2), 16), g = parseInt(hex.substr(3, 2), 16), b = parseInt(hex.substr(5, 2), 16);
+    var L = (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255;
+    return L > 0.62 ? { fill: "#1f2937", vien: "rgba(255,255,255,.75)" }
+                    : { fill: "#ffffff", vien: "rgba(0,0,0,.25)" };
+  }
+
   /* Một biểu đồ tròn: SVG + nhãn % trên lát cắt + chú giải có số liệu */
   function _pie(tieuDe, muc) {
     var tong = muc.reduce(function (s, x) { return s + x.giaTri; }, 0);
@@ -310,9 +323,10 @@
         /* Một lát duy nhất (100%) thì đặt nhãn ngay giữa hình tròn */
         var lx = muc.length === 1 ? C : C + R * 0.62 * Math.cos(gm);
         var ly = muc.length === 1 ? C : C + R * 0.62 * Math.sin(gm);
+        var muc_ = _mucChu(m.mau);
         nhan += '<text x="' + lx.toFixed(1) + '" y="' + ly.toFixed(1) + '" text-anchor="middle" ' +
-                'dominant-baseline="central" fill="#fff" font-size="13" font-weight="700" ' +
-                'style="paint-order:stroke;stroke:rgba(0,0,0,.25);stroke-width:2px">' +
+                'dominant-baseline="central" fill="' + muc_.fill + '" font-size="13" font-weight="700" ' +
+                'style="paint-order:stroke;stroke:' + muc_.vien + ';stroke-width:2.5px">' +
                 Math.round(phan * 100) + '%</text>';
       }
       goc += phan * Math.PI * 2;

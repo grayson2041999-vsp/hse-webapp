@@ -386,7 +386,10 @@ console.log('\n── Bình áp lực: hai biểu đồ tròn ──');
     /\.kd-con-han\{[^"]*#1a7a3c/.test(src) && /\.kd-sap-han\{[^"]*#e68900/.test(src) && /\.kd-qua-han\{[^"]*#c0392b/.test(src));
 
   /* Bảng màu phân loại: đúng 4 màu đã qua validate_palette (all-pairs, nền trắng) */
-  check('chỉ 4 màu phân loại — quá ngưỡng an toàn thì gộp "Khác"', CH.CHART_MAU_DONVI.length === 4);
+  /* Pastel đổi lấy số lượng: mức nhạt tối đa còn qua kiểm tra chỉ cho 3 màu */
+  check('chỉ 3 màu pastel — quá ngưỡng an toàn thì gộp "Khác"', CH.CHART_MAU_DONVI.length === 3);
+  check('màu đơn vị đúng bộ pastel đã dò',
+    CH.CHART_MAU_DONVI.join(',') === '#6fa4e3,#f29976,#65c9a5', CH.CHART_MAU_DONVI);
 
   store = [
     { section: 'cang_bien', kd: 'a' }, { section: 'cang_bien', kd: 'a' },
@@ -395,7 +398,7 @@ console.log('\n── Bình áp lực: hai biểu đồ tròn ──');
   let d = CH._chartData();
   check('đếm đúng số thiết bị mỗi đơn vị', d.donVi.map(x => x.giaTri).join(',') === '2,1,1', d.donVi);
   check('giữ thứ tự đơn vị theo danh mục', d.donVi[0].nhan === 'Cảng biển');
-  check('gán màu theo đúng thứ tự bảng màu', d.donVi[0].mau === '#2a78d6' && d.donVi[1].mau === '#eb6834');
+  check('gán màu theo đúng thứ tự bảng màu', d.donVi[0].mau === '#6fa4e3' && d.donVi[1].mau === '#f29976');
   check('đếm đúng từng trạng thái',
     d.trangThai.map(x => x.nhan + '=' + x.giaTri).join(',') === 'Còn hạn=2,Sắp hạn (≤60 ngày)=1,Quá hạn=1', d.trangThai);
   check('bỏ hẳn trạng thái không có thiết bị nào (không vẽ lát 0%)',
@@ -404,11 +407,11 @@ console.log('\n── Bình áp lực: hai biểu đồ tròn ──');
   /* Quá 4 đơn vị → gộp phần đuôi, KHÔNG sinh thêm màu mới */
   store = ['cang_bien','xuong_sua_chua','can_cu_kho_gn','d4','d5','d6'].map(s => ({ section: s, kd: 'a' }));
   d = CH._chartData();
-  check('quá 4 đơn vị thì gộp thành 5 lát (4 + Khác)', d.donVi.length === 5, d.donVi.map(x => x.nhan));
+  check('quá 3 đơn vị thì gộp thành 4 lát (3 + Khác)', d.donVi.length === 4, d.donVi.map(x => x.nhan));
   check('lát cuối là "Khác" và cộng dồn đúng',
-    /^Khác \(2 đơn vị\)$/.test(d.donVi[4].nhan) && d.donVi[4].giaTri === 2, d.donVi[4]);
+    /^Khác \(3 đơn vị\)$/.test(d.donVi[3].nhan) && d.donVi[3].giaTri === 3, d.donVi[3]);
   check('"Khác" dùng màu xám trung tính, không phải màu phân loại mới',
-    d.donVi[4].mau === '#94a3b8' && CH.CHART_MAU_DONVI.indexOf(d.donVi[4].mau) < 0);
+    d.donVi[3].mau === '#c3ccd8' && CH.CHART_MAU_DONVI.indexOf(d.donVi[3].mau) < 0);
 
   /* Thiết bị chưa có ngày kiểm định vẫn phải được đếm */
   store = [{ section: 'cang_bien', kd: '' }, { section: 'cang_bien', kd: 'a' }];
