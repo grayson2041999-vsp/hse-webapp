@@ -918,7 +918,6 @@ function canModify(u,rec){
   if(u.role==="admin") return true;
   return rec.createdBy===u.username;
 }
-function canDelete(u,rec){ return canModify(u,rec); }
 function canAnyInput(u){
   return ["cap1","cap2","cap3","cap4","khac"].some(function(c){return canInputCap(u,c);});
 }

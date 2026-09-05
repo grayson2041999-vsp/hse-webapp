@@ -364,7 +364,6 @@
   // hashPw giữ chữ ký cũ (Promise) nhưng KHÔNG hash nữa: mật khẩu được gửi thẳng
   // tới Supabase Auth. Các luồng UI cũ gọi hashPw(pw).then(fn) vẫn chạy đúng.
   function hashPw(pw){ return Promise.resolve(pw); }
-  function isHashed(pw){ return !!pw && /^[0-9a-f]{64}$/.test(pw); }
 
   function login(un, pw, callback){
     un=(un||"").trim();
@@ -1058,8 +1057,7 @@
     tabBar.style.cssText="display:flex;gap:6px;border-bottom:2px solid var(--border);margin:4px 0 16px;flex-wrap:wrap";
     tabBar.innerHTML=
       '<button class="adm-tab on" data-tab="users">Người dùng &amp; phân quyền</button>'+
-      '<button class="adm-tab" data-tab="donvi">Danh mục đơn vị</button>'+
-      '<button class="adm-tab" data-tab="doisoat">Đối soát đơn vị</button>';
+      '<button class="adm-tab" data-tab="donvi">Danh mục đơn vị</button>';
     root.appendChild(tabBar);
     if(!document.getElementById("adm-tab-css")){
       var _st=document.createElement("style"); _st.id="adm-tab-css";
@@ -1071,9 +1069,8 @@
     }
 
     var panes = {
-      users:   el("div"),
-      donvi:   el("div"),
-      doisoat: el("div")
+      users: el("div"),
+      donvi: el("div")
     };
     var drawn = {};
     Object.keys(panes).forEach(function(k){
@@ -1088,8 +1085,7 @@
         Object.keys(panes).forEach(function(k){ panes[k].style.display = (k===tab) ? "" : "none"; });
         if(drawn[tab]) return;
         drawn[tab] = true;
-        if(tab==="donvi")        renderDonViAdmin(panes.donvi);
-        else if(tab==="doisoat") renderDoiSoatAdmin(panes.doisoat);
+        if(tab==="donvi") renderDonViAdmin(panes.donvi);
       });
     });
     var paneUsers = panes.users;
@@ -1639,210 +1635,6 @@
   }
 
 
-  /* =========================================================
-     QUẢN TRỊ — ĐỐI SOÁT ĐƠN VỊ
-     ---------------------------------------------------------
-     Quét mọi cột đang lưu tên đơn vị trong toàn hệ thống (Kế hoạch, Kiểm tra
-     các cấp, Huấn luyện, Cấp phát BHLĐ, phân quyền) rồi đối chiếu với danh mục.
-     Mục đích: trước khi chuyển trang Cấp phát BHLĐ sang dùng danh mục, phải
-     biết chắc dữ liệu đang có những giá trị đơn vị nào và cái nào lệch.
-     Chỉ ĐỌC; các nút xử lý đều hỏi xác nhận trước khi ghi.
-     ========================================================= */
-  function renderDoiSoatAdmin(pane){
-    if(typeof HSE_UNITS === "undefined" || typeof HSE_UNITS.audit !== "function"){
-      pane.innerHTML='<div class="table-wrap" style="padding:24px;text-align:center;color:var(--text-muted)">'+
-        'Chưa nạp <b>assets/don-vi.js</b> — không thể đối soát.</div>';
-      return;
-    }
-
-    pane.innerHTML =
-      '<div class="toolbar">'+
-        '<div class="muted" style="max-width:700px;line-height:1.65">Đối chiếu <b>giá trị đơn vị thực có trong dữ liệu</b> với danh mục. '+
-          'Dùng trước khi chuyển một trang sang dùng danh mục, để không bỏ sót đơn vị nào.</div>'+
-        '<div class="spacer"></div>'+
-        '<button class="btn btn-ghost btn-sm" id="ds-reload">Quét lại</button>'+
-      '</div>'+
-      '<div id="ds-body"><div class="table-wrap" style="padding:24px;text-align:center;color:var(--text-muted)">Đang quét dữ liệu…</div></div>';
-
-    var body = pane.querySelector("#ds-body");
-    pane.querySelector("#ds-reload").addEventListener("click", scan);
-
-    var LABEL = {
-      ok:     ['Khớp danh mục',   '#eafaf1', '#1a7a3c'],
-      ten_cu: ['Tên cũ',          '#fef9e7', '#856404'],
-      ngung:  ['Đơn vị đã ngừng', '#eef1f4', '#5b6673'],
-      la:     ['Không có trong danh mục', '#fdeaea', '#c0392b']
-    };
-
-    function scan(){
-      body.innerHTML='<div class="table-wrap" style="padding:24px;text-align:center;color:var(--text-muted)">Đang quét dữ liệu…</div>';
-      HSE_UNITS.audit().then(draw).catch(function(e){
-        body.innerHTML='<div class="table-wrap" style="padding:24px;color:var(--danger)">Không quét được: '+esc(e&&e.message||e)+'</div>';
-      });
-    }
-
-    function draw(res){
-      var dem = { ok:0, ten_cu:0, ngung:0, la:0 };
-      res.rows.forEach(function(r){ dem[r.status]++; });
-
-      var html = '';
-
-      /* Thẻ tóm tắt */
-      html += '<div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px">'+
-        ["la","ten_cu","ngung","ok"].map(function(k){
-          var L=LABEL[k];
-          return '<div style="flex:1;min-width:150px;background:'+L[1]+';border-radius:10px;padding:12px 14px">'+
-            '<div style="font-size:22px;font-weight:800;color:'+L[2]+'">'+dem[k]+'</div>'+
-            '<div style="font-size:12px;font-weight:600;color:'+L[2]+'">'+L[0]+'</div></div>';
-        }).join('')+'</div>';
-
-      /* Bảng không đọc được */
-      if(res.errors.length){
-        html += '<div style="background:#fdeaea;border:1px solid #f5b7b1;border-radius:8px;padding:12px 14px;margin-bottom:14px;font-size:12.5px;line-height:1.7">'+
-          '<b style="color:var(--danger)">Không đọc được '+res.errors.length+' bảng</b> — kết quả bên dưới chưa đầy đủ:<br>'+
-          res.errors.map(function(e){ return '· '+esc(e.target.label)+' — '+esc(e.message); }).join('<br>')+'</div>';
-      }
-
-      /* Cảnh báo bảng ghép tên đơn vị vào khoá chính */
-      var keyed = res.rows.filter(function(r){ return r.keyed; });
-      if(keyed.length){
-        html += '<div style="background:#fef9e7;border:1px solid #fde68a;border-radius:8px;padding:12px 14px;margin-bottom:14px;font-size:12.5px;line-height:1.7">'+
-          '<b style="color:#856404">Lưu ý về Tiến trình cấp phát BHLĐ.</b> Bảng này ghép tên đơn vị vào khoá chính '+
-          '(<code>id = "&lt;tên đơn vị&gt;__&lt;quý&gt;"</code>), nên <b>đổi tên đơn vị sẽ làm mồ côi tiến trình cấp phát</b> của mọi quý. '+
-          'Chức năng đổi tên hàng loạt cố ý KHÔNG tự sửa bảng này. '+
-          'Các đơn vị đang có tiến trình: '+keyed.map(function(r){return '<b>'+esc(r.value)+'</b>';}).join(', ')+'.</div>';
-      }
-
-      /* Bảng chi tiết */
-      html += '<div class="table-wrap"><table><thead><tr>'+
-        '<th style="min-width:220px">Giá trị trong dữ liệu</th>'+
-        '<th>Trạng thái</th>'+
-        '<th style="text-align:center">Số bản ghi</th>'+
-        '<th style="min-width:260px">Xuất hiện ở</th>'+
-        '<th style="white-space:nowrap">Xử lý</th></tr></thead><tbody>';
-
-      res.rows.forEach(function(r){
-        var L = LABEL[r.status];
-        var noiDung = Object.keys(r.targets).map(function(t){
-          return '<span class="muted">'+esc(t)+': <b>'+r.targets[t]+'</b></span>';
-        }).join('<br>');
-        var xuLy = '<span class="muted">—</span>';
-        if(r.status === "ten_cu"){
-          xuLy = '<button class="btn btn-ghost btn-sm" data-act="doiten" data-v="'+esc(r.value)+'" data-ma="'+esc(r.unit.ma)+'">Cập nhật sang "'+esc(r.unit.ten)+'"</button>';
-        } else if(r.status === "la"){
-          xuLy = '<button class="btn btn-ghost btn-sm" data-act="them" data-v="'+esc(r.value)+'">Thêm vào danh mục</button> '+
-                 '<button class="btn btn-ghost btn-sm" data-act="gan" data-v="'+esc(r.value)+'">Gán về đơn vị…</button>';
-        } else if(r.status === "ngung"){
-          xuLy = '<span class="muted">Vẫn đọc được, chỉ ẩn khỏi droplist</span>';
-        }
-        if(r.lech && r.lech.length && r.unit){
-          var nut = '<button class="btn btn-ghost btn-sm" data-act="chuanhoa" data-v="'+esc(r.lech[0])+'" data-ma="'+esc(r.unit.ma)+'">Chuẩn hoá cách viết</button>';
-          // thay hẳn dấu "—" thay vì nối thêm vào sau nó
-          xuLy = (xuLy.indexOf("—") >= 0) ? nut : (xuLy + ' ' + nut);
-        }
-        html += '<tr>'+
-          '<td><b>'+esc(r.value)+'</b>'+
-            (r.status==="ten_cu" ? '<div class="muted" style="font-size:11px;margin-top:2px">nay là: '+esc(r.unit.ten)+'</div>' : '')+
-            (r.lech && r.lech.length
-              ? '<div style="font-size:11px;margin-top:3px;color:#9a6700;line-height:1.5">⚠ Cách viết lệch chuẩn: '+
-                r.lech.map(function(v){ return '«'+esc(v)+'» ('+r.variants[v]+')'; }).join(', ')+
-                '<br><span class="muted">Phân quyền cấp phát so chuỗi tuyệt đối — lệch là mất quyền.</span></div>'
-              : '')+
-            (r.keyed ? '<div class="muted" style="font-size:11px;margin-top:2px">có trong khoá tiến trình cấp phát</div>' : '')+
-          '</td>'+
-          '<td><span class="badge" style="background:'+L[1]+';color:'+L[2]+'">'+esc(L[0])+'</span></td>'+
-          '<td style="text-align:center;font-weight:700">'+r.total+'</td>'+
-          '<td style="line-height:1.6">'+noiDung+'</td>'+
-          '<td style="white-space:nowrap">'+xuLy+'</td></tr>';
-      });
-      if(!res.rows.length) html += '<tr><td colspan="5" class="muted" style="text-align:center;padding:24px">Chưa có bản ghi nào mang tên đơn vị.</td></tr>';
-      html += '</tbody></table></div>';
-
-      /* Đơn vị trong danh mục nhưng chưa có dữ liệu */
-      if(res.chuaDung.length){
-        html += '<div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--border)">'+
-          '<h3 style="font-size:14px;font-weight:700;color:var(--brand);margin-bottom:6px">Đơn vị trong danh mục nhưng chưa có bản ghi nào ('+res.chuaDung.length+')</h3>'+
-          '<p class="muted" style="margin:0 0 8px">Bình thường nếu đơn vị đó mới tạo hoặc chưa tham gia nghiệp vụ nào.</p>'+
-          '<div style="line-height:2">'+res.chuaDung.map(function(u){
-            return '<span class="badge" style="background:#fff;border:1px solid var(--border);color:var(--text-muted);margin-right:4px">'+esc(u.ten)+'</span>';
-          }).join('')+'</div></div>';
-      }
-
-      body.innerHTML = html;
-
-      Array.prototype.forEach.call(body.querySelectorAll("button[data-act]"), function(b){
-        b.addEventListener("click", function(){
-          var v = b.getAttribute("data-v"), act = b.getAttribute("data-act");
-          if(act === "doiten" || act === "chuanhoa") capNhatTen(v, HSE_UNITS.byMa(b.getAttribute("data-ma")).ten);
-          else if(act === "them") themVaoDanhMuc(v);
-          else if(act === "gan")  ganVeDonVi(v);
-        });
-      });
-    }
-
-    /* Cập nhật hàng loạt bản ghi từ tên cũ sang tên mới */
-    function capNhatTen(tenCu, tenMoi){
-      showToast('Đang rà soát "'+tenCu+'"...', "info");
-      HSE_UNITS.renameScan(tenCu).then(function(sc){
-        if(!sc.total){ showToast("Không còn bản ghi nào mang tên này.", "success"); scan(); return; }
-        var ct = sc.hits.map(function(h){ return "· "+h.target.label+": "+h.rows.length; }).join("\n");
-        if(!confirm('Cập nhật '+sc.total+' bản ghi từ "'+tenCu+'" sang "'+tenMoi+'"?\n\n'+ct)) return;
-        HSE_UNITS.renameApply(sc, tenCu, tenMoi).then(function(res){ baoKetQua(res, sc.total); scan(); });
-      });
-    }
-
-    /* Thêm chính giá trị lạ đó vào danh mục thành một đơn vị mới */
-    function themVaoDanhMuc(ten){
-      if(!confirm('Thêm "'+ten+'" thành một đơn vị mới trong danh mục?\n\n'+
-        'Đơn vị mới chưa được gán cho trang nào — vào tab "Danh mục đơn vị" để tích các trang được dùng.')) return;
-      HSE_UNITS.saveUnit({
-        ma: HSE_UNITS.suggestMa(ten), ten: ten, nhom: "phong_ban",
-        sort: 900, active: true, he_thong: false, pages: []
-      }).then(function(){ showToast('Đã thêm "'+ten+'" vào danh mục.', "success"); scan(); })
-        .catch(function(e){ showToast("Không lưu được: "+(e&&e.message||e), "error"); });
-    }
-
-    /* Gán giá trị lạ về một đơn vị đã có (đổi tên hàng loạt trong dữ liệu) */
-    function ganVeDonVi(tenLa){
-      var ds = HSE_UNITS.all({ includeInactive: true });
-      var chon = prompt('Gán "'+tenLa+'" về đơn vị nào? Nhập SỐ THỨ TỰ:\n\n'+
-        ds.map(function(u,i){ return (i+1)+". "+u.ten; }).join("\n"));
-      if(chon === null) return;
-      var i = parseInt(chon, 10) - 1;
-      if(isNaN(i) || i < 0 || i >= ds.length){ showToast("Số thứ tự không hợp lệ.", "error"); return; }
-      var dich = ds[i];
-      showToast("Đang rà soát...", "info");
-      HSE_UNITS.renameScan(tenLa).then(function(sc){
-        if(!sc.total){ showToast("Không tìm thấy bản ghi nào.", "warning"); return; }
-        var ct = sc.hits.map(function(h){ return "· "+h.target.label+": "+h.rows.length; }).join("\n");
-        if(!confirm('Đổi '+sc.total+' bản ghi từ "'+tenLa+'" sang "'+dich.ten+'"?\n\n'+ct+
-          '\n\nThao tác này ghi thẳng vào dữ liệu nghiệp vụ, không tự hoàn tác được.')) return;
-        HSE_UNITS.renameApply(sc, tenLa, dich.ten).then(function(res){
-          /* Ghi nhận bí danh để bản ghi nào sót lại vẫn tra ra đúng đơn vị */
-          if(dich.ten_cu.indexOf(tenLa) < 0){
-            var next = JSON.parse(JSON.stringify(dich));
-            next.ten_cu.push(tenLa);
-            HSE_UNITS.saveUnit(next);
-          }
-          baoKetQua(res, sc.total); scan();
-        });
-      });
-    }
-
-    function baoKetQua(res, tong){
-      if(res.skipped && res.skipped.length){
-        console.warn("[Đối soát] Bảng có tên đơn vị trong khoá chính, không tự sửa:", res.skipped);
-      }
-      if(res.errors.length){
-        console.warn("[Đối soát] Bản ghi lỗi:", res.errors);
-        showToast("Đã cập nhật "+res.updated+"/"+tong+" bản ghi · "+res.errors.length+" lỗi (xem Console).", "warning");
-      } else {
-        showToast("✅ Đã cập nhật "+res.updated+" bản ghi.", "success");
-      }
-    }
-
-    scan();
-  }
 
   function buildModal(){
     var bg = el("div","modal-bg");
@@ -2163,61 +1955,6 @@
         '<h3 style="font-size:15px;font-weight:700;color:var(--brand);margin-bottom:6px;">Kết nối cơ sở dữ liệu</h3>'+
         '<p style="font-size:12.5px;color:var(--text-muted);margin:0;">✅ Đang kết nối <b>Supabase</b>. Dữ liệu được lưu và đồng bộ tự động — không cần cấu hình gì thêm.</p>'+
       '</div>';
-    return; // ── Đã chuyển sang Supabase; phần cấu hình Google Sheets bên dưới không còn dùng ──
-    /* eslint-disable */
-    container.innerHTML =
-      '<div style="margin-top:20px;padding-top:20px;border-top:1px solid var(--border)">' +
-        '<h3 style="font-size:15px;font-weight:700;color:var(--brand);margin-bottom:6px;"><svg class="lic-emoji" width="1.05em" height="1.05em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex-shrink:0" aria-hidden="true"><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/></svg> Kết nối Google Sheets Database</h3>' +
-        '<p style="font-size:12.5px;color:var(--text-muted);margin-bottom:14px;">Dán URL Apps Script Web App vào đây. Dữ liệu sẽ được lưu lên Google Sheets và đồng bộ giữa các máy.</p>' +
-        '<div style="display:flex;gap:10px;margin-bottom:10px;flex-wrap:wrap;">' +
-          '<input id="hse-db-url" class="inp" style="flex:1;min-width:300px;font-size:12.5px;" ' +
-            'placeholder="https://script.google.com/macros/s/.../exec" value="' + esc(currentUrl) + '">' +
-          '<button class="btn btn-accent btn-sm" id="hse-db-save"><svg class="lic-emoji" width="1.05em" height="1.05em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex-shrink:0" aria-hidden="true"><path d="M15.2 3a2 2 0 0 1 1.4.6l3.8 3.8a2 2 0 0 1 .6 1.4V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/><path d="M17 21v-7a1 1 0 0 0-1-1H8a1 1 0 0 0-1 1v7"/><path d="M7 3v4a1 1 0 0 0 1 1h7"/></svg> Lưu URL</button>' +
-          '<button class="btn btn-ghost btn-sm" id="hse-db-test"><svg class="lic-emoji" width="1.05em" height="1.05em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex-shrink:0" aria-hidden="true"><path d="m21 21-4.34-4.34"/><circle cx="11" cy="11" r="8"/></svg> Kiểm tra kết nối</button>' +
-          '<button class="btn btn-ghost btn-sm" id="hse-db-sync"><svg class="lic-emoji" width="1.05em" height="1.05em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex-shrink:0" aria-hidden="true"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg> Sync Users</button>' +
-        '</div>' +
-        '<div id="hse-db-status" style="font-size:12.5px;padding:8px 12px;border-radius:6px;display:none;"></div>' +
-      '</div>';
-
-    var urlInput = document.getElementById("hse-db-url");
-    var statusEl = document.getElementById("hse-db-status");
-
-    function showStatus(msg, ok) {
-      statusEl.style.display = "block";
-      statusEl.style.background = ok ? "#eafaf1" : "#fdedec";
-      statusEl.style.color = ok ? "#1a7a3c" : "#c0392b";
-      statusEl.style.border = "1px solid " + (ok ? "#a9dfbf" : "#f1948a");
-      statusEl.textContent = msg;
-    }
-
-    document.getElementById("hse-db-save").onclick = function() {
-      var url = urlInput.value.trim();
-      if(typeof DB === "undefined") { showStatus("❌ db.js chưa được tải.", false); return; }
-      DB.init(url);
-      showStatus(url ? "✅ Đã lưu URL thành công!" : "⚠️ Đã xóa URL (chế độ offline).", !!url);
-    };
-
-    document.getElementById("hse-db-test").onclick = function() {
-      if(typeof DB === "undefined" || !DB.isReady()) { showStatus("❌ Chưa nhập URL.", false); return; }
-      showStatus("⏳ Đang kiểm tra...", true);
-      DB.testConnection().then(function(r) {
-        showStatus("✅ Kết nối OK — " + r.count + " sheets: " + r.sheets.slice(0,5).join(", ") + "...", true);
-      }).catch(function(e) {
-        showStatus("❌ Lỗi: " + e.message, false);
-      });
-    };
-
-    document.getElementById("hse-db-sync").onclick = function() {
-      if(typeof DB === "undefined" || !DB.isReady()) { showStatus("❌ Chưa kết nối Sheets.", false); return; }
-      var users = getUsers();
-      if(!users.length) { showStatus("⚠️ Không có tài khoản nào để đẩy lên.", false); return; }
-      showStatus("⏳ Đang đẩy " + users.length + " tài khoản lên Sheets...", true);
-      DB.bulkWrite("users", users).then(function() {
-        showStatus("✅ Đã đẩy " + users.length + " tài khoản lên Sheets thành công!", true);
-      }).catch(function(e) {
-        showStatus("❌ Lỗi: " + e.message, false);
-      });
-    };
   }
 
   /* =========================================================

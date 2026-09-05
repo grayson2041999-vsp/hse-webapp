@@ -42,13 +42,6 @@
   /* ── SHEETS SYNC ── */
 
   /* Pull thủ công (nút Làm mới): chờ Sheets rồi mới callback */
-  function _pull(cb) {
-    if (typeof DB === "undefined" || !DB.isReady()) { if (cb) cb(); return; }
-    DB.getAll(SHEET).then(function(rows) {
-      if (rows && rows.length) _save(rows.map(_normalizeRow));
-      if (cb) cb();
-    }).catch(function() { if (cb) cb(); });
-  }
 
   /* Pull ngầm (stale-while-revalidate):
      - Render localStorage ngay (cb() trước)

@@ -22,6 +22,27 @@
       hiện ngay lập tức, không chờ mạng; tải xong từ Supabase thì phát
       sự kiện "hse-donvi-change" để trang vẽ lại.
 
+   ĐỐI SOÁT DỮ LIỆU (không có giao diện — chạy khi cần)
+     Mở trang chủ → Quản trị hệ thống, bấm F12 → Console, dán:
+
+       HSE_UNITS.audit().then(r=>{
+         const out = 'Chua dung: ' + (r.chuaDung.map(u=>u.ten).join(', ')||'(khong)') + '\n'
+           + 'Loi doc: '   + (r.errors.map(e=>e.target.label+' -> '+e.message).join(' | ')||'(khong)') + '\n\n'
+           + r.rows.map(x =>
+               `[${x.status}] ${x.total} ban ghi | ${x.value}`
+               + (x.lech && x.lech.length ? ` | lech: ${x.lech.map(v=>'"'+v+'"').join(', ')}` : '')
+               + (x.keyed ? ' | KHOA-TIEN-TRINH' : '')
+               + '\n    ' + Object.keys(x.targets).map(k=>k+': '+x.targets[k]).join(' | ')
+             ).join('\n');
+         console.log(out); copy(out);
+       });
+
+     Nó quét mọi cột đang lưu tên đơn vị (xem RENAME_TARGETS) và chỉ ra:
+     giá trị lạ, tên cũ chưa cập nhật, đơn vị đã ngừng, và các cách viết lệch
+     chuẩn (thừa khoảng trắng / gạch ngang dài) — thứ mà giao diện không thấy.
+     Nên chạy sau mỗi lần nhập liệu hàng loạt hoặc đổi tên đơn vị.
+     ⚠️ Phải chạy ở trang chủ: cần cả db.js lẫn bhld-sync.js mới đọc đủ 12 cột.
+
    CÁCH DÙNG (trang nghiệp vụ)
      HSE_UNITS.list("ke-hoach")            → ["Cảng biển", ...]
      HSE_UNITS.allowOther("ke-hoach")      → true/false (mục "Khác")

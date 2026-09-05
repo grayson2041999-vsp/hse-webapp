@@ -821,9 +821,6 @@ function renderErrorLog(){
 }
 
 /* ---- INLINE EDIT: HELPERS DỰNG OPTION ---- */
-function _ieOptMonths(sel){var o="";for(var m=1;m<=12;m++){o+='<option value="'+m+'"'+(m===sel?' selected':'')+'>Tháng '+m+'</option>';}return o;}
-function _ieOptYears(sel){var now=new Date();var ys=[];for(var y=now.getFullYear()-2;y<=now.getFullYear()+1;y++)ys.push(y);if(sel&&ys.indexOf(sel)<0)ys.push(sel);ys.sort(function(a,b){return a-b;});return ys.map(function(y){return '<option value="'+y+'"'+(y===sel?' selected':'')+'>'+y+'</option>';}).join("");}
-function _ieOptDevices(sel){var devices=getDevices();if(!devices.length)return '<option value="">— Chưa có hệ thống —</option>';return devices.map(function(d){return '<option value="'+d.id+'"'+(d.id===sel?' selected':'')+'>'+esc(d.name)+' — '+esc(d.location)+'</option>';}).join("");}
 
 /* ---- INLINE EDIT: DỰNG DÒNG NHẬP/SỬA ---- */
 function inlineRowHtml(rec, idx){
@@ -1086,153 +1083,12 @@ function deleteDevice(id){
    MODAL NHẬP BÁO LỖI (User)
    ================================================================ */
 var _editErrorId=null;
-function openErrorModal(editId){
-  _editErrorId=editId||null;
-  var devices=getDevices();
-  var warn=document.getElementById("noDeviceWarn");
-  warn.style.display=devices.length?"none":"block";
-  populateSystemFilter();
-  populateYearMonthSelect();
-  var existing=editId?getErrors().find(function(x){return x.id===editId;}):null;
-  document.getElementById("errorModalTitle").textContent=editId?"Chỉnh sửa bản ghi báo lỗi":"Nhập báo lỗi hệ thống BCTĐ";
-  if(existing){
-    document.getElementById("eMonth").value=existing.month;
-    document.getElementById("eYear").value=existing.year;
-    document.getElementById("eDevice").value=existing.deviceId;
-    document.getElementById("eChildDevice").value=existing.childDevice||"";
-    document.getElementById("eDevLocation").value=existing.devLocation||"";
-    document.getElementById("eErrType").value=existing.errType;
-    document.getElementById("eErrCustom").value=existing.errCustom||"";
-    if(window.HSEDate)HSEDate.setValue(document.getElementById("eDetectDate"),existing.detectDate||"");else document.getElementById("eDetectDate").value=existing.detectDate||"";
-    document.getElementById("eMeasure").value=existing.measure||"";
-    toggleCustomErr();
-    updateDateRange();
-  } else {
-    var now=new Date();
-    document.getElementById("eMonth").value=now.getMonth()+1;
-    document.getElementById("eYear").value=now.getFullYear();
-    document.getElementById("eChildDevice").value="";
-    document.getElementById("eDevLocation").value="";
-    document.getElementById("eErrType").value="Lỗi thiết bị";
-    document.getElementById("eErrCustom").value="";
-    if(window.HSEDate)HSEDate.setValue(document.getElementById("eDetectDate"),"");else document.getElementById("eDetectDate").value="";
-    document.getElementById("eMeasure").value="";
-    toggleCustomErr();
-    updateDateRange();
-  }
-  document.getElementById("errorModalBg").classList.add("open");
-}
-function closeErrorModal(){document.getElementById("errorModalBg").classList.remove("open");}
 
-function populateDeviceSelect(){
-  var devices=getDevices();
-  var sel=document.getElementById("eDevice");
-  if(!sel) return; // modal nhập báo lỗi đã bỏ, dùng nhập inline
-  var cur=sel.value;
-  sel.innerHTML=devices.length
-    ?devices.map(function(d){return'<option value="'+d.id+'"'+(d.id===cur?' selected':'')+'>'+esc(d.name)+' — '+esc(d.location)+'</option>';}).join("")
-    :'<option value="">— Chưa có hệ thống —</option>';
-}
 
-function populateYearMonthSelect(){
-  var now=new Date();
-  var selM=document.getElementById("eMonth");
-  var selY=document.getElementById("eYear");
-  selM.innerHTML=[1,2,3,4,5,6,7,8,9,10,11,12].map(function(m){
-    return'<option value="'+m+'">Tháng '+m+'</option>';
-  }).join("");
-  var years=[];
-  for(var y=now.getFullYear()-2;y<=now.getFullYear()+1;y++)years.push(y);
-  selY.innerHTML=years.map(function(y){
-    return'<option value="'+y+'"'+(y===now.getFullYear()?' selected':'')+'>'+y+'</option>';
-  }).join("");
-}
 
-function updateDateRange(){
-  // Bỏ ràng buộc min/max — ngày phát hiện có thể nằm ngoài tháng báo cáo
-  // (lỗi phát hiện tháng trước nhưng ghi nhận vào tháng sau là hợp lệ)
-  var inp=document.getElementById("eDetectDate");
-  inp.removeAttribute("min");
-  inp.removeAttribute("max");
-}
 
-function toggleCustomErr(){
-  var v=document.getElementById("eErrType").value;
-  var cg=document.getElementById("customErrGroup");
-  var dg=document.getElementById("detectDateGroup");
-  cg.style.display=v==="Khác"?"block":"none";
-  cg.parentElement.style.gridTemplateColumns=v==="Khác"?"1fr 1fr":"1fr 1fr";
-}
 
-function appendBienPhap(text){
-  var ta=document.getElementById("eMeasure");
-  var cur=(ta.value||"").trim();
-  ta.value=cur?(cur+". "+text):text;
-  ta.focus();
-}
 
-function saveError(){
-  var month=parseInt(document.getElementById("eMonth").value);
-  var year=parseInt(document.getElementById("eYear").value);
-  var deviceId=document.getElementById("eDevice").value;
-  var childDevice=(document.getElementById("eChildDevice").value||"").trim();
-  var devLocation=(document.getElementById("eDevLocation").value||"").trim();
-  var errType=document.getElementById("eErrType").value;
-  var errCustom=document.getElementById("eErrCustom").value.trim();
-  var detectDate=document.getElementById("eDetectDate").value;
-  var measure=(document.getElementById("eMeasure").value||"").trim();
-  var u=currentUser();
-
-  if(isMonthLocked(month,year)){showToast("🔒 Tháng "+month+"/"+year+" đã bị khoá. Không thể lưu.","danger");return;}
-  if(!_editErrorId===false){// đang edit
-    var _existing=getErrors().find(function(x){return x.id===_editErrorId;});
-    if(_existing&&!isOwner(_existing)){showToast("⚠️ Bạn không có quyền sửa bản ghi của người khác.","warning");return;}
-  }
-  if(!deviceId){showToast("⚠️ Vui lòng chọn hệ thống","warning");return;}
-  if(!childDevice){showToast("⚠️ Vui lòng nhập tên thiết bị","warning");return;}
-  if(!devLocation){showToast("⚠️ Vui lòng nhập vị trí thiết bị","warning");return;}
-  if(errType==="Khác"&&!errCustom){showToast("⚠️ Vui lòng nhập mô tả lỗi","warning");return;}
-  if(!detectDate){showToast("⚠️ Vui lòng chọn ngày phát hiện","warning");return;}
-  if(!measure){showToast("⚠️ Vui lòng nhập biện pháp khắc phục","warning");return;}
-
-  var item={
-    id:_editErrorId||uid(),
-    month:month, year:year,
-    deviceId:deviceId,
-    childDevice:childDevice,
-    devLocation:devLocation,
-    errType:errType,
-    errCustom:errType==="Khác"?errCustom:"",
-    detectDate:detectDate,
-    measure:measure,
-    createdBy:u?(u.fullname||u.username):"Khách",
-    createdAt:new Date().toISOString()
-  };
-  var isNew=!_editErrorId;
-  var data=getErrors();
-  if(!isNew){
-    var idx=data.findIndex(function(x){return x.id===_editErrorId;});
-    if(idx>=0)data[idx]=item; else data.push(item);
-  } else { data.push(item); }
-  saveErrors(data);
-  // Sheets: insert hoặc update từng record, không bulkWrite
-  // Nếu update thất bại vì record chưa có trong Sheets → tự động insert (upsert)
-  if(typeof DB!=="undefined"&&DB.isReady()){
-    var _sheetsOp=isNew
-      ? DB.insert("pccc_errors",item)
-      : DB.update("pccc_errors",item.id,item).catch(function(e){
-          if(e&&e.message&&e.message.indexOf("tìm thấy")>=0)
-            return DB.insert("pccc_errors",item);
-          throw e;
-        });
-    _sheetsOp.then(function(){ _dbToast(true,"Bản ghi"); })
-             .catch(function(e){ _dbToast(false,e&&e.message||""); });
-  }
-  populateMonthFilter();populateSystemFilter();
-  renderErrorLog();
-  closeErrorModal();
-  showToast("✅ Đã lưu bản ghi báo lỗi","success");
-}
 
 function deleteError(id){
   var rec=getErrors().find(function(x){return x.id===id;});
@@ -1641,42 +1497,7 @@ function _doBuild(m,y,errors,devices,newDevices,noSystem,preparedBy,btn,logoBuff
 }
 
 /* ---- SYNC STATUS ---- */
-function updateSyncStatus(){
-  var el=document.getElementById("syncStatus");
-  if(!el)return;
-  var dbOk=typeof DB!=="undefined"&&DB.isReady();
-  var dirty=load(K_ERRORS_DIRTY,false);
-  if(!dbOk){
-    el.textContent="Chưa kết nối Sheets";
-    el.style.background="#fef5e4"; el.style.color="#e68900";
-  } else if(dirty){
-    el.textContent="Chưa sync";
-    el.style.background="#fdedec"; el.style.color="#c0392b";
-  } else {
-    el.textContent="Đã sync";
-    el.style.background="#eafaf1"; el.style.color="#1a7a3c";
-  }
-}
 
-function manualSync(){
-  var el=document.getElementById("syncStatus");
-  if(el){el.textContent="Đang kiểm tra...";el.style.background="#dceaf7";el.style.color="#003087";}
-  if(typeof DB==="undefined"||!DB.isReady()){
-    showToast("❌ Chưa cấu hình URL Google Sheets. Vào Quản trị hệ thống → Cài đặt DB.","danger");
-    updateSyncStatus(); return;
-  }
-  DB.testConnection().then(function(){
-    var p1=DB.bulkWrite("pccc_devices", getDevices()).then(function(){save(K_DEVICES_DIRTY,false);});
-    var p2=DB.bulkWrite("pccc_errors",  getErrors()).then(function(){save(K_ERRORS_DIRTY,false);});
-    return Promise.all([p1,p2]);
-  }).then(function(){
-    showToast("✅ Sync thành công — Sheets đã được cập nhật","success");
-    updateSyncStatus();
-  }).catch(function(e){
-    showToast("❌ Lỗi kết nối Sheets: "+(e&&e.message||"Không rõ nguyên nhân"),"danger");
-    updateSyncStatus();
-  });
-}
 
 /* ================================================================
    HYDRATE HỒ SƠ NGƯỜI DÙNG TỪ SUPABASE
