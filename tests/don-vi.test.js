@@ -325,6 +325,45 @@ console.log('\n── Không còn danh sách viết cứng ở Cấp phát BHLĐ
   check('app.js lấy đơn vị cấp phát từ danh mục', /HSE_UNITS\.list\("cap-phat-bhld"/.test(appjs));
 }
 
+console.log('\n── Bình áp lực: cờ môi chất phải là boolean thật ──');
+{
+  const src = fs.readFileSync(path.join(ROOT, 'assets', 'binh-ap-luc.js'), 'utf8');
+  const i = src.indexOf('function _toBool(');
+  const j = src.indexOf('/* ── LOCAL STORAGE ── */');
+  const T = new Function(src.slice(i, j) + '; return { _toBool, _fixBools };')();
+
+  check('chuỗi "false" từ server → false (LỖI GỐC)', T._toBool('false') === false);
+  check('"FALSE" / " False " cũng → false', T._toBool('FALSE') === false && T._toBool(' False ') === false);
+  check('chuỗi rỗng → false', T._toBool('') === false && T._toBool('   ') === false);
+  check('"0" và số 0 → false', T._toBool('0') === false && T._toBool(0) === false);
+  check('null / undefined → false', T._toBool(null) === false && T._toBool(undefined) === false);
+  check('"không" → false', T._toBool('không') === false);
+  check('chuỗi "true" → true', T._toBool('true') === true && T._toBool('TRUE') === true);
+  check('boolean thật giữ nguyên', T._toBool(true) === true && T._toBool(false) === false);
+  check('"x" (tick kiểu bảng tính) → true', T._toBool('x') === true);
+
+  const r = T._fixBools({ moi_chat_an_mon: 'false', moi_chat_chay_no: 'true' });
+  check('_fixBools ép cả hai cờ', r.moi_chat_an_mon === false && r.moi_chat_chay_no === true);
+
+  check('_load() ép kiểu ngay ở cửa vào', /return Array\.isArray\(arr\) \? arr\.map\(_fixBools\)/.test(src));
+  check('_normalizeRow (đường pull từ server) cũng ép kiểu', /return _fixBools\(row\);/.test(src));
+
+  /* Hệ quả nặng nhất: chu kỳ kiểm định bị rút ngắn */
+  const k = src.indexOf('function _calcNextDate(');
+  const m = src.indexOf('/* ── TRẠNG THÁI KIỂM ĐỊNH ── */');
+  const CALC = new Function('HSEDate', src.slice(k, m) + '; return _calcNextDate;')({
+    parse: v => new Date(v)
+  });
+  const nam = new Date().getFullYear() - 5;   // thiết bị 5 tuổi → chu kỳ 3 năm
+  const binhThuong = CALC('2024-06-15', nam, false, false);
+  const chuoiFalse = CALC('2024-06-15', nam, 'false', 'false');
+  check('bình thường: chu kỳ 3 năm', binhThuong.slice(0, 4) === '2027', binhThuong);
+  check('nếu KHÔNG ép kiểu, "false" rút chu kỳ còn 2 năm (bằng chứng lỗi)',
+    chuoiFalse.slice(0, 4) === '2026', chuoiFalse);
+  check('sau khi ép kiểu thì ra đúng 3 năm',
+    CALC('2024-06-15', nam, T._toBool('false'), T._toBool('false')) === binhThuong);
+}
+
 console.log('\n── Bình áp lực: một bảng, đơn vị là một cột ──');
 {
   const src = fs.readFileSync(path.join(ROOT, 'assets', 'binh-ap-luc.js'), 'utf8');

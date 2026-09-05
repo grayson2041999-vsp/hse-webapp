@@ -64,9 +64,37 @@
   var _filterUnit = "";     // mã đơn vị đang lọc ("" = tất cả)
   var _dragging  = null;    // element đang kéo
 
+  /* ── ÉP KIỂU BOOLEAN ──
+     LỖI ĐÃ SỬA: server trả hai cờ môi chất về dưới dạng CHUỖI ("false"),
+     và trong JavaScript chuỗi "false" là TRUTHY. Hậu quả:
+       · ô tích "Ăn mòn KL" / "Cháy nổ" luôn tự bật;
+       · nặng hơn: _calcNextDate() coi mọi bình đều là môi chất đặc biệt nên
+         RÚT NGẮN chu kỳ kiểm định (3 năm → 2, hoặc 2 → 1), làm "Ngày KĐ tiếp
+         theo" hiển thị sớm hơn thực tế.
+     Vì vậy mọi giá trị đọc lên đều phải đi qua đây. */
+  function _toBool(v) {
+    if (typeof v === "boolean") return v;
+    if (v === null || v === undefined) return false;
+    if (typeof v === "number") return v !== 0;
+    var t = String(v).trim().toLowerCase();
+    if (t === "" || t === "false" || t === "0" || t === "no" || t === "n" ||
+        t === "không" || t === "khong" || t === "null" || t === "undefined") return false;
+    return true;
+  }
+  function _fixBools(r) {
+    if (r && typeof r === "object") {
+      r.moi_chat_an_mon  = _toBool(r.moi_chat_an_mon);
+      r.moi_chat_chay_no = _toBool(r.moi_chat_chay_no);
+    }
+    return r;
+  }
+
   /* ── LOCAL STORAGE ── */
   function _load() {
-    try { return JSON.parse(localStorage.getItem(LS_KEY) || "[]"); } catch (e) { return []; }
+    var arr;
+    try { arr = JSON.parse(localStorage.getItem(LS_KEY) || "[]"); } catch (e) { return []; }
+    /* Ép kiểu ngay ở cửa vào: bản ghi cũ trong cache cũng được chữa. */
+    return Array.isArray(arr) ? arr.map(_fixBools) : [];
   }
   function _save(arr) {
     localStorage.setItem(LS_KEY, JSON.stringify(arr));
@@ -119,7 +147,7 @@
   function _normalizeRow(row) {
     row.ngay_kd_gan_nhat  = HSEDate.toISO(row.ngay_kd_gan_nhat);
     row.ngay_kd_tiep_theo = HSEDate.toISO(row.ngay_kd_tiep_theo);
-    return row;
+    return _fixBools(row);   /* server có thể trả "false" dạng chuỗi */
   }
 
   /* ── SYNC SHEETS ── */
@@ -592,10 +620,10 @@
           '<label>Ghi chú – Môi chất</label>' +
           '<div class="bal-checkbox-row">' +
             '<label class="bal-check-label">' +
-              '<input id="bal-inp-anmon" type="checkbox"' + (rec.moi_chat_an_mon ? " checked" : "") + '> Môi chất ăn mòn kim loại' +
+              '<input id="bal-inp-anmon" type="checkbox"' + (_toBool(rec.moi_chat_an_mon) ? " checked" : "") + '> Môi chất ăn mòn kim loại' +
             '</label>' +
             '<label class="bal-check-label">' +
-              '<input id="bal-inp-chayno" type="checkbox"' + (rec.moi_chat_chay_no ? " checked" : "") + '> Môi chất cháy nổ' +
+              '<input id="bal-inp-chayno" type="checkbox"' + (_toBool(rec.moi_chat_chay_no) ? " checked" : "") + '> Môi chất cháy nổ' +
             '</label>' +
           '</div>' +
         '</div>' +
