@@ -376,14 +376,10 @@
             <div class="form-row" style="grid-template-columns:1fr;max-width:440px;">
               <div class="form-group">
                 <label>Đơn vị <span class="req">*</span></label>
+                <!-- Danh sách đơn vị do buildDonViSelect() đổ vào từ danh mục
+                     dùng chung (Quản trị hệ thống → Danh mục đơn vị). -->
                 <select class="inp" id="c12DonViSel" onchange="toggleDonViKhac1()">
                   <option value="">-- Chọn đơn vị --</option>
-                  <option>Cảng biển</option>
-                  <option>Căn cứ Kho - Giao nhận</option>
-                  <option>Xưởng sửa chữa</option>
-                  <option>Đội xe VTHH&amp;PTTBCD</option>
-                  <option>Đội xe VCHK</option>
-                  <option value="__khac__">Khác</option>
                 </select>
                 <input type="text" class="inp" id="c12DonViKhac" placeholder="Nhập tên đơn vị..." style="display:none;margin-top:6px;">
               </div>
@@ -626,7 +622,9 @@
 
 <script src="assets/docx.iife.js"></script>
 <script type="module" src="assets/supabase-config.js"></script>
-<script src="assets/db.js?v=20260904"></script>
+<script src="assets/db.js?v=20260904b"></script>
+<!-- Danh mục Phòng/Ban/Đơn vị dùng chung (nạp SAU db.js) -->
+<script src="assets/don-vi.js?v=20260904b"></script>
 <script src="assets/hse-activity.js"></script>
 <script>
 /* ═══════════════════════════════════════════════════
@@ -661,7 +659,28 @@ var vp34Cnt    = 0;
 
 /* ── CẤU HÌNH QUÝ ── */
 var QUY_MONTHS={1:[1,2,3],2:[4,5,6],3:[7,8,9],4:[10,11,12]};
-var DON_VI_FIXED=["Cảng biển","Căn cứ Kho - Giao nhận","Xưởng sửa chữa","Đội xe VTHH&PTTBCD","Đội xe VCHK"];
+/* ── ĐƠN VỊ: lấy từ DANH MỤC DÙNG CHUNG (assets/don-vi.js) ──
+   Trước đây danh sách này viết cứng ở 3 chỗ trong file (hằng DON_VI_FIXED,
+   biến DON_VI trong báo cáo, và các <option> trong HTML). Nay do Admin quản lý
+   ở Quản trị hệ thống → Danh mục đơn vị. Bản ghi vẫn lưu TÊN đơn vị như cũ. */
+function donViList(){ return window.HSE_UNITS ? HSE_UNITS.list("kiem-tra-cac-cap") : []; }
+function donViAllowOther(){ return window.HSE_UNITS ? HSE_UNITS.allowOther("kiem-tra-cac-cap") : true; }
+function donViNorm(v){ return window.HSE_UNITS ? HSE_UNITS.norm(v) : String(v==null?"":v).trim().toLowerCase(); }
+/* Giá trị đã lưu → tên hiện hành (đơn vị có thể đã được Admin đổi tên) */
+function donViCanon(v){ return window.HSE_UNITS ? HSE_UNITS.label(v) : String(v==null?"":v); }
+function donViInList(v){ var k=donViNorm(v); return donViList().some(function(u){return donViNorm(u)===k;}); }
+
+/* Đổ danh sách đơn vị vào droplist Bước 1 (gọi lúc khởi động và mỗi khi
+   danh mục tải xong / Admin vừa sửa) */
+function buildDonViSelect(){
+  var sel=document.getElementById("c12DonViSel"); if(!sel) return;
+  var giu=currentDonVi||sel.value||"";
+  var html='<option value="">-- Chọn đơn vị --</option>'+
+    donViList().map(function(u){return '<option>'+esc(u)+'</option>';}).join("");
+  if(donViAllowOther()) html+='<option value="__khac__">Khác</option>';
+  sel.innerHTML=html;
+  if(giu && giu!=="__khac__") setDonVi1(giu);
+}
 
 function quyCuaThang(m){return Math.floor((parseInt(m,10)-1)/3)+1;}
 
@@ -697,7 +716,7 @@ function buildThangNamSelects(){
 /* ── ĐƠN VỊ (BƯỚC 1) ── */
 var currentDonVi=null; // đơn vị đang thao tác ở bước 2
 
-function isKhacDonVi(val){return !!val && DON_VI_FIXED.indexOf(val)<0;}
+function isKhacDonVi(val){return !!val && !donViInList(donViCanon(val));}
 function toggleDonViKhac1(){
   var sel=document.getElementById("c12DonViSel");
   var inp=document.getElementById("c12DonViKhac");
@@ -712,9 +731,16 @@ function getDonVi1(){
 function setDonVi1(val){
   var sel=document.getElementById("c12DonViSel");
   var inp=document.getElementById("c12DonViKhac");
+  if(!sel||!inp) return;
   if(!val){sel.value="";inp.value="";inp.style.display="none";return;}
-  if(DON_VI_FIXED.indexOf(val)>=0){sel.value=val;inp.value="";inp.style.display="none";}
-  else{sel.value="__khac__";inp.value=val;inp.style.display="block";}
+  var cur=donViCanon(val);                       // đơn vị có thể đã đổi tên
+  if(donViInList(cur)){sel.value=cur;inp.value="";inp.style.display="none";return;}
+  if(donViAllowOther()){sel.value="__khac__";inp.value=cur;inp.style.display="block";return;}
+  /* Không cho nhập tự do mà bản ghi cũ vẫn mang đơn vị này → thêm tạm vào
+     droplist để mở ra sửa không làm mất dữ liệu. */
+  var da=Array.prototype.some.call(sel.options,function(o){return o.value===cur;});
+  if(!da){var o=document.createElement("option");o.value=cur;o.textContent=cur+" (không còn dùng)";sel.appendChild(o);}
+  sel.value=cur;inp.value="";inp.style.display="none";
 }
 
 /* Bước 1 → Bước 2: chốt đơn vị rồi hiện phần nhập của riêng đơn vị đó */
@@ -1490,8 +1516,6 @@ function renderBaoCao(){
     mStart12=mEnd12=parseInt(thang12Val);
   }
 
-  var DON_VI=["Cảng biển","Căn cứ Kho - Giao nhận","Xưởng sửa chữa","Đội xe VTHH&PTTBCD","Đội xe VCHK"];
-
   // Lọc dữ liệu cap12 theo tháng/quý + năm
   var data12=load(LS_KEY12,[]).filter(function(r){
     var ym=r.thang||""; // "YYYY-MM"
@@ -1499,6 +1523,15 @@ function renderBaoCao(){
     if(parts.length<2) return false;
     var y=parseInt(parts[0]), m=parseInt(parts[1]);
     return y===nam && m>=mStart12 && m<=mEnd12;
+  });
+
+  /* Các dòng của bảng 1 = danh mục đơn vị của trang này + những đơn vị chỉ
+     còn xuất hiện trong dữ liệu (đã ngừng hoạt động, hoặc nhập tự do qua mục
+     "Khác"). Nhờ vậy báo cáo không bỏ sót số liệu đã nhập. */
+  var DON_VI=donViList().slice();
+  data12.forEach(function(r){
+    var dv=donViCanon(r.donVi||""); if(!dv) return;
+    if(!DON_VI.some(function(u){return donViNorm(u)===donViNorm(dv);})) DON_VI.push(dv);
   });
 
   // Tính bảng 1
@@ -1509,7 +1542,7 @@ function renderBaoCao(){
     var c1={lan:0,vp:0,da:0,dang:0};
     var c2={lan:0,vp:0,da:0,dang:0};
     data12.forEach(function(r){
-      if(r.donVi!==dv) return;
+      if(donViNorm(donViCanon(r.donVi||""))!==donViNorm(dv)) return;
       var vps=r.violations?(typeof r.violations==="string"?JSON.parse(r.violations):r.violations):[];
       var daKP=vps.filter(function(v){return v.tinhTrangKP==="hoan-thanh";}).length;
       var dangKP=vps.filter(function(v){return v.tinhTrangKP==="dang";}).length;
@@ -2163,6 +2196,12 @@ function init(){
 
   buildCapSelector();
   buildThangNamSelects();
+  buildDonViSelect();
+  /* Danh mục tải xong từ Supabase (hoặc Admin vừa sửa) → dựng lại droplist
+     và vẽ lại báo cáo. Trước đó droplist đã hiện ngay nhờ cache trong don-vi.js. */
+  if(window.HSE_UNITS){
+    HSE_UNITS.onChange(function(){ buildDonViSelect(); renderBaoCao(); });
+  }
   resetForm();
 
   initBaoCaoFilters();

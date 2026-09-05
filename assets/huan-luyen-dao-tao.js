@@ -30,20 +30,31 @@
       desc: "Theo Nghị định 44/2016/NĐ-CP và các quy định hiện hành" },
   ];
 
-  var UNITS = [
-    "Ban giám đốc",
-    "Phòng Kỹ thuật - Vật tư",
-    "Phòng Kinh tế - Tổ chức nhân sự",
-    "Phòng Kế toán",
-    "Phòng Thương mại - Dịch vụ",
-    "Ban Thực hiện hợp đồng",
-    "Ban Điều độ sản xuất",
-    "Cảng biển",
-    "Xưởng sửa chữa",
-    "Căn cứ Kho - Giao nhận",
-    "Đội xe VTHH&PTTBCD",
-    "Đội xe VCHK",
-  ];
+  /* ── ĐƠN VỊ: lấy từ DANH MỤC DÙNG CHUNG (assets/don-vi.js) ──
+     Trước đây 12 đơn vị được viết cứng ngay tại đây. Nay Admin quản lý ở
+     Quản trị hệ thống → Danh mục đơn vị. Bản ghi vẫn lưu TÊN như cũ, nên
+     dữ liệu hiện có đọc bình thường. */
+  function _units() { return window.HSE_UNITS ? HSE_UNITS.list("huan-luyen-dao-tao") : []; }
+  function _unitNorm(v) { return window.HSE_UNITS ? HSE_UNITS.norm(v) : String(v == null ? "" : v).trim().toLowerCase(); }
+  /* Giá trị đã lưu → tên hiện hành (đơn vị có thể đã được Admin đổi tên) */
+  function _unitCanon(v) { return window.HSE_UNITS ? HSE_UNITS.label(v) : String(v == null ? "" : v); }
+  function _unitInList(v) { var k = _unitNorm(v); return _units().some(function (u) { return _unitNorm(u) === k; }); }
+  /* Lựa chọn cho droplist: danh mục + chính giá trị đang lưu nếu nó không còn
+     trong danh mục — để sửa bản ghi cũ không làm mất đơn vị. */
+  function _unitOpts(val) {
+    var out = _units().map(function (u) { return { v: u, t: u }; });
+    var cur = _unitCanon(val || "");
+    if (cur && !_unitInList(cur)) out.push({ v: cur, t: cur + " (không còn dùng)" });
+    return out;
+  }
+  /* Đổ danh sách vào ô Đơn vị của form Thêm/Sửa nhân sự */
+  function _fillFormUnitSelect(val) {
+    var sel = document.getElementById("hl-f-unit"); if (!sel) return;
+    var cur = _unitCanon(val || "");
+    sel.innerHTML = '<option value="">-- Chọn đơn vị --</option>' +
+      _unitOpts(cur).map(function (o) { return '<option value="' + _esc(o.v) + '">' + _esc(o.t) + '</option>'; }).join("");
+    sel.value = cur || "";
+  }
 
   /* ──────────────────────────────────────────
      STATE
@@ -108,7 +119,11 @@
   }
 
   /* Vị trí đơn vị theo thứ tự droplist (đơn vị lạ → xuống cuối) */
-  function _unitIndex(u) { var i = UNITS.indexOf(u); return i < 0 ? UNITS.length + 1 : i; }
+  function _unitIndex(u) {
+    var list = _units(), k = _unitNorm(u);
+    for (var i = 0; i < list.length; i++) if (_unitNorm(list[i]) === k) return i;
+    return list.length + 1;   // đơn vị lạ / đã ngừng → xuống cuối
+  }
 
   /* Lọc nhân sự theo loại + gom nhóm theo đơn vị (thứ tự droplist),
      trong từng đơn vị xếp theo thứ tự kéo–thả */
@@ -307,6 +322,19 @@
     _render();
   };
 
+  /* Danh mục đơn vị tải xong từ Supabase (hoặc Admin vừa sửa) → vẽ lại bảng
+     để droplist đơn vị cập nhật. Không vẽ lại khi đang nhập dở (sửa nhanh
+     trong bảng, wizard cập nhật hàng loạt, hoặc modal đang mở) kẻo mất nội dung. */
+  if (window.HSE_UNITS) {
+    HSE_UNITS.onChange(function () {
+      if (!document.getElementById("hl-body")) return;
+      if (_editRowId || _batchMode) return;
+      var bg = document.getElementById("hl-modal-bg");
+      if (bg && bg.classList.contains("open")) return;
+      _renderTabContent(_currentKey);
+    });
+  }
+
   function _render() {
     _container.innerHTML = "";
     _container.appendChild(_buildStyles());
@@ -412,7 +440,7 @@
         '<div class="hl-lk-card">' +
           '<div class="hl-lk-head">' +
             '<div class="hl-lk-name">' + _esc(g.name) + '</div>' +
-            '<div class="hl-lk-meta">Danh số <b>' + _esc(g.pid) + '</b> · ' + _esc(g.title || "–") + ' · ' + _esc(g.unit || "–") + '</div>' +
+            '<div class="hl-lk-meta">Danh số <b>' + _esc(g.pid) + '</b> · ' + _esc(g.title || "–") + ' · ' + _esc(_unitCanon(g.unit) || "–") + '</div>' +
           '</div>' +
           '<div class="hl-tw"><table><thead><tr>' +
             '<th>Khoá học</th><th>Loại</th><th>Ngày HL gần nhất</th><th>Ngày HL tiếp theo</th><th>Trạng thái</th>' +
@@ -843,7 +871,7 @@
         var aoa = [header];
         rows.forEach(function (p, i) {
           var st = _calcStatus(p.lastDate, months, warnDays);
-          var r = [i + 1, p.name || "", p.pid || "", p.title || "", p.unit || ""];
+          var r = [i + 1, p.name || "", p.pid || "", p.title || "", _unitCanon(p.unit) || ""];
           if (hasSub) r.push(p.subType || "");
           r.push(_toDisplay(p.lastDate) || "", _nextPlain(p.lastDate, months), _statusText(st, p.lastDate), p.note || "");
           aoa.push(r);
@@ -1085,7 +1113,7 @@
         nameCell  = '<td class="hl-col-name">' + _inpCell(id, "name",  p.name,  "hl-inline-name", "Họ và tên") + '</td>';
         pidCell   = '<td>' + _inpCell(id, "pid",   p.pid,   "", "Danh số") + '</td>';
         titleCell = '<td>' + _inpCell(id, "title", p.title, "", "Chức danh") + '</td>';
-        unitCell  = '<td>' + _selCell(id, "unit",  p.unit, UNITS.map(function (u) { return { v: u, t: u }; }), "-- Chọn đơn vị --") + '</td>';
+        unitCell  = '<td>' + _selCell(id, "unit",  _unitCanon(p.unit), _unitOpts(p.unit), "-- Chọn đơn vị --") + '</td>';
         lastCell  = '<td><input class="hl-inline hl-inline-date" data-id="' + id + '" data-field="lastDate" ' +
                       'maxlength="10" placeholder="DD/MM/YYYY" value="' + _esc(_toDisplay(p.lastDate)) + '" autocomplete="off"></td>';
       } else {
@@ -1094,7 +1122,7 @@
         nameCell  = '<td class="hl-col-name' + (dupName ? ' hl-dup' : '') + '" style="font-weight:600;"' + (dupName ? ' title="Trùng họ tên"' : '') + '>' + _esc(p.name) + (dupName ? ' <span class="hl-dup-ic">⚠</span>' : '') + '</td>';
         pidCell   = '<td' + (dupPid ? ' class="hl-dup" title="Trùng danh số"' : '') + '><span class="hl-badge ' + (dupPid ? 'hl-exp' : 'hl-blue') + '">' + _esc(p.pid) + (dupPid ? ' ⚠' : '') + '</span></td>';
         titleCell = '<td>' + _esc(p.title || "–") + '</td>';
-        unitCell  = '<td style="font-size:12.5px;">' + _esc(p.unit) + '</td>';
+        unitCell  = '<td style="font-size:12.5px;">' + _esc(_unitCanon(p.unit)) + '</td>';
         lastCell  = '<td>' + _fmtDate(p.lastDate) + '</td>';
       }
 
@@ -1222,7 +1250,7 @@
       '<td class="hl-col-name">' + _newInp("name",  "hl-inline-name", "Họ và tên") + '</td>' +
       '<td>' + _newInp("pid",   "", "Danh số") + '</td>' +
       '<td>' + _newInp("title", "", "Chức danh") + '</td>' +
-      '<td>' + _newSel("unit", UNITS.map(function (u) { return { v: u, t: u }; }), "-- Đơn vị --") + '</td>' +
+      '<td>' + _newSel("unit", _unitOpts(""), "-- Đơn vị --") + '</td>' +
       sub +
       '<td><input class="hl-inline hl-inline-date hl-new" data-field="lastDate" maxlength="10" placeholder="DD/MM/YYYY" autocomplete="off"></td>' +
       '<td style="color:var(--text-muted)">–</td>' +
@@ -1446,9 +1474,9 @@
             '</div>' +
             '<div class="field" style="grid-column:1/-1">' +
               '<label>Đơn vị <span style="color:var(--danger)">*</span></label>' +
+              /* Danh sách do _fillFormUnitSelect() đổ vào khi mở form */
               '<select class="inp" id="hl-f-unit" style="width:100%">' +
                 '<option value="">-- Chọn đơn vị --</option>' +
-                UNITS.map(function (u) { return '<option>' + _esc(u) + '</option>'; }).join("") +
               '</select>' +
             '</div>' +
             '<div class="field" style="grid-column:1/-1">' +
@@ -1497,7 +1525,7 @@
       document.getElementById("hl-f-name").value     = p.name     || "";
       document.getElementById("hl-f-pid").value      = p.pid      || "";
       document.getElementById("hl-f-title").value    = p.title    || "";
-      document.getElementById("hl-f-unit").value     = p.unit     || "";
+      _fillFormUnitSelect(p.unit || "");
       document.getElementById("hl-f-lastdate").value = _toDisplay(p.lastDate);
       document.getElementById("hl-f-note").value     = p.note     || "";
       document.getElementById("hl-f-subtype").value  = p.subType  || "";
@@ -1505,7 +1533,7 @@
       document.getElementById("hl-f-name").value     = "";
       document.getElementById("hl-f-pid").value      = "";
       document.getElementById("hl-f-title").value    = "";
-      document.getElementById("hl-f-unit").value     = "";
+      _fillFormUnitSelect("");
       document.getElementById("hl-f-lastdate").value = "";
       document.getElementById("hl-f-note").value     = "";
       document.getElementById("hl-f-subtype").value  = "";

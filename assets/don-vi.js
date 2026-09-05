@@ -46,8 +46,8 @@
      ───────────────────────────────────────────── */
   var PAGES = [
     { slug: "ke-hoach",           title: "Kế hoạch",             note: "Đơn vị chủ trì & phối hợp", applied: true  },
-    { slug: "kiem-tra-cac-cap",   title: "Kiểm tra các cấp",     note: "Chọn đơn vị ở Bước 1",      applied: false },
-    { slug: "huan-luyen-dao-tao", title: "Huấn luyện - Đào tạo", note: "Đơn vị của từng nhân sự",   applied: false },
+    { slug: "kiem-tra-cac-cap",   title: "Kiểm tra các cấp",     note: "Chọn đơn vị ở Bước 1",      applied: true  },
+    { slug: "huan-luyen-dao-tao", title: "Huấn luyện - Đào tạo", note: "Đơn vị của từng nhân sự",   applied: true  },
     { slug: "cap-phat-bhld",      title: "Cấp phát BHLĐ",        note: "Đơn vị cấp phát & phân quyền", applied: false }
   ];
 
