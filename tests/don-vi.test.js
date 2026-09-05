@@ -600,6 +600,15 @@ console.log('\n── Thiết bị nâng: bảng mới trong Quản lý thiết 
   check('cột Loại thiết bị đã gộp vào cột Tên thiết bị', !src.includes('"col-loai"'));
   check('ô Tên thiết bị hiển thị "<loại> <tên>"',
     /rec\.loai_thiet_bi \+ " " : ""\) \+ \(rec\.ten_thiet_bi \|\| ""\)\)\.trim\(\)/.test(src));
+  check('Biển kiểm soát nằm dòng 2 trong ô Tên thiết bị, có nhãn nhạt màu',
+    /id="tbn-inp-bks"/.test(src) &&
+    /tbn-bks-nhan">Biển kiểm soát<\/span>/.test(src) &&
+    /bien_kiem_soat:\s+document\.getElementById\("tbn-inp-bks"\)\.value/.test(src));
+  check('Biển kiểm soát có cột riêng trong file Excel', /"Biển kiểm soát", "Ngày KĐ&TT gần nhất"/.test(src));
+  check('SQL có cột Biển kiểm soát và bổ sung được cho bảng đã tạo trước', (() => {
+    const q = fs.readFileSync(path.join(ROOT, 'supabase', 'thiet_bi_nang.sql'), 'utf8');
+    return /bien_kiem_soat     text/.test(q) && /add column if not exists bien_kiem_soat text/.test(q);
+  })());
   check('loại và tên vẫn là hai trường riêng trong dữ liệu (chỉ gộp lúc hiển thị)',
     /loai_thiet_bi:\s+document\.getElementById\("tbn-inp-loai"\)\.value/.test(src) &&
     /ten_thiet_bi:\s+document\.getElementById\("tbn-inp-ten"\)\.value/.test(src));

@@ -419,14 +419,14 @@
     var rows = _rowsSorted(_filterUnit, _filterLoai);
     var head = ["STT", "Tên thiết bị", "Loại thiết bị", "Đơn vị quản lý", "Vị trí lắp đặt",
                 "Tải trọng thiết kế (tấn)", "Tải trọng làm việc (tấn)", "Năm đưa vào sử dụng",
-                "Số chế tạo", "Số đăng ký", "Ngày KĐ&TT gần nhất", "Ngày KĐ&TT tiếp theo",
+                "Số chế tạo", "Số đăng ký", "Biển kiểm soát", "Ngày KĐ&TT gần nhất", "Ngày KĐ&TT tiếp theo",
                 "Trạng thái", "Ghi chú"];
     var body = rows.map(function (r, i) {
       var nd = _nextDateOf(r), st = _kdStatus(nd);
       return [i + 1, r.ten_thiet_bi || "", r.loai_thiet_bi || "",
               _unitLabel(r.section).replace(" (không còn dùng)", ""), r.vi_tri || "",
               _num(r.tai_trong_tk), _num(r.tai_trong_lv),
-              r.nam_su_dung || "", r.so_che_tao || "", r.so_dang_ky || "",
+              r.nam_su_dung || "", r.so_che_tao || "", r.so_dang_ky || "", r.bien_kiem_soat || "",
               r.ngay_kd_gan_nhat ? HSEDate.fmt(r.ngay_kd_gan_nhat) : "",
               nd ? HSEDate.fmt(nd) : "",
               st ? st.label : "Chưa có ngày KĐ",
@@ -468,7 +468,7 @@
           var ws  = XLSX.utils.aoa_to_sheet(aoa);
           ws["!cols"] = [{ wch: 5 }, { wch: 30 }, { wch: 14 }, { wch: 20 }, { wch: 18 },
                          { wch: 15 }, { wch: 15 }, { wch: 14 }, { wch: 14 }, { wch: 14 },
-                         { wch: 18 }, { wch: 18 }, { wch: 14 }, { wch: 28 }];
+                         { wch: 15 }, { wch: 18 }, { wch: 18 }, { wch: 14 }, { wch: 28 }];
           ws["!merges"] = [{ s: { r: 0, c: 0 }, e: { r: 0, c: d.head.length - 1 } },
                            { s: { r: 1, c: 0 }, e: { r: 1, c: d.head.length - 1 } }];
           var wb = XLSX.utils.book_new();
@@ -680,7 +680,14 @@
        Vẫn là HAI trường riêng trong dữ liệu — chỉ gộp lúc hiển thị, nên lọc
        theo loại và xuất Excel theo từng cột vẫn chạy như cũ. */
     var tenHienThi = ((rec.loai_thiet_bi ? rec.loai_thiet_bi + " " : "") + (rec.ten_thiet_bi || "")).trim();
-    tr.appendChild(td(_esc(tenHienThi) || "—", "col-ten"));
+    var tenHtml = _esc(tenHienThi) || "—";
+    /* Biển kiểm soát xuống dòng thứ hai trong cùng ô, có nhãn nhạt màu đứng
+       trước để phân biệt với tên thiết bị mà không tốn thêm một cột. */
+    if (rec.bien_kiem_soat) {
+      tenHtml += '<div class="tbn-bks"><span class="tbn-bks-nhan">Biển kiểm soát</span> ' +
+                 _esc(rec.bien_kiem_soat) + "</div>";
+    }
+    tr.appendChild(td(tenHtml, "col-ten"));
 
     var nhan = _unitLabel(rec.section), ghi = "";
     var _i = nhan.indexOf(" (không còn dùng)");
@@ -896,9 +903,15 @@
             '<input id="tbn-inp-sochetao" class="tbn-input" type="text" value="' + _esc(rec.so_che_tao || "") + '">' +
           "</div>" +
         "</div>" +
-        '<div class="tbn-form-row">' +
-          "<label>Số đăng ký</label>" +
-          '<input id="tbn-inp-sodangky" class="tbn-input" type="text" value="' + _esc(rec.so_dang_ky || "") + '">' +
+        '<div class="tbn-form-row tbn-form-row-2">' +
+          "<div>" +
+            "<label>Số đăng ký</label>" +
+            '<input id="tbn-inp-sodangky" class="tbn-input" type="text" value="' + _esc(rec.so_dang_ky || "") + '">' +
+          "</div>" +
+          "<div>" +
+            "<label>Biển kiểm soát</label>" +
+            '<input id="tbn-inp-bks" class="tbn-input" type="text" placeholder="VD: 72LA - 1153" value="' + _esc(rec.bien_kiem_soat || "") + '">' +
+          "</div>" +
         "</div>" +
         '<div class="tbn-form-row">' +
           "<label>Ngày kiểm định &amp; thử tải gần nhất</label>" +
@@ -963,6 +976,7 @@
         nam_su_dung:       document.getElementById("tbn-inp-nam").value,
         so_che_tao:        document.getElementById("tbn-inp-sochetao").value.trim(),
         so_dang_ky:        document.getElementById("tbn-inp-sodangky").value.trim(),
+        bien_kiem_soat:    document.getElementById("tbn-inp-bks").value.trim(),
         ngay_kd_gan_nhat:  ngayISO,
         ngay_kd_tiep_theo: _tuChinh
                              ? (HSEDate.getValue(document.getElementById("tbn-inp-ngaykdtt")) || _calcNextDate(ngayISO))
@@ -1063,6 +1077,8 @@
       ".tbn-table th.col-ten,.tbn-table td.col-ten{text-align:left;}",
       ".tbn-table td.col-tttk,.tbn-table td.col-ttlv,.tbn-table td.col-nam,.tbn-table td.col-kd,.tbn-table td.col-kdtt{font-variant-numeric:tabular-nums;}",
       ".tbn-canh-bao{color:#c0392b;font-weight:800;}",
+      ".tbn-bks{margin-top:3px;font-size:12px;font-weight:700;color:#334155;line-height:1.3;}",
+      ".tbn-bks-nhan{color:#9aa7b8;font-weight:500;}",
 
       /* Dải màu cảnh báo hạn kiểm định ở đầu hàng */
       ".tbn-table tbody tr>td:first-child{border-left:3px solid transparent;}",

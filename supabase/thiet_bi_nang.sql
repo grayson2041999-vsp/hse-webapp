@@ -41,6 +41,7 @@ create table if not exists public."ThietBi_ThietBiNang" (
   nam_su_dung        text,                                  -- năm đưa vào sử dụng
   so_che_tao         text,
   so_dang_ky         text,
+  bien_kiem_soat     text,                                  -- biển số xe (xe nâng, cần trục bánh lốp…)
   ngay_kd_gan_nhat   text,                                  -- ISO YYYY-MM-DD
   ngay_kd_tiep_theo  text,                                  -- ISO YYYY-MM-DD
   ngay_kd_tu_chinh   boolean not null default false,        -- true = người dùng tự nhập, không tự tính
@@ -49,6 +50,11 @@ create table if not exists public."ThietBi_ThietBiNang" (
   "createdAt"        timestamptz,
   "updatedAt"        timestamptz
 );
+
+-- Bảng đã tạo từ bản trước (chưa có Biển kiểm soát) thì bổ sung cột ở đây.
+-- Chạy lại nhiều lần vẫn an toàn.
+alter table public."ThietBi_ThietBiNang"
+  add column if not exists bien_kiem_soat text;
 
 -- Lọc theo đơn vị và sắp thứ tự là truy vấn thường xuyên nhất
 create index if not exists thietbinang_section_order_idx
