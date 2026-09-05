@@ -536,6 +536,10 @@ console.log('\n── Bình áp lực: một bảng, đơn vị là một cột 
   check('nhãn trạng thái dùng chung cho chip và droplist', BAL._ttLabel('sap-han') === 'Sắp hạn (≤60 ngày)');
   store = [];
 
+  check('CHỐNG TÁI PHÁT: ô dữ liệu phải cho xuống dòng, vì style.css đặt nowrap toàn cục',
+    /\.bal-table td\{[^"]*white-space:normal/.test(src));
+  check('chữ dài cắt tối đa mấy dòng rồi … và xem đủ bằng tooltip',
+    /-webkit-line-clamp/.test(src) && /el\.title = nguyen/.test(src));
   check('không còn nhiều bảng theo section', !/function\s+_buildSection\s*\(/.test(src));
   check('không còn hàm _renderSections', !/function\s+_renderSections\s*\(/.test(src));
   check('có cột "Đơn vị quản lý" trong bảng',
@@ -653,9 +657,9 @@ console.log('\n── Thiết bị nâng: bảng mới trong Quản lý thiết 
     /r\.ngay_kd_tu_chinh = _toBool\(r\.ngay_kd_tu_chinh\)/.test(src));
 
   /* Đủ 13 cột theo đúng yêu cầu nghiệp vụ */
-  const cols = ['col-no', 'col-ten', 'col-donvi', 'col-vitri', 'col-tttk', 'col-ttlv',
+  const cols = ['col-no', 'col-ten', 'col-vitri', 'col-tt',
                 'col-nam', 'col-sct', 'col-sdk', 'col-kd', 'col-kdtt', 'col-ghichu'];
-  check('đủ 12 cột trong bảng', cols.every(c => src.includes('"' + c + '"')),
+  check('đủ 10 cột trong bảng', cols.every(c => src.includes('"' + c + '"')),
     cols.filter(c => !src.includes('"' + c + '"')));
   check('cột Loại thiết bị đã gộp vào cột Tên thiết bị', !src.includes('"col-loai"'));
   check('ô Tên thiết bị hiển thị "<loại> <tên>"',
@@ -672,22 +676,32 @@ console.log('\n── Thiết bị nâng: bảng mới trong Quản lý thiết 
   check('loại và tên vẫn là hai trường riêng trong dữ liệu (chỉ gộp lúc hiển thị)',
     /loai_thiet_bi:\s+document\.getElementById\("tbn-inp-loai"\)\.value/.test(src) &&
     /ten_thiet_bi:\s+document\.getElementById\("tbn-inp-ten"\)\.value/.test(src));
-  check('Tải trọng là MỘT cột lớn tách thành hai cột con',
-    /tbn-th-group' colspan='2'>Tải trọng \(tấn\)/.test(src) &&
-    /tbn-th-sub'>Thiết kế/.test(src) && /tbn-th-sub'>Làm việc/.test(src));
+  check('hai cột tải trọng gộp làm một, bằng nhau chỉ hiện một số',
+    !src.includes('"col-tttk"') && !src.includes('"col-ttlv"') &&
+    /tk === lv/.test(src) && /TK ' \+ tk \+ " \/ LV " \+ lv/.test(src));
+  check('làm việc vượt thiết kế vẫn được tô đỏ cảnh báo',
+    /lv > tk/.test(src) && /tbn-canh-bao/.test(src));
+  check('bỏ cột Đơn vị, thay bằng dải tiêu đề gom hàng theo đơn vị',
+    !src.includes('"col-donvi"') && /function _groupRow\(/.test(src) &&
+    /tr\.className = "tbn-group"/.test(src));
+  check('sọc xen kẽ tính theo hàng dữ liệu, dải nhóm không làm lệch nhịp',
+    /no % 2 === 0.*tbn-alt/s.test(src) && !/nth-child\(even\) td/.test(src));
   check('độ rộng cột khai bằng colgroup (tiêu đề hai tầng không suy được từ hàng đầu)',
     /createElement\("colgroup"\)/.test(src) && /'<col class="' \+ c \+ '">'/.test(src));
-  check('tiêu đề tầng 2 được ĐO để dính đúng chỗ khi cuộn, không đoán số cố định',
-    /_fixStickyRows/.test(src) && /getBoundingClientRect\(\)\.height/.test(src));
+  check('tiêu đề về lại MỘT tầng nên bỏ hẳn cơ chế đo chiều cao', !/_fixStickyRows/.test(src));
+  check('CHỐNG TÁI PHÁT: ô dữ liệu phải cho xuống dòng, vì style.css đặt nowrap toàn cục',
+    /\.tbn-table td\{[^"]*white-space:normal/.test(src));
+  check('chữ dài cắt tối đa mấy dòng rồi … và xem đủ bằng tooltip',
+    /-webkit-line-clamp/.test(src) && /el\.title = nguyen/.test(src));
   check('lọc theo loại nằm ngay dưới tiêu đề cột Tên thiết bị',
-    src.includes(`"<th class='col-ten' rowspan='2'>" + _thFilterLoai()`) &&
+    src.includes(`"<th class='col-ten'>" + _thFilterLoai()`) &&
     /_thFilter\("Tên thiết bị", "tbn-filter-loai"/.test(src) &&
     /thead.querySelector\("#tbn-filter-loai"\)/.test(src));
-  check('lọc Đơn vị quản lý nằm ngay tiêu đề cột',
-    src.includes(`"<th class='col-donvi' rowspan='2'>" + _thFilterDonVi()`) && /thead.querySelector\("#tbn-filter-unit"\)/.test(src));
+  check('lọc đơn vị chuyển xuống thanh thao tác (bảng không còn cột Đơn vị)',
+    /selDV\.id = "tbn-filter-unit"/.test(src) && /bar\.appendChild\(selDV\)/.test(src));
   check('có nút xuất Excel', /id="tbn-btn-xls"/.test(src));
   check('lọc hạn kiểm định nằm ngay tiêu đề cột Ngày KĐ&TT tiếp theo',
-    src.includes(`"<th class='col-kdtt' rowspan='2'>" + _thFilterTT()`) &&
+    src.includes(`"<th class='col-kdtt'>" + _thFilterTT()`) &&
     /thead.querySelector\("#tbn-filter-tt"\)/.test(src));
   check('khoá trạng thái khớp class badge trong bảng (không thể lệch nhau)',
     /st\.cls\.replace\("kd-", ""\)/.test(src) && /key: "qua-han"/.test(src));

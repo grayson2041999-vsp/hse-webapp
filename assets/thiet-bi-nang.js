@@ -392,26 +392,7 @@
       return;
     }
     wrap.appendChild(_buildTable(_rowsSorted(_filterUnit, _filterLoai, _filterTT)));
-    _fixStickyRows();
   }
-
-  /* Tiêu đề hai tầng + position:sticky: tầng 2 phải biết tầng 1 cao bao nhiêu
-     mới dừng đúng chỗ, mà chiều cao đó thay đổi theo bề rộng màn hình (nhãn
-     xuống dòng) nên phải ĐO thật, không đoán bằng số cố định. */
-  function _fixStickyRows() {
-    var apply = function () {
-      var r1 = document.querySelector("#tbn-sections .tbn-table thead tr");
-      if (!r1) return;
-      var h = Math.round(r1.getBoundingClientRect().height);
-      var subs = document.querySelectorAll("#tbn-sections .tbn-table thead tr:nth-child(2) th");
-      for (var i = 0; i < subs.length; i++) subs[i].style.top = h + "px";
-    };
-    if (window.requestAnimationFrame) window.requestAnimationFrame(apply);
-    else setTimeout(apply, 0);
-  }
-  window.addEventListener("resize", function () {
-    if (document.getElementById("tbn-sections")) _fixStickyRows();
-  });
 
   /* ══════════════════════════════════════════
      XUẤT EXCEL — xuất đúng những gì đang thấy (theo bộ lọc và thứ tự hiện tại).
@@ -537,14 +518,6 @@
     return _thFilter("Ngày KĐ&amp;TT<br>tiếp theo", "tbn-filter-tt", opts, !!_filterTT,
                      "hạn kiểm định");
   }
-  function _thFilterDonVi() {
-    var opts = '<option value="">Tất cả đơn vị</option>' +
-      _units().map(function (u) {
-        return '<option value="' + _esc(u.key) + '"' + (u.key === _filterUnit ? " selected" : "") + ">" +
-               _esc(u.label) + "</option>";
-      }).join("");
-    return _thFilter("Đơn vị quản lý", "tbn-filter-unit", opts, !!_filterUnit);
-  }
 
   /* ── BUILD BẢNG ── */
   function _buildTable(rows) {
@@ -598,6 +571,20 @@
       }
     }
 
+    /* Bộ lọc đơn vị: bảng đã gom hàng theo đơn vị nên không còn cột Đơn vị
+       để đặt droplist; đưa về thanh thao tác. */
+    var selDV = document.createElement("select");
+    selDV.id = "tbn-filter-unit";
+    selDV.className = "tbn-bar-select" + (_filterUnit ? " is-on" : "");
+    selDV.title = "Lọc theo đơn vị quản lý";
+    selDV.innerHTML = '<option value="">Tất cả đơn vị</option>' +
+      _units().map(function (u) {
+        return '<option value="' + _esc(u.key) + '"' + (u.key === _filterUnit ? " selected" : "") + ">" +
+               _esc(u.label) + "</option>";
+      }).join("");
+    selDV.onchange = function () { _filterUnit = this.value; _renderTable(); };
+    bar.appendChild(selDV);
+
     if (_filterUnit || _filterLoai || _filterTT) {
       var mo = [];
       if (_filterLoai) mo.push(_esc(_filterLoai));
@@ -623,7 +610,7 @@
        cột KHÔNG thể suy từ hàng đầu như bảng một tầng. Khai bằng <colgroup>
        để table-layout:fixed lấy đúng số đo, không phụ thuộc hàng nào. */
     var COLS = (_editMode ? ["col-drag"] : [])
-      .concat(["col-no", "col-ten", "col-donvi", "col-vitri", "col-tttk", "col-ttlv",
+      .concat(["col-no", "col-ten", "col-vitri", "col-tt",
                "col-nam", "col-sct", "col-sdk", "col-kd", "col-kdtt", "col-ghichu"])
       .concat(_editMode ? ["col-action"] : []);
     var colgroup = document.createElement("colgroup");
@@ -633,23 +620,18 @@
     var thead = document.createElement("thead");
     thead.innerHTML =
       "<tr>" +
-      (_editMode ? "<th class='col-drag' rowspan='2'></th>" : "") +
-      "<th class='col-no' rowspan='2'>Nº</th>" +
-      "<th class='col-ten' rowspan='2'>" + _thFilterLoai() + "</th>" +
-      "<th class='col-donvi' rowspan='2'>" + _thFilterDonVi() + "</th>" +
-      "<th class='col-vitri' rowspan='2'>Vị trí<br>lắp đặt</th>" +
-      "<th class='tbn-th-group' colspan='2'>Tải trọng (tấn)</th>" +
-      "<th class='col-nam' rowspan='2'>Năm đưa vào<br>sử dụng</th>" +
-      "<th class='col-sct' rowspan='2'>Số<br>chế tạo</th>" +
-      "<th class='col-sdk' rowspan='2'>Số<br>đăng ký</th>" +
-      "<th class='col-kd' rowspan='2'>Ngày KĐ&amp;TT<br>gần nhất</th>" +
-      "<th class='col-kdtt' rowspan='2'>" + _thFilterTT() + "</th>" +
-      "<th class='col-ghichu' rowspan='2'>Ghi chú</th>" +
-      (_editMode ? "<th class='col-action' rowspan='2'></th>" : "") +
-      "</tr>" +
-      "<tr>" +
-        "<th class='tbn-th-sub'>Thiết kế</th>" +
-        "<th class='tbn-th-sub'>Làm việc</th>" +
+      (_editMode ? "<th class='col-drag'></th>" : "") +
+      "<th class='col-no'>Nº</th>" +
+      "<th class='col-ten'>" + _thFilterLoai() + "</th>" +
+      "<th class='col-vitri'>Vị trí<br>lắp đặt</th>" +
+      "<th class='col-tt'>Tải trọng<br>(tấn)</th>" +
+      "<th class='col-nam'>Năm đưa vào<br>sử dụng</th>" +
+      "<th class='col-sct'>Số<br>chế tạo</th>" +
+      "<th class='col-sdk'>Số<br>đăng ký</th>" +
+      "<th class='col-kd'>Ngày KĐ&amp;TT<br>gần nhất</th>" +
+      "<th class='col-kdtt'>" + _thFilterTT() + "</th>" +
+      "<th class='col-ghichu'>Ghi chú</th>" +
+      (_editMode ? "<th class='col-action'></th>" : "") +
       "</tr>";
     table.appendChild(thead);
 
@@ -666,7 +648,7 @@
     if (!rows.length) {
       var emptyRow = document.createElement("tr");
       var emptyTd  = document.createElement("td");
-      emptyTd.colSpan = _editMode ? 14 : 12;
+      emptyTd.colSpan = COLS.length;
       emptyTd.className = "tbn-empty";
       emptyTd.textContent = (_filterUnit || _filterLoai || _filterTT)
         ? "Không có thiết bị nào khớp bộ lọc."
@@ -674,7 +656,19 @@
       emptyRow.appendChild(emptyTd);
       tbody.appendChild(emptyRow);
     } else {
-      rows.forEach(function (row, idx) { tbody.appendChild(_buildRow(row, idx + 1)); });
+      /* Bảng vốn đã sắp theo đơn vị, nên chỉ cần chèn dải tiêu đề mỗi khi
+         đổi đơn vị — thay cho cột "Đơn vị quản lý" lặp lại từng hàng. */
+      var secTruoc = "\u0000";
+      rows.forEach(function (row, idx) {
+        var sec = row.section || "";
+        if (sec !== secTruoc) {
+          secTruoc = sec;
+          var dem = 0;
+          rows.forEach(function (r) { if ((r.section || "") === sec) dem++; });
+          tbody.appendChild(_groupRow(sec, dem, COLS.length));
+        }
+        tbody.appendChild(_buildRow(row, idx + 1));
+      });
     }
 
     table.appendChild(tbody);
@@ -683,12 +677,29 @@
     return box;
   }
 
+  /* ── DẢI TIÊU ĐỀ ĐƠN VỊ ── */
+  function _groupRow(sec, dem, soCot) {
+    var tr = document.createElement("tr");
+    tr.className = "tbn-group";
+    var td = document.createElement("td");
+    td.colSpan = soCot;
+    var nhan = sec ? _unitLabel(sec) : "Chưa phân đơn vị";
+    var cu = "";
+    var i = nhan.indexOf(" (không còn dùng)");
+    if (i >= 0) { cu = '<span class="tbn-group-cu">không còn dùng</span>'; nhan = nhan.slice(0, i); }
+    td.innerHTML = '<span class="tbn-group-ten">' + _esc(nhan) + "</span>" + cu +
+                   '<span class="tbn-group-dem">' + dem + " thiết bị</span>";
+    tr.appendChild(td);
+    return tr;
+  }
+
   /* ── BUILD 1 ROW ── */
   function _buildRow(rec, no) {
     var tr = document.createElement("tr");
     tr.dataset.id  = rec.id;
     tr.dataset.sec = rec.section || "";
     if (_editMode) tr.className = "tbn-row-draggable";
+    if (no % 2 === 0) tr.classList.add("tbn-alt");
 
     var nextDate = _nextDateOf(rec);
     var status   = _kdStatus(nextDate);
@@ -704,10 +715,18 @@
       _wireDrag(tr);
     }
 
-    function td(content, cls) {
+    /* content = HTML để hiển thị · nguyen = chữ đầy đủ cho tooltip · dong =
+       số dòng tối đa. Ô dài hơn sẽ có dấu … và di chuột lên xem được đủ —
+       KHÔNG bao giờ cắt âm thầm như trước. */
+    function td(content, cls, nguyen, dong) {
       var el = document.createElement("td");
       if (cls) el.className = cls;
-      el.innerHTML = content;
+      var box = document.createElement("div");
+      box.className = "tbn-clamp";
+      if (dong) box.style.webkitLineClamp = String(dong);
+      box.innerHTML = content;
+      el.appendChild(box);
+      if (nguyen) el.title = nguyen;
       return el;
     }
 
@@ -723,27 +742,37 @@
       tenHtml += '<div class="tbn-bks"><span class="tbn-bks-nhan">Biển kiểm soát</span> ' +
                  _esc(rec.bien_kiem_soat) + "</div>";
     }
-    tr.appendChild(td(tenHtml, "col-ten"));
+    tr.appendChild(td(tenHtml, "col-ten",
+      tenHienThi + (rec.bien_kiem_soat ? " · Biển kiểm soát " + rec.bien_kiem_soat : ""), 3));
 
-    var nhan = _unitLabel(rec.section), ghi = "";
-    var _i = nhan.indexOf(" (không còn dùng)");
-    if (_i >= 0) { ghi = '<br><span style="font-size:11px;color:#9a6700">không còn dùng</span>'; nhan = nhan.slice(0, _i); }
-    tr.appendChild(td(_esc(nhan) + ghi, "col-donvi"));
-    tr.appendChild(td(_esc(rec.vi_tri || "—"), "col-vitri"));
+    tr.appendChild(td(_esc(rec.vi_tri || "—"), "col-vitri", rec.vi_tri || "", 2));
 
+    /* MỘT cột tải trọng. Hai giá trị bằng nhau (đa số trường hợp) chỉ hiện
+       một số cho đỡ rối; khác nhau mới ghi rõ TK / LV — và làm việc VƯỢT
+       thiết kế thì tô đỏ, vì đó là nhập sai hoặc thiết bị đang quá tải. */
     var tk = _num(rec.tai_trong_tk), lv = _num(rec.tai_trong_lv);
-    tr.appendChild(td(tk === "" ? "—" : tk, "col-tttk"));
-    /* Tải trọng làm việc vượt tải trọng thiết kế là dấu hiệu nhập sai hoặc
-       thiết bị đang bị dùng quá tải → đánh dấu để người nhập nhìn thấy. */
-    var lvHtml = lv === "" ? "—" : String(lv);
-    if (tk !== "" && lv !== "" && lv > tk) {
-      lvHtml = '<span class="tbn-canh-bao" title="Tải trọng làm việc đang lớn hơn tải trọng thiết kế">' + lv + " ⚠</span>";
+    var ttHtml, ttTip = "";
+    if (tk === "" && lv === "") {
+      ttHtml = "—";
+    } else if (tk === "" || lv === "") {
+      ttHtml = String(tk === "" ? lv : tk);
+      ttTip  = (tk === "" ? "Tải trọng làm việc " + lv : "Tải trọng thiết kế " + tk) + " tấn";
+    } else if (tk === lv) {
+      ttHtml = String(tk);
+      ttTip  = "Thiết kế và làm việc cùng " + tk + " tấn";
+    } else {
+      ttTip  = "Thiết kế " + tk + " tấn · Làm việc " + lv + " tấn";
+      ttHtml = '<span class="tbn-tt-khac">TK ' + tk + " / LV " + lv + "</span>";
+      if (lv > tk) {
+        ttTip  = "Tải trọng làm việc đang LỚN HƠN tải trọng thiết kế — " + ttTip;
+        ttHtml = '<span class="tbn-canh-bao">TK ' + tk + " / LV " + lv + " ⚠</span>";
+      }
     }
-    tr.appendChild(td(lvHtml, "col-ttlv"));
+    tr.appendChild(td(ttHtml, "col-tt", ttTip, 2));
 
     tr.appendChild(td(rec.nam_su_dung || "—", "col-nam"));
-    tr.appendChild(td(_esc(rec.so_che_tao || "—"), "col-sct"));
-    tr.appendChild(td(_esc(rec.so_dang_ky || "—"), "col-sdk"));
+    tr.appendChild(td(_esc(rec.so_che_tao || "—"), "col-sct", rec.so_che_tao || "", 2));
+    tr.appendChild(td(_esc(rec.so_dang_ky || "—"), "col-sdk", rec.so_dang_ky || "", 2));
     tr.appendChild(td(rec.ngay_kd_gan_nhat ? HSEDate.fmt(rec.ngay_kd_gan_nhat) : "—", "col-kd"));
 
     var nextCell = document.createElement("td");
@@ -763,7 +792,7 @@
     }
     tr.appendChild(nextCell);
 
-    tr.appendChild(td(_esc(rec.ghi_chu || "") || "—", "col-ghichu"));
+    tr.appendChild(td(_esc(rec.ghi_chu || "") || "—", "col-ghichu", rec.ghi_chu || "", 2));
 
     if (_editMode) {
       var tdAct = document.createElement("td");
@@ -1077,19 +1106,29 @@
 
       /* Thanh thao tác dưới tiêu đề */
       ".tbn-bar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:10px 18px;background:#f6f8fc;border-bottom:1px solid #e6ebf5;}",
+      ".tbn-bar-select{padding:5px 9px;font-size:12.5px;font-weight:600;font-family:inherit;color:#334155;background:#fff;border:1.5px solid #cdd6e8;border-radius:7px;cursor:pointer;outline:none;max-width:240px;}",
+      ".tbn-bar-select:hover{border-color:#0060B6;}",
+      ".tbn-bar-select.is-on{border-color:#0060B6;background:#eef3fb;color:#003087;}",
       ".tbn-chip{margin-left:auto;border:1px solid #cdd6e8;background:#fff;color:#41577a;border-radius:14px;padding:4px 11px;font-size:12px;font-weight:600;cursor:pointer;}",
       ".tbn-chip:hover{background:#eef3fb;border-color:#0060B6;color:#003087;}",
 
       /* Bảng */
       ".tbn-table-wrap{max-height:72vh;overflow:auto;-webkit-overflow-scrolling:touch;}",
-      ".tbn-table{width:100%;min-width:1240px;table-layout:fixed;border-collapse:collapse;font-size:13px;}",
+      ".tbn-table{width:100%;min-width:1080px;table-layout:fixed;border-collapse:collapse;font-size:13px;}",
       ".tbn-table th{position:sticky;top:0;z-index:2;background:#dde6f3;color:#003087;font-weight:700;font-size:12.5px;letter-spacing:.2px;padding:10px;text-align:center;vertical-align:middle;white-space:normal;line-height:1.35;border-bottom:2px solid #b9c8e2;box-shadow:inset 0 -2px 0 #b9c8e2;overflow:hidden;}",
-      ".tbn-table td{padding:10px;text-align:center;border-bottom:1px solid #eef0f4;vertical-align:middle;overflow:hidden;word-break:break-word;overflow-wrap:anywhere;font-weight:600;color:#1f2b3d;line-height:1.45;}",
-      ".tbn-table thead tr:first-child th{z-index:3;}",
-      ".tbn-th-group{border-bottom:1px solid #c3d0e6!important;box-shadow:none!important;}",
-      ".tbn-th-sub{font-size:11.5px;}",
-      ".tbn-table tbody tr:nth-child(even) td{background:#fafbfe;}",
+      /* ⚠ white-space:normal BẮT BUỘC — assets/style.css đặt th,td{white-space:nowrap}
+         cho toàn webapp; gặp ô overflow:hidden thì chữ dài bị CẮT CỤT không
+         dấu hiệu gì, người xem không biết mình đang đọc thiếu. */
+      ".tbn-table td{padding:10px;text-align:center;white-space:normal;border-bottom:1px solid #eef0f4;vertical-align:middle;word-break:break-word;overflow-wrap:anywhere;font-weight:600;color:#1f2b3d;line-height:1.45;}",
+      /* Cắt tối đa N dòng rồi thêm dấu … — nội dung đầy đủ xem bằng tooltip */
+      ".tbn-clamp{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;line-clamp:2;overflow:hidden;}",
+      ".tbn-table tr.tbn-alt td{background:#fafbfe;}",
       ".tbn-table tbody tr:hover td{background:#eef3fb;}",
+      /* Dải tiêu đề đơn vị — thay cho cột "Đơn vị quản lý" lặp lại từng hàng */
+      ".tbn-table tr.tbn-group td{background:#eef3fb!important;padding:8px 14px;text-align:left;border-top:1px solid #cdd6e8;border-bottom:1px solid #cdd6e8;}",
+      ".tbn-group-ten{font-weight:800;font-size:12.5px;color:#003087;text-transform:uppercase;letter-spacing:.5px;}",
+      ".tbn-group-cu{margin-left:8px;font-size:11px;font-weight:600;color:#9a6700;}",
+      ".tbn-group-dem{margin-left:10px;font-size:11.5px;font-weight:600;color:#6b7c93;}",
       ".tbn-table th, .tbn-table td{border-right:1px solid #e6ebf5;}",
       ".tbn-table th:last-child, .tbn-table td:last-child{border-right:none;}",
       ".tbn-empty{text-align:center;color:#6b7c93;padding:24px!important;font-style:italic;font-weight:500;}",
@@ -1097,21 +1136,20 @@
       /* Độ rộng cột — tổng 100% */
       ".tbn-table .col-no{width:3%;color:#6b7c93;font-weight:700;}",
       ".tbn-table .col-drag{width:3%;cursor:grab;color:#aaa;font-size:16px;user-select:none;}",
-      ".tbn-table .col-ten{width:21.5%;font-weight:700;color:#0f172a;}",
-      ".tbn-table .col-donvi{width:10%;color:#334155;}",
-      ".tbn-table .col-vitri{width:8.5%;}",
-      ".tbn-table .col-tttk{width:6.5%;}",
-      ".tbn-table .col-ttlv{width:6.5%;}",
-      ".tbn-table .col-nam{width:5.5%;}",
-      ".tbn-table .col-sct{width:7.5%;}",
-      ".tbn-table .col-sdk{width:7.5%;}",
-      ".tbn-table .col-kd{width:8%;}",
-      ".tbn-table .col-kdtt{width:10%;}",
-      ".tbn-table .col-ghichu{width:5.5%;}",
+      ".tbn-table .col-ten{width:20%;font-weight:700;color:#0f172a;}",
+      ".tbn-table .col-vitri{width:11%;}",
+      ".tbn-table .col-tt{width:7.5%;}",
+      ".tbn-table .col-nam{width:6.5%;}",
+      ".tbn-table .col-sct{width:11%;}",
+      ".tbn-table .col-sdk{width:11%;}",
+      ".tbn-table .col-kd{width:9%;}",
+      ".tbn-table .col-kdtt{width:11%;}",
+      ".tbn-table .col-ghichu{width:10%;}",
       ".tbn-table .col-action{width:7%;white-space:nowrap;}",
       /* Chỉ cột Tên thiết bị căn trái, còn lại căn giữa */
       ".tbn-table th.col-ten,.tbn-table td.col-ten{text-align:left;}",
-      ".tbn-table td.col-tttk,.tbn-table td.col-ttlv,.tbn-table td.col-nam,.tbn-table td.col-kd,.tbn-table td.col-kdtt{font-variant-numeric:tabular-nums;}",
+      ".tbn-table td.col-tt,.tbn-table td.col-nam,.tbn-table td.col-kd,.tbn-table td.col-kdtt{font-variant-numeric:tabular-nums;}",
+      ".tbn-tt-khac{font-weight:700;color:#41577a;}",
       ".tbn-canh-bao{color:#c0392b;font-weight:800;}",
       ".tbn-bks{margin-top:3px;font-size:12px;font-weight:700;color:#334155;line-height:1.3;}",
       ".tbn-bks-nhan{color:#9aa7b8;font-weight:500;}",

@@ -705,29 +705,39 @@
       _wireDrag(tr);
     }
 
-    function td(content, cls) {
+    /* content = HTML hiển thị · nguyen = chữ đầy đủ cho tooltip · dong = số
+       dòng tối đa. Dài hơn thì có dấu … và di chuột lên xem được đủ — KHÔNG
+       cắt âm thầm như trước. */
+    function td(content, cls, nguyen, dong) {
       var el = document.createElement("td");
       if (cls) el.className = cls;
-      el.innerHTML = content;
+      var box = document.createElement("div");
+      box.className = "bal-clamp";
+      if (dong) box.style.webkitLineClamp = String(dong);
+      box.innerHTML = content;
+      el.appendChild(box);
+      if (nguyen) el.title = nguyen;
       return el;
     }
 
     tr.appendChild(td(no, "col-no"));
-    tr.appendChild(td(_esc(rec.ten_thiet_bi || ""), "col-ten"));
+    tr.appendChild(td(_esc(rec.ten_thiet_bi || ""), "col-ten", rec.ten_thiet_bi || "", 3));
     var nhan = _unitLabel(rec.section), ghi = "";
     var _i = nhan.indexOf(" (không còn dùng)");
     if (_i >= 0) { ghi = '<br><span style="font-size:11px;color:#9a6700">không còn dùng</span>'; nhan = nhan.slice(0, _i); }
-    tr.appendChild(td(_esc(nhan) + ghi, "col-donvi"));
-    tr.appendChild(td(_esc(rec.vi_tri || ""), "col-vitri"));
+    tr.appendChild(td(_esc(nhan) + ghi, "col-donvi", _unitLabel(rec.section), 2));
+    tr.appendChild(td(_esc(rec.vi_tri || "") || "—", "col-vitri", rec.vi_tri || "", 2));
 
     /* Thông số chính */
     var thongSo = "";
     if (rec.v_m3)    thongSo += "V = " + rec.v_m3 + " m³";
     if (rec.plv_kgcm2) thongSo += (thongSo ? "<br>" : "") + "P<sub>lv</sub> = " + rec.plv_kgcm2 + " kg/cm²";
-    tr.appendChild(td(thongSo || "—", "col-thongso"));
+    tr.appendChild(td(thongSo || "—", "col-thongso",
+      ((rec.v_m3 ? "V = " + rec.v_m3 + " m³" : "") +
+       (rec.plv_kgcm2 ? " · Plv = " + rec.plv_kgcm2 + " kg/cm²" : "")).trim(), 2));
 
     tr.appendChild(td(rec.nam_van_hanh || "—", "col-nam"));
-    tr.appendChild(td(_esc(rec.so_dang_ky || "—"), "col-sodangky"));
+    tr.appendChild(td(_esc(rec.so_dang_ky || "—"), "col-sodangky", rec.so_dang_ky || "", 2));
     tr.appendChild(td(rec.ngay_kd_gan_nhat ? HSEDate.fmt(rec.ngay_kd_gan_nhat) : "—", "col-kd"));
 
     /* Ngày KĐ tiếp theo + badge trạng thái */
@@ -753,7 +763,8 @@
     if (rec.moi_chat_an_mon) ghiChu.push('<span class="tag-moi-chat">Ăn mòn KL</span>');
     if (rec.moi_chat_chay_no) ghiChu.push('<span class="tag-moi-chat">Cháy nổ</span>');
     if (rec.ghi_chu) ghiChu.push(_esc(rec.ghi_chu));
-    tr.appendChild(td(ghiChu.join(" ") || "—", "col-ghichu"));
+    tr.appendChild(td(ghiChu.join(" ") || "—", "col-ghichu",
+      ghiChu.length ? String(ghiChu.join(" ")).replace(/<[^>]*>/g, "") : "", 2));
 
     /* Cột action (edit mode) */
     if (_editMode) {
@@ -1103,7 +1114,12 @@
       ".bal-table-wrap{max-height:72vh;overflow:auto;-webkit-overflow-scrolling:touch;}",
       ".bal-table{width:100%;min-width:1040px;table-layout:fixed;border-collapse:collapse;font-size:13px;}",
       ".bal-table th{position:sticky;top:0;z-index:2;background:#dde6f3;color:#003087;font-weight:700;font-size:12.5px;letter-spacing:.2px;padding:10px 10px;text-align:center;vertical-align:middle;white-space:normal;line-height:1.35;border-bottom:2px solid #b9c8e2;box-shadow:inset 0 -2px 0 #b9c8e2;overflow:hidden;}",
-      ".bal-table td{padding:10px;text-align:center;border-bottom:1px solid #eef0f4;vertical-align:middle;overflow:hidden;word-break:break-word;overflow-wrap:anywhere;font-weight:600;color:#1f2b3d;line-height:1.45;}",
+      /* ⚠ white-space:normal BẮT BUỘC — assets/style.css đặt th,td{white-space:nowrap}
+         cho toàn webapp; gặp ô overflow:hidden thì chữ dài bị CẮT CỤT không
+         dấu hiệu gì, người xem không biết mình đang đọc thiếu. */
+      ".bal-table td{padding:10px;text-align:center;white-space:normal;border-bottom:1px solid #eef0f4;vertical-align:middle;word-break:break-word;overflow-wrap:anywhere;font-weight:600;color:#1f2b3d;line-height:1.45;}",
+      /* Cắt tối đa N dòng rồi thêm dấu … — nội dung đầy đủ xem bằng tooltip */
+      ".bal-clamp{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;line-clamp:2;overflow:hidden;}",
       ".bal-table tbody tr:nth-child(even) td{background:#fafbfe;}",
       ".bal-table tbody tr:hover td{background:#eef3fb;}",
       ".bal-table th, .bal-table td{border-right:1px solid #e6ebf5;}",
