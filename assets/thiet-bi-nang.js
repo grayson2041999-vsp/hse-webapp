@@ -71,7 +71,7 @@
      và bộ lọc không thể lệch nhau. */
   var TRANG_THAI = [
     { key: "con-han",  label: "Còn hạn"            },
-    { key: "sap-han",  label: "Sắp hạn (≤60 ngày)" },
+    { key: "sap-han",  label: "Sắp hết hạn (≤60 ngày)" },
     { key: "qua-han",  label: "Quá hạn"            },
     { key: "chua-co",  label: "Chưa có ngày KĐ"    }
   ];
@@ -167,7 +167,7 @@
     if (!next) return null;
     var diff = (next - new Date()) / (1000 * 60 * 60 * 24);
     if (diff < 0)   return { cls: "kd-qua-han", label: "Quá hạn" };
-    if (diff <= 60) return { cls: "kd-sap-han", label: "Sắp hạn" };
+    if (diff <= 60) return { cls: "kd-sap-han", label: "Sắp hết hạn" };
     return              { cls: "kd-con-han", label: "Còn hạn" };
   }
 
@@ -285,7 +285,7 @@
     });
     var trangThai = [
       { nhan: "Còn hạn",            giaTri: tt["con-han"], mau: CHART_MAU_TT["con-han"] },
-      { nhan: "Sắp hạn (≤60 ngày)", giaTri: tt["sap-han"], mau: CHART_MAU_TT["sap-han"] },
+      { nhan: "Sắp hết hạn (≤60 ngày)", giaTri: tt["sap-han"], mau: CHART_MAU_TT["sap-han"] },
       { nhan: "Quá hạn",            giaTri: tt["qua-han"], mau: CHART_MAU_TT["qua-han"] },
       { nhan: "Chưa có ngày KĐ",    giaTri: tt["chua-co"], mau: CHART_MAU_TT["chua-co"] }
     ].filter(function (x) { return x.giaTri > 0; });
@@ -529,7 +529,7 @@
     hdr.className = "tbn-section-hdr";
     hdr.innerHTML =
       '<span class="tbn-section-title">' +
-        '<svg width="1.05em" height="1.05em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex-shrink:0" aria-hidden="true"><rect x="2" y="6" width="20" height="8" rx="1"/><path d="M17 14v7"/><path d="M7 14v7"/><path d="M17 3v3"/><path d="M7 3v3"/><path d="M10 14 2.3 6.3"/><path d="m14 6 7.7 7.7"/><path d="m8 6 8 8"/></svg>' +
+        '<svg width="1.05em" height="1.05em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink:0"><path d="M3 21h18"/><path d="M7 21V4"/><path d="M4 4h16"/><path d="M7 8l4-4"/><path d="M17 4v5"/><path d="M15.5 9h3v2a1.5 1.5 0 0 1-3 0z"/></svg>' +
         " Danh sách thiết bị nâng</span>" +
       '<div class="tbn-hdr-right">' +
         '<button class="tbn-btn-xls" id="tbn-btn-xls" title="Xuất danh sách đang hiển thị ra Excel">' +

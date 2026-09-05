@@ -51,7 +51,7 @@
      bộ lọc không thể lệch nhau. */
   var TRANG_THAI = [
     { key: "con-han",  label: "Còn hạn"            },
-    { key: "sap-han",  label: "Sắp hạn (≤60 ngày)" },
+    { key: "sap-han",  label: "Sắp hết hạn (≤60 ngày)" },
     { key: "qua-han",  label: "Quá hạn"            },
     { key: "chua-co",  label: "Chưa có ngày KĐ"    }
   ];
@@ -174,7 +174,7 @@
     var now  = new Date();
     var diff = (next - now) / (1000 * 60 * 60 * 24); // số ngày còn lại
     if (diff < 0)   return { cls: "kd-qua-han",  label: "Quá hạn" };
-    if (diff <= 60) return { cls: "kd-sap-han",  label: "Sắp hạn" };
+    if (diff <= 60) return { cls: "kd-sap-han",  label: "Sắp hết hạn" };
     return              { cls: "kd-con-han",  label: "Còn hạn" };
   }
 
@@ -299,7 +299,7 @@
     });
     var trangThai = [
       { nhan: "Còn hạn",           giaTri: tt["con-han"], mau: CHART_MAU_TT["con-han"] },
-      { nhan: "Sắp hạn (≤60 ngày)", giaTri: tt["sap-han"], mau: CHART_MAU_TT["sap-han"] },
+      { nhan: "Sắp hết hạn (≤60 ngày)", giaTri: tt["sap-han"], mau: CHART_MAU_TT["sap-han"] },
       { nhan: "Quá hạn",           giaTri: tt["qua-han"], mau: CHART_MAU_TT["qua-han"] },
       { nhan: "Chưa có ngày KĐ",   giaTri: tt["chua-co"], mau: CHART_MAU_TT["chua-co"] }
     ].filter(function (x) { return x.giaTri > 0; });
@@ -562,7 +562,7 @@
     var hdr = document.createElement("div");
     hdr.className = "bal-section-hdr";
     hdr.innerHTML =
-      '<span class="bal-section-title"><svg class="lic-emoji" width="1.05em" height="1.05em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex-shrink:0" aria-hidden="true"><path d="M9.671 4.136a2.34 2.34 0 0 1 4.659 0 2.34 2.34 0 0 0 3.319 1.915 2.34 2.34 0 0 1 2.33 4.033 2.34 2.34 0 0 0 0 3.831 2.34 2.34 0 0 1-2.33 4.033 2.34 2.34 0 0 0-3.319 1.915 2.34 2.34 0 0 1-4.659 0 2.34 2.34 0 0 0-3.32-1.915 2.34 2.34 0 0 1-2.33-4.033 2.34 2.34 0 0 0 0-3.831A2.34 2.34 0 0 1 6.35 6.051a2.34 2.34 0 0 0 3.319-1.915"/><circle cx="12" cy="12" r="3"/></svg> Danh sách bình áp lực</span>' +
+      '<span class="bal-section-title"><svg width="1.05em" height="1.05em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink:0"><path d="m12 14 4-4"/><path d="M3.34 19a10 10 0 1 1 17.32 0"/></svg> Danh sách bình áp lực</span>' +
       '<div class="bal-hdr-right">' +
         '<button class="bal-btn-xls" id="bal-btn-xls" title="Xuất danh sách đang hiển thị ra Excel">' +
           '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;flex-shrink:0" aria-hidden="true"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v5h5"/><path d="M8 13h2"/><path d="M14 13h2"/><path d="M8 17h2"/><path d="M14 17h2"/></svg> Xuất Excel</button>' +

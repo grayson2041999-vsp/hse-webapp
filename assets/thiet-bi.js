@@ -12,9 +12,14 @@ window.renderQuanLyThietBi = function(container, user, canEdit, isAdmin) {
   _pt.innerHTML = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink:0"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.106-3.105c.32-.322.863-.22.983.218a6 6 0 0 1-8.259 7.057l-7.91 7.91a1 1 0 0 1-2.999-3l7.91-7.91a6 6 0 0 1 7.057-8.259c.438.12.54.662.219.984z"/></svg><span>Quản lý thiết bị</span>';
   container.appendChild(_pt);
 
+  /* Icon nét (lucide) thay cho emoji: emoji mỗi hệ điều hành vẽ một kiểu và
+     không ăn theo màu chữ của tab đang chọn. SVG thì dùng currentColor nên
+     tab hoạt động icon cũng đậm màu theo. */
+  var ICON_BAL   = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink:0"><path d="m12 14 4-4"/><path d="M3.34 19a10 10 0 1 1 17.32 0"/></svg>';
+  var ICON_TBN   = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink:0"><path d="M3 21h18"/><path d="M7 21V4"/><path d="M4 4h16"/><path d="M7 8l4-4"/><path d="M17 4v5"/><path d="M15.5 9h3v2a1.5 1.5 0 0 1-3 0z"/></svg>';
   var tabs = [
-    { key: "binh-ap-luc",   label: "🔵 Bình áp lực" },
-    { key: "thiet-bi-nang", label: "🏗️ Thiết bị nâng" }
+    { key: "binh-ap-luc",   label: "Bình áp lực",   icon: ICON_BAL },
+    { key: "thiet-bi-nang", label: "Thiết bị nâng", icon: ICON_TBN }
   ];
   var activeTab = "binh-ap-luc";
 
@@ -28,9 +33,10 @@ window.renderQuanLyThietBi = function(container, user, canEdit, isAdmin) {
     bar.style.cssText = "display:flex;gap:0;border-bottom:2px solid #cdd6e8;margin-bottom:20px;";
     tabs.forEach(function(tab) {
       var btn = document.createElement("button");
-      btn.textContent = tab.label;
+      btn.innerHTML = tab.icon + "<span>" + tab.label + "</span>";
       var active = tab.key === activeTab;
       btn.style.cssText =
+        "display:inline-flex;align-items:center;gap:8px;" +
         "padding:10px 22px;font-size:13.5px;font-weight:" + (active ? "700" : "500") + ";" +
         "border:none;cursor:pointer;" +
         "background:" + (active ? "#fff" : "#f4f7fc") + ";" +

@@ -400,7 +400,7 @@ console.log('\n── Bình áp lực: hai biểu đồ tròn ──');
   check('giữ thứ tự đơn vị theo danh mục', d.donVi[0].nhan === 'Cảng biển');
   check('gán màu theo đúng thứ tự bảng màu', d.donVi[0].mau === '#6fa4e3' && d.donVi[1].mau === '#f29976');
   check('đếm đúng từng trạng thái',
-    d.trangThai.map(x => x.nhan + '=' + x.giaTri).join(',') === 'Còn hạn=2,Sắp hạn (≤60 ngày)=1,Quá hạn=1', d.trangThai);
+    d.trangThai.map(x => x.nhan + '=' + x.giaTri).join(',') === 'Còn hạn=2,Sắp hết hạn (≤60 ngày)=1,Quá hạn=1', d.trangThai);
   check('bỏ hẳn trạng thái không có thiết bị nào (không vẽ lát 0%)',
     !d.trangThai.some(x => x.giaTri === 0));
 
@@ -533,7 +533,7 @@ console.log('\n── Bình áp lực: một bảng, đơn vị là một cột 
   check('lọc chồng trạng thái với đơn vị',
     BAL._rowsSorted('cang_bien', 'qua-han').map(r => r.id).join('') === 'r');
   check('không lọc trạng thái thì lấy hết', BAL._rowsSorted().length === 5);
-  check('nhãn trạng thái dùng chung cho chip và droplist', BAL._ttLabel('sap-han') === 'Sắp hạn (≤60 ngày)');
+  check('nhãn trạng thái dùng chung cho chip và droplist', BAL._ttLabel('sap-han') === 'Sắp hết hạn (≤60 ngày)');
   store = [];
 
   check('CHỐNG TÁI PHÁT: ô dữ liệu phải cho xuống dòng, vì style.css đặt nowrap toàn cục',
