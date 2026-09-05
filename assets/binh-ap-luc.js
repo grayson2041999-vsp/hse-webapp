@@ -540,6 +540,9 @@
 
     var nextDate = _nextDateOf(rec);
     var status   = _kdStatus(nextDate);
+    /* Hàng quá hạn / sắp hạn được đánh dấu bằng dải màu ở mép trái */
+    if (status && status.cls === "kd-qua-han") tr.classList.add("bal-row-qua-han");
+    if (status && status.cls === "kd-sap-han") tr.classList.add("bal-row-sap-han");
 
     /* Cột kéo thả */
     if (_editMode) {
@@ -927,32 +930,43 @@
       ".bal-toolbar{display:flex;gap:10px;align-items:center;margin-bottom:10px;flex-wrap:wrap;}",
       ".bal-legend{display:flex;gap:12px;align-items:center;margin-bottom:16px;flex-wrap:wrap;}",
       ".bal-section{background:#fff;border-radius:10px;box-shadow:0 2px 8px rgba(0,0,0,0.07);margin-bottom:28px;overflow:hidden;}",
-      ".bal-section-hdr{display:flex;align-items:center;gap:12px;padding:14px 18px;background:#dde6f3;border-bottom:1px solid #cdd6e8;}",
-      ".bal-section-title{font-weight:700;color:#003087;font-size:15px;flex:1;}",
-      ".bal-section-count{font-size:12px;color:#6b7c93;background:#fff;border-radius:12px;padding:2px 10px;}",
+      ".bal-section-hdr{position:relative;display:flex;align-items:center;justify-content:center;gap:10px;padding:16px 150px;min-height:56px;background:linear-gradient(180deg,#e6edf8 0%,#dde6f3 100%);border-bottom:2px solid #c3d0e6;}",
+      ".bal-section-title{display:inline-flex;align-items:center;gap:9px;justify-content:center;font-weight:800;color:#003087;font-size:19px;line-height:1.25;text-transform:uppercase;letter-spacing:.7px;text-align:center;}",
+      ".bal-section-count{position:absolute;right:18px;top:50%;transform:translateY(-50%);font-size:12px;font-weight:700;color:#41577a;background:#fff;border:1px solid #d5deee;border-radius:12px;padding:3px 11px;white-space:nowrap;}",
+      ".bal-section-hdr>.bal-btn{position:absolute;left:18px;top:50%;transform:translateY(-50%);}",
+      "@media(max-width:760px){.bal-section-hdr{flex-direction:column;padding:14px 12px;}.bal-section-title{font-size:16px;}.bal-section-count,.bal-section-hdr>.bal-btn{position:static;transform:none;}}",
 
       /* Table */
-      ".bal-table-wrap{overflow-x:hidden;}",
-      ".bal-table{width:100%;table-layout:fixed;border-collapse:collapse;font-size:13px;}",
-      ".bal-table th{background:#dde6f3;color:#003087;font-weight:600;padding:9px 10px;text-align:left;white-space:nowrap;border-bottom:2px solid #cdd6e8;overflow:hidden;}",
-      ".bal-table td{padding:8px 10px;border-bottom:1px solid #eef0f4;vertical-align:middle;overflow:hidden;word-break:break-word;overflow-wrap:anywhere;}",
+      ".bal-table-wrap{max-height:72vh;overflow:auto;-webkit-overflow-scrolling:touch;}",
+      ".bal-table{width:100%;min-width:1040px;table-layout:fixed;border-collapse:collapse;font-size:13px;}",
+      ".bal-table th{position:sticky;top:0;z-index:2;background:#dde6f3;color:#003087;font-weight:700;font-size:12.5px;letter-spacing:.2px;padding:10px 10px;text-align:left;white-space:normal;line-height:1.3;border-bottom:2px solid #b9c8e2;box-shadow:inset 0 -2px 0 #b9c8e2;overflow:hidden;}",
+      ".bal-table td{padding:10px;border-bottom:1px solid #eef0f4;vertical-align:middle;overflow:hidden;word-break:break-word;overflow-wrap:anywhere;font-weight:600;color:#1f2b3d;line-height:1.45;}",
+      ".bal-table tbody tr:nth-child(even) td{background:#fafbfe;}",
       ".bal-table tbody tr:hover td{background:#eef3fb;}",
       ".bal-table th, .bal-table td{border-right:1px solid #e6ebf5;}",
       ".bal-table th:last-child, .bal-table td:last-child{border-right:none;}",
       ".bal-empty{text-align:center;color:#6b7c93;padding:24px!important;font-style:italic;}",
 
       /* Col widths */
-      ".col-no{width:36px;text-align:center;color:#6b7c93;}",
-      ".col-drag{width:26px;text-align:center;cursor:grab;color:#aaa;font-size:16px;user-select:none;}",
-      ".col-ten{width:160px;}",
-      ".col-vitri{width:130px;}",
-      ".col-donvi{width:145px;color:#334155;white-space:normal;}",
-      ".col-thongso{width:130px;}",
-      ".col-nam{width:80px;}",
-      ".col-sodangky{width:90px;}",
-      ".col-kd{width:100px;}",
-      ".col-ghichu{width:120px;}",
-      ".col-action{width:60px;text-align:right;}",
+      ".col-no{width:3.5%;text-align:center;color:#6b7c93;font-weight:700;}",
+      ".col-drag{width:3%;text-align:center;cursor:grab;color:#aaa;font-size:16px;user-select:none;}",
+      ".col-ten{width:17%;font-weight:700;color:#0f172a;}",
+      ".col-donvi{width:11%;color:#334155;white-space:normal;}",
+      ".col-vitri{width:10.5%;}",
+      ".col-thongso{width:12%;white-space:nowrap;}",
+      ".col-nam{width:7%;text-align:center;}",
+      ".col-sodangky{width:10%;}",
+      ".col-kd{width:10.5%;text-align:center;}",
+      ".col-ghichu{width:8%;}",
+      ".col-action{width:7%;text-align:right;white-space:nowrap;}",
+      ".bal-table td.col-thongso{font-variant-numeric:tabular-nums;}",
+      ".bal-table td.col-kd{font-variant-numeric:tabular-nums;}",
+      /* Dải màu cảnh báo hạn kiểm định ở đầu hàng */
+      ".bal-table tbody tr>td:first-child{border-left:3px solid transparent;}",
+      ".bal-row-qua-han>td:first-child{border-left-color:#c0392b;}",
+      ".bal-row-sap-han>td:first-child{border-left-color:#e68900;}",
+      ".bal-row-qua-han>td{background:#fefafa;}",
+      ".bal-row-sap-han>td{background:#fffdf7;}",
 
       /* Drag */
       ".bal-row-draggable{cursor:default;}",
