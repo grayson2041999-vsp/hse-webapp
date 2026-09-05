@@ -364,6 +364,69 @@ console.log('\n── Bình áp lực: cờ môi chất phải là boolean thậ
     CALC('2024-06-15', nam, T._toBool('false'), T._toBool('false')) === binhThuong);
 }
 
+console.log('\n── Bình áp lực: hai biểu đồ tròn ──');
+{
+  const src = fs.readFileSync(path.join(ROOT, 'assets', 'binh-ap-luc.js'), 'utf8');
+  const i = src.indexOf('var CHART_MAU_DONVI');
+  const j = src.indexOf('/* Một biểu đồ tròn:');
+  let store = [];
+  const CH = new Function('_load', '_unitRank', '_unitLabel', '_kdStatus', '_nextDateOf',
+    src.slice(i, j) + '; return { _chartData, CHART_MAU_DONVI, CHART_MAU_TT };'
+  )(() => store,
+    k => ({ cang_bien: 0, xuong_sua_chua: 1, can_cu_kho_gn: 2, d4: 3, d5: 4, d6: 5 }[k] ?? 999),
+    k => ({ cang_bien: 'Cảng biển', xuong_sua_chua: 'Xưởng sửa chữa', can_cu_kho_gn: 'Căn cứ Kho' }[k] || k),
+    d => d ? ({ a: { cls: 'kd-con-han' }, b: { cls: 'kd-sap-han' }, c: { cls: 'kd-qua-han' } }[d] || null) : null,
+    r => r.kd || '');
+
+  /* Màu trạng thái phải TRÙNG màu badge trong bảng, để nối được hai chỗ */
+  check('màu "Còn hạn" khớp .kd-con-han (#1a7a3c)', CH.CHART_MAU_TT['con-han'] === '#1a7a3c');
+  check('màu "Sắp hạn" khớp .kd-sap-han (#e68900)', CH.CHART_MAU_TT['sap-han'] === '#e68900');
+  check('màu "Quá hạn" khớp .kd-qua-han (#c0392b)', CH.CHART_MAU_TT['qua-han'] === '#c0392b');
+  check('mỗi màu badge đều có mặt trong CSS của bảng',
+    /\.kd-con-han\{[^"]*#1a7a3c/.test(src) && /\.kd-sap-han\{[^"]*#e68900/.test(src) && /\.kd-qua-han\{[^"]*#c0392b/.test(src));
+
+  /* Bảng màu phân loại: đúng 4 màu đã qua validate_palette (all-pairs, nền trắng) */
+  check('chỉ 4 màu phân loại — quá ngưỡng an toàn thì gộp "Khác"', CH.CHART_MAU_DONVI.length === 4);
+
+  store = [
+    { section: 'cang_bien', kd: 'a' }, { section: 'cang_bien', kd: 'a' },
+    { section: 'xuong_sua_chua', kd: 'b' }, { section: 'can_cu_kho_gn', kd: 'c' }
+  ];
+  let d = CH._chartData();
+  check('đếm đúng số thiết bị mỗi đơn vị', d.donVi.map(x => x.giaTri).join(',') === '2,1,1', d.donVi);
+  check('giữ thứ tự đơn vị theo danh mục', d.donVi[0].nhan === 'Cảng biển');
+  check('gán màu theo đúng thứ tự bảng màu', d.donVi[0].mau === '#2a78d6' && d.donVi[1].mau === '#eb6834');
+  check('đếm đúng từng trạng thái',
+    d.trangThai.map(x => x.nhan + '=' + x.giaTri).join(',') === 'Còn hạn=2,Sắp hạn (≤60 ngày)=1,Quá hạn=1', d.trangThai);
+  check('bỏ hẳn trạng thái không có thiết bị nào (không vẽ lát 0%)',
+    !d.trangThai.some(x => x.giaTri === 0));
+
+  /* Quá 4 đơn vị → gộp phần đuôi, KHÔNG sinh thêm màu mới */
+  store = ['cang_bien','xuong_sua_chua','can_cu_kho_gn','d4','d5','d6'].map(s => ({ section: s, kd: 'a' }));
+  d = CH._chartData();
+  check('quá 4 đơn vị thì gộp thành 5 lát (4 + Khác)', d.donVi.length === 5, d.donVi.map(x => x.nhan));
+  check('lát cuối là "Khác" và cộng dồn đúng',
+    /^Khác \(2 đơn vị\)$/.test(d.donVi[4].nhan) && d.donVi[4].giaTri === 2, d.donVi[4]);
+  check('"Khác" dùng màu xám trung tính, không phải màu phân loại mới',
+    d.donVi[4].mau === '#94a3b8' && CH.CHART_MAU_DONVI.indexOf(d.donVi[4].mau) < 0);
+
+  /* Thiết bị chưa có ngày kiểm định vẫn phải được đếm */
+  store = [{ section: 'cang_bien', kd: '' }, { section: 'cang_bien', kd: 'a' }];
+  d = CH._chartData();
+  check('thiết bị chưa có ngày KĐ vào nhóm riêng, không bị bỏ sót',
+    d.trangThai.some(x => x.nhan === 'Chưa có ngày KĐ' && x.giaTri === 1), d.trangThai);
+  check('tổng các lát = tổng thiết bị',
+    d.trangThai.reduce((s, x) => s + x.giaTri, 0) === d.tong && d.tong === 2);
+
+  store = [];
+  check('không có thiết bị thì không vẽ biểu đồ', CH._chartData().tong === 0);
+
+  /* Màu không được là kênh thông tin duy nhất */
+  check('có nhãn % ngay trên lát cắt', /Math\.round\(phan \* 100\) \+ '%<\/text>'/.test(src));
+  check('chú giải luôn kèm tên và số liệu', /bal-lg-name|bal-lg-val/.test(src));
+  check('mỗi lát có tooltip mô tả bằng chữ', /<title>' \+ _esc\(m\.nhan\)/.test(src));
+}
+
 console.log('\n── Bình áp lực: ngày KĐ tiếp theo sửa tay được ──');
 {
   const src = fs.readFileSync(path.join(ROOT, 'assets', 'binh-ap-luc.js'), 'utf8');

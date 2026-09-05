@@ -210,6 +210,144 @@
     });
   };
 
+
+  /* ══════════════════════════════════════════
+     BIỂU ĐỒ TRÒN
+     Hai biểu đồ: tỷ lệ thiết bị theo đơn vị, và tỷ lệ trạng thái kiểm định.
+     Vẽ bằng SVG thuần, không cần thư viện ngoài.
+
+     MÀU:
+     · Đơn vị  — bảng màu phân loại đã kiểm bằng validate_palette (all-pairs,
+       nền trắng): worst CVD ΔE 9.2, worst normal-vision ΔE 16.3. Chỉ 4 màu là
+       ngưỡng an toàn; đơn vị thứ 5 trở đi gộp vào "Khác" màu xám, KHÔNG sinh
+       thêm màu mới (màu sinh thêm sẽ lẫn với màu đã có khi nhìn qua mắt người
+       mù màu).
+     · Trạng thái — dùng đúng màu của badge trong bảng để người đọc nối được
+       hai chỗ với nhau. Cặp đỏ↔xanh chỉ cách nhau ΔE 6.2 với người mù màu đỏ-lục,
+       nên BẮT BUỘC có nhãn chữ trên lát cắt và trong chú giải — màu không bao
+       giờ là kênh thông tin duy nhất.
+     ══════════════════════════════════════════ */
+  var CHART_MAU_DONVI = ["#2a78d6", "#eb6834", "#1baf7a", "#4a3aa7"];
+  var CHART_MAU_KHAC  = "#94a3b8";
+  var CHART_MAU_TT = {
+    "con-han": "#1a7a3c",   // khớp .kd-con-han
+    "sap-han": "#e68900",   // khớp .kd-sap-han
+    "qua-han": "#c0392b",   // khớp .kd-qua-han
+    "chua-co": "#94a3b8"
+  };
+
+  /* Gom số liệu cho hai biểu đồ */
+  function _chartData() {
+    var all = _load();
+
+    /* 1. Theo đơn vị — giữ thứ tự trong danh mục, quá 4 thì gộp "Khác" */
+    var dem = {}, thuTu = [];
+    all.forEach(function (r) {
+      var k = r.section || "";
+      if (!(k in dem)) { dem[k] = 0; thuTu.push(k); }
+      dem[k]++;
+    });
+    thuTu.sort(function (a, b) { return _unitRank(a) - _unitRank(b); });
+    var donVi = thuTu.map(function (k, i) {
+      return { nhan: k ? _unitLabel(k).replace(" (không còn dùng)", "") : "Chưa phân đơn vị",
+               giaTri: dem[k], mau: CHART_MAU_DONVI[i] || CHART_MAU_KHAC };
+    });
+    if (donVi.length > CHART_MAU_DONVI.length) {
+      var giu = donVi.slice(0, CHART_MAU_DONVI.length);
+      var con = donVi.slice(CHART_MAU_DONVI.length);
+      giu.push({ nhan: "Khác (" + con.length + " đơn vị)",
+                 giaTri: con.reduce(function (s, x) { return s + x.giaTri; }, 0),
+                 mau: CHART_MAU_KHAC });
+      donVi = giu;
+    }
+
+    /* 2. Theo trạng thái kiểm định */
+    var tt = { "con-han": 0, "sap-han": 0, "qua-han": 0, "chua-co": 0 };
+    all.forEach(function (r) {
+      var st = _kdStatus(_nextDateOf(r));
+      if (!st) { tt["chua-co"]++; return; }
+      tt[st.cls.replace("kd-", "")]++;
+    });
+    var trangThai = [
+      { nhan: "Còn hạn",           giaTri: tt["con-han"], mau: CHART_MAU_TT["con-han"] },
+      { nhan: "Sắp hạn (≤60 ngày)", giaTri: tt["sap-han"], mau: CHART_MAU_TT["sap-han"] },
+      { nhan: "Quá hạn",           giaTri: tt["qua-han"], mau: CHART_MAU_TT["qua-han"] },
+      { nhan: "Chưa có ngày KĐ",   giaTri: tt["chua-co"], mau: CHART_MAU_TT["chua-co"] }
+    ].filter(function (x) { return x.giaTri > 0; });
+
+    return { tong: all.length, donVi: donVi, trangThai: trangThai };
+  }
+
+  /* Một biểu đồ tròn: SVG + nhãn % trên lát cắt + chú giải có số liệu */
+  function _pie(tieuDe, muc) {
+    var tong = muc.reduce(function (s, x) { return s + x.giaTri; }, 0);
+    var R = 78, C = 90;              // bán kính và tâm (viewBox 180×180)
+    var goc = -Math.PI / 2;          // bắt đầu từ 12 giờ
+    var lat = "", nhan = "";
+
+    muc.forEach(function (m, i) {
+      var phan = m.giaTri / tong;
+      var d;
+      if (muc.length === 1) {
+        /* Một lát duy nhất: cung tròn suy biến, vẽ hình tròn đầy */
+        d = "M " + C + " " + (C - R) + " A " + R + " " + R + " 0 1 1 " + (C - 0.01) + " " + (C - R) + " Z";
+      } else {
+        var g2 = goc + phan * Math.PI * 2;
+        var x1 = C + R * Math.cos(goc),  y1 = C + R * Math.sin(goc);
+        var x2 = C + R * Math.cos(g2),   y2 = C + R * Math.sin(g2);
+        d = "M " + C + " " + C + " L " + x1.toFixed(2) + " " + y1.toFixed(2) +
+            " A " + R + " " + R + " 0 " + (phan > 0.5 ? 1 : 0) + " 1 " +
+            x2.toFixed(2) + " " + y2.toFixed(2) + " Z";
+      }
+      lat += '<path d="' + d + '" fill="' + m.mau + '" stroke="#fff" stroke-width="2" ' +
+             'class="bal-slice" data-i="' + i + '"><title>' + _esc(m.nhan) + ": " + m.giaTri +
+             " thiết bị (" + Math.round(phan * 100) + '%)</title></path>';
+
+      /* Nhãn % ngay trên lát cắt — kênh thông tin thứ hai ngoài màu.
+         Lát quá nhỏ thì bỏ nhãn cho khỏi chồng chữ, chú giải vẫn có đủ số. */
+      if (phan >= 0.08) {
+        var gm = goc + phan * Math.PI;
+        /* Một lát duy nhất (100%) thì đặt nhãn ngay giữa hình tròn */
+        var lx = muc.length === 1 ? C : C + R * 0.62 * Math.cos(gm);
+        var ly = muc.length === 1 ? C : C + R * 0.62 * Math.sin(gm);
+        nhan += '<text x="' + lx.toFixed(1) + '" y="' + ly.toFixed(1) + '" text-anchor="middle" ' +
+                'dominant-baseline="central" fill="#fff" font-size="13" font-weight="700" ' +
+                'style="paint-order:stroke;stroke:rgba(0,0,0,.25);stroke-width:2px">' +
+                Math.round(phan * 100) + '%</text>';
+      }
+      goc += phan * Math.PI * 2;
+    });
+
+    var chuGiai = muc.map(function (m) {
+      return '<div class="bal-lg-item">' +
+               '<span class="bal-lg-dot" style="background:' + m.mau + '"></span>' +
+               '<span class="bal-lg-name">' + _esc(m.nhan) + '</span>' +
+               '<span class="bal-lg-val">' + m.giaTri + ' · ' + Math.round(m.giaTri / tong * 100) + '%</span>' +
+             '</div>';
+    }).join("");
+
+    return '<div class="bal-chart">' +
+             '<div class="bal-chart-title">' + _esc(tieuDe) + '</div>' +
+             '<svg viewBox="0 0 180 180" class="bal-pie" role="img" aria-label="' + _esc(tieuDe) + '">' +
+               lat + nhan +
+             "</svg>" +
+             '<div class="bal-legend-box">' + chuGiai + "</div>" +
+           "</div>";
+  }
+
+  /* Khối hai biểu đồ. Luôn tính trên TOÀN BỘ thiết bị, không theo bộ lọc bảng —
+     để con số tổng quan không đổi khi người dùng lọc xem từng đơn vị. */
+  function _buildCharts() {
+    var d = _chartData();
+    var box = document.createElement("div");
+    if (!d.tong) return box;          // chưa có thiết bị thì không vẽ gì
+    box.className = "bal-charts";
+    box.innerHTML =
+      _pie("Tỷ lệ thiết bị theo đơn vị", d.donVi) +
+      _pie("Tỷ lệ theo hạn kiểm định", d.trangThai);
+    return box;
+  }
+
   /* ── RENDER CHÍNH ── */
   function _render() {
     _container.innerHTML = "";
@@ -298,6 +436,7 @@
     }
 
     wrap.innerHTML = "";
+    wrap.appendChild(_buildCharts());
     if (!units.length) {
       wrap.innerHTML = '<div style="padding:20px;text-align:center;color:#6b7280;font-size:13px">' +
         "Chưa có đơn vị nào được gán cho mục Bình áp lực.<br>" +
@@ -815,6 +954,20 @@
       ".bal-btn-xs{padding:3px 9px;font-size:12px;margin-left:4px;}",
 
       /* KĐ badges */
+      /* ── Biểu đồ tròn ── */
+      ".bal-charts{display:flex;gap:18px;flex-wrap:wrap;margin-bottom:20px;}",
+      ".bal-chart{flex:1 1 320px;min-width:280px;background:#fff;border-radius:10px;box-shadow:0 2px 8px rgba(0,0,0,0.07);padding:16px 18px;display:flex;flex-direction:column;align-items:center;}",
+      ".bal-chart-title{font-weight:700;color:#003087;font-size:14px;margin-bottom:10px;text-align:center;}",
+      ".bal-pie{width:180px;height:180px;flex-shrink:0;}",
+      ".bal-slice{transition:opacity .12s;cursor:default;}",
+      ".bal-chart:hover .bal-slice{opacity:.55;}",
+      ".bal-chart .bal-slice:hover{opacity:1;}",
+      ".bal-legend-box{margin-top:12px;width:100%;display:flex;flex-direction:column;gap:5px;}",
+      ".bal-lg-item{display:flex;align-items:center;gap:8px;font-size:12.5px;}",
+      ".bal-lg-dot{width:11px;height:11px;border-radius:3px;flex-shrink:0;}",
+      ".bal-lg-name{color:#334155;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}",
+      ".bal-lg-val{color:#6b7c93;font-weight:600;white-space:nowrap;}",
+      "@media(max-width:700px){.bal-charts{flex-direction:column;}}",
       ".kd-badge{display:inline-block;border-radius:10px;padding:2px 8px;font-size:11px;font-weight:600;margin-top:3px;}",
       ".kd-con-han{background:#eafaf1;color:#1a7a3c;}",
       ".kd-sap-han{background:#fef5e4;color:#e68900;}",
