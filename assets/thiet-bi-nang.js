@@ -500,7 +500,9 @@
       _loaiDangCo().map(function (l) {
         return '<option value="' + _esc(l) + '"' + (l === _filterLoai ? " selected" : "") + ">" + _esc(l) + "</option>";
       }).join("");
-    return _thFilter("Loại thiết bị", "tbn-filter-loai", opts, !!_filterLoai);
+    /* Nhãn là "Tên thiết bị" vì hai cột đã gộp làm một; droplist vẫn lọc
+       theo LOẠI, đúng thứ đứng đầu mỗi ô. */
+    return _thFilter("Tên thiết bị", "tbn-filter-loai", opts, !!_filterLoai);
   }
   function _thFilterDonVi() {
     var opts = '<option value="">Tất cả đơn vị</option>' +
@@ -587,7 +589,7 @@
        cột KHÔNG thể suy từ hàng đầu như bảng một tầng. Khai bằng <colgroup>
        để table-layout:fixed lấy đúng số đo, không phụ thuộc hàng nào. */
     var COLS = (_editMode ? ["col-drag"] : [])
-      .concat(["col-no", "col-ten", "col-loai", "col-donvi", "col-vitri", "col-tttk", "col-ttlv",
+      .concat(["col-no", "col-ten", "col-donvi", "col-vitri", "col-tttk", "col-ttlv",
                "col-nam", "col-sct", "col-sdk", "col-kd", "col-kdtt", "col-ghichu"])
       .concat(_editMode ? ["col-action"] : []);
     var colgroup = document.createElement("colgroup");
@@ -599,8 +601,7 @@
       "<tr>" +
       (_editMode ? "<th class='col-drag' rowspan='2'></th>" : "") +
       "<th class='col-no' rowspan='2'>Nº</th>" +
-      "<th class='col-ten' rowspan='2'>Tên thiết bị</th>" +
-      "<th class='col-loai' rowspan='2'>" + _thFilterLoai() + "</th>" +
+      "<th class='col-ten' rowspan='2'>" + _thFilterLoai() + "</th>" +
       "<th class='col-donvi' rowspan='2'>" + _thFilterDonVi() + "</th>" +
       "<th class='col-vitri' rowspan='2'>Vị trí<br>lắp đặt</th>" +
       "<th class='tbn-th-group' colspan='2'>Tải trọng (tấn)</th>" +
@@ -629,7 +630,7 @@
     if (!rows.length) {
       var emptyRow = document.createElement("tr");
       var emptyTd  = document.createElement("td");
-      emptyTd.colSpan = _editMode ? 15 : 13;
+      emptyTd.colSpan = _editMode ? 14 : 12;
       emptyTd.className = "tbn-empty";
       emptyTd.textContent = (_filterUnit || _filterLoai)
         ? "Không có thiết bị nào khớp bộ lọc."
@@ -675,8 +676,11 @@
     }
 
     tr.appendChild(td(no, "col-no"));
-    tr.appendChild(td(_esc(rec.ten_thiet_bi || ""), "col-ten"));
-    tr.appendChild(td(_esc(rec.loai_thiet_bi || "—"), "col-loai"));
+    /* Loại + tên gộp làm một chuỗi: "Cần trục KATO NK/20250E-v 72LA - 1153".
+       Vẫn là HAI trường riêng trong dữ liệu — chỉ gộp lúc hiển thị, nên lọc
+       theo loại và xuất Excel theo từng cột vẫn chạy như cũ. */
+    var tenHienThi = ((rec.loai_thiet_bi ? rec.loai_thiet_bi + " " : "") + (rec.ten_thiet_bi || "")).trim();
+    tr.appendChild(td(_esc(tenHienThi) || "—", "col-ten"));
 
     var nhan = _unitLabel(rec.section), ghi = "";
     var _i = nhan.indexOf(" (không còn dùng)");
@@ -1043,8 +1047,7 @@
       /* Độ rộng cột — tổng 100% */
       ".tbn-table .col-no{width:3%;color:#6b7c93;font-weight:700;}",
       ".tbn-table .col-drag{width:3%;cursor:grab;color:#aaa;font-size:16px;user-select:none;}",
-      ".tbn-table .col-ten{width:14%;font-weight:700;color:#0f172a;}",
-      ".tbn-table .col-loai{width:8.5%;}",
+      ".tbn-table .col-ten{width:22.5%;font-weight:700;color:#0f172a;}",
       ".tbn-table .col-donvi{width:10%;color:#334155;}",
       ".tbn-table .col-vitri{width:8.5%;}",
       ".tbn-table .col-tttk{width:6.5%;}",
@@ -1071,6 +1074,7 @@
       /* Bộ lọc ngay tại tiêu đề cột */
       ".tbn-th-filter{display:flex;flex-direction:column;align-items:center;gap:4px;}",
       ".tbn-th-label{display:block;}",
+      ".tbn-table th.col-ten .tbn-th-filter{align-items:stretch;}",
       ".tbn-th-select{width:100%;max-width:100%;box-sizing:border-box;padding:3px 4px;font-size:11.5px;font-weight:600;font-family:inherit;text-transform:none;letter-spacing:0;text-align:center;color:#334155;background:#fff;border:1px solid #cdd6e8;border-radius:5px;cursor:pointer;outline:none;}",
       ".tbn-th-select:hover{border-color:#0060B6;}",
       ".tbn-th-select:focus{border-color:#0060B6;box-shadow:0 0 0 2px rgba(0,96,182,.15);}",

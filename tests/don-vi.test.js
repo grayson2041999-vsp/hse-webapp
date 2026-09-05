@@ -593,10 +593,16 @@ console.log('\n── Thiết bị nâng: bảng mới trong Quản lý thiết 
     /r\.ngay_kd_tu_chinh = _toBool\(r\.ngay_kd_tu_chinh\)/.test(src));
 
   /* Đủ 13 cột theo đúng yêu cầu nghiệp vụ */
-  const cols = ['col-no', 'col-ten', 'col-loai', 'col-donvi', 'col-vitri', 'col-tttk', 'col-ttlv',
+  const cols = ['col-no', 'col-ten', 'col-donvi', 'col-vitri', 'col-tttk', 'col-ttlv',
                 'col-nam', 'col-sct', 'col-sdk', 'col-kd', 'col-kdtt', 'col-ghichu'];
-  check('đủ 13 cột trong bảng', cols.every(c => src.includes('"' + c + '"')),
+  check('đủ 12 cột trong bảng', cols.every(c => src.includes('"' + c + '"')),
     cols.filter(c => !src.includes('"' + c + '"')));
+  check('cột Loại thiết bị đã gộp vào cột Tên thiết bị', !src.includes('"col-loai"'));
+  check('ô Tên thiết bị hiển thị "<loại> <tên>"',
+    /rec\.loai_thiet_bi \+ " " : ""\) \+ \(rec\.ten_thiet_bi \|\| ""\)\)\.trim\(\)/.test(src));
+  check('loại và tên vẫn là hai trường riêng trong dữ liệu (chỉ gộp lúc hiển thị)',
+    /loai_thiet_bi:\s+document\.getElementById\("tbn-inp-loai"\)\.value/.test(src) &&
+    /ten_thiet_bi:\s+document\.getElementById\("tbn-inp-ten"\)\.value/.test(src));
   check('Tải trọng là MỘT cột lớn tách thành hai cột con',
     /tbn-th-group' colspan='2'>Tải trọng \(tấn\)/.test(src) &&
     /tbn-th-sub'>Thiết kế/.test(src) && /tbn-th-sub'>Làm việc/.test(src));
@@ -604,8 +610,10 @@ console.log('\n── Thiết bị nâng: bảng mới trong Quản lý thiết 
     /createElement\("colgroup"\)/.test(src) && /'<col class="' \+ c \+ '">'/.test(src));
   check('tiêu đề tầng 2 được ĐO để dính đúng chỗ khi cuộn, không đoán số cố định',
     /_fixStickyRows/.test(src) && /getBoundingClientRect\(\)\.height/.test(src));
-  check('lọc Loại thiết bị nằm ngay tiêu đề cột',
-    src.includes(`"<th class='col-loai' rowspan='2'>" + _thFilterLoai()`) && /thead.querySelector\("#tbn-filter-loai"\)/.test(src));
+  check('lọc theo loại nằm ngay dưới tiêu đề cột Tên thiết bị',
+    src.includes(`"<th class='col-ten' rowspan='2'>" + _thFilterLoai()`) &&
+    /_thFilter\("Tên thiết bị", "tbn-filter-loai"/.test(src) &&
+    /thead.querySelector\("#tbn-filter-loai"\)/.test(src));
   check('lọc Đơn vị quản lý nằm ngay tiêu đề cột',
     src.includes(`"<th class='col-donvi' rowspan='2'>" + _thFilterDonVi()`) && /thead.querySelector\("#tbn-filter-unit"\)/.test(src));
   check('có nút xuất Excel', /id="tbn-btn-xls"/.test(src));
