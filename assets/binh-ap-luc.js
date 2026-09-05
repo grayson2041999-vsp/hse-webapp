@@ -85,6 +85,7 @@
     if (r && typeof r === "object") {
       r.moi_chat_an_mon  = _toBool(r.moi_chat_an_mon);
       r.moi_chat_chay_no = _toBool(r.moi_chat_chay_no);
+      r.ngay_kd_tu_chinh = _toBool(r.ngay_kd_tu_chinh);
     }
     return r;
   }
@@ -129,6 +130,15 @@
     return next.getFullYear() + "-" +
            String(next.getMonth() + 1).padStart(2, "0") + "-" +
            String(next.getDate()).padStart(2, "0");   /* trả về ISO YYYY-MM-DD */
+  }
+
+  /* Ngày kiểm định tiếp theo DÙNG ĐỂ HIỂN THỊ.
+     · ngay_kd_tu_chinh = true  → giữ đúng ngày người dùng đã nhập
+     · ngược lại                → tự tính lại theo tuổi thiết bị + môi chất,
+       nên mọi thay đổi ở ngày KĐ gần nhất / năm / môi chất đều phản ánh ngay. */
+  function _nextDateOf(rec) {
+    if (rec.ngay_kd_tu_chinh && rec.ngay_kd_tiep_theo) return rec.ngay_kd_tiep_theo;
+    return _calcNextDate(rec.ngay_kd_gan_nhat, rec.nam_van_hanh, rec.moi_chat_an_mon, rec.moi_chat_chay_no);
   }
 
   /* ── TRẠNG THÁI KIỂM ĐỊNH ── */
@@ -375,7 +385,7 @@
     tr.dataset.sec = rec.section || "";
     if (_editMode) tr.className = "bal-row-draggable";
 
-    var nextDate = _calcNextDate(rec.ngay_kd_gan_nhat, rec.nam_van_hanh, rec.moi_chat_an_mon, rec.moi_chat_chay_no);
+    var nextDate = _nextDateOf(rec);
     var status   = _kdStatus(nextDate);
 
     /* Cột kéo thả */
@@ -417,7 +427,8 @@
     var nextCell = document.createElement("td");
     nextCell.className = "col-kd";
     if (nextDate) {
-      nextCell.innerHTML = HSEDate.fmt(nextDate);
+      nextCell.innerHTML = HSEDate.fmt(nextDate) +
+        (rec.ngay_kd_tu_chinh ? ' <span title="Ngày do người dùng tự nhập, không phải ngày hệ thống tự tính" style="font-size:11px;color:#6b7c93">✎</span>' : "");
       if (status) {
         var badge = document.createElement("span");
         badge.className = "kd-badge " + status.cls;
@@ -549,14 +560,30 @@
     }
 
     /* Tính ngày tiếp theo để hiển thị preview */
+    /* Đang dùng ngày tự nhập hay ngày hệ thống tính?
+       Mở form ra thì giữ đúng trạng thái đã lưu của bản ghi. */
+    var _tuChinh = !!rec.ngay_kd_tu_chinh;
+
+    function _goiY() {
+      return _calcNextDate(
+        HSEDate.getValue(document.getElementById("bal-inp-ngaykd")),
+        document.getElementById("bal-inp-nam").value,
+        document.getElementById("bal-inp-anmon").checked,
+        document.getElementById("bal-inp-chayno").checked
+      );
+    }
+    /* Cập nhật dòng gợi ý. Nếu chưa chỉnh tay thì ô ngày đi theo gợi ý;
+       đã chỉnh tay rồi thì để nguyên, chỉ hiện gợi ý bên dưới để đối chiếu. */
     function previewNext() {
-      var ngay  = HSEDate.getValue(document.getElementById("bal-inp-ngaykd"));
-      var nam   = document.getElementById("bal-inp-nam").value;
-      var anMon = document.getElementById("bal-inp-anmon").checked;
-      var chayNo= document.getElementById("bal-inp-chayno").checked;
-      var next  = _calcNextDate(ngay, nam, anMon, chayNo);
+      var next = _goiY();
       var el = document.getElementById("bal-preview-next");
       if (el) el.textContent = next ? HSEDate.fmt(next) : "—";
+      var tag = document.getElementById("bal-tag-tuchinh");
+      if (tag) tag.style.display = _tuChinh ? "" : "none";
+      if (!_tuChinh) {
+        var inp = document.getElementById("bal-inp-ngaykdtt");
+        if (inp && window.HSEDate) HSEDate.setValue(inp, next || "");
+      }
     }
 
     var overlay = document.createElement("div");
@@ -613,8 +640,13 @@
           '<input id="bal-inp-ngaykd" class="bal-input" type="date" value="' + HSEDate.toISO(rec.ngay_kd_gan_nhat || "") + '">' +
         '</div>' +
         '<div class="bal-form-row">' +
-          '<label>Ngày kiểm định tiếp theo <span style="font-weight:400;color:#6b7c93">(tự động)</span></label>' +
-          '<div class="bal-next-date-preview" id="bal-preview-next">' + (rec.ngay_kd_tiep_theo ? HSEDate.fmt(rec.ngay_kd_tiep_theo) : "—") + '</div>' +
+          '<label>Ngày kiểm định tiếp theo</label>' +
+          '<input id="bal-inp-ngaykdtt" class="bal-input" type="date" value="' + HSEDate.toISO(_nextDateOf(rec) || "") + '">' +
+          '<div style="margin-top:6px;font-size:12px;color:#6b7c93;display:flex;align-items:center;gap:8px;flex-wrap:wrap">' +
+            '<span>Hệ thống tự tính: <b id="bal-preview-next">—</b></span>' +
+            '<button type="button" id="bal-btn-dungtutinh" class="bal-btn bal-btn-xs bal-btn-outline">Dùng ngày này</button>' +
+            '<span id="bal-tag-tuchinh" style="color:#9a6700;display:none">✎ đang dùng ngày tự nhập</span>' +
+          '</div>' +
         '</div>' +
         '<div class="bal-form-row">' +
           '<label>Ghi chú – Môi chất</label>' +
@@ -648,6 +680,20 @@
       var el = document.getElementById(id);
       if (el) el.addEventListener("change", previewNext);
     });
+    /* Người dùng tự sửa ô ngày → từ đó về sau giữ nguyên ngày họ nhập,
+       không bị ghi đè khi đổi ngày KĐ gần nhất / năm / môi chất nữa. */
+    var _inpTT = document.getElementById("bal-inp-ngaykdtt");
+    if (_inpTT) _inpTT.addEventListener("change", function () {
+      _tuChinh = true;
+      var tag = document.getElementById("bal-tag-tuchinh");
+      if (tag) tag.style.display = "";
+    });
+    /* Quay lại dùng ngày hệ thống tính */
+    var _btnTT = document.getElementById("bal-btn-dungtutinh");
+    if (_btnTT) _btnTT.addEventListener("click", function () {
+      _tuChinh = false;
+      previewNext();
+    });
     previewNext();
 
     /* Close */
@@ -678,7 +724,10 @@
         nam_van_hanh:      nam,
         so_dang_ky:        document.getElementById("bal-inp-sodangky").value.trim(),
         ngay_kd_gan_nhat:  ngayISO,
-        ngay_kd_tiep_theo: _calcNextDate(ngayISO, nam, anMon, chayNo),
+        ngay_kd_tiep_theo: _tuChinh
+                             ? (HSEDate.getValue(document.getElementById("bal-inp-ngaykdtt")) || _calcNextDate(ngayISO, nam, anMon, chayNo))
+                             : _calcNextDate(ngayISO, nam, anMon, chayNo),
+        ngay_kd_tu_chinh:  _tuChinh,
         moi_chat_an_mon:   anMon,
         moi_chat_chay_no:  chayNo,
         ghi_chu:           document.getElementById("bal-inp-ghichu").value.trim(),
@@ -786,7 +835,6 @@
       ".bal-form-row-2{display:grid;grid-template-columns:1fr 1fr;gap:14px;}",
       ".bal-input{width:100%;padding:8px 10px;border:1.5px solid #cdd6e8;border-radius:7px;font-size:13px;box-sizing:border-box;outline:none;}",
       ".bal-input:focus{border-color:#0060B6;box-shadow:0 0 0 3px rgba(0,96,182,0.1);}",
-      ".bal-next-date-preview{padding:8px 10px;background:#eef3fb;border-radius:7px;font-size:14px;font-weight:600;color:#003087;min-height:36px;display:flex;align-items:center;}",
       ".bal-checkbox-row{display:flex;gap:20px;flex-wrap:wrap;}",
       ".bal-check-label{display:flex;align-items:center;gap:6px;font-size:13px;font-weight:400;cursor:pointer;}",
     ].join("\n");

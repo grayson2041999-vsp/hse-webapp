@@ -364,6 +364,46 @@ console.log('\n── Bình áp lực: cờ môi chất phải là boolean thậ
     CALC('2024-06-15', nam, T._toBool('false'), T._toBool('false')) === binhThuong);
 }
 
+console.log('\n── Bình áp lực: ngày KĐ tiếp theo sửa tay được ──');
+{
+  const src = fs.readFileSync(path.join(ROOT, 'assets', 'binh-ap-luc.js'), 'utf8');
+  const k = src.indexOf('function _calcNextDate(');
+  const m = src.indexOf('/* ── TRẠNG THÁI KIỂM ĐỊNH ── */');
+  const M = new Function('HSEDate', src.slice(k, m) + '; return { _calcNextDate, _nextDateOf };')({
+    parse: v => new Date(v)
+  });
+  const nam = new Date().getFullYear() - 5;   // 5 tuổi → chu kỳ 3 năm
+
+  const tuTinh = { ngay_kd_gan_nhat: '2024-06-15', nam_van_hanh: nam,
+                   moi_chat_an_mon: false, moi_chat_chay_no: false,
+                   ngay_kd_tiep_theo: '2030-01-01', ngay_kd_tu_chinh: false };
+  check('chưa sửa tay → BỎ QUA giá trị đang lưu, tính lại theo công thức',
+    M._nextDateOf(tuTinh).slice(0, 4) === '2027', M._nextDateOf(tuTinh));
+
+  const suaTay = Object.assign({}, tuTinh, { ngay_kd_tu_chinh: true });
+  check('đã sửa tay → giữ đúng ngày người dùng nhập',
+    M._nextDateOf(suaTay) === '2030-01-01', M._nextDateOf(suaTay));
+
+  const suaTayRong = Object.assign({}, tuTinh, { ngay_kd_tu_chinh: true, ngay_kd_tiep_theo: '' });
+  check('đã sửa tay nhưng để trống → quay về ngày tự tính',
+    M._nextDateOf(suaTayRong).slice(0, 4) === '2027');
+
+  check('đổi ngày KĐ gần nhất: bản tự tính đi theo, bản sửa tay không',
+    M._nextDateOf(Object.assign({}, tuTinh, { ngay_kd_gan_nhat: '2025-06-15' })).slice(0, 4) === '2028' &&
+    M._nextDateOf(Object.assign({}, suaTay, { ngay_kd_gan_nhat: '2025-06-15' })) === '2030-01-01');
+
+  check('cờ tự chỉnh cũng được ép kiểu boolean (tránh bẫy chuỗi "false")',
+    /r\.ngay_kd_tu_chinh = _toBool\(r\.ngay_kd_tu_chinh\)/.test(src));
+  check('form có ô nhập ngày KĐ tiếp theo', /id="bal-inp-ngaykdtt"/.test(src));
+  check('form có nút quay lại ngày tự tính', /id="bal-btn-dungtutinh"/.test(src));
+  check('bảng đánh dấu bản ghi sửa tay', /ngay_kd_tu_chinh \? ' <span title="Ngày do người dùng tự nhập/.test(src));
+  check('lưu kèm cờ tự chỉnh', /ngay_kd_tu_chinh:\s+_tuChinh/.test(src));
+
+  const sql = fs.readFileSync(path.join(ROOT, 'supabase', 'binh_ap_luc_tu_chinh.sql'), 'utf8');
+  check('có SQL thêm cột, mặc định false cho bản ghi cũ',
+    /add column if not exists ngay_kd_tu_chinh boolean not null default false/.test(sql));
+}
+
 console.log('\n── Bình áp lực: một bảng, đơn vị là một cột ──');
 {
   const src = fs.readFileSync(path.join(ROOT, 'assets', 'binh-ap-luc.js'), 'utf8');
