@@ -50,11 +50,30 @@ let U = loadUnits();
 let KH = loadKeHoachUnitFns();
 
 console.log('── Danh mục mặc định khớp hiện trạng đang hard-code ──');
-check('ke-hoach: 6 đơn vị (5 đơn vị SX + Phòng Kỹ thuật - Vật tư)', U.list('ke-hoach').length === 6, U.list('ke-hoach'));
+check('ke-hoach: 9 mục (6 đơn vị + Công đoàn + 2 mục gộp)', U.list('ke-hoach').length === 9, U.list('ke-hoach'));
+check('ke-hoach: loại mục gộp ra thì còn 7 đơn vị thật',
+  U.list('ke-hoach', { excludeGop: true }).length === 7, U.list('ke-hoach', { excludeGop: true }));
 check('kiem-tra-cac-cap: 5 đơn vị sản xuất', U.list('kiem-tra-cac-cap').length === 5);
-check('huan-luyen-dao-tao: đủ 12 đơn vị chính thức', U.list('huan-luyen-dao-tao').length === 12);
+check('huan-luyen-dao-tao: 12 đơn vị chính thức + Công đoàn', U.list('huan-luyen-dao-tao').length === 13);
 check('cap-phat-bhld: 5 + Bộ máy điều hành + Test', U.list('cap-phat-bhld').length === 7);
 check('đơn vị hệ thống chỉ hiện ở trang được gán', U.list('ke-hoach').indexOf('Test') < 0);
+
+console.log('\n── Mục gộp (không phải đơn vị thật) ──');
+{
+  const gop = U.all().filter(u => u.muc_gop);
+  check('có 2 mục gộp trong danh mục', gop.length === 2, gop.map(u => u.ten));
+  check('mục gộp hiện trong droplist Kế hoạch',
+    U.list('ke-hoach').indexOf('Tất cả các ĐVSX') >= 0);
+  check('mục gộp KHÔNG lọt vào chỗ đếm theo đơn vị',
+    U.list('ke-hoach', { excludeGop: true }).indexOf('Tất cả các ĐVSX') < 0);
+  check('mục gộp không xuất hiện ở trang Cấp phát BHLĐ',
+    U.list('cap-phat-bhld').every(n => !/^Tất cả/.test(n)));
+  check('tên mục gộp khớp ĐÚNG chuỗi đang có trong dữ liệu (không phải sửa bản ghi)',
+    U.resolve('Tất cả các ĐVSX') && U.resolve('Tất cả đơn vị/phòng/ban') ? true : false);
+  check('Công đoàn đã thành đơn vị thật', (U.resolve('Công đoàn') || {}).ma === 'cong_doan');
+  check('maOf() trả mã ổn định để làm khoá', U.maOf('Cảng biển') === 'cang_bien');
+  check('maOf() với tên lạ vẫn cho khoá duy nhất', U.maOf('Xí nghiệp Cơ khí') === 'xí_nghiệp_cơ_khí');
+}
 
 console.log('\n── Tra cứu tên (bí danh & chuẩn hoá) ──');
 check('tra theo mã', (U.resolve('cang_bien')||{}).ten === 'Cảng biển');
@@ -81,7 +100,7 @@ freshEnv(); U = loadUnits(); KH = loadKeHoachUnitFns();
 console.log('\n── Trang Kế hoạch: droplist 1 lựa chọn ──');
 let d = KH.unitDropdown('x', 'Cảng biển');
 check('chọn đúng giá trị trong danh mục', has(d, 'value="Cảng biển" selected'));
-check('có placeholder + 6 đơn vị + Khác', (d.match(/<option/g) || []).length === 8);
+check('có placeholder + 9 mục + Khác', (d.match(/<option/g) || []).length === 11);
 d = KH.unitDropdown('x', 'XN Cơ khí');
 check('giá trị ngoài danh mục → rơi vào "Khác"', has(d, 'value="Khác" selected'));
 check('giá trị ngoài danh mục → giữ nguyên chữ trong ô nhập', has(d, 'value="XN Cơ khí"') && has(d, 'display:block'));
@@ -222,18 +241,18 @@ console.log('\n── Huấn luyện - Đào tạo: droplist đơn vị ──')
   const HL = new Function('window',
     src.slice(i, j) + '; return { _units, _unitCanon, _unitInList, _unitOpts };')(global);
 
-  check('lấy đủ 12 đơn vị từ danh mục', HL._units().length === 12);
-  check('_unitOpts cho dòng thêm mới = đúng 12 mục', HL._unitOpts('').length === 12);
+  check('lấy đủ 13 mục từ danh mục', HL._units().length === 13);
+  check('_unitOpts cho dòng thêm mới = đúng 13 mục', HL._unitOpts('').length === 13);
   check('_unitOpts giữ đơn vị không còn trong danh mục',
-    HL._unitOpts('Xí nghiệp Cơ khí').length === 13 &&
-    /không còn dùng/.test(HL._unitOpts('Xí nghiệp Cơ khí')[12].t));
-  check('_unitOpts KHÔNG nhân đôi đơn vị đang có', HL._unitOpts('Cảng biển').length === 12);
+    HL._unitOpts('Xí nghiệp Cơ khí').length === 14 &&
+    /không còn dùng/.test(HL._unitOpts('Xí nghiệp Cơ khí')[13].t));
+  check('_unitOpts KHÔNG nhân đôi đơn vị đang có', HL._unitOpts('Cảng biển').length === 13);
   check('_unitCanon quy tên cũ về tên hiện hành (sau khi Admin đổi tên)', (() => {
     const u = JSON.parse(JSON.stringify(U.byMa('doi_xe_vchk')));
     u.ten_cu = ['Đội xe VCHK']; u.ten = 'Đội xe vận chuyển hành khách';
     U.saveUnit(u);
     const ok = HL._unitCanon('Đội xe VCHK') === 'Đội xe vận chuyển hành khách'
-            && HL._unitOpts('Đội xe VCHK').length === 12;   // vẫn khớp, không thêm dòng "không còn dùng"
+            && HL._unitOpts('Đội xe VCHK').length === 13;   // vẫn khớp, không thêm dòng "không còn dùng"
     u.ten = 'Đội xe VCHK'; u.ten_cu = []; U.saveUnit(u);    // trả lại
     return ok;
   })());
@@ -244,8 +263,66 @@ console.log('\n── Huấn luyện - Đào tạo: droplist đơn vị ──')
   const HL2 = new Function('window', '_units', '_unitNorm',
     src.slice(k, m) + '; return _unitIndex;')(global, HL._units, v => U.norm(v));
   check('_unitIndex trả đúng vị trí theo danh mục', HL2('Cảng biển') === 7, HL2('Cảng biển'));
-  check('_unitIndex đẩy đơn vị lạ xuống cuối', HL2('Xí nghiệp Cơ khí') === 13);
+  check('_unitIndex đẩy đơn vị lạ xuống cuối', HL2('Xí nghiệp Cơ khí') === 14);
   check('_unitIndex bỏ qua khác biệt gạch ngang / hoa thường', HL2('phòng kỹ thuật – vật tư') === 1);
+}
+
+/* ─────────────────────────────────────────────
+   TRANG CẤP PHÁT BHLĐ
+   ───────────────────────────────────────────── */
+console.log('\n── Cấp phát BHLĐ: đơn vị & khoá tiến trình ──');
+{
+  const src = fs.readFileSync(path.join(ROOT, 'cap-phat-bhld.html'), 'utf8');
+  const i = src.indexOf('function unitOrder()');
+  const j = src.indexOf('/* Icon Lucide (SVG path)');
+  if (i < 0 || j < 0) throw new Error('Không tìm thấy khối hàm đơn vị trong cap-phat-bhld.html');
+  const CP = new Function('window',
+    src.slice(i, j) + '; return { unitOrder, _uMa, _uCanon, _uSame, _cpUnitRank, _uInOrder };')(global);
+
+  check('7 đơn vị cấp phát, không lẫn mục gộp', CP.unitOrder().length === 7, CP.unitOrder());
+  check('không có "Tất cả..." trong đơn vị cấp phát', CP.unitOrder().every(u => !/^Tất cả/.test(u)));
+  check('giữ đúng thứ tự danh mục', CP._cpUnitRank('Cảng biển') === 0 && CP._cpUnitRank('Test') === 6,
+    [CP._cpUnitRank('Cảng biển'), CP._cpUnitRank('Test')]);
+  check('đơn vị lạ bị đẩy xuống cuối', CP._cpUnitRank('Xí nghiệp Cơ khí') === 999);
+  check('_uSame bỏ qua khác biệt khoảng trắng / hoa thường', CP._uSame('Cảng  BIỂN', 'Cảng biển'));
+  check('_uSame bỏ qua gạch ngang dài', CP._uSame('Phòng Kỹ thuật – Vật tư', 'Phòng Kỹ thuật - Vật tư'));
+
+  /* Khoá tiến trình cấp phát: TÊN → MÃ */
+  const key    = dv => CP._uMa(dv) + '__' + 'Q3/2026';
+  const keyCu  = dv => dv + '__' + 'Q3/2026';
+  check('khoá tiến trình dùng mã ổn định', key('Cảng biển') === 'cang_bien__Q3/2026');
+  check('khoá mới KHÁC khoá cũ (nên cần bước tự chuyển)', key('Cảng biển') !== keyCu('Cảng biển'));
+  check('đổi tên đơn vị KHÔNG làm đổi khoá', (() => {
+    const u = JSON.parse(JSON.stringify(U.byMa('cang_bien')));
+    u.ten_cu = ['Cảng biển']; u.ten = 'Cảng biển Vietsovpetro'; U.saveUnit(u);
+    const sau = key('Cảng biển Vietsovpetro');
+    const cu  = key('Cảng biển');           // tên cũ vẫn tra ra đúng mã
+    u.ten = 'Cảng biển'; u.ten_cu = []; U.saveUnit(u);
+    return sau === 'cang_bien__Q3/2026' && cu === 'cang_bien__Q3/2026';
+  })());
+  check('tên lạ vẫn cho khoá duy nhất, không đụng nhau',
+    CP._uMa('Xí nghiệp A') !== CP._uMa('Xí nghiệp B'));
+
+  /* Nhu cầu mua sắm: loại đơn vị Test */
+  const k = src.indexOf('function nhuCauUnits()');
+  const NC = new Function('unitOrder', '_uMa', src.slice(k, src.indexOf('function initNhuCauPage')) + '; return nhuCauUnits;')(CP.unitOrder, CP._uMa);
+  check('nhu cầu mua sắm loại đơn vị Test', NC().length === 6 && NC().indexOf('Test') < 0, NC());
+  check('nhu cầu mua sắm GIỮ Bộ máy điều hành', NC().indexOf('Bộ máy điều hành') >= 0);
+}
+
+console.log('\n── Không còn danh sách viết cứng ở Cấp phát BHLĐ ──');
+{
+  const cpb = fs.readFileSync(path.join(ROOT, 'cap-phat-bhld.html'), 'utf8');
+  check('không còn hằng UNIT_ORDER', !/const\s+UNIT_ORDER\s*=/.test(cpb));
+  check('không còn hằng NHUCAU_UNITS', !/const\s+NHUCAU_UNITS\s*=/.test(cpb));
+  check('không còn bảng icon theo tên đơn vị', !/'Đội xe VTHH&PTTBCD':'🚛'/.test(cpb));
+  check('có nạp assets/don-vi.js', /assets\/don-vi\.js/.test(cpb));
+  check('khoá tiến trình đã dùng mã', /_cpwKey\(dv,q\)\{return _uMa\(dv\)/.test(cpb));
+  check('vẫn giữ đường đọc khoá cũ để tự chuyển', /_cpwKeyCu/.test(cpb));
+
+  const appjs = fs.readFileSync(path.join(ROOT, 'assets', 'app.js'), 'utf8');
+  check('app.js không còn hằng CAP_PHAT_UNITS', !/CAP_PHAT_UNITS/.test(appjs));
+  check('app.js lấy đơn vị cấp phát từ danh mục', /HSE_UNITS\.list\("cap-phat-bhld"/.test(appjs));
 }
 
 /* ─────────────────────────────────────────────
@@ -307,9 +384,9 @@ console.log('\n── Đối soát: phân loại giá trị ──');
     check('xếp giá trị lạ lên đầu', res.rows[0].status === 'la');
     check('ghi rõ giá trị xuất hiện ở bảng nào',
       Object.keys(by('Cảng biển').targets).length === 5, Object.keys(by('Cảng biển').targets));
-    /* 14 đơn vị trong danh mục, 4 đơn vị có dữ liệu (Cảng biển, Xưởng sửa chữa,
-       Đội xe VCHK đã đổi tên, Phòng Kế toán) → còn 10 chưa dùng */
-    check('liệt kê đơn vị trong danh mục chưa có dữ liệu', res.chuaDung.length === 10, res.chuaDung.length);
+    /* 17 mục trong danh mục, 4 mục có dữ liệu (Cảng biển, Xưởng sửa chữa,
+       Đội xe VCHK đã đổi tên, Phòng Kế toán) → còn 13 chưa dùng */
+    check('liệt kê đơn vị trong danh mục chưa có dữ liệu', res.chuaDung.length === 13, res.chuaDung.length);
     check('đơn vị đã dùng KHÔNG bị liệt vào nhóm chưa dùng',
       !res.chuaDung.some(u => u.ma === 'cang_bien' || u.ma === 'doi_xe_vchk'));
     check('không có bảng nào lỗi khi đọc', res.errors.length === 0, res.errors);

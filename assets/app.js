@@ -1320,6 +1320,19 @@
     var showInactive = false;
     // Ô tick trong modal nằm trong .field — cần ghi đè padding của ".field input"
     var CB = 'style="width:16px;height:16px;padding:0;flex-shrink:0;accent-color:var(--brand)"';
+    /* Bộ icon cho thẻ đơn vị ở trang Cấp phát BHLĐ (khớp _unitIcon bên đó) */
+    var DV_ICONS = [
+      { v:"",          t:"(mặc định — toà nhà)" },
+      { v:"anchor",    t:"Mỏ neo — cảng" },
+      { v:"package",   t:"Thùng hàng — kho" },
+      { v:"wrench",    t:"Cờ lê — xưởng" },
+      { v:"truck",     t:"Xe tải" },
+      { v:"car",       t:"Ô tô con" },
+      { v:"landmark",  t:"Trụ sở" },
+      { v:"flask",     t:"Ống nghiệm — thử nghiệm" },
+      { v:"hard-hat",  t:"Mũ bảo hộ" },
+      { v:"users",     t:"Nhóm người" }
+    ];
 
     pane.innerHTML =
       '<div class="toolbar">'+
@@ -1358,6 +1371,7 @@
           '<td class="muted">'+(i+1)+'</td>'+
           '<td><b>'+esc(u.ten)+'</b>'+
             (u.he_thong?' <span class="badge" style="background:#eef1f4;color:var(--text-muted)">hệ thống</span>':'')+
+            (u.muc_gop?' <span class="badge" style="background:#f3e8ff;color:#6b21a8">mục gộp</span>':'')+
             '<div class="muted" style="font-size:11px;margin-top:2px">mã: <code>'+esc(u.ma)+'</code>'+
               (u.ten_cu.length?' · tên cũ: '+esc(u.ten_cu.join(", ")):'')+'</div></td>'+
           '<td class="muted">'+esc(HSE_UNITS.nhomLabel(u.nhom))+'</td>'+
@@ -1373,8 +1387,12 @@
             '<button class="btn btn-ghost btn-sm" data-act="up"   data-ma="'+esc(u.ma)+'" title="Lên trên"'+(i===0?' disabled':'')+'>▲</button> '+
             '<button class="btn btn-ghost btn-sm" data-act="down" data-ma="'+esc(u.ma)+'" title="Xuống dưới"'+(i===rows.length-1?' disabled':'')+'>▼</button> '+
             '<button class="btn btn-ghost btn-sm" data-act="edit" data-ma="'+esc(u.ma)+'">Sửa</button> '+
-            '<button class="btn btn-ghost btn-sm" data-act="toggle" data-ma="'+esc(u.ma)+'">'+(u.active?'Ngừng':'Bật lại')+'</button> '+
-            '<button class="btn btn-danger btn-sm" data-act="del" data-ma="'+esc(u.ma)+'">Xoá</button>'+
+            /* Đơn vị hệ thống (Test, Bộ máy điều hành) bị so sánh theo TÊN ở
+               nhiều chỗ trong trang Cấp phát BHLĐ → không cho ngừng/xoá. */
+            (u.he_thong
+              ? '<span class="muted" title="Đơn vị hệ thống — trang Cấp phát BHLĐ nhận diện theo tên, không được ngừng hoặc xoá">khoá</span>'
+              : '<button class="btn btn-ghost btn-sm" data-act="toggle" data-ma="'+esc(u.ma)+'">'+(u.active?'Ngừng':'Bật lại')+'</button> '+
+                '<button class="btn btn-danger btn-sm" data-act="del" data-ma="'+esc(u.ma)+'">Xoá</button>')+
           '</td></tr>';
       });
       if(!rows.length) html += '<tr><td colspan="'+(5+PG.length)+'" class="muted" style="text-align:center;padding:24px">Danh mục trống.</td></tr>';
@@ -1463,15 +1481,22 @@
             '<div class="field"><label>Nhóm</label><select class="inp" id="dv_nhom" style="width:100%">'+
               '<option value="phong_ban">Phòng / Ban</option>'+
               '<option value="don_vi_sx">Đơn vị sản xuất</option>'+
-              '<option value="he_thong">Đơn vị hệ thống</option></select></div>'+
+              '<option value="doan_the">Đoàn thể</option>'+
+              '<option value="he_thong">Đơn vị hệ thống</option>'+
+              '<option value="muc_gop">Mục gộp (không phải đơn vị)</option></select></div>'+
             '<div class="field"><label>Thứ tự hiển thị</label>'+
               '<input class="inp" id="dv_sort" type="number" style="width:100%" value="'+(isNew?nextSort():u.sort)+'"></div>'+
           '</div>'+
           '<div class="field"><label>Trang được dùng đơn vị này</label>'+
             '<div class="perm-grid" id="dv_pages" style="max-height:none;grid-template-columns:1fr 1fr"></div></div>'+
+          '<div class="field"><label>Icon (thẻ đơn vị ở trang Cấp phát BHLĐ)</label>'+
+            '<select class="inp" id="dv_icon" style="width:100%">'+
+              DV_ICONS.map(function(o){ return '<option value="'+esc(o.v)+'">'+esc(o.t)+'</option>'; }).join('')+
+            '</select></div>'+
           '<div class="field" style="display:flex;gap:18px;flex-wrap:wrap">'+
             '<label class="perm-item" style="margin:0"><input type="checkbox" id="dv_active"'+(isNew||u.active?" checked":"")+' '+CB+'><span>Đang hoạt động</span></label>'+
-            '<label class="perm-item" style="margin:0"><input type="checkbox" id="dv_hethong"'+(!isNew&&u.he_thong?" checked":"")+' '+CB+'><span>Đơn vị hệ thống (ngoài 12 đơn vị chính thức)</span></label>'+
+            '<label class="perm-item" style="margin:0"><input type="checkbox" id="dv_hethong"'+(!isNew&&u.he_thong?" checked":"")+' '+CB+(!isNew&&u.he_thong?" disabled":"")+'><span>Đơn vị hệ thống (ngoài 12 đơn vị chính thức)</span></label>'+
+            '<label class="perm-item" style="margin:0"><input type="checkbox" id="dv_mucgop"'+(!isNew&&u.muc_gop?" checked":"")+' '+CB+'><span>Mục gộp — cách nói gộp, không phải một đơn vị</span></label>'+
           '</div>'+
           '<div class="field"><label>Ghi chú</label><input class="inp" id="dv_ghichu" style="width:100%" value="'+esc(isNew?"":(u.ghi_chu||""))+'"></div>'+
           (isNew ? '<div class="muted">Mã cố định sẽ được sinh tự động từ tên và không bao giờ thay đổi.</div>'
@@ -1488,7 +1513,18 @@
         return '<label class="perm-item" style="align-items:flex-start"><input type="checkbox" value="'+esc(p.slug)+'"'+(on?" checked":"")+' '+CB+'>'+
                '<span>'+esc(p.title)+'<br><span class="muted">'+esc(p.note)+(p.applied?"":" · chưa áp dụng")+'</span></span></label>';
       }).join("");
-      if(!isNew) bg.querySelector("#dv_nhom").value = u.nhom;
+      if(!isNew){
+        bg.querySelector("#dv_nhom").value = u.nhom;
+        bg.querySelector("#dv_icon").value = u.icon || "";
+        /* Trang Cấp phát BHLĐ nhận diện đơn vị hệ thống bằng TÊN (so chuỗi ở
+           ~23 chỗ, kể cả khoá bảng test_baseline) → khoá ô tên lại. */
+        if(u.he_thong){
+          var oTen = bg.querySelector("#dv_ten");
+          oTen.readOnly = true;
+          oTen.style.background = "#f4f6f8";
+          oTen.title = "Đơn vị hệ thống — tên được dùng làm mã nhận diện trong trang Cấp phát BHLĐ, không đổi được.";
+        }
+      }
       bg.classList.add("open");
       bg.querySelector("#dv_ten").focus();
 
@@ -1513,7 +1549,9 @@
           nhom:     bg.querySelector("#dv_nhom").value,
           sort:     parseInt(bg.querySelector("#dv_sort").value,10) || 0,
           active:   bg.querySelector("#dv_active").checked,
-          he_thong: bg.querySelector("#dv_hethong").checked,
+          he_thong: isNew ? bg.querySelector("#dv_hethong").checked : u.he_thong,
+          muc_gop:  bg.querySelector("#dv_mucgop").checked,
+          icon:     bg.querySelector("#dv_icon").value,
           pages:    pages,
           ghi_chu:  bg.querySelector("#dv_ghichu").value.trim()
         };
@@ -1841,7 +1879,15 @@
       '<div class="modal-f"><button class="btn btn-ghost" id="mc">Huỷ</button><button class="btn btn-accent" id="ms">Lưu</button></div></div>';
 
     var permBox = $("#m_perms",bg);
-    var CAP_PHAT_UNITS = ['Cảng biển','Căn cứ Kho - Giao nhận','Xưởng sửa chữa','Đội xe VTHH&PTTBCD','Đội xe VCHK','Bộ máy điều hành','Test'];
+    /* Đơn vị cấp phát BHLĐ — lấy từ DANH MỤC DÙNG CHUNG thay vì viết cứng.
+       excludeGop: "mục gộp" không phải đơn vị cấp phát.
+       Lưu ý: capPhatUnits lưu TÊN đơn vị, và canEditUnit() bên trang Cấp phát
+       BHLĐ so khớp chuẩn hoá — nên tên ở đây phải lấy đúng từ danh mục. */
+    function capPhatUnitList(){
+      return (typeof HSE_UNITS!=="undefined")
+        ? HSE_UNITS.list("cap-phat-bhld",{excludeGop:true})
+        : [];
+    }
     MENU.forEach(function(item){
       if(item.adminOnly) return;
       if(item.adminEditOnly) return;
@@ -1860,16 +1906,43 @@
     permBox.parentNode.insertBefore(cpUnitWrap, permBox.nextSibling);
     // Dùng querySelector trên cpUnitWrap vì bg chưa được thêm vào document DOM lúc này
     var cpGrid = cpUnitWrap.querySelector("#cpUnitGrid");
-    CAP_PHAT_UNITS.forEach(function(u){
-      var lab = el("label","perm-item");
-      lab.innerHTML='<input type="checkbox" value="'+u+'"><span>'+u+'</span>';
-      cpGrid.appendChild(lab);
-    });
+    function buildCpGrid(){
+      cpGrid.innerHTML="";
+      capPhatUnitList().forEach(function(u){
+        var lab = el("label","perm-item");
+        lab.innerHTML='<input type="checkbox" value="'+esc(u)+'"><span>'+esc(u)+'</span>';
+        cpGrid.appendChild(lab);
+      });
+    }
+    buildCpGrid();
     cpUnitWrap.querySelector("#cpSelAll").addEventListener("click",function(e){e.preventDefault();cpGrid.querySelectorAll("input").forEach(function(c){c.checked=true;});});
     cpUnitWrap.querySelector("#cpSelNone").addEventListener("click",function(e){e.preventDefault();cpGrid.querySelectorAll("input").forEach(function(c){c.checked=false;});});
 
     function getCapPhatUnits(){ var a=[]; cpGrid.querySelectorAll("input:checked").forEach(function(c){a.push(c.value);}); return a; }
-    function setCapPhatUnits(arr){ cpGrid.querySelectorAll("input").forEach(function(c){c.checked=arr.indexOf(c.value)!==-1;}); }
+    function setCapPhatUnits(arr){
+      buildCpGrid();
+      var con = (arr||[]).slice();
+      cpGrid.querySelectorAll("input").forEach(function(c){
+        var tick = con.some(function(v){
+          return (typeof HSE_UNITS!=="undefined")
+            ? HSE_UNITS.norm(HSE_UNITS.label(v))===HSE_UNITS.norm(c.value)
+            : v===c.value;
+        });
+        c.checked = tick;
+        if(tick) con = con.filter(function(v){
+          return (typeof HSE_UNITS!=="undefined")
+            ? HSE_UNITS.norm(HSE_UNITS.label(v))!==HSE_UNITS.norm(c.value)
+            : v!==c.value;
+        });
+      });
+      /* Quyền cũ trỏ tới đơn vị không còn trong danh mục: vẫn hiện và giữ tích,
+         nếu không bấm Lưu là user mất quyền mà admin không hay biết. */
+      con.forEach(function(v){
+        var lab = el("label","perm-item");
+        lab.innerHTML='<input type="checkbox" value="'+esc(v)+'" checked><span>'+esc(v)+' <span class="muted">(không còn trong danh mục)</span></span>';
+        cpGrid.appendChild(lab);
+      });
+    }
     function updateCpUnitWrap(){
       var cpChk = permBox.querySelector("input[value='cap-phat-bhld']");
       var isAdm = $("#m_role",bg).value==="admin";
@@ -1942,7 +2015,7 @@
       if(pw && pw.length<6){ alert("Mật khẩu phải có tối thiểu 6 ký tự."); return; }
       if(pw && pw!==pw2){ alert("Mật khẩu xác nhận không khớp."); return; }
       var perms = role==="admin" ? allSlugs() : getPerms();
-      var capPhatUnits = role==="admin" ? CAP_PHAT_UNITS : getCapPhatUnits();
+      var capPhatUnits = role==="admin" ? capPhatUnitList() : getCapPhatUnits();
       var approve = document.getElementById("m_approve") && document.getElementById("m_approve").checked;
       var saveBtn=document.getElementById("ms"); if(saveBtn){saveBtn.disabled=true;saveBtn.textContent="Đang lưu...";}
       function doSave(hashedPw){

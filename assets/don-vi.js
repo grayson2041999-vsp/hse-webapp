@@ -48,7 +48,7 @@
     { slug: "ke-hoach",           title: "Kế hoạch",             note: "Đơn vị chủ trì & phối hợp", applied: true  },
     { slug: "kiem-tra-cac-cap",   title: "Kiểm tra các cấp",     note: "Chọn đơn vị ở Bước 1",      applied: true  },
     { slug: "huan-luyen-dao-tao", title: "Huấn luyện - Đào tạo", note: "Đơn vị của từng nhân sự",   applied: true  },
-    { slug: "cap-phat-bhld",      title: "Cấp phát BHLĐ",        note: "Đơn vị cấp phát & phân quyền", applied: false }
+    { slug: "cap-phat-bhld",      title: "Cấp phát BHLĐ",        note: "Đơn vị cấp phát & phân quyền", applied: true  }
   ];
 
   /* ─────────────────────────────────────────────
@@ -113,20 +113,26 @@
     { ma:"p_thuong_mai_dv",   ten:"Phòng Thương mại - Dịch vụ",      nhom:"phong_ban", sort:50,  he_thong:false, pages:["huan-luyen-dao-tao"] },
     { ma:"ban_thuc_hien_hd",  ten:"Ban Thực hiện hợp đồng",          nhom:"phong_ban", sort:60,  he_thong:false, pages:["huan-luyen-dao-tao"] },
     { ma:"ban_dieu_do_sx",    ten:"Ban Điều độ sản xuất",            nhom:"phong_ban", sort:70,  he_thong:false, pages:["huan-luyen-dao-tao"] },
-    { ma:"cang_bien",         ten:"Cảng biển",                       nhom:"don_vi_sx", sort:80,  he_thong:false, pages:["ke-hoach","kiem-tra-cac-cap","huan-luyen-dao-tao","cap-phat-bhld"] },
-    { ma:"can_cu_kho_gn",     ten:"Căn cứ Kho - Giao nhận",          nhom:"don_vi_sx", sort:90,  he_thong:false, pages:["ke-hoach","kiem-tra-cac-cap","huan-luyen-dao-tao","cap-phat-bhld"] },
-    { ma:"xuong_sua_chua",    ten:"Xưởng sửa chữa",                  nhom:"don_vi_sx", sort:100, he_thong:false, pages:["ke-hoach","kiem-tra-cac-cap","huan-luyen-dao-tao","cap-phat-bhld"] },
-    { ma:"doi_xe_vthh",       ten:"Đội xe VTHH&PTTBCD",              nhom:"don_vi_sx", sort:110, he_thong:false, pages:["ke-hoach","kiem-tra-cac-cap","huan-luyen-dao-tao","cap-phat-bhld"] },
-    { ma:"doi_xe_vchk",       ten:"Đội xe VCHK",                     nhom:"don_vi_sx", sort:120, he_thong:false, pages:["ke-hoach","kiem-tra-cac-cap","huan-luyen-dao-tao","cap-phat-bhld"] },
-    { ma:"bo_may_dieu_hanh",  ten:"Bộ máy điều hành",                nhom:"he_thong",  sort:200, he_thong:true,  pages:["cap-phat-bhld"] },
-    { ma:"test",              ten:"Test",                            nhom:"he_thong",  sort:210, he_thong:true,  pages:["cap-phat-bhld"] }
+    { ma:"cang_bien",         ten:"Cảng biển",                       nhom:"don_vi_sx", sort:80,  he_thong:false, icon:"anchor",   pages:["ke-hoach","kiem-tra-cac-cap","huan-luyen-dao-tao","cap-phat-bhld"] },
+    { ma:"can_cu_kho_gn",     ten:"Căn cứ Kho - Giao nhận",          nhom:"don_vi_sx", sort:90,  he_thong:false, icon:"package",  pages:["ke-hoach","kiem-tra-cac-cap","huan-luyen-dao-tao","cap-phat-bhld"] },
+    { ma:"xuong_sua_chua",    ten:"Xưởng sửa chữa",                  nhom:"don_vi_sx", sort:100, he_thong:false, icon:"wrench",   pages:["ke-hoach","kiem-tra-cac-cap","huan-luyen-dao-tao","cap-phat-bhld"] },
+    { ma:"doi_xe_vthh",       ten:"Đội xe VTHH&PTTBCD",              nhom:"don_vi_sx", sort:110, he_thong:false, icon:"truck",    pages:["ke-hoach","kiem-tra-cac-cap","huan-luyen-dao-tao","cap-phat-bhld"] },
+    { ma:"doi_xe_vchk",       ten:"Đội xe VCHK",                     nhom:"don_vi_sx", sort:120, he_thong:false, icon:"car",      pages:["ke-hoach","kiem-tra-cac-cap","huan-luyen-dao-tao","cap-phat-bhld"] },
+    { ma:"cong_doan",         ten:"Công đoàn",                       nhom:"doan_the",  sort:130, he_thong:false, pages:["ke-hoach","huan-luyen-dao-tao"] },
+    { ma:"bo_may_dieu_hanh",  ten:"Bộ máy điều hành",                nhom:"he_thong",  sort:200, he_thong:true,  icon:"landmark", pages:["cap-phat-bhld"] },
+    { ma:"test",              ten:"Test",                            nhom:"he_thong",  sort:210, he_thong:true,  icon:"flask",    pages:["cap-phat-bhld"] },
+    /* "Mục gộp" — cách nói gộp, KHÔNG phải một đơn vị. Chọn được trong
+       droplist nhưng bị loại khỏi mọi chỗ đếm/thống kê theo đơn vị. */
+    { ma:"gop_tat_ca_dvsx",   ten:"Tất cả các ĐVSX",                 nhom:"muc_gop",   sort:300, he_thong:false, muc_gop:true, pages:["ke-hoach"] },
+    { ma:"gop_toan_xn",       ten:"Tất cả đơn vị/phòng/ban",         nhom:"muc_gop",   sort:310, he_thong:false, muc_gop:true, pages:["ke-hoach"] }
   ];
 
   var DEFAULT_CFG = {
     other: { "ke-hoach": true, "kiem-tra-cac-cap": true, "huan-luyen-dao-tao": false, "cap-phat-bhld": false }
   };
 
-  var NHOM_LABEL = { phong_ban: "Phòng / Ban", don_vi_sx: "Đơn vị sản xuất", he_thong: "Đơn vị hệ thống" };
+  var NHOM_LABEL = { phong_ban: "Phòng / Ban", don_vi_sx: "Đơn vị sản xuất", doan_the: "Đoàn thể",
+                     he_thong: "Đơn vị hệ thống", muc_gop: "Mục gộp (không phải đơn vị)" };
 
   /* ─────────────── TIỆN ÍCH ─────────────── */
   function esc(s) {
@@ -169,6 +175,8 @@
       sort:     parseInt(r.sort, 10) || 0,
       active:   r.active !== false,
       he_thong: !!r.he_thong,
+      muc_gop:  !!r.muc_gop,
+      icon:     r.icon || "",
       pages:    asArr(r.pages),
       ghi_chu:  r.ghi_chu || ""
     };
@@ -211,6 +219,8 @@
     return _list.filter(function (u) {
       if (!u.active && !opt.includeInactive) return false;
       if (u.he_thong && opt.excludeHeThong) return false;
+      // excludeGop: bỏ các "mục gộp" — dùng ở mọi nơi ĐẾM theo đơn vị
+      if (u.muc_gop && opt.excludeGop) return false;
       return true;
     }).map(function (u) { return u; }).sort(bySort);
   }
@@ -241,6 +251,9 @@
   function label(x) { var u = resolve(x); return u ? u.ten : String(x == null ? "" : x); }
 
   function byMa(ma) { for (var i = 0; i < _list.length; i++) if (_list[i].ma === ma) return _list[i]; return null; }
+  /* Mã ổn định của một tên đơn vị (dùng làm khoá thay cho tên).
+     Không tra được thì trả lại chính chuỗi đã chuẩn hoá, để khoá vẫn duy nhất. */
+  function maOf(x) { var u = resolve(x); return u ? u.ma : norm(x).replace(/\s+/g, "_"); }
 
   function allowOther(page) { return !!(_cfg && _cfg.other && _cfg.other[page]); }
 
@@ -272,14 +285,30 @@
   function nhomLabel(n) { return NHOM_LABEL[n] || n; }
 
   /* ─────────────── TẢI TỪ SUPABASE ─────────────── */
+  /* Đọc danh mục: qua db.js nếu có, không thì gọi thẳng Supabase.
+     Trang Cấp phát BHLĐ KHÔNG nạp db.js — nó có bhld-sync.js riêng. */
+  function _fetchList() {
+    if (typeof DB !== "undefined") return DB.getAll(SHEET);
+    if (!window.HSE_SB) return Promise.reject(new Error("Chưa kết nối Supabase"));
+    return window.HSE_SB.from("DonVi").select("*").then(function (r) {
+      if (r.error) throw new Error(r.error.message);
+      return r.data || [];
+    });
+  }
+  function _fetchConfig() {
+    if (typeof DB !== "undefined") return DB.getById(CFG_SHEET, CFG_KEY);
+    if (!window.HSE_SB) return Promise.reject(new Error("Chưa kết nối Supabase"));
+    return window.HSE_SB.from("TraCuuATVSLD").select("*").eq("key", CFG_KEY).maybeSingle()
+      .then(function (r) { if (r.error) throw new Error(r.error.message); return r.data; });
+  }
+
   function refresh() {
-    if (typeof DB === "undefined") return Promise.resolve(_list);
-    return DB.getAll(SHEET).then(function (rows) {
+    return _fetchList().then(function (rows) {
       if (rows && rows.length) {
         _list = rows.map(normRow).filter(function (u) { return !!u.ma; }).sort(bySort);
         saveCache(_list);
       }
-      return DB.getById(CFG_SHEET, CFG_KEY).catch(function () { return null; });
+      return _fetchConfig().catch(function () { return null; });
     }).then(function (row) {
       if (row && row.value) {
         try {
@@ -317,27 +346,39 @@
     for (var i = 0; i < _list.length; i++) if (_list[i].ma === row.ma) idx = i;
     if (idx >= 0) _list[idx] = row; else _list.push(row);
     _list.sort(bySort); saveCache(_list); emit();
-    if (typeof DB === "undefined") return Promise.resolve(row);
-    return DB.insert(SHEET, {
+    var payload = {
       ma: row.ma, ten: row.ten, ten_cu: row.ten_cu, nhom: row.nhom,
       sort: row.sort, active: row.active, he_thong: row.he_thong,
+      muc_gop: row.muc_gop, icon: row.icon,
       pages: row.pages, ghi_chu: row.ghi_chu, updated_at: new Date().toISOString()
-    }).then(function () { return row; });
+    };
+    if (typeof DB === "undefined") {
+      // Trang không nạp db.js (vd Cấp phát BHLĐ) → ghi thẳng qua Supabase
+      if (!window.HSE_SB) return Promise.resolve(row);
+      return window.HSE_SB.from("DonVi").upsert(payload, { onConflict: "ma" })
+        .then(function (r) { if (r.error) throw new Error(r.error.message); return row; });
+    }
+    return DB.insert(SHEET, payload).then(function () { return row; });
   }
 
   function removeUnit(ma) {
     _list = _list.filter(function (u) { return u.ma !== ma; });
     saveCache(_list); emit();
-    if (typeof DB === "undefined") return Promise.resolve(true);
-    return DB.delete(SHEET, ma);
+    if (typeof DB !== "undefined") return DB.delete(SHEET, ma);
+    if (!window.HSE_SB) return Promise.resolve(true);
+    return window.HSE_SB.from("DonVi").delete().eq("ma", ma)
+      .then(function (r) { if (r.error) throw new Error(r.error.message); return true; });
   }
 
   function config() { return clone(_cfg); }
   function saveConfig(cfg) {
     _cfg = cfg && typeof cfg === "object" ? cfg : clone(DEFAULT_CFG);
     saveCfgCache(_cfg); emit();
-    if (typeof DB === "undefined") return Promise.resolve(_cfg);
-    return DB.insert(CFG_SHEET, { key: CFG_KEY, value: JSON.stringify(_cfg) }).then(function () { return _cfg; });
+    var row = { key: CFG_KEY, value: JSON.stringify(_cfg) };
+    if (typeof DB !== "undefined") return DB.insert(CFG_SHEET, row).then(function () { return _cfg; });
+    if (!window.HSE_SB) return Promise.resolve(_cfg);
+    return window.HSE_SB.from("TraCuuATVSLD").upsert(row, { onConflict: "key" })
+      .then(function (r) { if (r.error) throw new Error(r.error.message); return _cfg; });
   }
 
   /** Sinh mã ổn định từ tên (chỉ dùng khi TẠO MỚI; sau đó không đổi nữa) */
@@ -500,6 +541,7 @@
     resolve: resolve,
     label: label,
     byMa: byMa,
+    maOf: maOf,
     allowOther: allowOther,
     optionsHtml: optionsHtml,
     nhomLabel: nhomLabel,

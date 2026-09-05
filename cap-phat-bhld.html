@@ -8,6 +8,9 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <script type="module" src="assets/supabase-config.js"></script>
   <script src="assets/bhld-sync.js?v=20260904"></script>
+  <!-- Danh mục Phòng/Ban/Đơn vị dùng chung. Trang này KHÔNG nạp db.js,
+       don-vi.js tự đọc thẳng Supabase khi thiếu DB. -->
+  <script src="assets/don-vi.js?v=20260905"></script>
 <script src="assets/hse-activity.js"></script>
   <!-- Khối tài khoản trên header dùng chung với các trang khác (xem file để biết lý do) -->
   <link rel="stylesheet" href="assets/header-auth.css">
@@ -1243,13 +1246,16 @@ function canEditUnit(donVi){
   if(u.active===false)return false;
   if(u.role==='admin')return true;
   if(u.role==='viewer')return false;
-  return Array.isArray(u.capPhatUnits)&&u.capPhatUnits.includes(donVi);
+  if(!Array.isArray(u.capPhatUnits))return false;
+  /* So khớp CHUẨN HOÁ, không so chuỗi tuyệt đối: capPhatUnits lưu TÊN đơn vị,
+     lệch một khoảng trắng hay gạch ngang dài là user mất quyền im lặng. */
+  return u.capPhatUnits.some(function(x){ return _uSame(x,donVi); });
 }
 function getCentralUserUnits(){
   const u=getCentralUser();
   if(!u)return null;
   if(u.role==='admin')return null; // null = thấy tất cả
-  return Array.isArray(u.capPhatUnits)?u.capPhatUnits:[];
+  return Array.isArray(u.capPhatUnits)?u.capPhatUnits.map(_uCanon):[];
 }
 function _getCurrentUsername(){const u=getCentralUser();return u?u.username:'';}
 
@@ -1712,7 +1718,7 @@ function cpOpenTraCuu(){
   // User thường quản lý đúng 1 đơn vị → tự chọn để hiện ngay nút thêm (＋) ở cuối bảng
   try{
     if(!(typeof isAdmin==='function'&&isAdmin())){
-      var _ed=(typeof UNIT_ORDER!=='undefined'?UNIT_ORDER:[]).filter(function(u){return typeof canEditUnit==='function'&&canEditUnit(u);});
+      var _ed=unitOrder().filter(function(u){return typeof canEditUnit==='function'&&canEditUnit(u);});
       if(_ed.length===1)dvSel.value=_ed[0];
     }
   }catch(e){}
@@ -2392,7 +2398,7 @@ function cpnvDelRow(id){
 function cpnvRender(){
   var host=document.getElementById('cpnv-steps'); if(!host)return;
   var admin=(typeof isAdmin==='function'&&isAdmin());
-  var units=(typeof UNIT_ORDER!=='undefined'?UNIT_ORDER:[]).filter(function(u){return typeof canEditUnit==='function'&&canEditUnit(u);});
+  var units=unitOrder().filter(function(u){return typeof canEditUnit==='function'&&canEditUnit(u);});
   var _meUser=(typeof _getCurrentUsername==='function')?_getCurrentUsername():'';
   var approved=BHLD.lsGet('phieu_requests').filter(function(p){return p.type==='nv_moi'&&p.status==='approved'&&String(p.submittedByUsername||'')===String(_meUser);})
     .sort(function(a,b){return new Date(b.reviewedAt||b.createdAt||0)-new Date(a.reviewedAt||a.createdAt||0);}).slice(0,20);
@@ -2480,7 +2486,7 @@ function cpnvRenderQty(list){
   host.innerHTML=html;
 }
 function cpnvSubmit(){
-  var units=(typeof UNIT_ORDER!=='undefined'?UNIT_ORDER:[]).filter(function(u){return typeof canEditUnit==='function'&&canEditUnit(u);});
+  var units=unitOrder().filter(function(u){return typeof canEditUnit==='function'&&canEditUnit(u);});
   if(units.length&&(!_currentUnit||!canEditUnit(_currentUnit)))_currentUnit=units[0];
   if(typeof submitPhieuNVMoi==='function')submitPhieuNVMoi();
   setTimeout(cpnvRender,60);
@@ -2503,21 +2509,47 @@ function cpGoApprove(){
 // ========= AUTH =========
 // (Auth được xử lý qua hse_session — xem getCentralUser() / canEditUnit())
 // ========= NHÂN VIÊN - UNIT PICKER =========
-const UNIT_ORDER=['Cảng biển','Căn cứ Kho - Giao nhận','Xưởng sửa chữa','Đội xe VTHH&PTTBCD','Đội xe VCHK','Bộ máy điều hành','Test'];
-// Xếp hạng đơn vị theo UNIT_ORDER (đơn vị lạ đẩy xuống cuối)
-function _cpUnitRank(u){var i=UNIT_ORDER.indexOf(u);return i<0?999:i;}
-const UNIT_ICONS={'Cảng biển':'🚢','Căn cứ Kho - Giao nhận':'📦','Xưởng sửa chữa':'🔧','Đội xe VTHH&PTTBCD':'🚛','Đội xe VCHK':'🚗','Bộ máy điều hành':'🏛️','Test':'🧪'};
-// Icon Lucide (SVG path) cho thẻ chọn đơn vị — dùng currentColor để khớp màu navy
+/* ── ĐƠN VỊ: lấy từ DANH MỤC DÙNG CHUNG (assets/don-vi.js) ──
+   Trước đây thứ tự, icon và danh sách đơn vị viết cứng ngay tại đây.
+   Nay Admin quản lý ở Quản trị hệ thống → Danh mục đơn vị.
+
+   ⚠️ Lưu ý quan trọng: trang này nhận diện đơn vị hệ thống ("Test",
+   "Bộ máy điều hành") bằng cách SO CHUỖI TÊN ở khoảng 23 chỗ, kể cả khoá
+   bảng test_baseline. Vì vậy trang Quản trị KHOÁ không cho đổi tên/xoá các
+   đơn vị hệ thống. Đừng bỏ khoá đó nếu chưa thay hết các phép so chuỗi. */
+function unitOrder(){
+  // excludeGop: "mục gộp" (vd "Tất cả các ĐVSX") không phải đơn vị cấp phát
+  return window.HSE_UNITS ? HSE_UNITS.list('cap-phat-bhld',{excludeGop:true}) : [];
+}
+function _uNorm(v){ return window.HSE_UNITS ? HSE_UNITS.norm(v) : String(v==null?'':v).trim().toLowerCase(); }
+/* Giá trị đã lưu → tên hiện hành (đơn vị có thể đã được đổi tên) */
+function _uCanon(v){ return window.HSE_UNITS ? HSE_UNITS.label(v) : String(v==null?'':v); }
+/* Mã ổn định — dùng làm KHOÁ thay cho tên */
+function _uMa(v){ return window.HSE_UNITS ? HSE_UNITS.maOf(v) : String(v==null?'':v); }
+function _uSame(a,b){ return _uNorm(_uCanon(a))===_uNorm(_uCanon(b)); }
+
+// Xếp hạng đơn vị theo thứ tự trong danh mục (đơn vị lạ đẩy xuống cuối)
+function _cpUnitRank(u){
+  var list=unitOrder(), k=_uNorm(_uCanon(u));
+  for(var i=0;i<list.length;i++) if(_uNorm(list[i])===k) return i;
+  return 999;
+}
+function _uInOrder(u){ return _cpUnitRank(u)<999; }
+
+/* Icon Lucide (SVG path) cho thẻ chọn đơn vị. Admin chọn tên icon trong
+   danh mục (cột "icon"); ở đây chỉ tra path tương ứng. */
 const UNIT_LUCIDE={
-  'Cảng biển':'<circle cx="12" cy="5" r="3"/><line x1="12" x2="12" y1="22" y2="8"/><path d="M5 12H2a10 10 0 0 0 20 0h-3"/>',
-  'Căn cứ Kho - Giao nhận':'<path d="M22 8.35V20a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V8.35A2 2 0 0 1 3.26 6.5l8-3.2a2 2 0 0 1 1.48 0l8 3.2A2 2 0 0 1 22 8.35Z"/><path d="M6 18h12"/><path d="M6 14h12"/><path d="M6 10h12"/>',
-  'Xưởng sửa chữa':'<path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.106-3.105c.32-.322.863-.22.983.218a6 6 0 0 1-8.259 7.057l-7.91 7.91a1 1 0 0 1-2.999-3l7.91-7.91a6 6 0 0 1 7.057-8.259c.438.12.54.662.219.984z"/>',
-  'Đội xe VTHH&PTTBCD':'<path d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2"/><path d="M15 18H9"/><path d="M19 18h2a1 1 0 0 0 1-1v-3.65a1 1 0 0 0-.22-.624l-3.48-4.35A1 1 0 0 0 17.52 8H14"/><circle cx="17" cy="18" r="2"/><circle cx="7" cy="18" r="2"/>',
-  'Đội xe VCHK':'<path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2"/><circle cx="7" cy="17" r="2"/><path d="M9 17h6"/><circle cx="17" cy="17" r="2"/>',
-  'Bộ máy điều hành':'<line x1="3" x2="21" y1="22" y2="22"/><line x1="6" x2="6" y1="18" y2="11"/><line x1="10" x2="10" y1="18" y2="11"/><line x1="14" x2="14" y1="18" y2="11"/><line x1="18" x2="18" y1="18" y2="11"/><polygon points="12 2 20 7 4 7"/>',
-  'Test':'<path d="M10 2v7.5a2 2 0 0 1-.2.9L4.7 20.5a1 1 0 0 0 .9 1.5h12.8a1 1 0 0 0 .9-1.5l-5.1-10.1a2 2 0 0 1-.2-.9V2"/><path d="M8.5 2h7"/><path d="M7 16h10"/>'
+  'anchor':'<circle cx="12" cy="5" r="3"/><line x1="12" x2="12" y1="22" y2="8"/><path d="M5 12H2a10 10 0 0 0 20 0h-3"/>',
+  'package':'<path d="M22 8.35V20a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V8.35A2 2 0 0 1 3.26 6.5l8-3.2a2 2 0 0 1 1.48 0l8 3.2A2 2 0 0 1 22 8.35Z"/><path d="M6 18h12"/><path d="M6 14h12"/><path d="M6 10h12"/>',
+  'wrench':'<path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.106-3.105c.32-.322.863-.22.983.218a6 6 0 0 1-8.259 7.057l-7.91 7.91a1 1 0 0 1-2.999-3l7.91-7.91a6 6 0 0 1 7.057-8.259c.438.12.54.662.219.984z"/>',
+  'truck':'<path d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2"/><path d="M15 18H9"/><path d="M19 18h2a1 1 0 0 0 1-1v-3.65a1 1 0 0 0-.22-.624l-3.48-4.35A1 1 0 0 0 17.52 8H14"/><circle cx="17" cy="18" r="2"/><circle cx="7" cy="18" r="2"/>',
+  'car':'<path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2"/><circle cx="7" cy="17" r="2"/><path d="M9 17h6"/><circle cx="17" cy="17" r="2"/>',
+  'landmark':'<line x1="3" x2="21" y1="22" y2="22"/><line x1="6" x2="6" y1="18" y2="11"/><line x1="10" x2="10" y1="18" y2="11"/><line x1="14" x2="14" y1="18" y2="11"/><line x1="18" x2="18" y1="18" y2="11"/><polygon points="12 2 20 7 4 7"/>',
+  'flask':'<path d="M10 2v7.5a2 2 0 0 1-.2.9L4.7 20.5a1 1 0 0 0 .9 1.5h12.8a1 1 0 0 0 .9-1.5l-5.1-10.1a2 2 0 0 1-.2-.9V2"/><path d="M8.5 2h7"/><path d="M7 16h10"/>',
+  'hard-hat':'<path d="M2 18a1 1 0 0 0 1 1h18a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1H3a1 1 0 0 0-1 1z"/><path d="M10 10V5a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v5"/><path d="M4 15v-3a6 6 0 0 1 6-6"/><path d="M14 6a6 6 0 0 1 6 6v3"/>',
+  'users':'<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>'
 };
-function _unitIcon(u){ var p=UNIT_LUCIDE[u]||'<rect width="16" height="20" x="4" y="2" rx="2"/><path d="M9 22v-4h6v4"/><path d="M8 6h.01"/><path d="M16 6h.01"/><path d="M12 6h.01"/><path d="M12 10h.01"/><path d="M12 14h.01"/>'; return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+p+'</svg>'; }
+function _unitIcon(u){ var _dv=window.HSE_UNITS?HSE_UNITS.resolve(u):null; var p=UNIT_LUCIDE[(_dv&&_dv.icon)||'']||'<rect width="16" height="20" x="4" y="2" rx="2"/><path d="M9 22v-4h6v4"/><path d="M8 6h.01"/><path d="M16 6h.01"/><path d="M12 6h.01"/><path d="M12 10h.01"/><path d="M12 14h.01"/>'; return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+p+'</svg>'; }
 let _nvSyncing=false;
 const ROMAN_NUM=['I','II','III','IV','V','VI','VII','VIII','IX','X'];
 
@@ -2538,7 +2570,7 @@ function renderUnitPicker(){
 
   // TRA CỨU NHÂN SỰ: mọi người (viewer + user + khách) đều xem được danh sách
   // của mọi đơn vị. Quyền CHỈNH SỬA vẫn do canEditUnit/applyEditMode quyết định.
-  let html=UNIT_ORDER.map(u=>{
+  let html=unitOrder().map(u=>{
     const count=daNhanVien.filter(n=>n.boPhan===u).length;
     const icon=_unitIcon(u);
     const safeU=u.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
@@ -2689,7 +2721,7 @@ function renderTableNV(){
   }
   if(!bp&&!q){
     const allUnits=[...new Set(daNhanVien.map(n=>n.boPhan).filter(Boolean))];
-    const orderedUnits=[...UNIT_ORDER.filter(u=>allUnits.includes(u)),...allUnits.filter(u=>!UNIT_ORDER.includes(u))];
+    const orderedUnits=[...unitOrder().filter(u=>allUnits.some(a=>_uSame(a,u))),...allUnits.filter(u=>!_uInOrder(u))];
     let html='';let romanIdx=0;
     orderedUnits.forEach(unit=>{
       const unitEmps=filtered.filter(n=>n.boPhan===unit);if(!unitEmps.length)return;
@@ -2724,7 +2756,7 @@ renderTableNV();});
 function _populateBoPhanSelect(selectedValue){
   const sel=document.getElementById('nv-bophan');if(!sel)return;
   const allowedUnits=getCentralUserUnits(); // null = admin thấy tất cả
-  const units=allowedUnits===null?UNIT_ORDER:UNIT_ORDER.filter(u=>allowedUnits.includes(u));
+  const units=allowedUnits===null?unitOrder():unitOrder().filter(u=>allowedUnits.some(a=>_uSame(a,u)));
   sel.innerHTML='<option value="">-- Chọn đơn vị --</option>';
   units.forEach(u=>{const opt=document.createElement('option');opt.value=u;opt.textContent=u;sel.appendChild(opt);});
   if(selectedValue)sel.value=selectedValue;
@@ -5042,7 +5074,7 @@ function renderFormKho(type){
   const now=new Date();const thang=now.getMonth()+1;const nam=now.getFullYear();
   const isDC=type==='dieuchinh';
   const label=type==='nhap'?'nhập':type==='xuat'?'xuất':'điều chỉnh';
-  const donViHtml=type==='xuat'?`<div class="form-group" style="grid-column:1/-1;"><label>Đơn vị nhận <span style="color:red">*</span></label><select id="kho-donvi-nhan"><option value="">-- Chọn đơn vị nhận --</option>${UNIT_ORDER.map(u=>`<option value="${u}">${u}</option>`).join('')}<option value="Xuất khác">Xuất khác</option></select></div>`:'';
+  const donViHtml=type==='xuat'?`<div class="form-group" style="grid-column:1/-1;"><label>Đơn vị nhận <span style="color:red">*</span></label><select id="kho-donvi-nhan"><option value="">-- Chọn đơn vị nhận --</option>${unitOrder().map(u=>`<option value="${u}">${u}</option>`).join('')}<option value="Xuất khác">Xuất khác</option></select></div>`:'';
   const colSpan=isDC?6:(type==='xuat'?5:4);
   const itemRows=daNhomTB.map(nhom=>{
     const items=_dmSorted(nhom.id);
@@ -5166,7 +5198,9 @@ function xacNhanKho(type){
 
 // ========= NHU CẦU MUA SẮM =========
 // Đơn vị đưa vào tính nhu cầu — loại đơn vị "Test" (dữ liệu thử)
-const NHUCAU_UNITS=UNIT_ORDER.filter(u=>u!=='Test');
+/* Đơn vị đưa vào tính nhu cầu — loại đơn vị "Test" (dữ liệu thử).
+   Phải là HÀM: danh mục tải bất đồng bộ nên không tính sẵn lúc nạp trang. */
+function nhuCauUnits(){ return unitOrder().filter(u=>_uMa(u)!=='test'); }
 function initNhuCauPage(){
   const qEl=document.getElementById('nhucau-q');const yEl=document.getElementById('nhucau-y');if(!qEl||!yEl)return;
   // Mặc định = quý + năm hiện tại
@@ -5209,10 +5243,10 @@ function _computeNhuCauData(quyList){
   const _missSet={}; // nhân viên thiếu cỡ → không tính được quần áo/giày
   function _row(tbSized,tb){
     const key=tbSized.id;
-    if(!map[key]){map[key]={tbId:tbSized.id,ten:tbSized.ten,ma:tbSized.ma||'',dvUnit:tbSized.donVi||tb.donVi||'',perUnit:{}};NHUCAU_UNITS.forEach(u=>map[key].perUnit[u]=0);}
+    if(!map[key]){map[key]={tbId:tbSized.id,ten:tbSized.ten,ma:tbSized.ma||'',dvUnit:tbSized.donVi||tb.donVi||'',perUnit:{}};nhuCauUnits().forEach(u=>map[key].perUnit[u]=0);}
     return map[key];
   }
-  NHUCAU_UNITS.forEach(unit=>{
+  nhuCauUnits().forEach(unit=>{
     daNhanVien.filter(n=>n.boPhan===unit).forEach(nv=>{
       const _cd=getChucDanhByTen(nv.chucDanh);
       const dmList=daDinhMuc.filter(d=>(_cd&&d.chucDanhId==_cd.id)||d.chucDanh===nv.chucDanh);
@@ -5254,13 +5288,13 @@ function _computeNhuCauData(quyList){
   // với bảng Tồn kho cho dễ. Vật tư không nằm trong danh mục thì đẩy xuống cuối.
   const _order={};_dmAllSorted().forEach((d,i)=>{_order[String(d.id)]=i;});
   const _pos=r=>{const i=_order[String(r.tbId)];return i===undefined?1e9:i;};
-  return Object.values(map).map(row=>{const tongNhuCau=NHUCAU_UNITS.reduce((s,u)=>s+(row.perUnit[u]||0),0);const tonKho=daTonKho[row.tbId]||0;const canMua=Math.max(0,tongNhuCau-tonKho);return{...row,tongNhuCau,tonKho,canMua};}).filter(row=>row.tongNhuCau>0).sort((a,b)=>(_pos(a)-_pos(b))||a.ten.localeCompare(b.ten,'vi'));
+  return Object.values(map).map(row=>{const tongNhuCau=nhuCauUnits().reduce((s,u)=>s+(row.perUnit[u]||0),0);const tonKho=daTonKho[row.tbId]||0;const canMua=Math.max(0,tongNhuCau-tonKho);return{...row,tongNhuCau,tonKho,canMua};}).filter(row=>row.tongNhuCau>0).sort((a,b)=>(_pos(a)-_pos(b))||a.ten.localeCompare(b.ten,'vi'));
 }
 function _renderNhuCauTable(data,quyList){
   const el=document.getElementById('nhucau-result');
-  const unitCols=NHUCAU_UNITS.map(u=>`<th style="min-width:80px;text-align:center;font-size:12px;white-space:normal;">${u}</th>`).join('');
+  const unitCols=nhuCauUnits().map(u=>`<th style="min-width:80px;text-align:center;font-size:12px;white-space:normal;">${u}</th>`).join('');
   const rows=data.map((row,idx)=>{
-    const unitCells=NHUCAU_UNITS.map(u=>`<td style="text-align:center;">${row.perUnit[u]>0?row.perUnit[u]:'—'}</td>`).join('');
+    const unitCells=nhuCauUnits().map(u=>`<td style="text-align:center;">${row.perUnit[u]>0?row.perUnit[u]:'—'}</td>`).join('');
     const canMuaStyle=row.canMua>0?'color:#c0392b;font-weight:700;':'color:#27ae60;font-weight:600;';
     return`<tr><td style="text-align:center;">${idx+1}</td><td style="font-size:12px;color:#666;">${row.ma||'—'}</td><td>${row.ten}</td><td style="text-align:center;font-size:12px;">${row.dvUnit||''}</td>${unitCells}<td style="text-align:center;font-weight:700;">${row.tongNhuCau}</td><td style="text-align:center;color:#2980b9;font-weight:600;">${row.tonKho}</td><td style="text-align:center;${canMuaStyle}">${row.canMua}</td></tr>`;
   }).join('');
@@ -5274,10 +5308,10 @@ function _renderNhuCauTable(data,quyList){
 function exportNhuCauExcel(){
   const data=window._nhucauData;const quyList=window._nhucauQuyList;if(!data||!data.length){showToast('Chưa có dữ liệu.','error');return;}
   if(typeof XLSX==='undefined'){showToast('⚠️ Thư viện Excel chưa tải.','error');return;}
-  const header=['STT','Mã vật tư','Tên trang bị','ĐVT',...NHUCAU_UNITS,'Tổng nhu cầu','Tồn kho','Cần mua thêm'];
-  const rows=data.map((row,idx)=>[idx+1,row.ma||'',row.ten,row.dvUnit||'',...NHUCAU_UNITS.map(u=>_xlNum(row.perUnit[u]||0)),_xlNum(row.tongNhuCau),_xlNum(row.tonKho),_xlNum(row.canMua)]);
+  const header=['STT','Mã vật tư','Tên trang bị','ĐVT',...nhuCauUnits(),'Tổng nhu cầu','Tồn kho','Cần mua thêm'];
+  const rows=data.map((row,idx)=>[idx+1,row.ma||'',row.ten,row.dvUnit||'',...nhuCauUnits().map(u=>_xlNum(row.perUnit[u]||0)),_xlNum(row.tongNhuCau),_xlNum(row.tonKho),_xlNum(row.canMua)]);
   // cộng tất cả cột số: các đơn vị + Tổng nhu cầu + Tồn kho + Cần mua thêm
-  const _nC=4+NHUCAU_UNITS.length+3, _sumCols=[];
+  const _nC=4+nhuCauUnits().length+3, _sumCols=[];
   for(let c=4;c<_nC;c++)_sumCols.push(c);
   const _tot=_xlTotalRow(_nC,_sumCols,'TỔNG CỘNG',2);
   const ws=XLSX.utils.aoa_to_sheet([[`Nhu cầu mua sắm BHLĐ – ${quyList[0]} đến ${quyList[3]}`],[`Xuất ngày: ${new Date().toLocaleDateString('vi-VN')}`],[],header,...rows,_tot]);
@@ -5352,6 +5386,16 @@ document.addEventListener('DOMContentLoaded',()=>{
   // Render trang đầu
   renderUnitPicker();
   cpShowHome(); // mặc định hiện trang chủ dạng thẻ
+
+  /* Danh mục đơn vị tải xong từ Supabase (hoặc Admin vừa sửa) → vẽ lại thẻ
+     chọn đơn vị. Trước đó thẻ đã hiện ngay nhờ cache trong don-vi.js.
+     Chỉ vẽ lại khi đang ở màn hình chọn đơn vị, tránh cắt ngang thao tác. */
+  if(window.HSE_UNITS){
+    HSE_UNITS.onChange(function(){
+      var pk=document.getElementById('nv-unit-picker');
+      if(pk&&pk.style.display!=='none') renderUnitPicker();
+    });
+  }
   // Áp dụng edit mode ban đầu (chưa chọn đơn vị)
   applyEditMode();
 
@@ -5447,7 +5491,13 @@ function applyQuarterlyDeadlines(p){
    WIZARD CẤP PHÁT HÀNG QUÝ (3 bước có khoá) — trạng thái lưu Supabase
    ===================================================================== */
 var _cpwState=null,_cpwDonVi='',_cpwQuy='';
-function _cpwKey(dv,q){return dv+'__'+q;}
+/* KHOÁ TIẾN TRÌNH CẤP PHÁT
+   Trước đây khoá là "<TÊN đơn vị>__<quý>" → đổi tên đơn vị là mồ côi toàn bộ
+   tiến trình của mọi quý. Nay khoá dùng MÃ ổn định của đơn vị.
+   _cpwKeyCu() giữ lại cách ghép cũ để tự chuyển các bản ghi đã có sang khoá
+   mới ngay lần đầu mở (xem cpwLoad) — không cần chạy script riêng. */
+function _cpwKey(dv,q){return _uMa(dv)+'__'+q;}
+function _cpwKeyCu(dv,q){return dv+'__'+q;}
 function _cpwSB(){return window.HSE_SB||null;}
 function _cpwPendingChanges(dv){try{return BHLD.lsGet('pending_changes').filter(function(c){return c.donVi===dv&&c.status==='pending';});}catch(e){return[];}}
 function _cpwPhieu(dv,q){try{return BHLD.lsGet('phieu_requests').filter(function(p){return p.type==='quy'&&p.quyStr===q&&p.donVi===dv;}).sort(function(a,b){return new Date(b.createdAt||0)-new Date(a.createdAt||0);})[0]||null;}catch(e){return null;}}
@@ -5457,7 +5507,7 @@ function cpwInit(){
   var allDv=[...new Set(daNhanVien.map(function(n){return n.boPhan;}).filter(Boolean))];
   // CHỈ liệt kê đơn vị mà tài khoản ĐƯỢC PHÉP cấp phát (canEditUnit).
   // → chưa đăng nhập: rỗng; viewer: chỉ Test; user: đơn vị của họ + Test; admin: tất cả.
-  var units=[...new Set((typeof UNIT_ORDER!=='undefined'?UNIT_ORDER:[]).concat(allDv))]
+  var units=[...new Set(unitOrder().concat(allDv.map(_uCanon)))]
     .filter(function(dv){return typeof canEditUnit==='function'&&canEditUnit(dv);})
     .sort(function(a,b){return a.localeCompare(b,'vi');});
   if(!units.length){
@@ -5481,11 +5531,25 @@ function cpwOnSelect(){
   cpwLoad(_cpwDonVi,_cpwQuy).then(function(st){_cpwState=st;cpwRender();});
 }
 function cpwLoad(dv,q){
-  var key=_cpwKey(dv,q);
+  var key=_cpwKey(dv,q), keyCu=_cpwKeyCu(dv,q);
   var def={id:key,donVi:dv,quyStr:q,daInDanhSach:false,b1TrangThai:'chua',b3TrangThai:'chua',hoanTatAt:null};
   var sb=_cpwSB();if(!sb)return Promise.resolve(def);
-  return sb.from(BHLD.tbl('cap_phat_tien_trinh')).select('*').eq('id',key).maybeSingle().then(function(r){
-    if(r.error||!r.data)return def;return Object.assign(def,r.data);
+  var T=BHLD.tbl('cap_phat_tien_trinh');
+  return sb.from(T).select('*').eq('id',key).maybeSingle().then(function(r){
+    if(!r.error&&r.data)return Object.assign(def,r.data);
+    if(key===keyCu)return def;
+    /* Chưa có khoá mới → tìm bản ghi cũ (khoá ghép theo TÊN) và chuyển sang
+       khoá mới. Chạy một lần cho mỗi đơn vị+quý, an toàn khi lặp lại. */
+    return sb.from(T).select('*').eq('id',keyCu).maybeSingle().then(function(r2){
+      if(r2.error||!r2.data)return def;
+      var moi=Object.assign({},r2.data,{id:key,donVi:_uCanon(r2.data.donVi||dv)});
+      return sb.from(T).upsert(moi,{onConflict:'id'}).then(function(){
+        return sb.from(T).delete().eq('id',keyCu);
+      }).then(function(){
+        console.info('[Tiến trình] Đã chuyển khoá "'+keyCu+'" → "'+key+'".');
+        return Object.assign(def,moi);
+      }).catch(function(){ return Object.assign(def,r2.data,{id:key}); });
+    }).catch(function(){return def;});
   }).catch(function(){return def;});
 }
 function cpwSave(patch){
@@ -5980,8 +6044,21 @@ function cpwFillEmp(nvId){
   cpwRenderQuantity();
 }
 // ===================== BƯỚC 3: CHỌN VẬT TƯ KHÁC (ngoài 8 nhóm định mức, còn tồn kho) =====================
-function _cpwExtraGet(q,dv){ return (phieuExtra[q]&&phieuExtra[q][dv])?phieuExtra[q][dv]:[]; }
-function _cpwExtraSet(q,dv,arr){ if(!phieuExtra[q])phieuExtra[q]={}; phieuExtra[q][dv]=arr; if(typeof saveData==='function')saveData('phieu-extra',phieuExtra); }
+/* Vật tư khác lưu trên localStorage theo [quý][đơn vị]. Khoá cũ dùng TÊN đơn vị
+   → đổi tên là mất. Nay dùng MÃ; _cpwExtraGet tự chuyển dữ liệu cũ sang khoá mới. */
+function _cpwExtraGet(q,dv){
+  if(!phieuExtra[q])return [];
+  var ma=_uMa(dv);
+  if(phieuExtra[q][ma])return phieuExtra[q][ma];
+  if(ma!==dv&&phieuExtra[q][dv]){                 // chuyển khoá cũ → khoá mới
+    phieuExtra[q][ma]=phieuExtra[q][dv];
+    delete phieuExtra[q][dv];
+    if(typeof saveData==='function')saveData('phieu-extra',phieuExtra);
+    return phieuExtra[q][ma];
+  }
+  return [];
+}
+function _cpwExtraSet(q,dv,arr){ if(!phieuExtra[q])phieuExtra[q]={}; phieuExtra[q][_uMa(dv)]=arr; if(typeof saveData==='function')saveData('phieu-extra',phieuExtra); }
 // Pool = danh mục còn tồn kho, thuộc nhóm KHÔNG rơi vào 8 cột định mức (category 'khac')
 function _cpwExtraPool(){
   if(typeof daDanhMuc==='undefined'||!Array.isArray(daDanhMuc))return [];
@@ -6105,7 +6182,10 @@ function _cpwClearPhieuDataForTest(testNv){
   if(typeof saveData==='function')saveData('phieu-data',phieuData);
   // Dọn luôn vật tư khác của đơn vị Test
   var changed=false;
-  Object.keys(phieuExtra||{}).forEach(function(q){ if(phieuExtra[q]&&phieuExtra[q].Test){delete phieuExtra[q].Test;changed=true;} });
+  Object.keys(phieuExtra||{}).forEach(function(q){
+    if(!phieuExtra[q])return;
+    ['Test','test'].forEach(function(k){ if(phieuExtra[q][k]){delete phieuExtra[q][k];changed=true;} });
+  });
   if(changed&&typeof saveData==='function')saveData('phieu-extra',phieuExtra);
 }
 // ── Mặc định ban đầu cho chế độ Test (đồng bộ Supabase, bảng test_baseline) ──
