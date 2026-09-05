@@ -370,7 +370,26 @@
       return;
     }
     wrap.appendChild(_buildTable(_rowsSorted(_filterUnit, _filterLoai)));
+    _fixStickyRows();
   }
+
+  /* Tiêu đề hai tầng + position:sticky: tầng 2 phải biết tầng 1 cao bao nhiêu
+     mới dừng đúng chỗ, mà chiều cao đó thay đổi theo bề rộng màn hình (nhãn
+     xuống dòng) nên phải ĐO thật, không đoán bằng số cố định. */
+  function _fixStickyRows() {
+    var apply = function () {
+      var r1 = document.querySelector("#tbn-sections .tbn-table thead tr");
+      if (!r1) return;
+      var h = Math.round(r1.getBoundingClientRect().height);
+      var subs = document.querySelectorAll("#tbn-sections .tbn-table thead tr:nth-child(2) th");
+      for (var i = 0; i < subs.length; i++) subs[i].style.top = h + "px";
+    };
+    if (window.requestAnimationFrame) window.requestAnimationFrame(apply);
+    else setTimeout(apply, 0);
+  }
+  window.addEventListener("resize", function () {
+    if (document.getElementById("tbn-sections")) _fixStickyRows();
+  });
 
   /* ══════════════════════════════════════════
      XUẤT EXCEL — xuất đúng những gì đang thấy (theo bộ lọc và thứ tự hiện tại).
@@ -564,24 +583,38 @@
     var table = document.createElement("table");
     table.className = "tbn-table";
 
+    /* Bảng có tiêu đề HAI TẦNG (Tải trọng gộp trên, tách dưới) nên độ rộng
+       cột KHÔNG thể suy từ hàng đầu như bảng một tầng. Khai bằng <colgroup>
+       để table-layout:fixed lấy đúng số đo, không phụ thuộc hàng nào. */
+    var COLS = (_editMode ? ["col-drag"] : [])
+      .concat(["col-no", "col-ten", "col-loai", "col-donvi", "col-vitri", "col-tttk", "col-ttlv",
+               "col-nam", "col-sct", "col-sdk", "col-kd", "col-kdtt", "col-ghichu"])
+      .concat(_editMode ? ["col-action"] : []);
+    var colgroup = document.createElement("colgroup");
+    colgroup.innerHTML = COLS.map(function (c) { return '<col class="' + c + '">'; }).join("");
+    table.appendChild(colgroup);
+
     var thead = document.createElement("thead");
     thead.innerHTML =
       "<tr>" +
-      (_editMode ? "<th class='col-drag'></th>" : "") +
-      "<th class='col-no'>Nº</th>" +
-      "<th class='col-ten'>Tên thiết bị</th>" +
-      "<th class='col-loai'>" + _thFilterLoai() + "</th>" +
-      "<th class='col-donvi'>" + _thFilterDonVi() + "</th>" +
-      "<th class='col-vitri'>Vị trí<br>lắp đặt</th>" +
-      "<th class='col-tttk'>Tải trọng<br>thiết kế (tấn)</th>" +
-      "<th class='col-ttlv'>Tải trọng<br>làm việc (tấn)</th>" +
-      "<th class='col-nam'>Năm đưa vào<br>sử dụng</th>" +
-      "<th class='col-sct'>Số<br>chế tạo</th>" +
-      "<th class='col-sdk'>Số<br>đăng ký</th>" +
-      "<th class='col-kd'>Ngày KĐ&amp;TT<br>gần nhất</th>" +
-      "<th class='col-kdtt'>Ngày KĐ&amp;TT<br>tiếp theo</th>" +
-      "<th class='col-ghichu'>Ghi chú</th>" +
-      (_editMode ? "<th class='col-action'></th>" : "") +
+      (_editMode ? "<th class='col-drag' rowspan='2'></th>" : "") +
+      "<th class='col-no' rowspan='2'>Nº</th>" +
+      "<th class='col-ten' rowspan='2'>Tên thiết bị</th>" +
+      "<th class='col-loai' rowspan='2'>" + _thFilterLoai() + "</th>" +
+      "<th class='col-donvi' rowspan='2'>" + _thFilterDonVi() + "</th>" +
+      "<th class='col-vitri' rowspan='2'>Vị trí<br>lắp đặt</th>" +
+      "<th class='tbn-th-group' colspan='2'>Tải trọng (tấn)</th>" +
+      "<th class='col-nam' rowspan='2'>Năm đưa vào<br>sử dụng</th>" +
+      "<th class='col-sct' rowspan='2'>Số<br>chế tạo</th>" +
+      "<th class='col-sdk' rowspan='2'>Số<br>đăng ký</th>" +
+      "<th class='col-kd' rowspan='2'>Ngày KĐ&amp;TT<br>gần nhất</th>" +
+      "<th class='col-kdtt' rowspan='2'>Ngày KĐ&amp;TT<br>tiếp theo</th>" +
+      "<th class='col-ghichu' rowspan='2'>Ghi chú</th>" +
+      (_editMode ? "<th class='col-action' rowspan='2'></th>" : "") +
+      "</tr>" +
+      "<tr>" +
+        "<th class='tbn-th-sub'>Thiết kế</th>" +
+        "<th class='tbn-th-sub'>Làm việc</th>" +
       "</tr>";
     table.appendChild(thead);
 
@@ -998,6 +1031,9 @@
       ".tbn-table{width:100%;min-width:1240px;table-layout:fixed;border-collapse:collapse;font-size:13px;}",
       ".tbn-table th{position:sticky;top:0;z-index:2;background:#dde6f3;color:#003087;font-weight:700;font-size:12.5px;letter-spacing:.2px;padding:10px;text-align:center;vertical-align:middle;white-space:normal;line-height:1.35;border-bottom:2px solid #b9c8e2;box-shadow:inset 0 -2px 0 #b9c8e2;overflow:hidden;}",
       ".tbn-table td{padding:10px;text-align:center;border-bottom:1px solid #eef0f4;vertical-align:middle;overflow:hidden;word-break:break-word;overflow-wrap:anywhere;font-weight:600;color:#1f2b3d;line-height:1.45;}",
+      ".tbn-table thead tr:first-child th{z-index:3;}",
+      ".tbn-th-group{border-bottom:1px solid #c3d0e6!important;box-shadow:none!important;}",
+      ".tbn-th-sub{font-size:11.5px;}",
       ".tbn-table tbody tr:nth-child(even) td{background:#fafbfe;}",
       ".tbn-table tbody tr:hover td{background:#eef3fb;}",
       ".tbn-table th, .tbn-table td{border-right:1px solid #e6ebf5;}",
