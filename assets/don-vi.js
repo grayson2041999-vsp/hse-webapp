@@ -70,7 +70,8 @@
     { slug: "kiem-tra-cac-cap",   title: "Kiểm tra các cấp",     note: "Chọn đơn vị ở Bước 1",      applied: true  },
     { slug: "huan-luyen-dao-tao", title: "Huấn luyện - Đào tạo", note: "Đơn vị của từng nhân sự",   applied: true  },
     { slug: "cap-phat-bhld",      title: "Cấp phát BHLĐ",        note: "Đơn vị cấp phát & phân quyền", applied: true  },
-    { slug: "binh-ap-luc",        title: "Bình áp lực",          note: "Section trong Quản lý thiết bị", applied: true  }
+    { slug: "binh-ap-luc",        title: "Bình áp lực",          note: "Tab trong Quản lý thiết bị", applied: true  },
+    { slug: "thiet-bi-nang",      title: "Thiết bị nâng",        note: "Tab trong Quản lý thiết bị", applied: true  }
   ];
 
   /* ─────────────────────────────────────────────

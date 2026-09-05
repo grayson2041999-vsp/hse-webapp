@@ -516,17 +516,116 @@ console.log('\n── Bình áp lực: một bảng, đơn vị là một cột 
 
   check('không còn nhiều bảng theo section', !/function\s+_buildSection\s*\(/.test(src));
   check('không còn hàm _renderSections', !/function\s+_renderSections\s*\(/.test(src));
-  check('có cột "Đơn vị quản lý" trong bảng', /Đơn vị quản lý<\/th>/.test(src));
+  check('có cột "Đơn vị quản lý" trong bảng', /bal-th-label">Đơn vị quản lý</.test(src));
   check('có droplist đơn vị trong form thêm\/sửa', /id="bal-inp-donvi"/.test(src));
-  check('có bộ lọc theo đơn vị', /id = "bal-filter-unit"/.test(src));
+  check('bộ lọc đơn vị nằm ngay tiêu đề cột', /id="bal-filter-unit" class="bal-th-select/.test(src));
   check('kéo–thả vẫn giới hạn trong cùng đơn vị',
     /_dragging\.dataset\.sec !== tr\.dataset\.sec/.test(src));
 
   const bctd = fs.readFileSync(path.join(ROOT, 'bao-chay-tu-dong.html'), 'utf8');
   check('chữ ký Word không còn tên phòng viết cứng', !/run\("Phòng Kỹ thuật/.test(bctd));
   check('chữ ký Word tra theo mã ổn định', /PHONG_KY_TAT_MA\s*=\s*"p_ky_thuat_vat_tu"/.test(bctd));
-  check('Bình áp lực là điểm sử dụng thứ 5 trong danh mục',
-    U.PAGES.length === 5 && U.PAGES[4].slug === 'binh-ap-luc');
+  check('Bình áp lực và Thiết bị nâng là điểm sử dụng thứ 5 và 6',
+    U.PAGES.length === 6 && U.PAGES[4].slug === 'binh-ap-luc' && U.PAGES[5].slug === 'thiet-bi-nang',
+    U.PAGES.map(p => p.slug));
+}
+
+console.log('\n── Thiết bị nâng: bảng mới trong Quản lý thiết bị ──');
+{
+  const src = fs.readFileSync(path.join(ROOT, 'assets', 'thiet-bi-nang.js'), 'utf8');
+  const i = src.indexOf('var LS_KEY');
+  const j = src.indexOf('/* ── STATE ──');
+  if (i < 0 || j < 0) throw new Error('Không tìm thấy phần đơn vị trong thiet-bi-nang.js');
+  let store = [];
+  const TBN = new Function('window', '_load',
+    src.slice(i, j) + '; return { _units, _unitLabel, _unitRank, _loaiDangCo, _rowsSorted };')(global, () => store);
+
+  /* Chưa Admin tích ô nào thì bảng phải nói rõ là chưa có đơn vị,
+     KHÔNG được tự mượn danh sách của trang khác. */
+  check('chưa tích đơn vị nào thì droplist rỗng', TBN._units().length === 0, TBN._units());
+
+  const ganTrang = (ma, them) => {
+    const u = JSON.parse(JSON.stringify(U.byMa(ma)));
+    const ps = (u.pages || []).filter(x => x !== 'thiet-bi-nang');
+    u.pages = them ? ps.concat(['thiet-bi-nang']) : ps;
+    U.saveUnit(u);
+  };
+  ganTrang('cang_bien', true); ganTrang('xuong_sua_chua', true);
+  check('Admin tích ở danh mục là bảng có ngay đơn vị đó',
+    TBN._units().map(o => o.key).join(',') === 'cang_bien,xuong_sua_chua', TBN._units().map(o => o.key));
+  check('nhãn lấy từ tên trong danh mục', TBN._unitLabel('cang_bien') === 'Cảng biển');
+
+  store = [
+    { id: 'a', section: 'xuong_sua_chua', order: 1, loai_thiet_bi: 'Palăng'   },
+    { id: 'b', section: 'cang_bien',      order: 1, loai_thiet_bi: 'Cầu trục' },
+    { id: 'c', section: 'cang_bien',      order: 0, loai_thiet_bi: 'Palăng'   },
+    { id: 'd', section: 'can_cu_kho_gn',  order: 0, loai_thiet_bi: 'Xe nâng'  }
+  ];
+  check('giữ đơn vị chỉ còn trong dữ liệu', TBN._units().length === 3 && /không còn dùng/.test(TBN._units()[2].label));
+  check('gom theo đơn vị rồi theo thứ tự trong đơn vị',
+    TBN._rowsSorted().map(r => r.id).join('') === 'cbad', TBN._rowsSorted().map(r => r.id).join(''));
+  check('lọc theo đơn vị', TBN._rowsSorted('cang_bien').map(r => r.id).join('') === 'cb');
+  check('lọc theo loại thiết bị', TBN._rowsSorted('', 'Palăng').map(r => r.id).join('') === 'ca');
+  check('lọc chồng cả đơn vị lẫn loại', TBN._rowsSorted('cang_bien', 'Palăng').map(r => r.id).join('') === 'c');
+  check('droplist loại chỉ liệt kê loại đang có, theo thứ tự danh mục',
+    TBN._loaiDangCo().join(',') === 'Cầu trục,Palăng,Xe nâng', TBN._loaiDangCo());
+  store = [];
+
+  /* Chu kỳ kiểm định & thử tải: 1 năm, sửa tay được */
+  const k = src.indexOf('function _calcNextDate(');
+  const m = src.indexOf('/* ── TRẠNG THÁI KIỂM ĐỊNH ── */');
+  const M = new Function('HSEDate', 'CHU_KY_NAM',
+    src.slice(k, m) + '; return { _calcNextDate, _nextDateOf };')({ parse: v => new Date(v) }, 1);
+
+  check('chu kỳ 1 năm kể từ ngày KĐ&TT gần nhất',
+    M._calcNextDate('2025-06-15') === '2026-06-15', M._calcNextDate('2025-06-15'));
+  check('chưa có ngày gần nhất thì không bịa ngày tiếp theo', M._calcNextDate('') === '');
+  check('chưa sửa tay → BỎ QUA giá trị đang lưu, tính lại',
+    M._nextDateOf({ ngay_kd_gan_nhat: '2025-06-15', ngay_kd_tiep_theo: '2030-01-01',
+                    ngay_kd_tu_chinh: false }) === '2026-06-15');
+  check('đã sửa tay → giữ đúng ngày người dùng nhập',
+    M._nextDateOf({ ngay_kd_gan_nhat: '2025-06-15', ngay_kd_tiep_theo: '2030-01-01',
+                    ngay_kd_tu_chinh: true }) === '2030-01-01');
+  check('đã sửa tay nhưng để trống → quay về ngày tự tính',
+    M._nextDateOf({ ngay_kd_gan_nhat: '2025-06-15', ngay_kd_tiep_theo: '',
+                    ngay_kd_tu_chinh: true }) === '2026-06-15');
+  check('cờ tự chỉnh được ép kiểu boolean (tránh bẫy chuỗi "false")',
+    /r\.ngay_kd_tu_chinh = _toBool\(r\.ngay_kd_tu_chinh\)/.test(src));
+
+  /* Đủ 13 cột theo đúng yêu cầu nghiệp vụ */
+  const cols = ['col-no', 'col-ten', 'col-loai', 'col-donvi', 'col-vitri', 'col-tttk', 'col-ttlv',
+                'col-nam', 'col-sct', 'col-sdk', 'col-kd', 'col-kdtt', 'col-ghichu'];
+  check('đủ 13 cột trong bảng', cols.every(c => src.includes("<th class='" + c + "'")),
+    cols.filter(c => !src.includes("<th class='" + c + "'")));
+  check('lọc Loại thiết bị nằm ngay tiêu đề cột',
+    src.includes(`"<th class='col-loai'>" + _thFilterLoai()`) && /thead.querySelector\("#tbn-filter-loai"\)/.test(src));
+  check('lọc Đơn vị quản lý nằm ngay tiêu đề cột',
+    src.includes(`"<th class='col-donvi'>" + _thFilterDonVi()`) && /thead.querySelector\("#tbn-filter-unit"\)/.test(src));
+  check('có nút xuất Excel', /id="tbn-btn-xls"/.test(src));
+  check('cảnh báo khi tải trọng làm việc vượt tải trọng thiết kế', /lv > tk/.test(src));
+  check('kéo–thả vẫn giới hạn trong cùng đơn vị',
+    /_dragging\.dataset\.sec !== tr\.dataset\.sec/.test(src));
+  check('CSS cột được bọc trong .tbn-table, không đụng bảng Bình áp lực',
+    !/"\.col-[a-z]+\{/.test(src));
+
+  /* Đấu nối */
+  const tb = fs.readFileSync(path.join(ROOT, 'assets', 'thiet-bi.js'), 'utf8');
+  check('tab gọi module thật, không còn màn hình "Đang xây dựng"',
+    /window\.renderThietBiNang\(content/.test(tb) && !/Đang xây dựng/.test(tb));
+  check('index.html có nạp module',
+    /assets\/thiet-bi-nang\.js/.test(fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8')));
+  check('db.js ánh xạ đúng tên bảng Supabase',
+    /thiet_bi_nang:\s+"ThietBi_ThietBiNang"/.test(fs.readFileSync(path.join(ROOT, 'assets', 'db.js'), 'utf8')));
+
+  const sqlN = fs.readFileSync(path.join(ROOT, 'supabase', 'thiet_bi_nang.sql'), 'utf8');
+  check('có SQL tạo bảng', /create table if not exists public\."ThietBi_ThietBiNang"/.test(sqlN));
+  check('SQL bật RLS và cho Viewer chỉ đọc',
+    /enable row level security/.test(sqlN) && /for select using \(true\)/.test(sqlN) &&
+    /hse_current_role\(\) in \('admin', 'user'\)/.test(sqlN));
+  check('cột số/ngày để text để ô trống vẫn lưu được', /tai_trong_tk       text/.test(sqlN));
+
+  /* Trả danh mục về nguyên trạng để các phép đối soát phía sau không lệch */
+  ganTrang('cang_bien', false); ganTrang('xuong_sua_chua', false);
 }
 
 /* ─────────────────────────────────────────────

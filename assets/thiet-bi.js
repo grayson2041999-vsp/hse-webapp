@@ -52,12 +52,11 @@ window.renderQuanLyThietBi = function(container, user, canEdit, isAdmin) {
         content.innerHTML = "<p style='color:#c0392b'>Lỗi: không tải được module Bình áp lực.</p>";
       }
     } else {
-      content.innerHTML =
-        '<div style="text-align:center;padding:60px 20px;">' +
-          '<div style="font-size:48px;margin-bottom:12px;"><svg class="lic-emoji" width="1.05em" height="1.05em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex-shrink:0" aria-hidden="true"><rect x="2" y="6" width="20" height="8" rx="1"/><path d="M17 14v7"/><path d="M7 14v7"/><path d="M17 3v3"/><path d="M7 3v3"/><path d="M10 14 2.3 6.3"/><path d="m14 6 7.7 7.7"/><path d="m8 6 8 8"/></svg></div>' +
-          '<h3 style="color:#003087;margin-bottom:8px;">Thiết bị nâng</h3>' +
-          '<p style="color:#6b7c93;">Đang xây dựng. Nội dung sẽ được bổ sung trong phiên bản tiếp theo.</p>' +
-        '</div>';
+      if (typeof window.renderThietBiNang === "function") {
+        window.renderThietBiNang(content, canEdit || isAdmin);
+      } else {
+        content.innerHTML = "<p style='color:#c0392b'>Lỗi: không tải được module Thiết bị nâng.</p>";
+      }
     }
   }
 

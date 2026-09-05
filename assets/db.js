@@ -59,6 +59,7 @@ var DB = (function () {
     moi_truong:       "XuLyChatThai",
     nha_thau:         "NhaThau",
     binh_ap_luc:      "ThietBi_BinhApLuc",
+    thiet_bi_nang:    "ThietBi_ThietBiNang",
     kiem_tra_cap12:   "KiemTraCacCap_12",
     kiem_tra_cap34:   "KiemTraCacCap_34",
     // Svodka — svodka_matkhau có khoá chính riêng "tacvu_id" (xem PK ở trên).
