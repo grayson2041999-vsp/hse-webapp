@@ -397,6 +397,107 @@
     wrap.appendChild(_buildTable(_rowsSorted(_filterUnit)));
   }
 
+  /* ══════════════════════════════════════════
+     XUẤT EXCEL
+     Xuất đúng những gì đang thấy: theo bộ lọc đơn vị và thứ tự đang sắp.
+     Thư viện SheetJS nạp trễ (chỉ khi bấm nút) để không làm nặng lúc mở trang.
+     Không tải được thư viện (mạng nội bộ chặn) → rơi về file .xls dạng bảng
+     HTML, Excel vẫn mở bình thường.
+  ══════════════════════════════════════════ */
+  var _xlsxLoading = null;
+  function _ensureXLSX() {
+    if (typeof XLSX !== "undefined") return Promise.resolve(true);
+    if (_xlsxLoading) return _xlsxLoading;
+    _xlsxLoading = new Promise(function (resolve) {
+      var sc = document.createElement("script");
+      sc.src = "https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js";
+      sc.onload  = function () { resolve(typeof XLSX !== "undefined"); };
+      sc.onerror = function () { resolve(false); };
+      document.head.appendChild(sc);
+    });
+    return _xlsxLoading;
+  }
+
+  function _stamp() {
+    var d = new Date();
+    return d.getFullYear() + String(d.getMonth() + 1).padStart(2, "0") + String(d.getDate()).padStart(2, "0");
+  }
+
+  function _exportRows() {
+    var rows = _rowsSorted(_filterUnit);
+    var head = ["STT", "Tên thiết bị", "Đơn vị quản lý", "Vị trí lắp đặt", "V (m³)", "Plv (kg/cm²)",
+                "Năm vận hành", "Số đăng ký", "Ngày KĐ gần nhất", "Ngày KĐ tiếp theo", "Trạng thái", "Ghi chú"];
+    var body = rows.map(function (r, i) {
+      var nd = _nextDateOf(r), st = _kdStatus(nd), gc = [];
+      if (r.moi_chat_an_mon)  gc.push("Môi chất ăn mòn kim loại");
+      if (r.moi_chat_chay_no) gc.push("Môi chất cháy nổ");
+      if (r.ghi_chu)          gc.push(r.ghi_chu);
+      function num(v) { return (v === "" || v === null || v === undefined || isNaN(Number(v))) ? "" : Number(v); }
+      return [i + 1,
+              r.ten_thiet_bi || "",
+              _unitLabel(r.section).replace(" (không còn dùng)", ""),
+              r.vi_tri || "",
+              num(r.v_m3), num(r.plv_kgcm2),
+              r.nam_van_hanh || "", r.so_dang_ky || "",
+              r.ngay_kd_gan_nhat ? HSEDate.fmt(r.ngay_kd_gan_nhat) : "",
+              nd ? HSEDate.fmt(nd) : "",
+              st ? st.label : "Chưa có ngày KĐ",
+              gc.join("; ")];
+    });
+    return { head: head, body: body, count: rows.length };
+  }
+
+  /* Dự phòng khi không nạp được SheetJS: bảng HTML lưu đuôi .xls */
+  function _exportFallback(tieuDe, phu, d, ten) {
+    var html = '<meta charset="utf-8"><table border="1">' +
+      '<tr><th colspan="' + d.head.length + '">' + _esc(tieuDe) + "</th></tr>" +
+      '<tr><td colspan="' + d.head.length + '">' + _esc(phu) + "</td></tr><tr>" +
+      d.head.map(function (x) { return "<th>" + _esc(x) + "</th>"; }).join("") + "</tr>" +
+      d.body.map(function (r) {
+        return "<tr>" + r.map(function (c) { return "<td>" + _esc(c) + "</td>"; }).join("") + "</tr>";
+      }).join("") + "</table>";
+    var url = URL.createObjectURL(new Blob(["\ufeff" + html], { type: "application/vnd.ms-excel" }));
+    var a = document.createElement("a");
+    a.href = url; a.download = ten;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(function () { URL.revokeObjectURL(url); }, 2000);
+  }
+
+  function _exportExcel(btn) {
+    var d = _exportRows();
+    if (!d.count) { alert("Không có thiết bị nào để xuất."); return; }
+
+    var tieuDe = "DANH SÁCH BÌNH ÁP LỰC" +
+                 (_filterUnit ? " – " + _unitLabel(_filterUnit).toUpperCase() : "");
+    var phu    = "Xuất ngày: " + new Date().toLocaleDateString("vi-VN") + " · Tổng: " + d.count + " thiết bị";
+    var ten    = "BinhApLuc_" + (_filterUnit || "TatCa") + "_" + _stamp();
+
+    var cu = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = "⏳ Đang xuất...";
+    _ensureXLSX().then(function (ok) {
+      try {
+        if (ok) {
+          var aoa = [[tieuDe], [phu], []].concat([d.head]).concat(d.body);
+          var ws  = XLSX.utils.aoa_to_sheet(aoa);
+          ws["!cols"] = [{ wch: 5 }, { wch: 30 }, { wch: 20 }, { wch: 18 }, { wch: 10 }, { wch: 13 },
+                         { wch: 13 }, { wch: 16 }, { wch: 17 }, { wch: 17 }, { wch: 14 }, { wch: 30 }];
+          ws["!merges"] = [{ s: { r: 0, c: 0 }, e: { r: 0, c: d.head.length - 1 } },
+                           { s: { r: 1, c: 0 }, e: { r: 1, c: d.head.length - 1 } }];
+          var wb = XLSX.utils.book_new();
+          XLSX.utils.book_append_sheet(wb, ws, "Bình áp lực");
+          XLSX.writeFile(wb, ten + ".xlsx");
+        } else {
+          _exportFallback(tieuDe, phu, d, ten + ".xls");
+        }
+      } catch (e) {
+        alert("Không xuất được Excel: " + (e && e.message ? e.message : e));
+      }
+      btn.disabled = false;
+      btn.innerHTML = cu;
+    });
+  }
+
   /* Tiêu đề cột "Đơn vị quản lý" kèm droplist lọc ngay tại chỗ.
      Lọc đặt trong tiêu đề cột nào thì tác động lên đúng cột đó — người dùng
      không phải đi tìm bộ lọc ở nơi khác. */
@@ -424,7 +525,14 @@
     hdr.className = "bal-section-hdr";
     hdr.innerHTML =
       '<span class="bal-section-title"><svg class="lic-emoji" width="1.05em" height="1.05em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex-shrink:0" aria-hidden="true"><path d="M9.671 4.136a2.34 2.34 0 0 1 4.659 0 2.34 2.34 0 0 0 3.319 1.915 2.34 2.34 0 0 1 2.33 4.033 2.34 2.34 0 0 0 0 3.831 2.34 2.34 0 0 1-2.33 4.033 2.34 2.34 0 0 0-3.319 1.915 2.34 2.34 0 0 1-4.659 0 2.34 2.34 0 0 0-3.32-1.915 2.34 2.34 0 0 1-2.33-4.033 2.34 2.34 0 0 0 0-3.831A2.34 2.34 0 0 1 6.35 6.051a2.34 2.34 0 0 0 3.319-1.915"/><circle cx="12" cy="12" r="3"/></svg> Danh sách bình áp lực</span>' +
-      '<span class="bal-section-count">' + rows.length + " thiết bị</span>";
+      '<div class="bal-hdr-right">' +
+        '<button class="bal-btn-xls" id="bal-btn-xls" title="Xuất danh sách đang hiển thị ra Excel">' +
+          '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;flex-shrink:0" aria-hidden="true"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v5h5"/><path d="M8 13h2"/><path d="M14 13h2"/><path d="M8 17h2"/><path d="M14 17h2"/></svg> Xuất Excel</button>' +
+        '<span class="bal-section-count">' + rows.length + ' thiết bị</span>' +
+      "</div>";
+
+    var btnXls = hdr.querySelector("#bal-btn-xls");
+    if (btnXls) btnXls.onclick = function () { _exportExcel(btnXls); };
 
     box.appendChild(hdr);
 
@@ -489,8 +597,8 @@
       "<th class='col-thongso'>Thông số chính</th>" +
       "<th class='col-nam'>Năm vận hành</th>" +
       "<th class='col-sodangky'>Số đăng ký</th>" +
-      "<th class='col-kd'>Ngày KĐ gần nhất</th>" +
-      "<th class='col-kd'>Ngày KĐ tiếp theo</th>" +
+      "<th class='col-kd'>Ngày KĐ<br>gần nhất</th>" +
+      "<th class='col-kd'>Ngày KĐ<br>tiếp theo</th>" +
       "<th class='col-ghichu'>Ghi chú</th>" +
       (_editMode ? "<th class='col-action'></th>" : "") +
       "</tr>";
@@ -926,24 +1034,28 @@
       ".bal-chip{margin-left:auto;border:1px solid #cdd6e8;background:#fff;color:#41577a;border-radius:14px;padding:4px 11px;font-size:12px;font-weight:600;cursor:pointer;}",
       ".bal-chip:hover{background:#eef3fb;border-color:#0060B6;color:#003087;}",
       /* Bộ lọc ngay tại tiêu đề cột Đơn vị quản lý */
-      ".bal-th-filter{display:flex;flex-direction:column;gap:4px;}",
+      ".bal-th-filter{display:flex;flex-direction:column;align-items:center;gap:4px;}",
       ".bal-th-label{display:block;}",
-      ".bal-th-select{width:100%;max-width:100%;box-sizing:border-box;padding:3px 4px;font-size:11.5px;font-weight:600;font-family:inherit;text-transform:none;letter-spacing:0;color:#334155;background:#fff;border:1px solid #cdd6e8;border-radius:5px;cursor:pointer;outline:none;}",
+      ".bal-th-select{width:100%;max-width:100%;box-sizing:border-box;padding:3px 4px;font-size:11.5px;font-weight:600;font-family:inherit;text-transform:none;letter-spacing:0;text-align:center;color:#334155;background:#fff;border:1px solid #cdd6e8;border-radius:5px;cursor:pointer;outline:none;}",
       ".bal-th-select:hover{border-color:#0060B6;}",
       ".bal-th-select:focus{border-color:#0060B6;box-shadow:0 0 0 2px rgba(0,96,182,.15);}",
       ".bal-th-select.is-on{border-color:#0060B6;background:#eef3fb;color:#003087;}",
       ".bal-section{background:#fff;border-radius:10px;box-shadow:0 2px 8px rgba(0,0,0,0.07);margin-bottom:28px;overflow:hidden;}",
-      ".bal-section-hdr{position:relative;display:flex;align-items:center;justify-content:center;gap:10px;padding:16px 150px;min-height:56px;background:linear-gradient(180deg,#e6edf8 0%,#dde6f3 100%);border-bottom:2px solid #c3d0e6;}",
+      ".bal-section-hdr{position:relative;display:flex;align-items:center;justify-content:center;gap:10px;padding:16px 250px;min-height:56px;background:linear-gradient(180deg,#e6edf8 0%,#dde6f3 100%);border-bottom:2px solid #c3d0e6;}",
       ".bal-section-title{display:inline-flex;align-items:center;gap:9px;justify-content:center;font-weight:800;color:#003087;font-size:19px;line-height:1.25;text-transform:uppercase;letter-spacing:.7px;text-align:center;}",
-      ".bal-section-count{position:absolute;right:18px;top:50%;transform:translateY(-50%);font-size:12px;font-weight:700;color:#41577a;background:#fff;border:1px solid #d5deee;border-radius:12px;padding:3px 11px;white-space:nowrap;}",
+      ".bal-hdr-right{position:absolute;right:18px;top:50%;transform:translateY(-50%);display:flex;align-items:center;gap:10px;}",
+      ".bal-section-count{font-size:12px;font-weight:700;color:#41577a;background:#fff;border:1px solid #d5deee;border-radius:12px;padding:3px 11px;white-space:nowrap;}",
+      ".bal-btn-xls{display:inline-flex;align-items:center;gap:6px;background:#217346;color:#fff;border:none;border-radius:7px;padding:6px 12px;font-size:12.5px;font-weight:700;font-family:inherit;text-transform:none;cursor:pointer;white-space:nowrap;transition:background .15s;}",
+      ".bal-btn-xls:hover{background:#1a5c38;}",
+      ".bal-btn-xls:disabled{background:#9bb8a8;cursor:default;}",
       ".bal-section-hdr>.bal-btn{position:absolute;left:18px;top:50%;transform:translateY(-50%);}",
-      "@media(max-width:760px){.bal-section-hdr{flex-direction:column;padding:14px 12px;}.bal-section-title{font-size:16px;}.bal-section-count,.bal-section-hdr>.bal-btn{position:static;transform:none;}}",
+      "@media(max-width:760px){.bal-section-hdr{flex-direction:column;padding:14px 12px;}.bal-section-title{font-size:16px;}.bal-hdr-right{position:static;transform:none;}}",
 
       /* Table */
       ".bal-table-wrap{max-height:72vh;overflow:auto;-webkit-overflow-scrolling:touch;}",
       ".bal-table{width:100%;min-width:1040px;table-layout:fixed;border-collapse:collapse;font-size:13px;}",
-      ".bal-table th{position:sticky;top:0;z-index:2;background:#dde6f3;color:#003087;font-weight:700;font-size:12.5px;letter-spacing:.2px;padding:10px 10px;text-align:left;vertical-align:top;white-space:normal;line-height:1.3;border-bottom:2px solid #b9c8e2;box-shadow:inset 0 -2px 0 #b9c8e2;overflow:hidden;}",
-      ".bal-table td{padding:10px;border-bottom:1px solid #eef0f4;vertical-align:middle;overflow:hidden;word-break:break-word;overflow-wrap:anywhere;font-weight:600;color:#1f2b3d;line-height:1.45;}",
+      ".bal-table th{position:sticky;top:0;z-index:2;background:#dde6f3;color:#003087;font-weight:700;font-size:12.5px;letter-spacing:.2px;padding:10px 10px;text-align:center;vertical-align:middle;white-space:normal;line-height:1.35;border-bottom:2px solid #b9c8e2;box-shadow:inset 0 -2px 0 #b9c8e2;overflow:hidden;}",
+      ".bal-table td{padding:10px;text-align:center;border-bottom:1px solid #eef0f4;vertical-align:middle;overflow:hidden;word-break:break-word;overflow-wrap:anywhere;font-weight:600;color:#1f2b3d;line-height:1.45;}",
       ".bal-table tbody tr:nth-child(even) td{background:#fafbfe;}",
       ".bal-table tbody tr:hover td{background:#eef3fb;}",
       ".bal-table th, .bal-table td{border-right:1px solid #e6ebf5;}",
@@ -961,7 +1073,9 @@
       ".col-sodangky{width:10%;}",
       ".col-kd{width:10.5%;text-align:center;}",
       ".col-ghichu{width:7%;}",
-      ".col-action{width:7%;text-align:right;white-space:nowrap;}",
+      ".col-action{width:7%;white-space:nowrap;}",
+      /* Chỉ cột Tên thiết bị căn trái, còn lại căn giữa */
+      ".bal-table th.col-ten,.bal-table td.col-ten{text-align:left;}",
       ".bal-table td.col-thongso{font-variant-numeric:tabular-nums;}",
       ".bal-table td.col-kd{font-variant-numeric:tabular-nums;}",
       /* Dải màu cảnh báo hạn kiểm định ở đầu hàng */
