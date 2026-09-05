@@ -58,15 +58,48 @@
      type: "text" = 1 chuỗi · "array" = mảng tên (có thể lưu dạng chuỗi JSON)
      ───────────────────────────────────────────── */
   var RENAME_TARGETS = [
-    { sheet: "ke_hoach_mot_lan", col: "chuTri",       type: "text",  label: "Kế hoạch một lần — Chủ trì" },
-    { sheet: "ke_hoach_mot_lan", col: "phoiHop",      type: "array", label: "Kế hoạch một lần — Phối hợp" },
-    { sheet: "ke_hoach_lap_lai", col: "chuTri",       type: "text",  label: "Kế hoạch lặp lại — Chủ trì" },
-    { sheet: "ke_hoach_lap_lai", col: "phoiHop",      type: "array", label: "Kế hoạch lặp lại — Phối hợp" },
-    { sheet: "kiem_tra_cap12",   col: "donVi",        type: "text",  label: "Kiểm tra các cấp (cấp 1-2)" },
-    { sheet: "hl_nhansu",        col: "unit",         type: "text",  label: "Huấn luyện - Đào tạo — Nhân sự" },
-    { sheet: "nhanvien",         col: "boPhan",       type: "text",  label: "Cấp phát BHLĐ — Nhân viên" },
-    { sheet: "users",            col: "capPhatUnits", type: "array", label: "Phân quyền đơn vị cấp phát" }
+    /* ── Đọc qua db.js (assets/db.js giữ bảng ánh xạ của các trang thường) ── */
+    { sheet: "ke_hoach_mot_lan", col: "chuTri",       type: "text",  via: "db",   label: "Kế hoạch một lần — Chủ trì" },
+    { sheet: "ke_hoach_mot_lan", col: "phoiHop",      type: "array", via: "db",   label: "Kế hoạch một lần — Phối hợp" },
+    { sheet: "ke_hoach_lap_lai", col: "chuTri",       type: "text",  via: "db",   label: "Kế hoạch lặp lại — Chủ trì" },
+    { sheet: "ke_hoach_lap_lai", col: "phoiHop",      type: "array", via: "db",   label: "Kế hoạch lặp lại — Phối hợp" },
+    { sheet: "kiem_tra_cap12",   col: "donVi",        type: "text",  via: "db",   label: "Kiểm tra các cấp (cấp 1-2)" },
+    { sheet: "hl_nhansu",        col: "unit",         type: "text",  via: "db",   label: "Huấn luyện - Đào tạo — Nhân sự" },
+    { sheet: "users",            col: "capPhatUnits", type: "array", via: "db",   label: "Phân quyền đơn vị cấp phát" },
+    /* ── Đọc qua bhld-sync.js — trang Cấp phát BHLĐ có bảng ánh xạ RIÊNG,
+         KHÔNG nằm trong db.js. Phải hỏi BHLD.tbl() để lấy đúng tên bảng. ── */
+    { sheet: "nhanvien",            col: "boPhan", type: "text", via: "bhld", label: "Cấp phát BHLĐ — Nhân viên" },
+    { sheet: "nhom_nv",             col: "donVi",  type: "text", via: "bhld", label: "Cấp phát BHLĐ — Nhóm nội bộ" },
+    { sheet: "phieu_requests",      col: "donVi",  type: "text", via: "bhld", label: "Cấp phát BHLĐ — Phiếu yêu cầu" },
+    { sheet: "pending_changes",     col: "donVi",  type: "text", via: "bhld", label: "Cấp phát BHLĐ — Thay đổi chờ duyệt" },
+    /* ⚠️ Bảng này ghép TÊN ĐƠN VỊ vào khoá chính: id = "<tên đơn vị>__<quý>"
+       (xem _cpwKey trong cap-phat-bhld.html). Sửa riêng cột donVi KHÔNG đủ —
+       khoá cũ vẫn mồ côi. Vì vậy chỉ ĐỌC để đối soát, không tự đổi tên. */
+    { sheet: "cap_phat_tien_trinh", col: "donVi",  type: "text", via: "bhld", keyed: "id",
+      label: "Cấp phát BHLĐ — Tiến trình cấp phát" }
   ];
+
+  /* Đọc toàn bộ một bảng, định tuyến đúng module sở hữu bảng đó */
+  function _readAll(t) {
+    if (t.via === "bhld") {
+      if (!window.BHLD || !window.HSE_SB) {
+        return Promise.reject(new Error("Chưa nạp bhld-sync.js hoặc chưa kết nối Supabase"));
+      }
+      return window.HSE_SB.from(window.BHLD.tbl(t.sheet)).select("*").then(function (r) {
+        if (r.error) throw new Error(r.error.message);
+        return r.data || [];
+      });
+    }
+    if (typeof DB === "undefined") return Promise.reject(new Error("Chưa nạp db.js"));
+    return DB.getAll(t.sheet);
+  }
+
+  /* Các giá trị đơn vị có trong một bản ghi của một cột */
+  function _valuesOf(t, r) {
+    return (t.type === "array" ? asArr(r[t.col]) : [r[t.col]])
+      .map(function (v) { return String(v == null ? "" : v).trim(); })
+      .filter(Boolean);
+  }
 
   /* ─────────────────────────────────────────────
      SEED MẶC ĐỊNH — khớp đúng hiện trạng đang hard-code trong code,
@@ -333,12 +366,9 @@
     var k = norm(tenCu);
     var hits = [], errors = [];
     var jobs = RENAME_TARGETS.map(function (t) {
-      return DB.getAll(t.sheet).then(function (rows) {
+      return _readAll(t).then(function (rows) {
         var matched = (rows || []).filter(function (r) {
-          if (t.type === "array") {
-            return asArr(r[t.col]).some(function (v) { return norm(v) === k; });
-          }
-          return norm(r[t.col]) === k;
+          return _valuesOf(t, r).some(function (v) { return norm(v) === k; });
         });
         if (matched.length) hits.push({ target: t, rows: matched });
       }).catch(function (e) {
@@ -357,17 +387,24 @@
       return Promise.resolve({ updated: 0, errors: [] });
     }
     var k = norm(tenCu);
-    var updated = 0, errors = [];
+    var updated = 0, errors = [], skipped = [];
     var chain = Promise.resolve();
     scan.hits.forEach(function (h) {
+      /* Bảng ghép tên đơn vị vào khoá chính: sửa cột không đủ, phải đổi cả
+         khoá → để riêng, báo cho Admin thay vì âm thầm làm hỏng. */
+      if (h.target.keyed) { skipped.push({ target: h.target, count: h.rows.length }); return; }
       h.rows.forEach(function (r) {
         chain = chain.then(function () {
           var patch = {};
           if (h.target.type === "array") {
-            var arr = asArr(r[h.target.col]).map(function (v) { return norm(v) === k ? tenMoi : v; });
+            var cu = asArr(r[h.target.col]);
+            var arr = cu.map(function (v) { return norm(v) === k ? tenMoi : v; });
+            // Đã đúng sẵn (chỉ là biến thể cách viết trùng khớp) → khỏi ghi
+            if (arr.join("\u0000") === cu.join("\u0000")) return;
             // giữ nguyên KIỂU lưu ban đầu (mảng thật hay chuỗi JSON)
             patch[h.target.col] = (typeof r[h.target.col] === "string") ? JSON.stringify(arr) : arr;
           } else {
+            if (r[h.target.col] === tenMoi) return;   // đã đúng chính tả → bỏ qua
             patch[h.target.col] = tenMoi;
           }
           var pk = (h.target.sheet === "users") ? r.id : r.id;
@@ -376,7 +413,79 @@
         });
       });
     });
-    return chain.then(function () { return { updated: updated, errors: errors }; });
+    return chain.then(function () { return { updated: updated, errors: errors, skipped: skipped }; });
+  }
+
+  /* ─────────────── ĐỐI SOÁT DỮ LIỆU ───────────────
+     Quét MỌI cột đang lưu tên đơn vị trong toàn hệ thống, gom các giá trị
+     thực có và đối chiếu với danh mục. Trả về:
+       rows[]      mỗi giá trị thực có: { value, total, targets{}, unit, status }
+                   status: "ok"     — khớp đúng tên hiện hành trong danh mục
+                           "ten_cu" — khớp qua bí danh (đơn vị đã đổi tên)
+                           "ngung"  — có trong danh mục nhưng đã ngừng hoạt động
+                           "la"     — KHÔNG có trong danh mục (gõ sai / đơn vị ngoài)
+       chuaDung[]  đơn vị có trong danh mục nhưng chưa bản ghi nào dùng
+       errors[]    bảng không đọc được (chưa tạo / thiếu quyền / chưa nạp module)
+     Chỉ ĐỌC, không ghi gì.
+     ───────────────────────────────────────────── */
+  function audit() {
+    var errors = [];
+    var jobs = RENAME_TARGETS.map(function (t) {
+      return _readAll(t).then(function (rows) {
+        var vals = {};
+        (rows || []).forEach(function (r) {
+          _valuesOf(t, r).forEach(function (v) { vals[v] = (vals[v] || 0) + 1; });
+        });
+        return { target: t, values: vals };
+      }).catch(function (e) {
+        errors.push({ target: t, message: (e && e.message) || String(e) });
+        return null;
+      });
+    });
+
+    return Promise.all(jobs).then(function (res) {
+      var map = {};
+      res.forEach(function (x) {
+        if (!x) return;
+        Object.keys(x.values).forEach(function (v) {
+          var k = norm(v);
+          if (!map[k]) map[k] = { value: v, total: 0, targets: {}, variants: {}, keyed: false };
+          map[k].total += x.values[v];
+          /* Giữ lại TỪNG cách viết thô. Hai bản ghi "Cảng biển" và "Cảng  Biển"
+             gộp chung một dòng ở đây, nhưng canEditUnit() trong trang Cấp phát
+             BHLĐ so chuỗi tuyệt đối → lệch một ký tự là mất quyền im lặng.
+             Vì vậy phải chỉ ra cho Admin thấy. */
+          map[k].variants[v] = (map[k].variants[v] || 0) + x.values[v];
+          map[k].targets[x.target.label] = (map[k].targets[x.target.label] || 0) + x.values[v];
+          if (x.target.keyed) map[k].keyed = true;   // tên nằm trong khoá chính ở đâu đó
+        });
+      });
+
+      var rows = Object.keys(map).map(function (k) {
+        var it = map[k];
+        var u = resolve(it.value);
+        it.unit = u || null;
+        if (!u) it.status = "la";
+        else if (norm(u.ten) !== norm(it.value)) it.status = "ten_cu";
+        else if (!u.active) it.status = "ngung";
+        else it.status = "ok";
+        /* Cách viết trong dữ liệu lệch so với tên chuẩn trong danh mục
+           (thừa khoảng trắng, khác hoa/thường, gạch ngang dài...) */
+        var chuan = u ? u.ten : it.value;
+        it.lech = Object.keys(it.variants).filter(function (v) { return v !== chuan; });
+        return it;
+      }).sort(function (a, b) {
+        var rank = { la: 0, ten_cu: 1, ngung: 2, ok: 3 };
+        var d = rank[a.status] - rank[b.status];
+        return d !== 0 ? d : b.total - a.total;
+      });
+
+      var chuaDung = all({ includeInactive: true }).filter(function (u) {
+        return !rows.some(function (r) { return r.unit && r.unit.ma === u.ma; });
+      });
+
+      return { rows: rows, chuaDung: chuaDung, errors: errors };
+    });
   }
 
   /* ─────────────── XUẤT API ─────────────── */
@@ -407,7 +516,8 @@
     saveConfig: saveConfig,
     suggestMa: suggestMa,
     renameScan: renameScan,
-    renameApply: renameApply
+    renameApply: renameApply,
+    audit: audit
   };
 
   /* Tự tải nền khi trang mở (không chặn giao diện) */

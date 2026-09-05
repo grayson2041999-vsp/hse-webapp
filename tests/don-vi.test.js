@@ -248,5 +248,80 @@ console.log('\n── Huấn luyện - Đào tạo: droplist đơn vị ──')
   check('_unitIndex bỏ qua khác biệt gạch ngang / hoa thường', HL2('phòng kỹ thuật – vật tư') === 1);
 }
 
-console.log('\n' + (fail === 0 ? '🎉 TẤT CẢ ' + pass + ' KIỂM TRA ĐỀU ĐẠT' : '⚠️  ' + fail + ' lỗi / ' + (pass + fail) + ' kiểm tra'));
-process.exit(fail ? 1 : 0);
+/* ─────────────────────────────────────────────
+   ĐỐI SOÁT DỮ LIỆU (HSE_UNITS.audit)
+   ───────────────────────────────────────────── */
+console.log('\n── Đối soát: khai báo cột lưu tên đơn vị ──');
+{
+  const T = U.RENAME_TARGETS;
+  check('khai báo đủ 12 cột lưu tên đơn vị', T.length === 12, T.length);
+  check('mọi cột đều ghi rõ đọc qua module nào', T.every(t => t.via === 'db' || t.via === 'bhld'));
+  check('5 bảng của Cấp phát BHLĐ đọc qua bhld-sync', T.filter(t => t.via === 'bhld').length === 5);
+  check('bảng tiến trình cấp phát được đánh dấu có tên trong khoá chính',
+    T.some(t => t.sheet === 'cap_phat_tien_trinh' && t.keyed === 'id'));
+  check('KHÔNG đọc bảng BHLĐ qua db.js (tên bảng sẽ sai)',
+    !T.some(t => t.via === 'db' && ['nhanvien','nhom_nv','phieu_requests','pending_changes','cap_phat_tien_trinh'].includes(t.sheet)));
+}
+
+console.log('\n── Đối soát: phân loại giá trị ──');
+{
+  freshEnv(); U = loadUnits();
+  /* Đổi tên 1 đơn vị + ngừng 1 đơn vị để có đủ 4 trạng thái */
+  const dv = JSON.parse(JSON.stringify(U.byMa('doi_xe_vchk')));
+  dv.ten_cu = ['Đội xe VCHK']; dv.ten = 'Đội xe vận chuyển hành khách'; U.saveUnit(dv);
+  const kt = JSON.parse(JSON.stringify(U.byMa('p_ke_toan'))); kt.active = false; U.saveUnit(kt);
+
+  /* DB giả: trả dữ liệu cho các sheet đọc qua db.js, và Supabase giả cho BHLĐ */
+  global.DB = { getAll(sheet) {
+    const data = {
+      ke_hoach_mot_lan: [{ chuTri:'Cảng biển', phoiHop:['Xưởng sửa chữa'] },
+                         { chuTri:'Đội xe VCHK', phoiHop:[] }],
+      kiem_tra_cap12:   [{ donVi:'Cảng biển' }, { donVi:'Xí nghiệp Cơ khí' }],
+      hl_nhansu:        [{ unit:'Phòng Kế toán' }],
+      users:            [{ id:'u1', capPhatUnits:['Cảng biển'] }]
+    };
+    return Promise.resolve(data[sheet] || []);
+  }};
+  global.BHLD = { tbl: s => 'CapPhatBHLD_' + s };
+  const sbData = {
+    CapPhatBHLD_nhanvien:            [{ boPhan:'Cảng biển' }, { boPhan:'Cảng  Biển' }, { boPhan:'Kho vật tư' }],
+    CapPhatBHLD_cap_phat_tien_trinh: [{ id:'Cảng biển__Q3/2026', donVi:'Cảng biển' }]
+  };
+  global.HSE_SB = { from: t => ({ select: () => Promise.resolve({ data: sbData[t] || [], error: null }) }) };
+
+  U.audit().then(res => {
+    const by = v => res.rows.find(r => U.norm(r.value) === U.norm(v));
+
+    check('gộp các cách viết khác nhau của cùng một đơn vị làm một dòng',
+      res.rows.filter(r => U.norm(r.value) === U.norm('Cảng biển')).length === 1);
+    check('cộng đúng tổng số bản ghi', by('Cảng biển').total === 6, by('Cảng biển') && by('Cảng biển').total);
+    check('"Cảng biển" khớp danh mục', by('Cảng biển').status === 'ok');
+    check('"Đội xe VCHK" nhận diện là TÊN CŨ', by('Đội xe VCHK').status === 'ten_cu');
+    check('tên cũ trỏ đúng về đơn vị hiện hành',
+      by('Đội xe VCHK').unit.ten === 'Đội xe vận chuyển hành khách');
+    check('"Phòng Kế toán" nhận diện là ĐÃ NGỪNG', by('Phòng Kế toán').status === 'ngung');
+    check('"Xí nghiệp Cơ khí" nhận diện là LẠ', by('Xí nghiệp Cơ khí').status === 'la');
+    check('"Kho vật tư" (chỉ có trong BHLĐ) cũng được phát hiện', by('Kho vật tư').status === 'la');
+    check('đánh dấu đơn vị có tên nằm trong khoá tiến trình cấp phát', by('Cảng biển').keyed === true);
+    check('đơn vị không dính khoá thì không bị đánh dấu', by('Xí nghiệp Cơ khí').keyed === false);
+    check('xếp giá trị lạ lên đầu', res.rows[0].status === 'la');
+    check('ghi rõ giá trị xuất hiện ở bảng nào',
+      Object.keys(by('Cảng biển').targets).length === 5, Object.keys(by('Cảng biển').targets));
+    /* 14 đơn vị trong danh mục, 4 đơn vị có dữ liệu (Cảng biển, Xưởng sửa chữa,
+       Đội xe VCHK đã đổi tên, Phòng Kế toán) → còn 10 chưa dùng */
+    check('liệt kê đơn vị trong danh mục chưa có dữ liệu', res.chuaDung.length === 10, res.chuaDung.length);
+    check('đơn vị đã dùng KHÔNG bị liệt vào nhóm chưa dùng',
+      !res.chuaDung.some(u => u.ma === 'cang_bien' || u.ma === 'doi_xe_vchk'));
+    check('không có bảng nào lỗi khi đọc', res.errors.length === 0, res.errors);
+
+    /* Biến thể chính tả — nguy hiểm vì canEditUnit() so chuỗi tuyệt đối */
+    check('giữ lại từng cách viết thô', Object.keys(by('Cảng biển').variants).length === 2,
+      Object.keys(by('Cảng biển').variants));
+    check('chỉ ra cách viết lệch chuẩn', by('Cảng biển').lech.length === 1 && by('Cảng biển').lech[0] === 'Cảng  Biển',
+      by('Cảng biển').lech);
+    check('viết đúng chuẩn thì không bị báo lệch', by('Xưởng sửa chữa').lech.length === 0);
+
+    console.log('\n' + (fail === 0 ? '🎉 TẤT CẢ ' + pass + ' KIỂM TRA ĐỀU ĐẠT' : '⚠️  ' + fail + ' lỗi / ' + (pass + fail) + ' kiểm tra'));
+    process.exit(fail ? 1 : 0);
+  });
+}
