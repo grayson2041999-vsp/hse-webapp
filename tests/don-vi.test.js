@@ -665,7 +665,7 @@ console.log('\n── Thiết bị nâng: ba biểu đồ tròn ──');
     k => ({ cang_bien: 'Cảng biển', xuong_sua_chua: 'Xưởng sửa chữa' }[k] || k),
     d => d ? ({ a: { cls: 'kd-con-han' } }[d] || null) : null,
     r => r.kd || '',
-    ['Cầu trục', 'Cổng trục', 'Cần trục', 'Palăng', 'Tời', 'Xe nâng', 'Thang nâng', 'Sàn nâng', 'Khác']);
+    ['Cầu trục', 'Cổng trục', 'Cần trục', 'Palăng', 'Tời', 'Xe nâng', 'Thang nâng', 'Bàn nâng', 'Khác']);
 
   /* Biểu đồ loại thiết bị phải nằm GIỮA hai biểu đồ cũ */
   const iDV = src.indexOf('_pie("Tỷ lệ thiết bị theo đơn vị"');

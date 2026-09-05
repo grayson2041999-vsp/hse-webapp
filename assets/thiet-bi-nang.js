@@ -27,7 +27,7 @@
   /* Danh mục loại thiết bị nâng. Bản ghi cũ mang loại không còn trong danh
      sách vẫn hiện nguyên, không bị mất. */
   var LOAI_TB = ["Cầu trục", "Cổng trục", "Cần trục", "Palăng", "Tời",
-                 "Xe nâng", "Thang nâng", "Sàn nâng", "Khác"];
+                 "Xe nâng", "Thang nâng", "Bàn nâng", "Khác"];
 
   /* ── ĐƠN VỊ QUẢN LÝ, lấy từ DANH MỤC DÙNG CHUNG (assets/don-vi.js) ──
      Admin tích ô cột "Thiết bị nâng" ở Quản trị hệ thống → Danh mục đơn vị.
