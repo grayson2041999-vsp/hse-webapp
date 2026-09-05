@@ -628,6 +628,68 @@ console.log('\n── Thiết bị nâng: bảng mới trong Quản lý thiết 
   ganTrang('cang_bien', false); ganTrang('xuong_sua_chua', false);
 }
 
+console.log('\n── Thiết bị nâng: ba biểu đồ tròn ──');
+{
+  const src = fs.readFileSync(path.join(ROOT, 'assets', 'thiet-bi-nang.js'), 'utf8');
+  const i = src.indexOf('var CHART_MAU_DONVI');
+  const j = src.indexOf('function _mucChu(');
+  let store = [];
+  const CH = new Function('_load', '_unitRank', '_unitLabel', '_kdStatus', '_nextDateOf', 'LOAI_TB',
+    src.slice(i, j) + '; return { _chartData, CHART_MAU_DONVI, CHART_MAU_KHAC };'
+  )(() => store,
+    k => ({ cang_bien: 0, xuong_sua_chua: 1 }[k] ?? 999),
+    k => ({ cang_bien: 'Cảng biển', xuong_sua_chua: 'Xưởng sửa chữa' }[k] || k),
+    d => d ? ({ a: { cls: 'kd-con-han' } }[d] || null) : null,
+    r => r.kd || '',
+    ['Cầu trục', 'Cổng trục', 'Cần trục', 'Palăng', 'Tời', 'Xe nâng', 'Thang nâng', 'Sàn nâng', 'Khác']);
+
+  /* Biểu đồ loại thiết bị phải nằm GIỮA hai biểu đồ cũ */
+  const iDV = src.indexOf('_pie("Tỷ lệ thiết bị theo đơn vị"');
+  const iLO = src.indexOf('_pie("Tỷ lệ theo loại thiết bị"');
+  const iKD = src.indexOf('_pie("Tỷ lệ theo hạn kiểm định"');
+  check('vẽ đủ ba biểu đồ', iDV > 0 && iLO > 0 && iKD > 0);
+  check('biểu đồ theo loại đặt ở GIỮA', iDV < iLO && iLO < iKD, [iDV, iLO, iKD]);
+
+  store = [
+    { section: 'cang_bien',      loai_thiet_bi: 'Palăng',   kd: 'a' },
+    { section: 'cang_bien',      loai_thiet_bi: 'Palăng',   kd: 'a' },
+    { section: 'cang_bien',      loai_thiet_bi: 'Palăng',   kd: 'a' },
+    { section: 'xuong_sua_chua', loai_thiet_bi: 'Cầu trục', kd: 'a' },
+    { section: 'xuong_sua_chua', loai_thiet_bi: 'Xe nâng',  kd: 'a' },
+    { section: 'xuong_sua_chua',                            kd: 'a' }
+  ];
+  let d = CH._chartData();
+  check('đếm đúng số thiết bị mỗi loại',
+    d.loai.map(x => x.nhan + '=' + x.giaTri).join(',') === 'Palăng=3,Cầu trục=1,Xe nâng=1,Khác (1 loại)=1',
+    d.loai.map(x => x.nhan + '=' + x.giaTri));
+  check('loại đông nhất đứng đầu và được màu riêng',
+    d.loai[0].nhan === 'Palăng' && d.loai[0].mau === CH.CHART_MAU_DONVI[0]);
+  check('tổng các lát loại = tổng thiết bị',
+    d.loai.reduce((s2, x) => s2 + x.giaTri, 0) === d.tong && d.tong === 6);
+
+  /* Quá 3 loại → gộp đuôi vào "Khác" màu xám, KHÔNG sinh thêm màu mới */
+  check('quá 3 loại thì gộp thành 4 lát (3 + Khác)', d.loai.length === 4, d.loai.map(x => x.nhan));
+  check('lát cuối là "Khác", cộng dồn đúng và mang màu xám',
+    /^Khác \(1 loại\)$/.test(d.loai[3].nhan) && d.loai[3].giaTri === 1 &&
+    d.loai[3].mau === CH.CHART_MAU_KHAC, d.loai[3]);
+
+  /* Thiết bị chưa chọn loại phải có chỗ đứng riêng, không bị bỏ sót */
+  store = [
+    { section: 'cang_bien', loai_thiet_bi: 'Tời', kd: 'a' },
+    { section: 'cang_bien',                       kd: 'a' }
+  ];
+  d = CH._chartData();
+  check('thiết bị chưa chọn loại vẫn được đếm, không bị bỏ sót',
+    d.loai.some(x => x.nhan === 'Chưa phân loại' && x.giaTri === 1), d.loai.map(x => x.nhan));
+
+  /* Ít loại thì không được sinh lát "Khác" thừa */
+  store = [{ section: 'cang_bien', loai_thiet_bi: 'Tời', kd: 'a' }];
+  d = CH._chartData();
+  check('một loại duy nhất thì chỉ một lát', d.loai.length === 1 && d.loai[0].nhan === 'Tời');
+  store = [];
+  check('không có thiết bị thì không vẽ biểu đồ nào', CH._chartData().tong === 0);
+}
+
 /* ─────────────────────────────────────────────
    ĐỐI SOÁT DỮ LIỆU (HSE_UNITS.audit)
    ───────────────────────────────────────────── */

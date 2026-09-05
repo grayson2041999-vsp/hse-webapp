@@ -230,6 +230,31 @@
       donVi = giu;
     }
 
+    /* Theo LOẠI thiết bị — xếp loại đông nhất lên trước để loại chính được
+       một màu riêng; quá 3 loại thì gộp phần đuôi vào "Khác" màu xám, đúng
+       giới hạn 3 màu pastel an toàn đã nêu ở trên. */
+    var demL = {};
+    all.forEach(function (r) {
+      var k = r.loai_thiet_bi || "Chưa phân loại";
+      demL[k] = (demL[k] || 0) + 1;
+    });
+    var loai = Object.keys(demL).map(function (k) {
+      return { nhan: k, giaTri: demL[k] };
+    }).sort(function (a, b) {
+      if (b.giaTri !== a.giaTri) return b.giaTri - a.giaTri;
+      var ia = LOAI_TB.indexOf(a.nhan), ib = LOAI_TB.indexOf(b.nhan);
+      return (ia < 0 ? 99 : ia) - (ib < 0 ? 99 : ib);
+    });
+    loai.forEach(function (x, i) { x.mau = CHART_MAU_DONVI[i] || CHART_MAU_KHAC; });
+    if (loai.length > CHART_MAU_DONVI.length) {
+      var giuL = loai.slice(0, CHART_MAU_DONVI.length);
+      var conL = loai.slice(CHART_MAU_DONVI.length);
+      giuL.push({ nhan: "Khác (" + conL.length + " loại)",
+                  giaTri: conL.reduce(function (s2, x) { return s2 + x.giaTri; }, 0),
+                  mau: CHART_MAU_KHAC });
+      loai = giuL;
+    }
+
     var tt = { "con-han": 0, "sap-han": 0, "qua-han": 0, "chua-co": 0 };
     all.forEach(function (r) {
       var st = _kdStatus(_nextDateOf(r));
@@ -243,7 +268,7 @@
       { nhan: "Chưa có ngày KĐ",    giaTri: tt["chua-co"], mau: CHART_MAU_TT["chua-co"] }
     ].filter(function (x) { return x.giaTri > 0; });
 
-    return { tong: all.length, donVi: donVi, trangThai: trangThai };
+    return { tong: all.length, donVi: donVi, loai: loai, trangThai: trangThai };
   }
 
   function _mucChu(hex) {
@@ -310,6 +335,7 @@
     if (!d.tong) return box;
     box.className = "tbn-charts";
     box.innerHTML = _pie("Tỷ lệ thiết bị theo đơn vị", d.donVi) +
+                    _pie("Tỷ lệ theo loại thiết bị", d.loai) +
                     _pie("Tỷ lệ theo hạn kiểm định", d.trangThai);
     return box;
   }
@@ -1029,7 +1055,7 @@
 
       /* Biểu đồ tròn */
       ".tbn-charts{display:flex;gap:18px;flex-wrap:wrap;margin-bottom:20px;}",
-      ".tbn-chart{flex:1 1 320px;min-width:280px;background:#fff;border-radius:10px;box-shadow:0 2px 8px rgba(0,0,0,0.07);padding:16px 18px;display:flex;flex-direction:column;align-items:center;}",
+      ".tbn-chart{flex:1 1 280px;min-width:250px;background:#fff;border-radius:10px;box-shadow:0 2px 8px rgba(0,0,0,0.07);padding:16px 18px;display:flex;flex-direction:column;align-items:center;}",
       ".tbn-chart-title{font-weight:700;color:#003087;font-size:14px;margin-bottom:10px;text-align:center;}",
       ".tbn-pie{width:180px;height:180px;flex-shrink:0;}",
       ".tbn-slice{transition:opacity .12s;cursor:default;}",
