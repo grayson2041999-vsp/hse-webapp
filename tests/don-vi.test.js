@@ -477,8 +477,11 @@ console.log('\n── Bình áp lực: một bảng, đơn vị là một cột 
   const j = src.indexOf('/* ── STATE ──');
   if (i < 0 || j < 0) throw new Error('Không tìm thấy _units() trong binh-ap-luc.js');
   let store = [];
-  const BAL = new Function('window', '_load',
-    src.slice(i, j) + '; return { _units, _unitLabel, _unitRank, _rowsSorted };')(global, () => store);
+  const BAL = new Function('window', '_load', '_kdStatus', '_nextDateOf',
+    src.slice(i, j) + '; return { _units, _unitLabel, _unitRank, _rowsSorted, _ttLabel };')(
+    global, () => store,
+    d => d ? ({ x: { cls: 'kd-con-han' }, y: { cls: 'kd-sap-han' }, z: { cls: 'kd-qua-han' } }[d] || null) : null,
+    r => r.kd || '');
 
   check('2 đơn vị mặc định trong droplist', BAL._units().length === 2, BAL._units().map(o => o.key));
   check('key = MÃ đơn vị (khớp dữ liệu cũ, không phải chuyển đổi)',
@@ -512,13 +515,41 @@ console.log('\n── Bình áp lực: một bảng, đơn vị là một cột 
   check('đơn vị không còn trong danh mục xếp cuối', BAL._unitRank('can_cu_kho_gn') === 2);
   check('đơn vị lạ hoàn toàn xếp cuối cùng', BAL._unitRank('khong_co') === 999);
   check('lọc theo một đơn vị', BAL._rowsSorted('cang_bien').map(r => r.id).join('') === 'cb');
+
+  /* Lọc theo hạn kiểm định ngay tại cột "Ngày KĐ tiếp theo" */
+  store = [
+    { id: 'p', section: 'cang_bien',      order: 0, kd: 'x' },   // còn hạn
+    { id: 'q', section: 'cang_bien',      order: 1, kd: 'y' },   // sắp hạn
+    { id: 'r', section: 'cang_bien',      order: 2, kd: 'z' },   // quá hạn
+    { id: 's', section: 'xuong_sua_chua', order: 0, kd: 'z' },   // quá hạn, đơn vị khác
+    { id: 't', section: 'cang_bien',      order: 3 }             // chưa có ngày KĐ
+  ];
+  check('lọc Còn hạn', BAL._rowsSorted('', 'con-han').map(r => r.id).join('') === 'p');
+  check('lọc Sắp hạn', BAL._rowsSorted('', 'sap-han').map(r => r.id).join('') === 'q');
+  check('lọc Quá hạn lấy đủ mọi đơn vị', BAL._rowsSorted('', 'qua-han').map(r => r.id).join('') === 'rs',
+    BAL._rowsSorted('', 'qua-han').map(r => r.id).join(''));
+  check('thiết bị chưa có ngày KĐ lọc được riêng, không lẫn vào Còn hạn',
+    BAL._rowsSorted('', 'chua-co').map(r => r.id).join('') === 't');
+  check('lọc chồng trạng thái với đơn vị',
+    BAL._rowsSorted('cang_bien', 'qua-han').map(r => r.id).join('') === 'r');
+  check('không lọc trạng thái thì lấy hết', BAL._rowsSorted().length === 5);
+  check('nhãn trạng thái dùng chung cho chip và droplist', BAL._ttLabel('sap-han') === 'Sắp hạn (≤60 ngày)');
   store = [];
 
   check('không còn nhiều bảng theo section', !/function\s+_buildSection\s*\(/.test(src));
   check('không còn hàm _renderSections', !/function\s+_renderSections\s*\(/.test(src));
-  check('có cột "Đơn vị quản lý" trong bảng', /bal-th-label">Đơn vị quản lý</.test(src));
+  check('có cột "Đơn vị quản lý" trong bảng',
+    src.includes(`"<th class='col-donvi'>" + _thFilterDonVi()`));
   check('có droplist đơn vị trong form thêm\/sửa', /id="bal-inp-donvi"/.test(src));
-  check('bộ lọc đơn vị nằm ngay tiêu đề cột', /id="bal-filter-unit" class="bal-th-select/.test(src));
+  check('bộ lọc đơn vị nằm ngay tiêu đề cột',
+    /_thFilter\("Đơn vị quản lý", "bal-filter-unit"/.test(src) &&
+    /thead.querySelector\("#bal-filter-unit"\)/.test(src));
+  check('bộ lọc hạn kiểm định nằm ngay tiêu đề cột Ngày KĐ tiếp theo',
+    src.includes(`"<th class='col-kdtt'>" + _thFilterTT()`) &&
+    /thead.querySelector\("#bal-filter-tt"\)/.test(src));
+  check('khoá trạng thái khớp class badge trong bảng (không thể lệch nhau)',
+    /st\.cls\.replace\("kd-", ""\)/.test(src) && /key: "qua-han"/.test(src));
+  check('xuất Excel tôn trọng cả hai bộ lọc', /_rowsSorted\(_filterUnit, _filterTT\)/.test(src));
   check('kéo–thả vẫn giới hạn trong cùng đơn vị',
     /_dragging\.dataset\.sec !== tr\.dataset\.sec/.test(src));
 

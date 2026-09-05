@@ -46,10 +46,34 @@
     for (var i = 0; i < us.length; i++) if (us[i].key === key) return i;
     return 999;
   }
+  /* Trạng thái hạn kiểm định — khoá dùng cho bộ lọc, nhãn để hiển thị.
+     Khoá trùng phần đuôi class badge (.kd-con-han → "con-han") nên bảng và
+     bộ lọc không thể lệch nhau. */
+  var TRANG_THAI = [
+    { key: "con-han",  label: "Còn hạn"            },
+    { key: "sap-han",  label: "Sắp hạn (≤60 ngày)" },
+    { key: "qua-han",  label: "Quá hạn"            },
+    { key: "chua-co",  label: "Chưa có ngày KĐ"    }
+  ];
+  function _ttLabel(key) {
+    for (var i = 0; i < TRANG_THAI.length; i++) if (TRANG_THAI[i].key === key) return TRANG_THAI[i].label;
+    return key;
+  }
+  /* Trạng thái của MỘT bản ghi. Chỉ gọi khi thực sự lọc theo trạng thái —
+     giữ _rowsSorted() không phụ thuộc phần tính ngày. */
+  function _ttOf(rec) {
+    var st = _kdStatus(_nextDateOf(rec));
+    return st ? st.cls.replace("kd-", "") : "chua-co";
+  }
+
   /* Toàn bộ thiết bị, sắp theo đơn vị rồi theo thứ tự kéo–thả trong đơn vị */
-  function _rowsSorted(loc) {
+  function _rowsSorted(loc, tt) {
     return _load()
-      .filter(function (r) { return !loc || r.section === loc; })
+      .filter(function (r) {
+        if (loc && r.section !== loc) return false;
+        if (tt && _ttOf(r) !== tt) return false;
+        return true;
+      })
       .sort(function (x, y) {
         var d = _unitRank(x.section) - _unitRank(y.section);
         if (d !== 0) return d;
@@ -62,6 +86,7 @@
   var _canEdit   = false;
   var _editMode  = false;   // chế độ điều chỉnh (reorder + sửa nhanh)
   var _filterUnit = "";     // mã đơn vị đang lọc ("" = tất cả)
+  var _filterTT   = "";     // trạng thái hạn kiểm định đang lọc
   var _dragging  = null;    // element đang kéo
 
   /* ── ÉP KIỂU BOOLEAN ──
@@ -394,7 +419,7 @@
         "</div>";
       return;
     }
-    wrap.appendChild(_buildTable(_rowsSorted(_filterUnit)));
+    wrap.appendChild(_buildTable(_rowsSorted(_filterUnit, _filterTT)));
   }
 
   /* ══════════════════════════════════════════
@@ -424,7 +449,7 @@
   }
 
   function _exportRows() {
-    var rows = _rowsSorted(_filterUnit);
+    var rows = _rowsSorted(_filterUnit, _filterTT);
     var head = ["STT", "Tên thiết bị", "Đơn vị quản lý", "Vị trí lắp đặt", "V (m³)", "Plv (kg/cm²)",
                 "Năm vận hành", "Số đăng ký", "Ngày KĐ gần nhất", "Ngày KĐ tiếp theo", "Trạng thái", "Ghi chú"];
     var body = rows.map(function (r, i) {
@@ -467,8 +492,10 @@
     var d = _exportRows();
     if (!d.count) { alert("Không có thiết bị nào để xuất."); return; }
 
-    var tieuDe = "DANH SÁCH BÌNH ÁP LỰC" +
-                 (_filterUnit ? " – " + _unitLabel(_filterUnit).toUpperCase() : "");
+    var loc = [];
+    if (_filterUnit) loc.push(_unitLabel(_filterUnit).toUpperCase());
+    if (_filterTT)   loc.push(_ttLabel(_filterTT).toUpperCase());
+    var tieuDe = "DANH SÁCH BÌNH ÁP LỰC" + (loc.length ? " – " + loc.join(" · ") : "");
     var phu    = "Xuất ngày: " + new Date().toLocaleDateString("vi-VN") + " · Tổng: " + d.count + " thiết bị";
     var ten    = "BinhApLuc_" + (_filterUnit || "TatCa") + "_" + _stamp();
 
@@ -501,18 +528,29 @@
   /* Tiêu đề cột "Đơn vị quản lý" kèm droplist lọc ngay tại chỗ.
      Lọc đặt trong tiêu đề cột nào thì tác động lên đúng cột đó — người dùng
      không phải đi tìm bộ lọc ở nơi khác. */
+  function _thFilter(nhan, id, opts, dangLoc, nhanText) {
+    var t = _esc(nhanText || nhan);
+    return '<div class="bal-th-filter">' +
+             '<span class="bal-th-label">' + nhan + "</span>" +
+             '<select id="' + id + '" class="bal-th-select' + (dangLoc ? " is-on" : "") +
+               '" title="Lọc theo ' + t + '" aria-label="Lọc theo ' + t + '">' + opts + "</select>" +
+           "</div>";
+  }
   function _thFilterDonVi() {
-    var units = _units();
     var opts = '<option value="">Tất cả đơn vị</option>' +
-      units.map(function (u) {
-        return '<option value="' + _esc(u.key) + '"' + (u.key === _filterUnit ? " selected" : "") + '>' +
+      _units().map(function (u) {
+        return '<option value="' + _esc(u.key) + '"' + (u.key === _filterUnit ? " selected" : "") + ">" +
                _esc(u.label) + "</option>";
       }).join("");
-    return '<div class="bal-th-filter">' +
-             '<span class="bal-th-label">Đơn vị quản lý</span>' +
-             '<select id="bal-filter-unit" class="bal-th-select' + (_filterUnit ? " is-on" : "") +
-               '" title="Lọc theo đơn vị quản lý" aria-label="Lọc theo đơn vị quản lý">' + opts + '</select>' +
-           "</div>";
+    return _thFilter("Đơn vị quản lý", "bal-filter-unit", opts, !!_filterUnit);
+  }
+  function _thFilterTT() {
+    var opts = '<option value="">Tất cả trạng thái</option>' +
+      TRANG_THAI.map(function (t) {
+        return '<option value="' + t.key + '"' + (t.key === _filterTT ? " selected" : "") + ">" +
+               _esc(t.label) + "</option>";
+      }).join("");
+    return _thFilter("Ngày KĐ<br>tiếp theo", "bal-filter-tt", opts, !!_filterTT, "hạn kiểm định");
   }
 
   /* ── BUILD BẢNG DUY NHẤT ── */
@@ -568,12 +606,15 @@
     }
 
     /* Đang lọc → hiện chip cho biết, bấm để bỏ lọc */
-    if (_filterUnit) {
+    if (_filterUnit || _filterTT) {
+      var mo = [];
+      if (_filterUnit) mo.push(_esc(_unitLabel(_filterUnit)));
+      if (_filterTT)   mo.push(_esc(_ttLabel(_filterTT)));
       var chip = document.createElement("button");
       chip.className = "bal-chip";
-      chip.title = "Bỏ lọc, xem tất cả đơn vị";
-      chip.innerHTML = "Lọc: <b>" + _esc(_unitLabel(_filterUnit)) + "</b> ✕";
-      chip.onclick = function () { _filterUnit = ""; _renderTable(); };
+      chip.title = "Bỏ lọc, xem tất cả";
+      chip.innerHTML = "Lọc: <b>" + mo.join(" · ") + "</b> ✕";
+      chip.onclick = function () { _filterUnit = ""; _filterTT = ""; _renderTable(); };
       bar.appendChild(chip);
     }
 
@@ -598,7 +639,7 @@
       "<th class='col-nam'>Năm vận hành</th>" +
       "<th class='col-sodangky'>Số đăng ký</th>" +
       "<th class='col-kd'>Ngày KĐ<br>gần nhất</th>" +
-      "<th class='col-kd'>Ngày KĐ<br>tiếp theo</th>" +
+      "<th class='col-kdtt'>" + _thFilterTT() + "</th>" +
       "<th class='col-ghichu'>Ghi chú</th>" +
       (_editMode ? "<th class='col-action'></th>" : "") +
       "</tr>";
@@ -610,6 +651,11 @@
       selUnit.onchange = function () { _filterUnit = this.value; _renderTable(); };
       selUnit.onclick  = function (e) { e.stopPropagation(); };
     }
+    var selTT = thead.querySelector("#bal-filter-tt");
+    if (selTT) {
+      selTT.onchange = function () { _filterTT = this.value; _renderTable(); };
+      selTT.onclick  = function (e) { e.stopPropagation(); };
+    }
 
     var tbody = document.createElement("tbody");
     tbody.id = "bal-tbody";
@@ -619,7 +665,9 @@
       var emptyTd = document.createElement("td");
       emptyTd.colSpan = _editMode ? 12 : 10;
       emptyTd.className = "bal-empty";
-      emptyTd.textContent = "Chưa có thiết bị nào. " + (_editMode ? "Bấm '+ Thêm thiết bị' để thêm." : "");
+      emptyTd.textContent = (_filterUnit || _filterTT)
+        ? "Không có thiết bị nào khớp bộ lọc."
+        : "Chưa có thiết bị nào. " + (_editMode ? "Bấm '+ Thêm thiết bị' để thêm." : "");
       emptyRow.appendChild(emptyTd);
       tbody.appendChild(emptyRow);
     } else {
@@ -684,7 +732,7 @@
 
     /* Ngày KĐ tiếp theo + badge trạng thái */
     var nextCell = document.createElement("td");
-    nextCell.className = "col-kd";
+    nextCell.className = "col-kdtt";
     if (nextDate) {
       nextCell.innerHTML = HSEDate.fmt(nextDate) +
         (rec.ngay_kd_tu_chinh ? ' <span title="Ngày do người dùng tự nhập, không phải ngày hệ thống tự tính" style="font-size:11px;color:#6b7c93">✎</span>' : "");
@@ -1071,13 +1119,14 @@
       ".col-thongso{width:12%;white-space:nowrap;}",
       ".col-nam{width:7%;text-align:center;}",
       ".col-sodangky{width:10%;}",
-      ".col-kd{width:10.5%;text-align:center;}",
+      ".col-kd{width:9.5%;text-align:center;}",
+      ".col-kdtt{width:11.5%;text-align:center;}",
       ".col-ghichu{width:7%;}",
       ".col-action{width:7%;white-space:nowrap;}",
       /* Chỉ cột Tên thiết bị căn trái, còn lại căn giữa */
       ".bal-table th.col-ten,.bal-table td.col-ten{text-align:left;}",
       ".bal-table td.col-thongso{font-variant-numeric:tabular-nums;}",
-      ".bal-table td.col-kd{font-variant-numeric:tabular-nums;}",
+      ".bal-table td.col-kd,.bal-table td.col-kdtt{font-variant-numeric:tabular-nums;}",
       /* Dải màu cảnh báo hạn kiểm định ở đầu hàng */
       ".bal-table tbody tr>td:first-child{border-left:3px solid transparent;}",
       ".bal-row-qua-han>td:first-child{border-left-color:#c0392b;}",
