@@ -367,61 +367,12 @@
     _container.innerHTML = "";
     _container.appendChild(_buildStyles());
 
-    /* Toolbar */
-    var toolbar = document.createElement("div");
-    toolbar.className = "bal-toolbar";
-
-    /* Nút Làm mới */
-    var btnRefresh = document.createElement("button");
-    btnRefresh.className = "bal-btn bal-btn-outline";
-    btnRefresh.innerHTML = "🔄 Làm mới";
-    btnRefresh.title = "Tải lại dữ liệu từ Google Sheets";
-    btnRefresh.onclick = function () {
-      btnRefresh.disabled = true;
-      btnRefresh.innerHTML = "⏳ Đang tải...";
-      _pullFromSheets(function () {
-        btnRefresh.disabled = false;
-        btnRefresh.innerHTML = "🔄 Làm mới";
-        _renderTable();
-      });
-    };
-    toolbar.appendChild(btnRefresh);
-
-    if (_canEdit) {
-      /* Nút Chế độ điều chỉnh */
-      var btnEdit = document.createElement("button");
-      btnEdit.id = "bal-toggle-edit";
-      btnEdit.className = _editMode ? "bal-btn bal-btn-primary" : "bal-btn bal-btn-outline";
-      btnEdit.innerHTML = _editMode ? "✅ Xong" : "✏️ Chế độ điều chỉnh";
-      btnEdit.onclick = function () {
-        _editMode = !_editMode;
-        _renderTable();
-        var b = document.getElementById("bal-toggle-edit");
-        if (b) {
-          b.className  = _editMode ? "bal-btn bal-btn-primary" : "bal-btn bal-btn-outline";
-          b.innerHTML  = _editMode ? "✅ Xong" : "✏️ Chế độ điều chỉnh";
-        }
-      };
-      toolbar.appendChild(btnEdit);
-    }
-
-    /* Bộ lọc theo đơn vị — thay cho việc trước đây chia thành nhiều bảng */
-    var sel = document.createElement("select");
-    sel.id = "bal-filter-unit";
-    sel.className = "bal-input";
-    sel.style.cssText = "width:auto;min-width:180px;padding:7px 10px;";
-    sel.onchange = function () { _filterUnit = this.value; _renderTable(); };
-    toolbar.appendChild(sel);
-
-    /* Vùng các section (biểu đồ + bảng) */
+    /* Vùng các section (biểu đồ + bảng). Các nút thao tác và bộ lọc đơn vị
+       nằm NGAY TRONG khối bảng: nút dưới tiêu đề, bộ lọc ở tiêu đề cột
+       "Đơn vị quản lý" — xem _buildTable(). */
     var sectionsWrap = document.createElement("div");
     sectionsWrap.id = "bal-sections";
     _container.appendChild(sectionsWrap);
-
-    /* Thanh công cụ nằm DƯỚI bảng theo yêu cầu: Làm mới · Chế độ điều chỉnh ·
-       Bộ lọc đơn vị. Hàng chú thích trạng thái đã bỏ — badge ngay trong cột
-       "Ngày KĐ tiếp theo" đã ghi rõ Còn hạn / Sắp hạn / Quá hạn. */
-    _container.appendChild(toolbar);
 
     _renderTable();
   }
@@ -431,17 +382,8 @@
     if (!wrap) return;
     var units = _units();
 
-    /* Đổ lại bộ lọc đơn vị (giữ lựa chọn hiện tại nếu còn hợp lệ) */
-    var sel = document.getElementById("bal-filter-unit");
-    if (sel) {
-      if (!units.some(function (u) { return u.key === _filterUnit; })) _filterUnit = "";
-      sel.innerHTML = '<option value="">— Tất cả đơn vị —</option>' +
-        units.map(function (u) {
-          return '<option value="' + _esc(u.key) + '"' + (u.key === _filterUnit ? " selected" : "") + '>' +
-                 _esc(u.label) + "</option>";
-        }).join("");
-      sel.style.display = units.length ? "" : "none";
-    }
+    /* Bộ lọc đang chọn không còn trong danh mục → quay về "Tất cả đơn vị" */
+    if (_filterUnit && !units.some(function (u) { return u.key === _filterUnit; })) _filterUnit = "";
 
     wrap.innerHTML = "";
     wrap.appendChild(_buildCharts());
@@ -455,6 +397,23 @@
     wrap.appendChild(_buildTable(_rowsSorted(_filterUnit)));
   }
 
+  /* Tiêu đề cột "Đơn vị quản lý" kèm droplist lọc ngay tại chỗ.
+     Lọc đặt trong tiêu đề cột nào thì tác động lên đúng cột đó — người dùng
+     không phải đi tìm bộ lọc ở nơi khác. */
+  function _thFilterDonVi() {
+    var units = _units();
+    var opts = '<option value="">Tất cả đơn vị</option>' +
+      units.map(function (u) {
+        return '<option value="' + _esc(u.key) + '"' + (u.key === _filterUnit ? " selected" : "") + '>' +
+               _esc(u.label) + "</option>";
+      }).join("");
+    return '<div class="bal-th-filter">' +
+             '<span class="bal-th-label">Đơn vị quản lý</span>' +
+             '<select id="bal-filter-unit" class="bal-th-select' + (_filterUnit ? " is-on" : "") +
+               '" title="Lọc theo đơn vị quản lý" aria-label="Lọc theo đơn vị quản lý">' + opts + '</select>' +
+           "</div>";
+  }
+
   /* ── BUILD BẢNG DUY NHẤT ── */
   function _buildTable(rows) {
     var box = document.createElement("div");
@@ -464,18 +423,53 @@
     var hdr = document.createElement("div");
     hdr.className = "bal-section-hdr";
     hdr.innerHTML =
-      '<span class="bal-section-title"><svg class="lic-emoji" width="1.05em" height="1.05em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex-shrink:0" aria-hidden="true"><path d="M9.671 4.136a2.34 2.34 0 0 1 4.659 0 2.34 2.34 0 0 0 3.319 1.915 2.34 2.34 0 0 1 2.33 4.033 2.34 2.34 0 0 0 0 3.831 2.34 2.34 0 0 1-2.33 4.033 2.34 2.34 0 0 0-3.319 1.915 2.34 2.34 0 0 1-4.659 0 2.34 2.34 0 0 0-3.32-1.915 2.34 2.34 0 0 1-2.33-4.033 2.34 2.34 0 0 0 0-3.831A2.34 2.34 0 0 1 6.35 6.051a2.34 2.34 0 0 0 3.319-1.915"/><circle cx="12" cy="12" r="3"/></svg> Danh sách bình áp lực' +
-        (_filterUnit ? " — " + _esc(_unitLabel(_filterUnit)) : "") + "</span>" +
+      '<span class="bal-section-title"><svg class="lic-emoji" width="1.05em" height="1.05em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex-shrink:0" aria-hidden="true"><path d="M9.671 4.136a2.34 2.34 0 0 1 4.659 0 2.34 2.34 0 0 0 3.319 1.915 2.34 2.34 0 0 1 2.33 4.033 2.34 2.34 0 0 0 0 3.831 2.34 2.34 0 0 1-2.33 4.033 2.34 2.34 0 0 0-3.319 1.915 2.34 2.34 0 0 1-4.659 0 2.34 2.34 0 0 0-3.32-1.915 2.34 2.34 0 0 1-2.33-4.033 2.34 2.34 0 0 0 0-3.831A2.34 2.34 0 0 1 6.35 6.051a2.34 2.34 0 0 0 3.319-1.915"/><circle cx="12" cy="12" r="3"/></svg> Danh sách bình áp lực</span>' +
       '<span class="bal-section-count">' + rows.length + " thiết bị</span>";
 
-    if (_canEdit && _editMode) {
-      var btnAdd = document.createElement("button");
-      btnAdd.className = "bal-btn bal-btn-sm bal-btn-primary";
-      btnAdd.innerHTML = "+ Thêm thiết bị";
-      btnAdd.onclick = function () { _openModal(null); };
-      hdr.appendChild(btnAdd);
-    }
     box.appendChild(hdr);
+
+    /* ── Thanh thao tác: nằm ngay dưới tiêu đề, trên bảng ── */
+    var bar = document.createElement("div");
+    bar.className = "bal-bar";
+
+    var btnRefresh = document.createElement("button");
+    btnRefresh.className = "bal-btn bal-btn-sm bal-btn-outline";
+    btnRefresh.innerHTML = "🔄 Làm mới";
+    btnRefresh.title = "Tải lại dữ liệu từ máy chủ";
+    btnRefresh.onclick = function () {
+      btnRefresh.disabled = true;
+      btnRefresh.innerHTML = "⏳ Đang tải...";
+      _pullFromSheets(function () { _renderTable(); });
+    };
+    bar.appendChild(btnRefresh);
+
+    if (_canEdit) {
+      var btnEdit = document.createElement("button");
+      btnEdit.className = "bal-btn bal-btn-sm " + (_editMode ? "bal-btn-primary" : "bal-btn-outline");
+      btnEdit.innerHTML = _editMode ? "✅ Xong" : "✏️ Chế độ điều chỉnh";
+      btnEdit.onclick = function () { _editMode = !_editMode; _renderTable(); };
+      bar.appendChild(btnEdit);
+
+      if (_editMode) {
+        var btnAdd = document.createElement("button");
+        btnAdd.className = "bal-btn bal-btn-sm bal-btn-primary";
+        btnAdd.innerHTML = "+ Thêm thiết bị";
+        btnAdd.onclick = function () { _openModal(null); };
+        bar.appendChild(btnAdd);
+      }
+    }
+
+    /* Đang lọc → hiện chip cho biết, bấm để bỏ lọc */
+    if (_filterUnit) {
+      var chip = document.createElement("button");
+      chip.className = "bal-chip";
+      chip.title = "Bỏ lọc, xem tất cả đơn vị";
+      chip.innerHTML = "Lọc: <b>" + _esc(_unitLabel(_filterUnit)) + "</b> ✕";
+      chip.onclick = function () { _filterUnit = ""; _renderTable(); };
+      bar.appendChild(chip);
+    }
+
+    box.appendChild(bar);
 
     /* Bảng */
     var tableWrap = document.createElement("div");
@@ -490,7 +484,7 @@
       (_editMode ? "<th class='col-drag'></th>" : "") +
       "<th class='col-no'>Nº</th>" +
       "<th class='col-ten'>Tên thiết bị</th>" +
-      "<th class='col-donvi'>Đơn vị quản lý</th>" +
+      "<th class='col-donvi'>" + _thFilterDonVi() + "</th>" +
       "<th class='col-vitri'>Vị trí lắp đặt</th>" +
       "<th class='col-thongso'>Thông số chính</th>" +
       "<th class='col-nam'>Năm vận hành</th>" +
@@ -501,6 +495,13 @@
       (_editMode ? "<th class='col-action'></th>" : "") +
       "</tr>";
     table.appendChild(thead);
+
+    /* Wire droplist lọc đơn vị đặt trong tiêu đề cột */
+    var selUnit = thead.querySelector("#bal-filter-unit");
+    if (selUnit) {
+      selUnit.onchange = function () { _filterUnit = this.value; _renderTable(); };
+      selUnit.onclick  = function (e) { e.stopPropagation(); };
+    }
 
     var tbody = document.createElement("tbody");
     tbody.id = "bal-tbody";
@@ -921,7 +922,16 @@
     var style = document.createElement("style");
     style.textContent = [
       /* Layout */
-      ".bal-toolbar{display:flex;gap:10px;align-items:center;margin:2px 0 8px;flex-wrap:wrap;}",
+      ".bal-bar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:10px 18px;background:#f6f8fc;border-bottom:1px solid #e6ebf5;}",
+      ".bal-chip{margin-left:auto;border:1px solid #cdd6e8;background:#fff;color:#41577a;border-radius:14px;padding:4px 11px;font-size:12px;font-weight:600;cursor:pointer;}",
+      ".bal-chip:hover{background:#eef3fb;border-color:#0060B6;color:#003087;}",
+      /* Bộ lọc ngay tại tiêu đề cột Đơn vị quản lý */
+      ".bal-th-filter{display:flex;flex-direction:column;gap:4px;}",
+      ".bal-th-label{display:block;}",
+      ".bal-th-select{width:100%;max-width:100%;box-sizing:border-box;padding:3px 4px;font-size:11.5px;font-weight:600;font-family:inherit;text-transform:none;letter-spacing:0;color:#334155;background:#fff;border:1px solid #cdd6e8;border-radius:5px;cursor:pointer;outline:none;}",
+      ".bal-th-select:hover{border-color:#0060B6;}",
+      ".bal-th-select:focus{border-color:#0060B6;box-shadow:0 0 0 2px rgba(0,96,182,.15);}",
+      ".bal-th-select.is-on{border-color:#0060B6;background:#eef3fb;color:#003087;}",
       ".bal-section{background:#fff;border-radius:10px;box-shadow:0 2px 8px rgba(0,0,0,0.07);margin-bottom:28px;overflow:hidden;}",
       ".bal-section-hdr{position:relative;display:flex;align-items:center;justify-content:center;gap:10px;padding:16px 150px;min-height:56px;background:linear-gradient(180deg,#e6edf8 0%,#dde6f3 100%);border-bottom:2px solid #c3d0e6;}",
       ".bal-section-title{display:inline-flex;align-items:center;gap:9px;justify-content:center;font-weight:800;color:#003087;font-size:19px;line-height:1.25;text-transform:uppercase;letter-spacing:.7px;text-align:center;}",
@@ -932,7 +942,7 @@
       /* Table */
       ".bal-table-wrap{max-height:72vh;overflow:auto;-webkit-overflow-scrolling:touch;}",
       ".bal-table{width:100%;min-width:1040px;table-layout:fixed;border-collapse:collapse;font-size:13px;}",
-      ".bal-table th{position:sticky;top:0;z-index:2;background:#dde6f3;color:#003087;font-weight:700;font-size:12.5px;letter-spacing:.2px;padding:10px 10px;text-align:left;white-space:normal;line-height:1.3;border-bottom:2px solid #b9c8e2;box-shadow:inset 0 -2px 0 #b9c8e2;overflow:hidden;}",
+      ".bal-table th{position:sticky;top:0;z-index:2;background:#dde6f3;color:#003087;font-weight:700;font-size:12.5px;letter-spacing:.2px;padding:10px 10px;text-align:left;vertical-align:top;white-space:normal;line-height:1.3;border-bottom:2px solid #b9c8e2;box-shadow:inset 0 -2px 0 #b9c8e2;overflow:hidden;}",
       ".bal-table td{padding:10px;border-bottom:1px solid #eef0f4;vertical-align:middle;overflow:hidden;word-break:break-word;overflow-wrap:anywhere;font-weight:600;color:#1f2b3d;line-height:1.45;}",
       ".bal-table tbody tr:nth-child(even) td{background:#fafbfe;}",
       ".bal-table tbody tr:hover td{background:#eef3fb;}",
@@ -944,13 +954,13 @@
       ".col-no{width:3.5%;text-align:center;color:#6b7c93;font-weight:700;}",
       ".col-drag{width:3%;text-align:center;cursor:grab;color:#aaa;font-size:16px;user-select:none;}",
       ".col-ten{width:17%;font-weight:700;color:#0f172a;}",
-      ".col-donvi{width:11%;color:#334155;white-space:normal;}",
-      ".col-vitri{width:10.5%;}",
+      ".col-donvi{width:13%;color:#334155;white-space:normal;}",
+      ".col-vitri{width:9.5%;}",
       ".col-thongso{width:12%;white-space:nowrap;}",
       ".col-nam{width:7%;text-align:center;}",
       ".col-sodangky{width:10%;}",
       ".col-kd{width:10.5%;text-align:center;}",
-      ".col-ghichu{width:8%;}",
+      ".col-ghichu{width:7%;}",
       ".col-action{width:7%;text-align:right;white-space:nowrap;}",
       ".bal-table td.col-thongso{font-variant-numeric:tabular-nums;}",
       ".bal-table td.col-kd{font-variant-numeric:tabular-nums;}",
