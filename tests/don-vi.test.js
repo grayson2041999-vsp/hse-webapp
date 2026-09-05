@@ -325,38 +325,58 @@ console.log('\n── Không còn danh sách viết cứng ở Cấp phát BHLĐ
   check('app.js lấy đơn vị cấp phát từ danh mục', /HSE_UNITS\.list\("cap-phat-bhld"/.test(appjs));
 }
 
-console.log('\n── Bình áp lực: section lấy từ danh mục ──');
+console.log('\n── Bình áp lực: một bảng, đơn vị là một cột ──');
 {
   const src = fs.readFileSync(path.join(ROOT, 'assets', 'binh-ap-luc.js'), 'utf8');
-  const i = src.indexOf('function _sections()');
+  const i = src.indexOf('function _units()');
   const j = src.indexOf('/* ── STATE ──');
-  if (i < 0 || j < 0) throw new Error('Không tìm thấy _sections() trong binh-ap-luc.js');
+  if (i < 0 || j < 0) throw new Error('Không tìm thấy _units() trong binh-ap-luc.js');
   let store = [];
   const BAL = new Function('window', '_load',
-    src.slice(i, j) + '; return _sections;')(global, () => store);
+    src.slice(i, j) + '; return { _units, _unitLabel, _unitRank, _rowsSorted };')(global, () => store);
 
-  check('2 section mặc định', BAL().length === 2, BAL().map(o => o.key));
-  check('key section = MÃ đơn vị (khớp dữ liệu cũ, không phải chuyển đổi)',
-    BAL().map(o => o.key).join(',') === 'cang_bien,xuong_sua_chua', BAL().map(o => o.key));
+  check('2 đơn vị mặc định trong droplist', BAL._units().length === 2, BAL._units().map(o => o.key));
+  check('key = MÃ đơn vị (khớp dữ liệu cũ, không phải chuyển đổi)',
+    BAL._units().map(o => o.key).join(',') === 'cang_bien,xuong_sua_chua', BAL._units().map(o => o.key));
   check('nhãn lấy từ tên trong danh mục',
-    BAL()[0].label === 'Cảng biển' && BAL()[1].label === 'Xưởng sửa chữa');
+    BAL._unitLabel('cang_bien') === 'Cảng biển' && BAL._unitLabel('xuong_sua_chua') === 'Xưởng sửa chữa');
 
   check('đổi tên đơn vị chỉ đổi NHÃN, key giữ nguyên', (() => {
     const u = JSON.parse(JSON.stringify(U.byMa('cang_bien')));
     u.ten_cu = ['Cảng biển']; u.ten = 'Cảng biển VSP'; U.saveUnit(u);
-    const r = BAL()[0];
+    const r = BAL._units()[0];
     u.ten = 'Cảng biển'; u.ten_cu = []; U.saveUnit(u);
     return r.key === 'cang_bien' && r.label === 'Cảng biển VSP';
   })());
 
-  /* Thiết bị thuộc đơn vị đã bị bỏ tích vẫn phải hiện ra */
+  /* Thiết bị thuộc đơn vị đã bỏ tích vẫn phải hiện ra và sửa lại được */
   store = [{ id: 'x1', section: 'can_cu_kho_gn' }];
-  const s2 = BAL();
-  check('giữ section chỉ còn trong dữ liệu', s2.length === 3 && s2[2].key === 'can_cu_kho_gn', s2.map(o => o.key));
-  check('đánh dấu rõ section không còn dùng', /không còn dùng/.test(s2[2].label));
+  const us = BAL._units();
+  check('giữ đơn vị chỉ còn trong dữ liệu', us.length === 3 && us[2].key === 'can_cu_kho_gn', us.map(o => o.key));
+  check('đánh dấu rõ đơn vị không còn dùng', /không còn dùng/.test(us[2].label));
+
+  /* Sắp xếp: gom theo đơn vị rồi theo thứ tự kéo–thả trong đơn vị */
+  store = [
+    { id: 'a', section: 'xuong_sua_chua', order: 1 },
+    { id: 'b', section: 'cang_bien',      order: 1 },
+    { id: 'c', section: 'cang_bien',      order: 0 },
+    { id: 'd', section: 'can_cu_kho_gn',  order: 0 }
+  ];
+  check('gom theo đơn vị rồi theo thứ tự trong đơn vị',
+    BAL._rowsSorted().map(r => r.id).join('') === 'cbad', BAL._rowsSorted().map(r => r.id).join(''));
+  check('đơn vị không còn trong danh mục xếp cuối', BAL._unitRank('can_cu_kho_gn') === 2);
+  check('đơn vị lạ hoàn toàn xếp cuối cùng', BAL._unitRank('khong_co') === 999);
+  check('lọc theo một đơn vị', BAL._rowsSorted('cang_bien').map(r => r.id).join('') === 'cb');
   store = [];
 
-  check('binh-ap-luc.js không còn hằng SECTIONS', !/var\s+SECTIONS\s*=/.test(src));
+  check('không còn nhiều bảng theo section', !/function\s+_buildSection\s*\(/.test(src));
+  check('không còn hàm _renderSections', !/function\s+_renderSections\s*\(/.test(src));
+  check('có cột "Đơn vị quản lý" trong bảng', /Đơn vị quản lý<\/th>/.test(src));
+  check('có droplist đơn vị trong form thêm\/sửa', /id="bal-inp-donvi"/.test(src));
+  check('có bộ lọc theo đơn vị', /id = "bal-filter-unit"/.test(src));
+  check('kéo–thả vẫn giới hạn trong cùng đơn vị',
+    /_dragging\.dataset\.sec !== tr\.dataset\.sec/.test(src));
+
   const bctd = fs.readFileSync(path.join(ROOT, 'bao-chay-tu-dong.html'), 'utf8');
   check('chữ ký Word không còn tên phòng viết cứng', !/run\("Phòng Kỹ thuật/.test(bctd));
   check('chữ ký Word tra theo mã ổn định', /PHONG_KY_TAT_MA\s*=\s*"p_ky_thuat_vat_tu"/.test(bctd));

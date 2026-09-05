@@ -11,34 +11,57 @@
   var LS_KEY  = "binh_ap_luc";
   var SHEET   = "binh_ap_luc";
 
-  /* ── SECTION = ĐƠN VỊ, lấy từ DANH MỤC DÙNG CHUNG (assets/don-vi.js) ──
-     Trước đây 2 section viết cứng ngay tại đây. Nay Admin tích ô cột
-     "Bình áp lực" ở Quản trị hệ thống → Danh mục đơn vị là trang tự có thêm
-     section, không phải sửa code.
+  /* ── ĐƠN VỊ QUẢN LÝ, lấy từ DANH MỤC DÙNG CHUNG (assets/don-vi.js) ──
+     Trang này trước đây chia thành các bảng riêng theo đơn vị. Nay chỉ MỘT
+     bảng, đơn vị là một CỘT và chọn từ droplist. Danh sách droplist do Admin
+     quản lý ở Quản trị hệ thống → Danh mục đơn vị (cột "Bình áp lực").
 
-     Bản ghi lưu `section` = MÃ đơn vị ("cang_bien", "xuong_sua_chua") — đúng
-     bằng mã trong danh mục, nên không phải chuyển đổi dữ liệu cũ. Đổi tên đơn
-     vị chỉ đổi nhãn hiển thị, khoá giữ nguyên. */
-  function _sections() {
+     Bản ghi vẫn lưu `section` = MÃ đơn vị ("cang_bien", "xuong_sua_chua"),
+     đúng bằng mã trong danh mục → dữ liệu cũ dùng nguyên, không phải chuyển
+     đổi. Đổi tên đơn vị chỉ đổi nhãn hiển thị, khoá giữ nguyên. */
+  function _units() {
     var out = (window.HSE_UNITS ? HSE_UNITS.list("binh-ap-luc", { excludeGop: true }) : [])
       .map(function (ten) { return { key: HSE_UNITS.maOf(ten), label: ten }; });
-    /* Giữ lại section chỉ còn trong dữ liệu (đơn vị đã bỏ tích / đã ngừng)
-       để thiết bị đã nhập không biến mất khỏi trang. */
+    /* Giữ lại đơn vị chỉ còn trong dữ liệu (đã bỏ tích / đã ngừng) để thiết bị
+       đã nhập không biến mất và sửa lại được. */
     var co = {}; out.forEach(function (o) { co[o.key] = true; });
     _load().forEach(function (r) {
       var k = r && r.section;
       if (!k || co[k]) return;
       co[k] = true;
       var u = window.HSE_UNITS ? HSE_UNITS.byMa(k) : null;
-      out.push({ key: k, label: (u ? u.ten : k) + " (không còn dùng)" });
+      out.push({ key: k, label: (u ? u.ten : k) + " (không còn dùng)", cu: true });
     });
     return out;
+  }
+  function _unitLabel(key) {
+    if (!key) return "—";
+    var us = _units();
+    for (var i = 0; i < us.length; i++) if (us[i].key === key) return us[i].label;
+    return key;
+  }
+  /* Thứ tự đơn vị theo danh mục — để thiết bị cùng đơn vị nằm liền nhau */
+  function _unitRank(key) {
+    var us = _units();
+    for (var i = 0; i < us.length; i++) if (us[i].key === key) return i;
+    return 999;
+  }
+  /* Toàn bộ thiết bị, sắp theo đơn vị rồi theo thứ tự kéo–thả trong đơn vị */
+  function _rowsSorted(loc) {
+    return _load()
+      .filter(function (r) { return !loc || r.section === loc; })
+      .sort(function (x, y) {
+        var d = _unitRank(x.section) - _unitRank(y.section);
+        if (d !== 0) return d;
+        return (x.order || 0) - (y.order || 0);
+      });
   }
 
   /* ── STATE ── */
   var _container = null;
   var _canEdit   = false;
   var _editMode  = false;   // chế độ điều chỉnh (reorder + sửa nhanh)
+  var _filterUnit = "";     // mã đơn vị đang lọc ("" = tất cả)
   var _dragging  = null;    // element đang kéo
 
   /* ── LOCAL STORAGE ── */
@@ -134,7 +157,7 @@
   /* Danh mục tải xong từ Supabase (hoặc Admin vừa sửa) → vẽ lại các section */
   if (window.HSE_UNITS) {
     HSE_UNITS.onChange(function () {
-      if (document.getElementById("bal-sections")) _renderSections();
+      if (document.getElementById("bal-sections")) _renderTable();
     });
   }
 
@@ -169,7 +192,7 @@
       _pullFromSheets(function () {
         btnRefresh.disabled = false;
         btnRefresh.innerHTML = "🔄 Làm mới";
-        _renderSections();
+        _renderTable();
       });
     };
     toolbar.appendChild(btnRefresh);
@@ -182,7 +205,7 @@
       btnEdit.innerHTML = _editMode ? "✅ Xong" : "✏️ Chế độ điều chỉnh";
       btnEdit.onclick = function () {
         _editMode = !_editMode;
-        _renderSections();
+        _renderTable();
         var b = document.getElementById("bal-toggle-edit");
         if (b) {
           b.className  = _editMode ? "bal-btn bal-btn-primary" : "bal-btn bal-btn-outline";
@@ -191,6 +214,14 @@
       };
       toolbar.appendChild(btnEdit);
     }
+
+    /* Bộ lọc theo đơn vị — thay cho việc trước đây chia thành nhiều bảng */
+    var sel = document.createElement("select");
+    sel.id = "bal-filter-unit";
+    sel.className = "bal-input";
+    sel.style.cssText = "width:auto;min-width:180px;padding:7px 10px;";
+    sel.onchange = function () { _filterUnit = this.value; _renderTable(); };
+    toolbar.appendChild(sel);
 
     _container.appendChild(toolbar);
 
@@ -208,43 +239,55 @@
     sectionsWrap.id = "bal-sections";
     _container.appendChild(sectionsWrap);
 
-    _renderSections();
+    _renderTable();
   }
 
-  function _renderSections() {
+  function _renderTable() {
     var wrap = document.getElementById("bal-sections");
     if (!wrap) return;
+    var units = _units();
+
+    /* Đổ lại bộ lọc đơn vị (giữ lựa chọn hiện tại nếu còn hợp lệ) */
+    var sel = document.getElementById("bal-filter-unit");
+    if (sel) {
+      if (!units.some(function (u) { return u.key === _filterUnit; })) _filterUnit = "";
+      sel.innerHTML = '<option value="">— Tất cả đơn vị —</option>' +
+        units.map(function (u) {
+          return '<option value="' + _esc(u.key) + '"' + (u.key === _filterUnit ? " selected" : "") + '>' +
+                 _esc(u.label) + "</option>";
+        }).join("");
+      sel.style.display = units.length ? "" : "none";
+    }
+
     wrap.innerHTML = "";
-    var secs = _sections();
-    if (!secs.length) {
-      wrap.innerHTML = '<div style="padding:20px;text-align:center;color:#6b7280;font-size:13px">'+
-        'Chưa có đơn vị nào được gán cho mục Bình áp lực.<br>'+
-        'Admin vào <b>Quản trị hệ thống → Danh mục đơn vị</b>, tích ô cột <b>Bình áp lực</b>.</div>';
+    if (!units.length) {
+      wrap.innerHTML = '<div style="padding:20px;text-align:center;color:#6b7280;font-size:13px">' +
+        "Chưa có đơn vị nào được gán cho mục Bình áp lực.<br>" +
+        "Admin vào <b>Quản trị hệ thống → Danh mục đơn vị</b>, tích ô cột <b>Bình áp lực</b>." +
+        "</div>";
       return;
     }
-    secs.forEach(function (sec) {
-      wrap.appendChild(_buildSection(sec));
-    });
+    wrap.appendChild(_buildTable(_rowsSorted(_filterUnit)));
   }
 
-  /* ── BUILD 1 SECTION ── */
-  function _buildSection(sec) {
-    var rows = _bySection(sec.key);
-
+  /* ── BUILD BẢNG DUY NHẤT ── */
+  function _buildTable(rows) {
     var box = document.createElement("div");
     box.className = "bal-section";
 
-    /* Section header */
+    /* Header */
     var hdr = document.createElement("div");
     hdr.className = "bal-section-hdr";
-    hdr.innerHTML = '<span class="bal-section-title"><svg class="lic-emoji" width="1.05em" height="1.05em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex-shrink:0" aria-hidden="true"><path d="M9.671 4.136a2.34 2.34 0 0 1 4.659 0 2.34 2.34 0 0 0 3.319 1.915 2.34 2.34 0 0 1 2.33 4.033 2.34 2.34 0 0 0 0 3.831 2.34 2.34 0 0 1-2.33 4.033 2.34 2.34 0 0 0-3.319 1.915 2.34 2.34 0 0 1-4.659 0 2.34 2.34 0 0 0-3.32-1.915 2.34 2.34 0 0 1-2.33-4.033 2.34 2.34 0 0 0 0-3.831A2.34 2.34 0 0 1 6.35 6.051a2.34 2.34 0 0 0 3.319-1.915"/><circle cx="12" cy="12" r="3"/></svg> ' + sec.label + '</span>' +
-                    '<span class="bal-section-count">' + rows.length + ' thiết bị</span>';
+    hdr.innerHTML =
+      '<span class="bal-section-title"><svg class="lic-emoji" width="1.05em" height="1.05em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex-shrink:0" aria-hidden="true"><path d="M9.671 4.136a2.34 2.34 0 0 1 4.659 0 2.34 2.34 0 0 0 3.319 1.915 2.34 2.34 0 0 1 2.33 4.033 2.34 2.34 0 0 0 0 3.831 2.34 2.34 0 0 1-2.33 4.033 2.34 2.34 0 0 0-3.319 1.915 2.34 2.34 0 0 1-4.659 0 2.34 2.34 0 0 0-3.32-1.915 2.34 2.34 0 0 1-2.33-4.033 2.34 2.34 0 0 0 0-3.831A2.34 2.34 0 0 1 6.35 6.051a2.34 2.34 0 0 0 3.319-1.915"/><circle cx="12" cy="12" r="3"/></svg> Danh sách bình áp lực' +
+        (_filterUnit ? " — " + _esc(_unitLabel(_filterUnit)) : "") + "</span>" +
+      '<span class="bal-section-count">' + rows.length + " thiết bị</span>";
 
     if (_canEdit && _editMode) {
       var btnAdd = document.createElement("button");
       btnAdd.className = "bal-btn bal-btn-sm bal-btn-primary";
       btnAdd.innerHTML = "+ Thêm thiết bị";
-      btnAdd.onclick = function () { _openModal(null, sec.key); };
+      btnAdd.onclick = function () { _openModal(null); };
       hdr.appendChild(btnAdd);
     }
     box.appendChild(hdr);
@@ -256,13 +299,13 @@
     var table = document.createElement("table");
     table.className = "bal-table";
 
-    /* Header row */
     var thead = document.createElement("thead");
     thead.innerHTML =
       "<tr>" +
       (_editMode ? "<th class='col-drag'></th>" : "") +
       "<th class='col-no'>Nº</th>" +
       "<th class='col-ten'>Tên thiết bị</th>" +
+      "<th class='col-donvi'>Đơn vị quản lý</th>" +
       "<th class='col-vitri'>Vị trí lắp đặt</th>" +
       "<th class='col-thongso'>Thông số chính</th>" +
       "<th class='col-nam'>Năm vận hành</th>" +
@@ -275,19 +318,19 @@
     table.appendChild(thead);
 
     var tbody = document.createElement("tbody");
-    tbody.id = "bal-tbody-" + sec.key;
+    tbody.id = "bal-tbody";
 
-    if (rows.length === 0) {
+    if (!rows.length) {
       var emptyRow = document.createElement("tr");
-      var emptyTd  = document.createElement("td");
-      emptyTd.colSpan = _editMode ? 11 : 9;
+      var emptyTd = document.createElement("td");
+      emptyTd.colSpan = _editMode ? 12 : 10;
       emptyTd.className = "bal-empty";
       emptyTd.textContent = "Chưa có thiết bị nào. " + (_editMode ? "Bấm '+ Thêm thiết bị' để thêm." : "");
       emptyRow.appendChild(emptyTd);
       tbody.appendChild(emptyRow);
     } else {
       rows.forEach(function (row, idx) {
-        tbody.appendChild(_buildRow(row, idx + 1, sec.key));
+        tbody.appendChild(_buildRow(row, idx + 1));
       });
     }
 
@@ -298,10 +341,10 @@
   }
 
   /* ── BUILD 1 ROW ── */
-  function _buildRow(rec, no, secKey) {
+  function _buildRow(rec, no) {
     var tr = document.createElement("tr");
     tr.dataset.id  = rec.id;
-    tr.dataset.sec = secKey;
+    tr.dataset.sec = rec.section || "";
     if (_editMode) tr.className = "bal-row-draggable";
 
     var nextDate = _calcNextDate(rec.ngay_kd_gan_nhat, rec.nam_van_hanh, rec.moi_chat_an_mon, rec.moi_chat_chay_no);
@@ -312,7 +355,7 @@
       var tdDrag = document.createElement("td");
       tdDrag.className = "col-drag";
       tdDrag.innerHTML = "⠿";
-      tdDrag.title = "Kéo để sắp xếp";
+      tdDrag.title = "Kéo để sắp xếp (trong cùng một đơn vị)";
       tr.appendChild(tdDrag);
       _wireDrag(tr);
     }
@@ -326,6 +369,10 @@
 
     tr.appendChild(td(no, "col-no"));
     tr.appendChild(td(_esc(rec.ten_thiet_bi || ""), "col-ten"));
+    var nhan = _unitLabel(rec.section), ghi = "";
+    var _i = nhan.indexOf(" (không còn dùng)");
+    if (_i >= 0) { ghi = '<br><span style="font-size:11px;color:#9a6700">không còn dùng</span>'; nhan = nhan.slice(0, _i); }
+    tr.appendChild(td(_esc(nhan) + ghi, "col-donvi"));
     tr.appendChild(td(_esc(rec.vi_tri || ""), "col-vitri"));
 
     /* Thông số chính */
@@ -370,12 +417,12 @@
       var btnSua = document.createElement("button");
       btnSua.className = "bal-btn bal-btn-xs bal-btn-outline";
       btnSua.textContent = "Sửa";
-      btnSua.onclick = function () { _openModal(rec, secKey); };
+      btnSua.onclick = function () { _openModal(rec); };
 
       var btnXoa = document.createElement("button");
       btnXoa.className = "bal-btn bal-btn-xs bal-btn-danger";
       btnXoa.textContent = "Xoá";
-      btnXoa.onclick = function () { _deleteRow(rec.id, secKey); };
+      btnXoa.onclick = function () { _deleteRow(rec.id); };
 
       tdAct.appendChild(btnSua);
       tdAct.appendChild(btnXoa);
@@ -430,19 +477,24 @@
     });
   }
 
+  /* Đánh lại `order` cho ĐÚNG đơn vị vừa kéo, theo thứ tự DOM mới.
+     Bảng chỉ có một, nên phải đếm riêng trong từng đơn vị. */
   function _saveNewOrder(tbody, secKey) {
     var all  = _load();
     var rows = Array.from(tbody.querySelectorAll("tr[data-id]"));
-    rows.forEach(function (tr, idx) {
+    var i = 0;
+    rows.forEach(function (tr) {
+      if (tr.dataset.sec !== secKey) return;
       var rec = all.find(function (r) { return r.id === tr.dataset.id; });
       if (rec) {
-        rec.order      = idx;
+        rec.order     = i;
         rec.updatedAt = new Date().toISOString();
         _pushUpdate(rec);
       }
+      i++;
     });
     _save(all);
-    /* Cập nhật lại số thứ tự hiển thị */
+    /* Đánh lại số thứ tự hiển thị cho toàn bảng */
     rows.forEach(function (tr, idx) {
       var noCell = tr.querySelector(".col-no");
       if (noCell) noCell.textContent = idx + 1;
@@ -450,18 +502,23 @@
   }
 
   /* ── CRUD ── */
-  function _deleteRow(id, secKey) {
+  function _deleteRow(id) {
     if (!confirm("Xoá thiết bị này?")) return;
     var all = _load().filter(function (r) { return r.id !== id; });
     _save(all);
     _pushDelete(id);
-    _renderSections();
+    _renderTable();
   }
 
   /* ── MODAL THÊM / SỬA ── */
-  function _openModal(rec, secKey) {
+  function _openModal(rec) {
     var isNew = !rec;
-    if (isNew) rec = { id: _genId(), section: secKey, order: _bySection(secKey).length };
+    var units = _units();
+    if (isNew) {
+      /* Đơn vị mặc định = đơn vị đang lọc, không thì đơn vị đầu danh sách */
+      var mac = _filterUnit || (units[0] ? units[0].key : "");
+      rec = { id: _genId(), section: mac, order: _bySection(mac).length };
+    }
 
     /* Tính ngày tiếp theo để hiển thị preview */
     function previewNext() {
@@ -486,6 +543,15 @@
         '<button class="bal-modal-close" id="bal-modal-close"><svg class="lic-emoji" width="1.05em" height="1.05em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex-shrink:0" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>' +
       '</div>' +
       '<div class="bal-modal-body">' +
+        '<div class="bal-form-row">' +
+          '<label>Đơn vị quản lý</label>' +
+          '<select id="bal-inp-donvi" class="bal-input">' +
+            units.map(function (u) {
+              return '<option value="' + _esc(u.key) + '"' + (u.key === rec.section ? " selected" : "") + '>' +
+                     _esc(u.label) + '</option>';
+            }).join("") +
+          '</select>' +
+        '</div>' +
         '<div class="bal-form-row">' +
           '<label>Tên thiết bị</label>' +
           '<input id="bal-inp-ten" class="bal-input" type="text" value="' + _esc(rec.ten_thiet_bi || "") + '">' +
@@ -569,10 +635,14 @@
       var anMon       = document.getElementById("bal-inp-anmon").checked;
       var chayNo      = document.getElementById("bal-inp-chayno").checked;
 
+      var donViMoi = document.getElementById("bal-inp-donvi").value;
+      /* Đổi đơn vị → xếp xuống cuối danh sách của đơn vị mới */
+      var thuTu = (donViMoi === rec.section) ? rec.order : _bySection(donViMoi).length;
+
       var updated = {
         id:                rec.id,
-        section:           secKey,
-        order:             rec.order,
+        section:           donViMoi,
+        order:             thuTu,
         ten_thiet_bi:      document.getElementById("bal-inp-ten").value.trim(),
         vi_tri:            document.getElementById("bal-inp-vitri").value.trim(),
         v_m3:              document.getElementById("bal-inp-v").value,
@@ -587,6 +657,7 @@
         updatedAt:         new Date().toISOString()
       };
 
+      if (!updated.section)      { alert("Vui lòng chọn đơn vị quản lý."); return; }
       if (!updated.ten_thiet_bi) { alert("Vui lòng nhập tên thiết bị."); return; }
 
       var all = _load();
@@ -605,7 +676,7 @@
       }
 
       closeModal();
-      _renderSections();
+      _renderTable();
     };
   }
 
@@ -645,6 +716,7 @@
       ".col-drag{width:26px;text-align:center;cursor:grab;color:#aaa;font-size:16px;user-select:none;}",
       ".col-ten{width:160px;}",
       ".col-vitri{width:130px;}",
+      ".col-donvi{width:145px;color:#334155;white-space:normal;}",
       ".col-thongso{width:130px;}",
       ".col-nam{width:80px;}",
       ".col-sodangky{width:90px;}",
