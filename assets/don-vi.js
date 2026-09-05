@@ -48,7 +48,8 @@
     { slug: "ke-hoach",           title: "Kế hoạch",             note: "Đơn vị chủ trì & phối hợp", applied: true  },
     { slug: "kiem-tra-cac-cap",   title: "Kiểm tra các cấp",     note: "Chọn đơn vị ở Bước 1",      applied: true  },
     { slug: "huan-luyen-dao-tao", title: "Huấn luyện - Đào tạo", note: "Đơn vị của từng nhân sự",   applied: true  },
-    { slug: "cap-phat-bhld",      title: "Cấp phát BHLĐ",        note: "Đơn vị cấp phát & phân quyền", applied: true  }
+    { slug: "cap-phat-bhld",      title: "Cấp phát BHLĐ",        note: "Đơn vị cấp phát & phân quyền", applied: true  },
+    { slug: "binh-ap-luc",        title: "Bình áp lực",          note: "Section trong Quản lý thiết bị", applied: true  }
   ];
 
   /* ─────────────────────────────────────────────
@@ -113,9 +114,9 @@
     { ma:"p_thuong_mai_dv",   ten:"Phòng Thương mại - Dịch vụ",      nhom:"phong_ban", sort:50,  he_thong:false, pages:["huan-luyen-dao-tao"] },
     { ma:"ban_thuc_hien_hd",  ten:"Ban Thực hiện hợp đồng",          nhom:"phong_ban", sort:60,  he_thong:false, pages:["huan-luyen-dao-tao"] },
     { ma:"ban_dieu_do_sx",    ten:"Ban Điều độ sản xuất",            nhom:"phong_ban", sort:70,  he_thong:false, pages:["huan-luyen-dao-tao"] },
-    { ma:"cang_bien",         ten:"Cảng biển",                       nhom:"don_vi_sx", sort:80,  he_thong:false, icon:"anchor",   pages:["ke-hoach","kiem-tra-cac-cap","huan-luyen-dao-tao","cap-phat-bhld"] },
+    { ma:"cang_bien",         ten:"Cảng biển",                       nhom:"don_vi_sx", sort:80,  he_thong:false, icon:"anchor",   pages:["ke-hoach","kiem-tra-cac-cap","huan-luyen-dao-tao","cap-phat-bhld","binh-ap-luc"] },
     { ma:"can_cu_kho_gn",     ten:"Căn cứ Kho - Giao nhận",          nhom:"don_vi_sx", sort:90,  he_thong:false, icon:"package",  pages:["ke-hoach","kiem-tra-cac-cap","huan-luyen-dao-tao","cap-phat-bhld"] },
-    { ma:"xuong_sua_chua",    ten:"Xưởng sửa chữa",                  nhom:"don_vi_sx", sort:100, he_thong:false, icon:"wrench",   pages:["ke-hoach","kiem-tra-cac-cap","huan-luyen-dao-tao","cap-phat-bhld"] },
+    { ma:"xuong_sua_chua",    ten:"Xưởng sửa chữa",                  nhom:"don_vi_sx", sort:100, he_thong:false, icon:"wrench",   pages:["ke-hoach","kiem-tra-cac-cap","huan-luyen-dao-tao","cap-phat-bhld","binh-ap-luc"] },
     { ma:"doi_xe_vthh",       ten:"Đội xe VTHH&PTTBCD",              nhom:"don_vi_sx", sort:110, he_thong:false, icon:"truck",    pages:["ke-hoach","kiem-tra-cac-cap","huan-luyen-dao-tao","cap-phat-bhld"] },
     { ma:"doi_xe_vchk",       ten:"Đội xe VCHK",                     nhom:"don_vi_sx", sort:120, he_thong:false, icon:"car",      pages:["ke-hoach","kiem-tra-cac-cap","huan-luyen-dao-tao","cap-phat-bhld"] },
     { ma:"cong_doan",         ten:"Công đoàn",                       nhom:"doan_the",  sort:130, he_thong:false, pages:["ke-hoach","huan-luyen-dao-tao"] },

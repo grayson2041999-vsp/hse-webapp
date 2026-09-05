@@ -325,6 +325,45 @@ console.log('\n── Không còn danh sách viết cứng ở Cấp phát BHLĐ
   check('app.js lấy đơn vị cấp phát từ danh mục', /HSE_UNITS\.list\("cap-phat-bhld"/.test(appjs));
 }
 
+console.log('\n── Bình áp lực: section lấy từ danh mục ──');
+{
+  const src = fs.readFileSync(path.join(ROOT, 'assets', 'binh-ap-luc.js'), 'utf8');
+  const i = src.indexOf('function _sections()');
+  const j = src.indexOf('/* ── STATE ──');
+  if (i < 0 || j < 0) throw new Error('Không tìm thấy _sections() trong binh-ap-luc.js');
+  let store = [];
+  const BAL = new Function('window', '_load',
+    src.slice(i, j) + '; return _sections;')(global, () => store);
+
+  check('2 section mặc định', BAL().length === 2, BAL().map(o => o.key));
+  check('key section = MÃ đơn vị (khớp dữ liệu cũ, không phải chuyển đổi)',
+    BAL().map(o => o.key).join(',') === 'cang_bien,xuong_sua_chua', BAL().map(o => o.key));
+  check('nhãn lấy từ tên trong danh mục',
+    BAL()[0].label === 'Cảng biển' && BAL()[1].label === 'Xưởng sửa chữa');
+
+  check('đổi tên đơn vị chỉ đổi NHÃN, key giữ nguyên', (() => {
+    const u = JSON.parse(JSON.stringify(U.byMa('cang_bien')));
+    u.ten_cu = ['Cảng biển']; u.ten = 'Cảng biển VSP'; U.saveUnit(u);
+    const r = BAL()[0];
+    u.ten = 'Cảng biển'; u.ten_cu = []; U.saveUnit(u);
+    return r.key === 'cang_bien' && r.label === 'Cảng biển VSP';
+  })());
+
+  /* Thiết bị thuộc đơn vị đã bị bỏ tích vẫn phải hiện ra */
+  store = [{ id: 'x1', section: 'can_cu_kho_gn' }];
+  const s2 = BAL();
+  check('giữ section chỉ còn trong dữ liệu', s2.length === 3 && s2[2].key === 'can_cu_kho_gn', s2.map(o => o.key));
+  check('đánh dấu rõ section không còn dùng', /không còn dùng/.test(s2[2].label));
+  store = [];
+
+  check('binh-ap-luc.js không còn hằng SECTIONS', !/var\s+SECTIONS\s*=/.test(src));
+  const bctd = fs.readFileSync(path.join(ROOT, 'bao-chay-tu-dong.html'), 'utf8');
+  check('chữ ký Word không còn tên phòng viết cứng', !/run\("Phòng Kỹ thuật/.test(bctd));
+  check('chữ ký Word tra theo mã ổn định', /PHONG_KY_TAT_MA\s*=\s*"p_ky_thuat_vat_tu"/.test(bctd));
+  check('Bình áp lực là điểm sử dụng thứ 5 trong danh mục',
+    U.PAGES.length === 5 && U.PAGES[4].slug === 'binh-ap-luc');
+}
+
 /* ─────────────────────────────────────────────
    ĐỐI SOÁT DỮ LIỆU (HSE_UNITS.audit)
    ───────────────────────────────────────────── */

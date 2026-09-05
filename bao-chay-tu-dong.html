@@ -357,9 +357,21 @@
 </div>
 
 <script type="module" src="assets/supabase-config.js"></script>
-<script src="assets/db.js?v=20260904"></script>
+<script src="assets/db.js?v=20260905"></script>
+<!-- Danh mục Phòng/Ban/Đơn vị dùng chung (nạp SAU db.js) -->
+<script src="assets/don-vi.js?v=20260905"></script>
 <script src="assets/hse-activity.js"></script>
 <script>
+/* ── PHÒNG KÝ TẮT TRÊN FILE WORD ──
+   Trước đây tên phòng viết cứng ngay trong hàm xuất Word, lại dùng gạch ngang
+   DÀI ("–") khác với mọi nơi khác trong hệ thống ("-"). Nay tra từ danh mục
+   dùng chung theo MÃ ổn định, nên Admin đổi tên phòng là file Word đổi theo. */
+var PHONG_KY_TAT_MA = "p_ky_thuat_vat_tu";
+function _phongKyTat(){
+  var u = window.HSE_UNITS ? HSE_UNITS.byMa(PHONG_KY_TAT_MA) : null;
+  return u ? u.ten : "Phòng Kỹ thuật - Vật tư";
+}
+
 /* ================================================================
    PCCC & CNCH – Hệ thống báo cháy tự động
    ================================================================ */
@@ -1603,7 +1615,7 @@ function _doBuild(m,y,errors,devices,newDevices,noSystem,preparedBy,btn,logoBuff
         sigTable,
         pr([],{after:240}),
         pr([run("Ký tắt",{bold:true,underline:true})],{after:0}),
-        pr([run("Phòng Kỹ thuật – Vật tư",{bold:true,underline:true})],{after:240}),
+        pr([run(_phongKyTat(),{bold:true,underline:true})],{after:240}),
         pr([run("Thực hiện/ Выпол.: ",{bold:true,italic:true}),run(preparedBy,{bold:true,italic:true})],{after:0}),
       ]
     }]});

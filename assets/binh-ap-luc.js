@@ -1,7 +1,7 @@
 /* =========================================================
    BINH-AP-LUC.JS
    Module quản lý Bình áp lực – Quản lý thiết bị HSE
-   - 2 section: Cảng biển / Xưởng sửa chữa
+   - Các section (đơn vị) do Admin quản lý ở Danh mục đơn vị
    - CRUD + reorder (drag & drop)
    - Sync Google Sheets: pull khi load trang, push sau mỗi thao tác
    ========================================================= */
@@ -11,10 +11,29 @@
   var LS_KEY  = "binh_ap_luc";
   var SHEET   = "binh_ap_luc";
 
-  var SECTIONS = [
-    { key: "cang_bien",      label: "Cảng biển" },
-    { key: "xuong_sua_chua", label: "Xưởng sửa chữa" }
-  ];
+  /* ── SECTION = ĐƠN VỊ, lấy từ DANH MỤC DÙNG CHUNG (assets/don-vi.js) ──
+     Trước đây 2 section viết cứng ngay tại đây. Nay Admin tích ô cột
+     "Bình áp lực" ở Quản trị hệ thống → Danh mục đơn vị là trang tự có thêm
+     section, không phải sửa code.
+
+     Bản ghi lưu `section` = MÃ đơn vị ("cang_bien", "xuong_sua_chua") — đúng
+     bằng mã trong danh mục, nên không phải chuyển đổi dữ liệu cũ. Đổi tên đơn
+     vị chỉ đổi nhãn hiển thị, khoá giữ nguyên. */
+  function _sections() {
+    var out = (window.HSE_UNITS ? HSE_UNITS.list("binh-ap-luc", { excludeGop: true }) : [])
+      .map(function (ten) { return { key: HSE_UNITS.maOf(ten), label: ten }; });
+    /* Giữ lại section chỉ còn trong dữ liệu (đơn vị đã bỏ tích / đã ngừng)
+       để thiết bị đã nhập không biến mất khỏi trang. */
+    var co = {}; out.forEach(function (o) { co[o.key] = true; });
+    _load().forEach(function (r) {
+      var k = r && r.section;
+      if (!k || co[k]) return;
+      co[k] = true;
+      var u = window.HSE_UNITS ? HSE_UNITS.byMa(k) : null;
+      out.push({ key: k, label: (u ? u.ten : k) + " (không còn dùng)" });
+    });
+    return out;
+  }
 
   /* ── STATE ── */
   var _container = null;
@@ -112,6 +131,13 @@
   /* ══════════════════════════════════════════
      RENDER ENTRY POINT
   ══════════════════════════════════════════ */
+  /* Danh mục tải xong từ Supabase (hoặc Admin vừa sửa) → vẽ lại các section */
+  if (window.HSE_UNITS) {
+    HSE_UNITS.onChange(function () {
+      if (document.getElementById("bal-sections")) _renderSections();
+    });
+  }
+
   window.renderBinhApLuc = function (container, canEdit) {
     _container = container;
     _canEdit   = !!canEdit;
@@ -189,7 +215,14 @@
     var wrap = document.getElementById("bal-sections");
     if (!wrap) return;
     wrap.innerHTML = "";
-    SECTIONS.forEach(function (sec) {
+    var secs = _sections();
+    if (!secs.length) {
+      wrap.innerHTML = '<div style="padding:20px;text-align:center;color:#6b7280;font-size:13px">'+
+        'Chưa có đơn vị nào được gán cho mục Bình áp lực.<br>'+
+        'Admin vào <b>Quản trị hệ thống → Danh mục đơn vị</b>, tích ô cột <b>Bình áp lực</b>.</div>';
+      return;
+    }
+    secs.forEach(function (sec) {
       wrap.appendChild(_buildSection(sec));
     });
   }
