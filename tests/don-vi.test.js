@@ -537,8 +537,11 @@ console.log('\n── Thiết bị nâng: bảng mới trong Quản lý thiết 
   const j = src.indexOf('/* ── STATE ──');
   if (i < 0 || j < 0) throw new Error('Không tìm thấy phần đơn vị trong thiet-bi-nang.js');
   let store = [];
-  const TBN = new Function('window', '_load',
-    src.slice(i, j) + '; return { _units, _unitLabel, _unitRank, _loaiDangCo, _rowsSorted };')(global, () => store);
+  const TBN = new Function('window', '_load', '_kdStatus', '_nextDateOf',
+    src.slice(i, j) + '; return { _units, _unitLabel, _unitRank, _loaiDangCo, _rowsSorted, _ttLabel };')(
+    global, () => store,
+    d => d ? ({ x: { cls: 'kd-con-han' }, y: { cls: 'kd-sap-han' }, z: { cls: 'kd-qua-han' } }[d] || null) : null,
+    r => r.kd || '');
 
   /* Chưa Admin tích ô nào thì bảng phải nói rõ là chưa có đơn vị,
      KHÔNG được tự mượn danh sách của trang khác. */
@@ -567,6 +570,32 @@ console.log('\n── Thiết bị nâng: bảng mới trong Quản lý thiết 
   check('lọc theo đơn vị', TBN._rowsSorted('cang_bien').map(r => r.id).join('') === 'cb');
   check('lọc theo loại thiết bị', TBN._rowsSorted('', 'Palăng').map(r => r.id).join('') === 'ca');
   check('lọc chồng cả đơn vị lẫn loại', TBN._rowsSorted('cang_bien', 'Palăng').map(r => r.id).join('') === 'c');
+
+  /* Lọc theo hạn kiểm định ngay tại cột "Ngày KĐ&TT tiếp theo" */
+  store = [
+    { id: 'p', section: 'cang_bien',      order: 0, kd: 'x' },   // còn hạn
+    { id: 'q', section: 'cang_bien',      order: 1, kd: 'y' },   // sắp hạn
+    { id: 'r', section: 'cang_bien',      order: 2, kd: 'z' },   // quá hạn
+    { id: 's', section: 'xuong_sua_chua', order: 0, kd: 'z' },   // quá hạn, đơn vị khác
+    { id: 't', section: 'cang_bien',      order: 3 }             // chưa có ngày KĐ
+  ];
+  check('lọc Còn hạn',  TBN._rowsSorted('', '', 'con-han').map(r => r.id).join('') === 'p');
+  check('lọc Sắp hạn',  TBN._rowsSorted('', '', 'sap-han').map(r => r.id).join('') === 'q');
+  check('lọc Quá hạn lấy đủ mọi đơn vị', TBN._rowsSorted('', '', 'qua-han').map(r => r.id).join('') === 'rs',
+    TBN._rowsSorted('', '', 'qua-han').map(r => r.id).join(''));
+  check('thiết bị chưa có ngày KĐ lọc được riêng, không lẫn vào Còn hạn',
+    TBN._rowsSorted('', '', 'chua-co').map(r => r.id).join('') === 't');
+  check('lọc chồng trạng thái với đơn vị',
+    TBN._rowsSorted('cang_bien', '', 'qua-han').map(r => r.id).join('') === 'r');
+  check('không lọc trạng thái thì lấy hết', TBN._rowsSorted().length === 5);
+  check('nhãn trạng thái dùng chung cho chip và droplist', TBN._ttLabel('qua-han') === 'Quá hạn');
+
+  store = [
+    { id: 'a', section: 'xuong_sua_chua', order: 1, loai_thiet_bi: 'Palăng'   },
+    { id: 'b', section: 'cang_bien',      order: 1, loai_thiet_bi: 'Cầu trục' },
+    { id: 'c', section: 'cang_bien',      order: 0, loai_thiet_bi: 'Palăng'   },
+    { id: 'd', section: 'can_cu_kho_gn',  order: 0, loai_thiet_bi: 'Xe nâng'  }
+  ];
   check('droplist loại chỉ liệt kê loại đang có, theo thứ tự danh mục',
     TBN._loaiDangCo().join(',') === 'Cầu trục,Palăng,Xe nâng', TBN._loaiDangCo());
   store = [];
@@ -626,6 +655,13 @@ console.log('\n── Thiết bị nâng: bảng mới trong Quản lý thiết 
   check('lọc Đơn vị quản lý nằm ngay tiêu đề cột',
     src.includes(`"<th class='col-donvi' rowspan='2'>" + _thFilterDonVi()`) && /thead.querySelector\("#tbn-filter-unit"\)/.test(src));
   check('có nút xuất Excel', /id="tbn-btn-xls"/.test(src));
+  check('lọc hạn kiểm định nằm ngay tiêu đề cột Ngày KĐ&TT tiếp theo',
+    src.includes(`"<th class='col-kdtt' rowspan='2'>" + _thFilterTT()`) &&
+    /thead.querySelector\("#tbn-filter-tt"\)/.test(src));
+  check('khoá trạng thái khớp class badge trong bảng (không thể lệch nhau)',
+    /st\.cls\.replace\("kd-", ""\)/.test(src) && /key: "qua-han"/.test(src));
+  check('xuất Excel tôn trọng cả ba bộ lọc',
+    /_rowsSorted\(_filterUnit, _filterLoai, _filterTT\)/.test(src));
   check('cảnh báo khi tải trọng làm việc vượt tải trọng thiết kế', /lv > tk/.test(src));
   check('kéo–thả vẫn giới hạn trong cùng đơn vị',
     /_dragging\.dataset\.sec !== tr\.dataset\.sec/.test(src));

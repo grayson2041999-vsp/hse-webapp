@@ -66,12 +66,33 @@
     return out;
   }
 
+  /* Trạng thái hạn kiểm định — khoá dùng cho bộ lọc, nhãn dùng để hiển thị.
+     Khoá trùng phần đuôi của class badge (.kd-con-han → "con-han") nên bảng
+     và bộ lọc không thể lệch nhau. */
+  var TRANG_THAI = [
+    { key: "con-han",  label: "Còn hạn"            },
+    { key: "sap-han",  label: "Sắp hạn (≤60 ngày)" },
+    { key: "qua-han",  label: "Quá hạn"            },
+    { key: "chua-co",  label: "Chưa có ngày KĐ"    }
+  ];
+  function _ttLabel(key) {
+    for (var i = 0; i < TRANG_THAI.length; i++) if (TRANG_THAI[i].key === key) return TRANG_THAI[i].label;
+    return key;
+  }
+  /* Trạng thái của MỘT bản ghi, quy về khoá trên. Chỉ gọi khi thực sự lọc
+     theo trạng thái — giữ _rowsSorted() không phụ thuộc phần tính ngày. */
+  function _ttOf(rec) {
+    var st = _kdStatus(_nextDateOf(rec));
+    return st ? st.cls.replace("kd-", "") : "chua-co";
+  }
+
   /* Toàn bộ thiết bị, sắp theo đơn vị rồi theo thứ tự kéo–thả trong đơn vị */
-  function _rowsSorted(loc, loai) {
+  function _rowsSorted(loc, loai, tt) {
     return _load()
       .filter(function (r) {
         if (loc && r.section !== loc) return false;
         if (loai && (r.loai_thiet_bi || "") !== loai) return false;
+        if (tt && _ttOf(r) !== tt) return false;
         return true;
       })
       .sort(function (x, y) {
@@ -87,6 +108,7 @@
   var _editMode   = false;
   var _filterUnit = "";
   var _filterLoai = "";
+  var _filterTT   = "";     /* trạng thái hạn kiểm định đang lọc */
   var _dragging   = null;
 
   /* ── ÉP KIỂU BOOLEAN ──
@@ -369,7 +391,7 @@
         "</div>";
       return;
     }
-    wrap.appendChild(_buildTable(_rowsSorted(_filterUnit, _filterLoai)));
+    wrap.appendChild(_buildTable(_rowsSorted(_filterUnit, _filterLoai, _filterTT)));
     _fixStickyRows();
   }
 
@@ -416,7 +438,7 @@
     return (v === "" || v === null || v === undefined || isNaN(Number(v))) ? "" : Number(v);
   }
   function _exportRows() {
-    var rows = _rowsSorted(_filterUnit, _filterLoai);
+    var rows = _rowsSorted(_filterUnit, _filterLoai, _filterTT);
     var head = ["STT", "Tên thiết bị", "Loại thiết bị", "Đơn vị quản lý", "Vị trí lắp đặt",
                 "Tải trọng thiết kế (tấn)", "Tải trọng làm việc (tấn)", "Năm đưa vào sử dụng",
                 "Số chế tạo", "Số đăng ký", "Biển kiểm soát", "Ngày KĐ&TT gần nhất", "Ngày KĐ&TT tiếp theo",
@@ -454,6 +476,7 @@
     var loc = [];
     if (_filterLoai) loc.push(_filterLoai.toUpperCase());
     if (_filterUnit) loc.push(_unitLabel(_filterUnit).toUpperCase());
+    if (_filterTT)   loc.push(_ttLabel(_filterTT).toUpperCase());
     var tieuDe = "DANH SÁCH THIẾT BỊ NÂNG" + (loc.length ? " – " + loc.join(" · ") : "");
     var phu    = "Xuất ngày: " + new Date().toLocaleDateString("vi-VN") + " · Tổng: " + d.count + " thiết bị";
     var ten    = "ThietBiNang_" + (_filterUnit || "TatCa") + "_" + _stamp();
@@ -486,11 +509,12 @@
   }
 
   /* ── Tiêu đề cột kèm droplist lọc ngay tại chỗ ── */
-  function _thFilter(nhan, id, opts, dangLoc) {
+  function _thFilter(nhan, id, opts, dangLoc, nhanText) {
+    var t = _esc(nhanText || nhan);
     return '<div class="tbn-th-filter">' +
              '<span class="tbn-th-label">' + nhan + "</span>" +
              '<select id="' + id + '" class="tbn-th-select' + (dangLoc ? " is-on" : "") +
-               '" title="Lọc theo ' + _esc(nhan) + '" aria-label="Lọc theo ' + _esc(nhan) + '">' +
+               '" title="Lọc theo ' + t + '" aria-label="Lọc theo ' + t + '">' +
                opts +
              "</select>" +
            "</div>";
@@ -503,6 +527,15 @@
     /* Nhãn là "Tên thiết bị" vì hai cột đã gộp làm một; droplist vẫn lọc
        theo LOẠI, đúng thứ đứng đầu mỗi ô. */
     return _thFilter("Tên thiết bị", "tbn-filter-loai", opts, !!_filterLoai);
+  }
+  function _thFilterTT() {
+    var opts = '<option value="">Tất cả trạng thái</option>' +
+      TRANG_THAI.map(function (t) {
+        return '<option value="' + t.key + '"' + (t.key === _filterTT ? " selected" : "") + ">" +
+               _esc(t.label) + "</option>";
+      }).join("");
+    return _thFilter("Ngày KĐ&amp;TT<br>tiếp theo", "tbn-filter-tt", opts, !!_filterTT,
+                     "hạn kiểm định");
   }
   function _thFilterDonVi() {
     var opts = '<option value="">Tất cả đơn vị</option>' +
@@ -565,15 +598,16 @@
       }
     }
 
-    if (_filterUnit || _filterLoai) {
+    if (_filterUnit || _filterLoai || _filterTT) {
       var mo = [];
       if (_filterLoai) mo.push(_esc(_filterLoai));
       if (_filterUnit) mo.push(_esc(_unitLabel(_filterUnit)));
+      if (_filterTT)   mo.push(_esc(_ttLabel(_filterTT)));
       var chip = document.createElement("button");
       chip.className = "tbn-chip";
       chip.title = "Bỏ lọc, xem tất cả";
       chip.innerHTML = "Lọc: <b>" + mo.join(" · ") + "</b> ✕";
-      chip.onclick = function () { _filterUnit = ""; _filterLoai = ""; _renderTable(); };
+      chip.onclick = function () { _filterUnit = ""; _filterLoai = ""; _filterTT = ""; _renderTable(); };
       bar.appendChild(chip);
     }
     box.appendChild(bar);
@@ -609,7 +643,7 @@
       "<th class='col-sct' rowspan='2'>Số<br>chế tạo</th>" +
       "<th class='col-sdk' rowspan='2'>Số<br>đăng ký</th>" +
       "<th class='col-kd' rowspan='2'>Ngày KĐ&amp;TT<br>gần nhất</th>" +
-      "<th class='col-kdtt' rowspan='2'>Ngày KĐ&amp;TT<br>tiếp theo</th>" +
+      "<th class='col-kdtt' rowspan='2'>" + _thFilterTT() + "</th>" +
       "<th class='col-ghichu' rowspan='2'>Ghi chú</th>" +
       (_editMode ? "<th class='col-action' rowspan='2'></th>" : "") +
       "</tr>" +
@@ -623,6 +657,8 @@
     if (selLoai) selLoai.onchange = function () { _filterLoai = this.value; _renderTable(); };
     var selUnit = thead.querySelector("#tbn-filter-unit");
     if (selUnit) selUnit.onchange = function () { _filterUnit = this.value; _renderTable(); };
+    var selTT = thead.querySelector("#tbn-filter-tt");
+    if (selTT) selTT.onchange = function () { _filterTT = this.value; _renderTable(); };
 
     var tbody = document.createElement("tbody");
     tbody.id = "tbn-tbody";
@@ -632,7 +668,7 @@
       var emptyTd  = document.createElement("td");
       emptyTd.colSpan = _editMode ? 14 : 12;
       emptyTd.className = "tbn-empty";
-      emptyTd.textContent = (_filterUnit || _filterLoai)
+      emptyTd.textContent = (_filterUnit || _filterLoai || _filterTT)
         ? "Không có thiết bị nào khớp bộ lọc."
         : "Chưa có thiết bị nào. " + (_editMode ? "Bấm '+ Thêm thiết bị' để thêm." : "");
       emptyRow.appendChild(emptyTd);
@@ -1061,7 +1097,7 @@
       /* Độ rộng cột — tổng 100% */
       ".tbn-table .col-no{width:3%;color:#6b7c93;font-weight:700;}",
       ".tbn-table .col-drag{width:3%;cursor:grab;color:#aaa;font-size:16px;user-select:none;}",
-      ".tbn-table .col-ten{width:22.5%;font-weight:700;color:#0f172a;}",
+      ".tbn-table .col-ten{width:21.5%;font-weight:700;color:#0f172a;}",
       ".tbn-table .col-donvi{width:10%;color:#334155;}",
       ".tbn-table .col-vitri{width:8.5%;}",
       ".tbn-table .col-tttk{width:6.5%;}",
@@ -1070,7 +1106,7 @@
       ".tbn-table .col-sct{width:7.5%;}",
       ".tbn-table .col-sdk{width:7.5%;}",
       ".tbn-table .col-kd{width:8%;}",
-      ".tbn-table .col-kdtt{width:9%;}",
+      ".tbn-table .col-kdtt{width:10%;}",
       ".tbn-table .col-ghichu{width:5.5%;}",
       ".tbn-table .col-action{width:7%;white-space:nowrap;}",
       /* Chỉ cột Tên thiết bị căn trái, còn lại căn giữa */
