@@ -595,12 +595,19 @@ console.log('\n── Thiết bị nâng: bảng mới trong Quản lý thiết 
   /* Đủ 13 cột theo đúng yêu cầu nghiệp vụ */
   const cols = ['col-no', 'col-ten', 'col-loai', 'col-donvi', 'col-vitri', 'col-tttk', 'col-ttlv',
                 'col-nam', 'col-sct', 'col-sdk', 'col-kd', 'col-kdtt', 'col-ghichu'];
-  check('đủ 13 cột trong bảng', cols.every(c => src.includes("<th class='" + c + "'")),
-    cols.filter(c => !src.includes("<th class='" + c + "'")));
+  check('đủ 13 cột trong bảng', cols.every(c => src.includes('"' + c + '"')),
+    cols.filter(c => !src.includes('"' + c + '"')));
+  check('Tải trọng là MỘT cột lớn tách thành hai cột con',
+    /tbn-th-group' colspan='2'>Tải trọng \(tấn\)/.test(src) &&
+    /tbn-th-sub'>Thiết kế/.test(src) && /tbn-th-sub'>Làm việc/.test(src));
+  check('độ rộng cột khai bằng colgroup (tiêu đề hai tầng không suy được từ hàng đầu)',
+    /createElement\("colgroup"\)/.test(src) && /'<col class="' \+ c \+ '">'/.test(src));
+  check('tiêu đề tầng 2 được ĐO để dính đúng chỗ khi cuộn, không đoán số cố định',
+    /_fixStickyRows/.test(src) && /getBoundingClientRect\(\)\.height/.test(src));
   check('lọc Loại thiết bị nằm ngay tiêu đề cột',
-    src.includes(`"<th class='col-loai'>" + _thFilterLoai()`) && /thead.querySelector\("#tbn-filter-loai"\)/.test(src));
+    src.includes(`"<th class='col-loai' rowspan='2'>" + _thFilterLoai()`) && /thead.querySelector\("#tbn-filter-loai"\)/.test(src));
   check('lọc Đơn vị quản lý nằm ngay tiêu đề cột',
-    src.includes(`"<th class='col-donvi'>" + _thFilterDonVi()`) && /thead.querySelector\("#tbn-filter-unit"\)/.test(src));
+    src.includes(`"<th class='col-donvi' rowspan='2'>" + _thFilterDonVi()`) && /thead.querySelector\("#tbn-filter-unit"\)/.test(src));
   check('có nút xuất Excel', /id="tbn-btn-xls"/.test(src));
   check('cảnh báo khi tải trọng làm việc vượt tải trọng thiết kế', /lv > tk/.test(src));
   check('kéo–thả vẫn giới hạn trong cùng đơn vị',
