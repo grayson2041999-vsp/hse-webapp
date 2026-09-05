@@ -413,21 +413,15 @@
     sel.onchange = function () { _filterUnit = this.value; _renderTable(); };
     toolbar.appendChild(sel);
 
-    _container.appendChild(toolbar);
-
-    /* Chú thích trạng thái */
-    var legend = document.createElement("div");
-    legend.className = "bal-legend";
-    legend.innerHTML =
-      '<span class="kd-badge kd-con-han">Còn hạn</span>' +
-      '<span class="kd-badge kd-sap-han">Sắp hạn (≤ 60 ngày)</span>' +
-      '<span class="kd-badge kd-qua-han">Quá hạn</span>';
-    _container.appendChild(legend);
-
-    /* Vùng các section */
+    /* Vùng các section (biểu đồ + bảng) */
     var sectionsWrap = document.createElement("div");
     sectionsWrap.id = "bal-sections";
     _container.appendChild(sectionsWrap);
+
+    /* Thanh công cụ nằm DƯỚI bảng theo yêu cầu: Làm mới · Chế độ điều chỉnh ·
+       Bộ lọc đơn vị. Hàng chú thích trạng thái đã bỏ — badge ngay trong cột
+       "Ngày KĐ tiếp theo" đã ghi rõ Còn hạn / Sắp hạn / Quá hạn. */
+    _container.appendChild(toolbar);
 
     _renderTable();
   }
@@ -927,8 +921,7 @@
     var style = document.createElement("style");
     style.textContent = [
       /* Layout */
-      ".bal-toolbar{display:flex;gap:10px;align-items:center;margin-bottom:10px;flex-wrap:wrap;}",
-      ".bal-legend{display:flex;gap:12px;align-items:center;margin-bottom:16px;flex-wrap:wrap;}",
+      ".bal-toolbar{display:flex;gap:10px;align-items:center;margin:2px 0 8px;flex-wrap:wrap;}",
       ".bal-section{background:#fff;border-radius:10px;box-shadow:0 2px 8px rgba(0,0,0,0.07);margin-bottom:28px;overflow:hidden;}",
       ".bal-section-hdr{position:relative;display:flex;align-items:center;justify-content:center;gap:10px;padding:16px 150px;min-height:56px;background:linear-gradient(180deg,#e6edf8 0%,#dde6f3 100%);border-bottom:2px solid #c3d0e6;}",
       ".bal-section-title{display:inline-flex;align-items:center;gap:9px;justify-content:center;font-weight:800;color:#003087;font-size:19px;line-height:1.25;text-transform:uppercase;letter-spacing:.7px;text-align:center;}",
