@@ -104,6 +104,8 @@
     @keyframes pulse{0%,100%{opacity:1;}50%{opacity:.35;}}
     .badge{display:inline-block;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600;}
     .badge-blue{background:#dceaf7;color:#003087;}
+    .draft-note{font-size:11.5px;color:#a35c00;background:#fff4e0;border:1px solid #f0d5a8;border-radius:20px;padding:3px 11px;}
+    .draft-note b{color:#8a4d00;}
     .viewer-notice{font-size:12px;color:rgba(255,255,255,0.7);padding:5px 12px;border:1.5px solid rgba(255,255,255,0.35);border-radius:7px;}
   </style>
 </head>
@@ -134,6 +136,7 @@
             <span class="sync-dot" id="syncDot"></span>
             <span id="syncText"></span>
           </div>
+          <span id="draftNote" class="draft-note" style="display:none;"></span>
         </div>
       </div>
 
@@ -189,6 +192,20 @@ var FIELD_STEP = {rac_nh_long:"0.01",rac_nh_ran:"0.01",rac_knh:"0.01",thung_suc_
                   pin_ac_quy:"0.01",amiang:"0.01",dau_nhot:"0.001",nuoc_thai:"0.001"};
 var editingKey = null; // "nam-thang" của dòng đang chỉnh sửa inline
 
+/* ── BẢN NHÁP DÒNG ĐANG NHẬP ──────────────────────────────
+   Trước đây: gõ dở rồi chuyển sang tab khác / thu nhỏ trình duyệt là mất sạch.
+   Lý do: Supabase (autoRefreshToken) phát lại sự kiện SIGNED_IN/TOKEN_REFRESHED
+   mỗi khi tab được hiển thị lại → hydrateCurrentUser() → renderTable() vẽ lại
+   bảng từ dữ liệu ĐÃ LƯU, các ô <input> bị tạo mới nên số đang gõ biến mất.
+   Nay: mỗi lần gõ, giá trị được ghi tạm vào localStorage (K_MT_DRAFT) và được
+   khôi phục cả khi vẽ lại bảng lẫn khi đóng/mở lại trang.
+   Nháp chỉ là bản tạm trên máy — bấm "Lưu" mới ghi vào cơ sở dữ liệu.
+────────────────────────────────────────────────────────── */
+var K_MT_DRAFT = "hse_moi_truong_draft";
+var DRAFT_TTL  = 7*24*60*60*1000;   // nháp quá 7 ngày thì bỏ
+var mtDraft    = null;              // {key:"2026-9", vals:{...}, ts:123}
+var _lastPermSig = null;            // chữ ký quyền, để biết có cần vẽ lại không
+
 // ── Helpers ──
 function lsLoad(k,d){try{var v=localStorage.getItem(k);return v?JSON.parse(v):d;}catch(e){return d;}}
 function lsSave(k,v){localStorage.setItem(k,JSON.stringify(v));}
@@ -203,6 +220,71 @@ function fmtNum(v,dec){
 function fmtInt(v){
   if(v===undefined||v===null||v==="")return '<span class="no-data">—</span>';
   return num(v).toLocaleString('vi-VN');
+}
+
+// ── Bản nháp (lưu tạm trên máy) ──
+function draftHasValue(v){
+  if(!v)return false;
+  for(var k in v){ if(v[k]!==undefined&&v[k]!==null&&String(v[k]).trim()!=="")return true; }
+  return false;
+}
+function captureDraft(){
+  if(!editingKey)return;
+  var row=document.querySelector('tr.editing');
+  if(!row)return;
+  var vals={};
+  MT_FIELDS.forEach(function(f){
+    var el=row.querySelector('.inline-input[data-field="'+f+'"]');
+    if(el)vals[f]=el.value;
+  });
+  mtDraft={key:editingKey,vals:vals,ts:Date.now()};
+  try{lsSave(K_MT_DRAFT,mtDraft);}catch(e){}
+  updateDraftNote();
+}
+function clearDraft(){
+  mtDraft=null;
+  try{localStorage.removeItem(K_MT_DRAFT);}catch(e){}
+  updateDraftNote();
+}
+function restoreDraft(){
+  var d=lsLoad(K_MT_DRAFT,null);
+  if(!d||!d.key||!d.vals){return false;}
+  if(d.ts&&Date.now()-d.ts>DRAFT_TTL){clearDraft();return false;}
+  if(!draftHasValue(d.vals)){clearDraft();return false;}
+  mtDraft=d;
+  editingKey=d.key;
+  // chọn đúng năm của bản nháp để dòng đang nhập hiện ra
+  var nam=String(d.key).split("-")[0];
+  var sel=document.getElementById("yearSelect");
+  if(sel&&nam){
+    for(var i=0;i<sel.options.length;i++){
+      if(String(sel.options[i].value)===nam){sel.selectedIndex=i;break;}
+    }
+  }
+  return true;
+}
+function updateDraftNote(){
+  var el=document.getElementById("draftNote");
+  if(!el)return;
+  if(mtDraft&&mtDraft.key&&editingKey===mtDraft.key&&draftHasValue(mtDraft.vals)){
+    var p=String(mtDraft.key).split("-");
+    var thg=MONTHS[parseInt(p[1],10)-1]||("Tháng "+p[1]);
+    var selNam="";
+    try{ selNam=String(selectedYear()); }catch(e){}
+    if(selNam&&selNam!==String(p[0])){
+      el.innerHTML='Đang nhập dở '+esc(thg)+'/'+esc(p[0])+' — chọn năm '+esc(p[0])+' để nhập tiếp.';
+    } else {
+      el.innerHTML='Đang nhập dở '+esc(thg)+'/'+esc(p[0])+' — đã giữ tạm trên máy, bấm <b>Lưu</b> để ghi chính thức.';
+    }
+    el.style.display='';
+  } else {
+    el.style.display='none';
+    el.innerHTML='';
+  }
+}
+function permSig(u){
+  if(!u)return "";
+  return [u.username,u.role,(u.perms||[]).join(","),(u.active===false?"0":"1")].join("|");
 }
 
 // ── Auth ──
@@ -275,7 +357,15 @@ function refreshRoleDependentUI(){
     else if(canEdit(u)) desc.textContent='Bạn có quyền nhập và chỉnh sửa số liệu xử lý chất thải.';
     else desc.textContent='Bạn chỉ có quyền xem số liệu xử lý chất thải.';
   }
-  try{ renderTable(); }catch(e){}
+  // Chỉ vẽ lại bảng khi QUYỀN thực sự thay đổi, hoặc khi không có dòng nào
+  // đang nhập dở. Nếu không, mỗi lần quay lại tab (Supabase phát lại
+  // SIGNED_IN/TOKEN_REFRESHED) bảng sẽ bị vẽ lại vô ích, làm mất con trỏ
+  // đang gõ của người dùng.
+  var sig=permSig(u);
+  var changed=(sig!==_lastPermSig);
+  _lastPermSig=sig;
+  if(changed||!editingKey){ try{ renderTable(); }catch(e){} }
+  else { updateDraftNote(); }
 }
 function hydrateCurrentUser(){
   return _sbReadyMT().then(function(sb){
@@ -379,21 +469,31 @@ function renderTable(){
 
     // ── Dòng đang chỉnh sửa inline ──
     if(canEdit(u) && editingKey===nam+"-"+m){
+      // Ưu tiên giá trị đang gõ dở (bản nháp) so với giá trị đã lưu
+      var de=d;
+      if(mtDraft&&mtDraft.key===editingKey&&mtDraft.vals){
+        de={};
+        MT_FIELDS.forEach(function(f){ de[f]=d[f]; });
+        MT_FIELDS.forEach(function(f){
+          if(mtDraft.vals[f]!==undefined&&mtDraft.vals[f]!==null) de[f]=mtDraft.vals[f];
+        });
+      }
+      var totalVT_e=num(de.phuy_sat)+num(de.phuy_nhua)+num(de.can)+num(de.thung_nhua_1m3);
       rows+='<tr class="editing" id="editRow_'+m+'">'+
         '<td class="month-col">'+MONTHS[m-1]+'</td>'+
-        cellInput('rac_nh_long',d)+
-        cellInput('rac_nh_ran',d)+
-        cellInput('rac_knh',d)+
-        cellInput('thung_suc_rua',d)+
-        cellInput('phuy_sat',d)+
-        cellInput('phuy_nhua',d)+
-        cellInput('can',d)+
-        cellInput('thung_nhua_1m3',d)+
-        '<td id="inlineTotalVT">'+num(totalVoThung).toLocaleString('vi-VN')+'</td>'+
-        cellInput('pin_ac_quy',d)+
-        cellInput('amiang',d)+
-        cellInput('dau_nhot',d)+
-        cellInput('nuoc_thai',d)+
+        cellInput('rac_nh_long',de)+
+        cellInput('rac_nh_ran',de)+
+        cellInput('rac_knh',de)+
+        cellInput('thung_suc_rua',de)+
+        cellInput('phuy_sat',de)+
+        cellInput('phuy_nhua',de)+
+        cellInput('can',de)+
+        cellInput('thung_nhua_1m3',de)+
+        '<td id="inlineTotalVT">'+totalVT_e.toLocaleString('vi-VN')+'</td>'+
+        cellInput('pin_ac_quy',de)+
+        cellInput('amiang',de)+
+        cellInput('dau_nhot',de)+
+        cellInput('nuoc_thai',de)+
         '<td class="action-col editing-cell"><div class="inline-actions">'+
           '<button class="btn btn-primary btn-sm" onclick="saveInlineEdit('+nam+','+m+')">Lưu</button>'+
           '<button class="btn btn-outline btn-sm" onclick="cancelInlineEdit()">Huỷ</button>'+
@@ -453,8 +553,25 @@ function renderTable(){
     '<td></td>'+
   '</tr>';
 
+  // Ghi nhớ ô đang gõ để trả lại con trỏ sau khi vẽ lại bảng
+  var _ae=document.activeElement, _foc=null;
+  if(_ae&&_ae.classList&&_ae.classList.contains("inline-input")){
+    _foc={f:_ae.getAttribute("data-field")};
+    try{ _foc.s=_ae.selectionStart; _foc.e=_ae.selectionEnd; }catch(e){}
+  }
+
   body.innerHTML=rows;
+
+  if(_foc&&_foc.f){
+    var _el=document.querySelector('tr.editing .inline-input[data-field="'+_foc.f+'"]');
+    if(_el){
+      _el.focus();
+      if(_foc.s!=null){ try{ _el.setSelectionRange(_foc.s,_foc.e); }catch(e){} }
+    }
+  }
+
   renderStatCards(totals);
+  updateDraftNote();
 }
 
 function renderStatCards(t){
@@ -484,7 +601,7 @@ function renderStatCards(t){
 function cellInput(f,d){
   var v=(d[f]!==undefined&&d[f]!==null&&d[f]!=='')?d[f]:'';
   return '<td class="editing-cell"><input class="inline-input" data-field="'+f+'" type="number" min="0" step="'+
-    (FIELD_STEP[f]||'0.01')+'" value="'+v+'" oninput="updateInlineTotal()" placeholder="0"></td>';
+    (FIELD_STEP[f]||'0.01')+'" value="'+esc(v)+'" oninput="onInlineInput()" onchange="onInlineInput()" placeholder="0"></td>';
 }
 function updateInlineTotal(){
   var row=document.querySelector('tr.editing');
@@ -497,16 +614,28 @@ function updateInlineTotal(){
   });
   cell.textContent=sum.toLocaleString('vi-VN');
 }
+// Mỗi lần gõ: cập nhật cột Tổng + ghi tạm bản nháp vào máy
+function onInlineInput(){
+  updateInlineTotal();
+  captureDraft();
+}
 function startInlineEdit(nam,thang){
   var u=currentUser();
   if(!canEdit(u)){alert("Bạn không có quyền nhập liệu.");return;}
-  editingKey=nam+"-"+thang;
+  var key=nam+"-"+thang;
+  // Mở dòng khác thì bỏ bản nháp của dòng cũ
+  if(mtDraft&&mtDraft.key!==key)clearDraft();
+  editingKey=key;
   renderTable();
   // focus ô đầu tiên
   var row=document.querySelector('tr.editing .inline-input');
   if(row)row.focus();
 }
 function cancelInlineEdit(){
+  if(mtDraft&&mtDraft.key===editingKey&&draftHasValue(mtDraft.vals)){
+    if(!confirm("Bỏ các số đang nhập dở của dòng này?"))return;
+  }
+  clearDraft();
   editingKey=null;
   renderTable();
 }
@@ -521,6 +650,7 @@ function saveInlineEdit(nam,thang){
     vals[f]=el?el.value:0;
   });
   persistRecord(nam,thang,vals);
+  clearDraft();
   editingKey=null;
   renderTable();
 }
@@ -580,7 +710,7 @@ function deleteRecord(nam,thang){
   // Xoá khỏi localStorage
   var all=getAllRecords().filter(function(r){return r.id!==rec.id;});
   saveAllRecords(all);
-  if(editingKey===nam+"-"+thang)editingKey=null;
+  if(editingKey===nam+"-"+thang){editingKey=null;clearDraft();}
   renderTable();
 
   // Xoá trên Sheets/DB (nếu có)
@@ -611,6 +741,16 @@ window.addEventListener("DOMContentLoaded",function(){
     else
       desc.textContent='Bạn chỉ có quyền xem số liệu xử lý chất thải.';
   }
+
+  _lastPermSig=permSig(u);
+
+  // Khôi phục dòng đang nhập dở (nếu có) trước khi vẽ bảng lần đầu
+  restoreDraft();
+
+  // Chốt an toàn: ghi bản nháp mỗi khi rời/ẩn trang hoặc đóng tab
+  document.addEventListener("visibilitychange",function(){ if(document.hidden)captureDraft(); });
+  window.addEventListener("pagehide",captureDraft);
+  window.addEventListener("beforeunload",captureDraft);
 
   safePull();
 
