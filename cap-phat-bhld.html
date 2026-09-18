@@ -5967,12 +5967,26 @@ function cpwStep3ExtraBody(s3,phieu){
 function cpwStep4Body(s3,phieu){
   if(s3==='khoa')return '<div style="display:flex;align-items:center;gap:6px;font-size:13px;color:var(--text-light);">'+_ic('lock',15)+'Hoàn tất Bước 3 (phiếu được duyệt) để mở bước này.</div>';
   if(s3==='xong')return '<div style="display:flex;align-items:center;gap:6px;color:var(--success);font-size:13.5px;">'+_ic('check',16)+'<span>Đã hoàn tất'+(_cpwState.hoanTatAt?' vào '+new Date(_cpwState.hoanTatAt).toLocaleDateString('vi-VN'):'')+'. Thời hạn cấp phát của nhân viên đã được cập nhật.</span></div>';
+  var xw=_cpwDaXuat('word'), xx=_cpwDaXuat('excel'), du=xw&&xx;
+  var thieu=[]; if(!xw)thieu.push('Word'); if(!xx)thieu.push('Excel');
+  var ok='<span style="color:var(--success);font-weight:600;">✓ đã xuất</span>';
   return _demoApprovedNote(phieu)+
-    '<p style="font-size:13.5px;color:var(--text-light);margin:'+(_demoApprovedNote(phieu)?'8px':'0')+' 0 12px;">Xuất phiếu để trình ký. Sau khi trình ký, xác nhận để hệ thống cập nhật thời hạn cấp phát mới cho nhân viên.</p>'+
-    '<div style="display:flex;gap:8px;flex-wrap:wrap;">'+
+    '<p style="font-size:13.5px;color:var(--text-light);margin:'+(_demoApprovedNote(phieu)?'8px':'0')+' 0 10px;">Xuất phiếu để trình ký. Sau khi trình ký, xác nhận để hệ thống cập nhật thời hạn cấp phát mới cho nhân viên.</p>'+
+    '<div style="background:#fdf3e0;border:1px solid #e8c98a;border-radius:8px;padding:10px 12px;margin-bottom:12px;font-size:12.5px;color:#7a4a00;line-height:1.55;">'+
+      '<b>Hãy lưu lại cả hai file trước khi xác nhận.</b> Sau khi cập nhật thời hạn, webapp '+
+      'không xuất lại được hai file này cho quý đã hoàn tất — nút xuất sẽ đóng cùng với bước này.'+
+    '</div>'+
+    '<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">'+
       '<button class="btn btn-doc btn-sm" onclick="cpwExport()">'+_ic('file',15)+' Xuất phiếu (Word)</button>'+
-      '<button class="btn btn-xls btn-sm" onclick="exportPhieuMatrixExcel(_cpwQuy,_cpwDonVi)">'+_ic('sheet',15)+' Excel ký nhận</button>'+
-      '<button class="btn btn-success btn-sm" onclick="cpwFinalize()">'+_ic('check',15)+' Xác nhận đã trình ký & Cập nhật thời hạn</button>'+
+      (xw?ok:'')+
+      '<button class="btn btn-xls btn-sm" onclick="cpwExportExcel()">'+_ic('sheet',15)+' Excel ký nhận</button>'+
+      (xx?ok:'')+
+    '</div>'+
+    '<div style="margin-top:12px;border-top:1px dashed var(--border);padding-top:12px;">'+
+      '<button class="btn btn-success btn-sm" onclick="cpwFinalize()"'+(du?'':' disabled style="opacity:.45;cursor:not-allowed;"')+'>'+
+        _ic('check',15)+' Xác nhận đã trình ký &amp; Cập nhật thời hạn</button>'+
+      (du?'':'<div style="font-size:12.5px;color:var(--text-light);margin-top:7px;">'+_ic('lock',14)+
+        ' Cần xuất '+(thieu.length===2?'cả hai file':'file '+thieu[0])+' trước đã.</div>')+
     '</div>';
 }
 function cpwContinueStep1(){
@@ -6449,16 +6463,41 @@ function cpwSubmitQuantity(){
     cpwSave({buoc:3}).then(cpwRender);
   }).catch(function(e){showToast('Gửi phiếu lỗi: '+(e&&e.message||e),'error');});
 }
+/* Đánh dấu đã xuất file, CHỈ trong phiên làm việc hiện tại (không lưu server).
+   Cố ý không lưu lâu dài: mục đích là người bấm xác nhận phải đang cầm hai file
+   trong tay, chứ không phải ai đó đã từng xuất trên một máy khác.
+   Lưu ý: chỉ biết được người dùng đã BẤM nút xuất, không biết họ có lưu file
+   lại hay không — đây là lời nhắc, không phải bảo đảm. */
+var _cpwDaXuatFile={};
+function _cpwKeyXuat(){ return _uMa(_cpwDonVi)+'__'+_cpwQuy; }
+function _cpwDaXuat(loai){ var o=_cpwDaXuatFile[_cpwKeyXuat()]; return !!(o&&o[loai]); }
+function _cpwGhiDaXuat(loai){
+  var k=_cpwKeyXuat();
+  if(!_cpwDaXuatFile[k])_cpwDaXuatFile[k]={};
+  _cpwDaXuatFile[k][loai]=true;
+  if(typeof cpwRender==='function')cpwRender();
+}
 function cpwExport(){
   var p=_cpwPhieu(_cpwDonVi,_cpwQuy);
   if(!p){showToast('Không tìm thấy phiếu.','error');return;}
   if(typeof exportPhieuById==='function')exportPhieuById(p.id,'word');
+  _cpwGhiDaXuat('word');
+}
+function cpwExportExcel(){
+  if(typeof exportPhieuMatrixExcel!=='function')return;
+  exportPhieuMatrixExcel(_cpwQuy,_cpwDonVi);
+  _cpwGhiDaXuat('excel');
 }
 function cpwFinalize(){
   var p=_cpwPhieu(_cpwDonVi,_cpwQuy);
   if(!p||p.status!=='approved'){showToast('Phiếu chưa được duyệt.','warning');return;}
   if(_cpwState.b3TrangThai==='xong'){showToast('Đã hoàn tất trước đó.','info');return;}
-  if(!confirm('Xác nhận đã trình ký và cập nhật thời hạn cấp phát mới cho nhân viên?'))return;
+  if(!(_cpwDaXuat('word')&&_cpwDaXuat('excel'))){
+    showToast('Hãy xuất và lưu cả file Word lẫn file Excel trước khi xác nhận.','warning');return;
+  }
+  if(!confirm('Xác nhận đã trình ký và cập nhật thời hạn cấp phát mới cho nhân viên?\n\n'+
+    'Sau bước này, webapp sẽ KHÔNG xuất lại được phiếu Word và Excel của quý '+_cpwQuy+
+    ' — hãy chắc chắn anh/chị đã lưu cả hai file.'))return;
   var nUpd=applyQuarterlyDeadlines(p)||0;
   cpwSave({b3TrangThai:'xong',buoc:3,hoanTatAt:new Date().toISOString()}).then(function(){
     showToast('✅ Hoàn tất! Đã cập nhật thời hạn cho '+nUpd+' nhân viên.');
