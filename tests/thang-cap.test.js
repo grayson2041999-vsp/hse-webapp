@@ -6,7 +6,7 @@ const fs = require('fs'), vm = require('vm'), path = require('path');
 const ROOT = path.join(__dirname, '..');
 const SRC = fs.readFileSync(path.join(ROOT, 'cap-phat-bhld.html'), 'utf8');
 
-const NAMES = ['_yyyymm', '_addMonths', '_ckSo', '_mocCapMoi', 'getQuarterMonths'];
+const NAMES = ['_yyyymm', '_addMonths', '_ckSo', '_slTheoQuy', '_mocCapMoi', 'getQuarterMonths'];
 const code = NAMES.map(n => {
   const re = new RegExp('\\nfunction ' + n + '\\([\\s\\S]*?\\n\\}');
   const m = SRC.match(re) || SRC.match(new RegExp('\\nfunction ' + n + '\\([^\\n]*\\}'));
@@ -14,9 +14,11 @@ const code = NAMES.map(n => {
   return m[0];
 }).join('\n');
 
-const ctx = vm.createContext({ Date, Number, String, Math, isFinite, JSON, console });
+const im = [];
+const ctx = vm.createContext({ Date, Number, String, Math, isFinite, JSON,
+  console: { warn: (...a) => im.push(a.join(' ')), log: () => {} } });
 vm.runInContext(code, ctx);
-const { _addMonths, _ckSo, _mocCapMoi, getQuarterMonths } = ctx;
+const { _addMonths, _ckSo, _slTheoQuy, _mocCapMoi, getQuarterMonths } = ctx;
 const qEnd = q => { const m = getQuarterMonths(q); return m[m.length - 1]; };
 
 let fail = 0, total = 0;
@@ -67,6 +69,17 @@ T('mốc sai định dạng → null', _mocCapMoi('2026', 12, qEnd('Q4/2026')), 
 T('chu kỳ 0 → null', _mocCapMoi('2026-01', 0, qEnd('Q4/2026')), 'null');
 T('phát sớm hơn hạn → lấy tháng cuối quý', _mocCapMoi('2026-06', 12, qEnd('Q4/2026')), '2026-12');
 T('quý bắc cầu sang năm sau', qEnd('Q4/2026'), '2026-12');
+
+G('Số lượng cấp theo quý (găng tay / khẩu trang)');
+T('chu kỳ 1 tháng, 1 đôi → 3/quý', _slTheoQuy(1, 1, 'round'), 3);
+T('chu kỳ 0.25 tháng, 1 cái → 12/quý', _slTheoQuy(0.25, 1, 'round'), 12);
+T('chu kỳ "0,25" (dấu phẩy) → 12, KHÔNG phải NaN', _slTheoQuy('0,25', 1, 'round'), 12);
+T('chu kỳ 12 tháng → tối thiểu 1', _slTheoQuy(12, 1, 'round'), 1);
+T('chu kỳ 0.083, làm tròn lên', _slTheoQuy(0.083, 1, 'ceil'), 37);
+T('chu kỳ rỗng → 0 (bỏ qua, không đẩy NaN vào phiếu)', _slTheoQuy(null, 1, 'round'), 0);
+T('chu kỳ không đọc được → 0', _slTheoQuy('abc', 1, 'round'), 0);
+T('số lượng rỗng → 0', _slTheoQuy(1, null, 'round'), 0);
+T('có ghi console.warn khi bỏ qua', im.length >= 3, true);
 
 console.log('\n' + (fail ? '✗ ' + fail + '/' + total + ' ca FAIL' : '✓ ' + total + '/' + total + ' ca PASS'));
 process.exit(fail ? 1 : 0);

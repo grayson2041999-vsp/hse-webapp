@@ -3381,8 +3381,11 @@ function editDinhMuc(id){
 function saveDinhMuc(){
   if(!isAdmin()){showToast('Chỉ quản trị viên.','error');return;}
   const nhomTBId=parseInt(document.getElementById('dm2-trangbi').value);
-  const chuKy=parseFloat(document.getElementById('dm2-chuki').value);
-  if(!nhomTBId||!chuKy){showToast('Vui lòng chọn trang bị và nhập chu kỳ!','error');return;}
+  // _ckSo() nhận cả "0,25" lẫn "0.25" và luôn lưu xuống dạng số, tránh lặp lại
+  // sự cố dữ liệu cũ đồng bộ từ Sheet có chu kỳ là chuỗi "0,25" → Number() ra NaN.
+  const chuKy=_ckSo(document.getElementById('dm2-chuki').value);
+  if(!nhomTBId){showToast('Vui lòng chọn trang bị!','error');return;}
+  if(!(chuKy>0)){showToast('Chu kỳ phải là số lớn hơn 0 (dùng dấu chấm thập phân, VD 0.25).','error');return;}
   const cd=daChucDanh.find(x=>x.id==_currentDmCDId);
   if(editingIds.dinhmuc){
     const idx=daDinhMuc.findIndex(x=>x.id==editingIds.dinhmuc);
@@ -3456,9 +3459,13 @@ function getTBSized(tb,nv){
 }
 
 function tinhThangCapTiepTheo(nv,dmEntry){
-  const tb=getTB(dmEntry.trangBiId||dmEntry.nhomTBId);if(!tb)return null;const chuKy=dmEntry.chuKy;
+  const tb=getTB(dmEntry.trangBiId||dmEntry.nhomTBId);if(!tb)return null;
   // Găng tay & khẩu trang → cấp theo quý
   if(tb.ten.includes('Găng tay')||tb.ten==='Khẩu trang')return'quarterly';
+  // _ckSo() chấp nhận cả chu kỳ nhập sai dấu thập phân ("0,25") và trả 0 nếu không đọc được.
+  // Chu kỳ 0 trước đây làm hạn kế tiếp = chính tháng cấp → món đó đến hạn vĩnh viễn.
+  const chuKy=_ckSo(dmEntry.chuKy);
+  if(!(chuKy>0)){console.warn('[BHLĐ] Định mức thiếu chu kỳ hợp lệ, bỏ qua:',tb.ten,JSON.stringify(dmEntry.chuKy));return null;}
   const isQuanAo=tb.loaiCo==='quan_ao'&&tb.ten!=='Áo mưa'&&tb.ten!=='Bộ quần áo thợ hàn';
   const isAoMua=tb.ten==='Áo mưa';const isQAHan=tb.ten==='Bộ quần áo thợ hàn';
   const isGiay=tb.loaiCo==='giay';const isNon=tb.ten.includes('Mũ');const isKinh=tb.ten==='Kính bảo hộ';
@@ -3508,7 +3515,7 @@ function _nvWarnings(nv){
     const tb=getTB(d.trangBiId||d.nhomTBId); if(!tb) return;
     const map=_tbToThangField(tb); if(!map) return;        // loại trừ trang bị không theo dõi tháng
     if(seen[map.field]) return; seen[map.field]=1;
-    const chuKy=Math.round(Number(d.chuKy)||0);
+    const chuKy=Math.round(_ckSo(d.chuKy));
     const rec=nv[map.field]||'';
     const suggest=chuKy>0?_addMonths(dauQuy,-chuKy):'';
     // Lưu ý: tháng cấp ở tương lai là HỢP LỆ (nhân viên mới được duyệt → tháng cấp = ngày vào làm + chu kỳ),
@@ -3600,7 +3607,7 @@ function computeQuyData(quyStr,filterDonVi){
       const nextMonth=tinhThangCapTiepTheo(nv,d);const isQuarterly=nextMonth==='quarterly';
       // Hiện nếu: item theo quý, hoặc đến hạn/quá hạn trong/trước quý đang chọn
       const inQuarter=isQuarterly||(nextMonth&&nextMonth<=qEnd);if(!inQuarter)return;
-      let soLuong=d.soLuong;if(isQuarterly){soLuong=Math.round((3/d.chuKy)*d.soLuong);if(soLuong<1)soLuong=1;}
+      let soLuong=d.soLuong;if(isQuarterly)soLuong=_slTheoQuy(d.chuKy,d.soLuong,'round');
       const tbSized=getTBSized(tb,nv);
       items.push({ten:tbSized.ten,ma:tbSized.ma||'',soLuong,donVi:tbSized.donVi||tb.donVi,tbId:tbSized.id,cat:_tbCategory(tb)});
       const key=tbSized.id;if(!summaryMap[key])summaryMap[key]={ten:tbSized.ten,ma:tbSized.ma||'',donVi:tbSized.donVi||tb.donVi,soLuong:0,tbId:key};summaryMap[key].soLuong+=soLuong;
@@ -3671,7 +3678,7 @@ function computeNVMoiItems(nv){
     let soLuong=d.soLuong;
     if(tenTB.includes('Găng tay')||tenTB==='Khẩu trang'){
       // Số lượng trong 3 tháng
-      soLuong=Math.ceil((3/d.chuKy)*d.soLuong);if(soLuong<1)soLuong=1;
+      soLuong=_slTheoQuy(d.chuKy,d.soLuong,'ceil');
     } else if(tenTB.includes('Mũ')||tenTB==='Áo mưa'){
       soLuong=d.soLuong; // 1× — mũ bảo hộ & áo mưa: cấp 1 bộ lần đầu
     } else {
@@ -4040,7 +4047,8 @@ function approvePhieu(id,opts){
         // Mũ bảo hộ & Áo mưa: cấp 1 bộ (không nhân đôi) → lần cấp gần nhất = tháng vào làm
         if(tenTB.includes('Mũ')){changes.thangCapMu=startMM;return;}
         if(tenTB==='Áo mưa'){changes.thangCapAoMua=startMM;return;}
-        const chuKy=d.chuKy||12;
+        const chuKy=_ckSo(d.chuKy);
+        if(!(chuKy>0)){console.warn('[BHLĐ] approvePhieu: định mức thiếu chu kỳ hợp lệ, không ghi tháng cấp cho',tenTB,'–',nv.ten,JSON.stringify(d.chuKy));return;}
         const [ly,lm]=startMM.split('-').map(Number);
         const nextMM=_yyyymm(new Date(ly,lm-1+Math.round(chuKy),1));
         if(tb.loaiCo==='quan_ao'&&tenTB!=='Áo mưa'&&tenTB!=='Bộ quần áo thợ hàn')changes.thangCapQuanAo=nextMM;
@@ -5232,12 +5240,12 @@ function _computeNhuCauData(quyList){
         }
         // Găng tay & khẩu trang: cấp theo quý → mỗi quý 1 lượng, nhân với số quý trong cửa sổ
         if(tenTB.includes('Găng tay')||tenTB==='Khẩu trang'){
-          let slQuy=Math.round((3/d.chuKy)*d.soLuong);if(slQuy<1)slQuy=1;
+          const slQuy=_slTheoQuy(d.chuKy,d.soLuong,'round');if(!slQuy)return;
           _row(tbSized,tb).perUnit[unit]+=slQuy*nQuarters;
           return;
         }
         // Trang bị theo chu kỳ tháng: giả lập các mốc cấp tiếp theo, đếm mốc rơi trong cửa sổ
-        const chuKy=Math.round(Number(d.chuKy)||0);if(chuKy<=0)return;
+        const chuKy=Math.round(_ckSo(d.chuKy));if(chuKy<=0)return;
         let due=tinhThangCapTiepTheo(nv,d);   // mốc cấp tiếp theo đầu tiên
         if(!due||due==='quarterly')return;
         let guard=0;
@@ -5396,6 +5404,16 @@ function _ckSo(v){
   return isFinite(n)?n:0;
 }
 // Mốc đến hạn cuối cùng còn nằm trong quý cấp (tháng cuối quý = qEnd).
+// Số lượng cấp cho một quý (3 tháng) với trang bị cấp theo quý (găng tay, khẩu trang).
+// Trả 0 khi chu kỳ không đọc được — trước đây (3/"0,25") ra NaN, mà "NaN < 1" là false
+// nên NaN lọt thẳng vào phiếu quý và bảng dự trù nhu cầu.
+function _slTheoQuy(chuKyRaw,soLuong,lamTron){
+  const ck=_ckSo(chuKyRaw);
+  const sl=Number(soLuong)||0;
+  if(!(ck>0)||!(sl>0)){console.warn('[BHLĐ] Không tính được số lượng theo quý, chuKy=',JSON.stringify(chuKyRaw),'soLuong=',JSON.stringify(soLuong));return 0;}
+  const n=(lamTron==='ceil'?Math.ceil:Math.round)((3/ck)*sl);
+  return n<1?1:n;
+}
 function _mocCapMoi(mocCu,chuKy,qEnd){
   const a0=String(mocCu||'').slice(0,7);
   if(!/^\d{4}-\d{2}$/.test(a0))return null;
