@@ -8,8 +8,9 @@ const SRC = fs.readFileSync(path.join(ROOT, 'cap-phat-bhld.html'), 'utf8');
 
 const NAMES = ['_yyyymm', '_addMonths', '_ckSo', '_slTheoQuy', '_mocCapMoi', 'getQuarterMonths'];
 const code = NAMES.map(n => {
-  const re = new RegExp('\\nfunction ' + n + '\\([\\s\\S]*?\\n\\}');
-  const m = SRC.match(re) || SRC.match(new RegExp('\\nfunction ' + n + '\\([^\\n]*\\}'));
+  // Hàm một dòng phải khớp TRƯỚC, nếu không mẫu nhiều dòng sẽ nuốt sang hàm kế tiếp.
+  const m = SRC.match(new RegExp('\\nfunction ' + n + '\\([^\\n]*\\}\\n'))
+         || SRC.match(new RegExp('\\nfunction ' + n + '\\([\\s\\S]*?\\n\\}'));
   if (!m) { console.error('KHÔNG tìm thấy hàm ' + n + ' trong cap-phat-bhld.html'); process.exit(1); }
   return m[0];
 }).join('\n');

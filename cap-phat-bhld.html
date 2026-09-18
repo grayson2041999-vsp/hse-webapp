@@ -1845,13 +1845,86 @@ function _cpnsReadRowEl(tr){
 function _cpnsSyncDrafts(){
   _cpnsDrafts.forEach(function(d){ var tr=_cpnsRowEl('draft',d.tempId); if(tr)Object.assign(d,_cpnsReadRowEl(tr)); });
 }
-function _cpnsValidate(raw){
-  var errs=[]; var parsed={};
+/* ─────────────────────────────────────────────────────────────
+   KIỂM TRA "THÁNG CẤP GẦN NHẤT"
+
+   Quy ước: đây là tháng ĐÃ nhận, nên với nhân viên cũ nó không bao giờ
+   được nằm ở tương lai. Ngoại lệ duy nhất là mốc ảo của nhân viên mới —
+   món cấp đôi lần đầu (quần áo / giày / kính / QA thợ hàn) ghi
+   "tháng vào làm + 1 chu kỳ", mũ và áo mưa ghi đúng "tháng vào làm".
+
+   Trước đây không có hàng rào này: mọi ô chỉ kiểm tra định dạng MM/YYYY,
+   gõ tháng nào cũng nhận.
+   ───────────────────────────────────────────────────────────── */
+var _CAP_DOI_LAN_DAU=['thangCapQuanAo','thangCapGiay','thangCapKinh','thangCapQAHan'];
+function _thangHienTai(){var d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');}
+/* Biên trên hợp lệ của "tháng cấp gần nhất".
+   KHÔNG dùng tháng hiện tại: đơn vị được phép lập và hoàn tất phiếu của một
+   quý trước khi quý đó kết thúc, nên mốc cấp ghi nhận có thể rơi vào các
+   tháng còn lại của quý đang làm. VD hôm nay 09/2026 nhưng Căn cứ Kho đã
+   hoàn tất phiếu Q4/2026 thì 12/2026 là giá trị hợp lệ, không phải lỗi.
+   Biên = tháng cuối của quý muộn nhất đang có phiếu, tối thiểu là quý hiện tại. */
+function _bienTrenThangCap(){
+  var q=getCurrentQuy();
+  try{
+    (BHLD.lsGet('phieu_requests')||[]).forEach(function(p){
+      if(p&&p.type==='quy'&&p.quyStr&&_compareQuy(p.quyStr,q)>0)q=p.quyStr;
+    });
+  }catch(e){}
+  var m=getQuarterMonths(q);
+  return m[m.length-1];
+}
+// Chu kỳ (tháng) của một cột tháng cấp theo chức danh; 0 nếu không tra được.
+function _chuKyTheoTruong(chucDanhTen,field){
+  if(typeof daDinhMuc==='undefined')return 0;
+  var cd=(typeof getChucDanhByTen==='function')?getChucDanhByTen(chucDanhTen):null;
+  var list=daDinhMuc.filter(function(d){return (cd&&d.chucDanhId==cd.id)||d.chucDanh===chucDanhTen;});
+  for(var i=0;i<list.length;i++){
+    var tb=getTB(list[i].trangBiId||list[i].nhomTBId); if(!tb)continue;
+    var map=_tbToThangField(tb); if(!map||map.field!==field)continue;
+    var ck=Math.round(_ckSo(list[i].chuKy)); if(ck>0)return ck;
+  }
+  return 0;
+}
+function _laMocAoNVMoi(nvLike,field,giaTri){
+  var vl=String((nvLike&&nvLike.ngayVaoLam)||'').slice(0,7);
+  if(!/^\d{4}-\d{2}$/.test(vl))return false;
+  if(_CAP_DOI_LAN_DAU.indexOf(field)<0)return giaTri===vl;
+  var ck=_chuKyTheoTruong(nvLike&&nvLike.chucDanh,field);
+  return ck>0 && giaTri===_addMonths(vl,ck);
+}
+// Trả null nếu hợp lệ, hoặc chuỗi lý do để hiện cho người dùng.
+function _loiThangCap(nvLike,field,giaTri,giaTriCu){
+  var v=String(giaTri||'').slice(0,7);
+  if(!v)return null;                                        // để trống là được
+  if(!/^\d{4}-\d{2}$/.test(v))return 'sai định dạng MM/YYYY';
+  var bien=_bienTrenThangCap();
+  if(v<=bien)return null;
+  if(v===String(giaTriCu||'').slice(0,7))return null;        // không sửa ô này → không chặn
+  if(_laMocAoNVMoi(nvLike,field,v))return null;              // mốc ảo hợp lệ của nhân viên mới
+  return 'nằm ở tương lai (' + _fThangTxt(v) + ') — muộn nhất chỉ đến ' + _fThangTxt(bien);
+}
+var _NHAN_TRUONG_THANG={thangCapQuanAo:'Quần áo',thangCapGiay:'Giày',thangCapMu:'Mũ',
+                        thangCapKinh:'Kính',thangCapAoMua:'Áo mưa',thangCapQAHan:'QA thợ hàn'};
+
+function _cpnsValidate(raw,oldNv){
+  var errs=[]; var parsed={}; var msgs=[];
   if(!raw.danhSo)errs.push('danhSo');
   if(!raw.ten)errs.push('ten');
   if(!raw.chucDanh||!(typeof daChucDanh!=='undefined'&&daChucDanh.find(function(x){return x.ten===raw.chucDanh;})))errs.push('chucDanh');
-  _CPNS_MONTHS.forEach(function(f){ var p=_cpnsParseMM(raw[f]); if(p===null)errs.push(f); else parsed[f]=p; });
-  return {errs:errs,parsed:parsed};
+  var nvLike={chucDanh:raw.chucDanh,ngayVaoLam:(oldNv&&oldNv.ngayVaoLam)||''};
+  _CPNS_MONTHS.forEach(function(f){
+    var p=_cpnsParseMM(raw[f]);
+    if(p===null){errs.push(f);msgs.push((_NHAN_TRUONG_THANG[f]||f)+': sai định dạng MM/YYYY');return;}
+    parsed[f]=p;
+    var loi=_loiThangCap(nvLike,f,p,oldNv&&oldNv[f]);
+    if(loi){errs.push(f);msgs.push((_NHAN_TRUONG_THANG[f]||f)+': '+loi);}
+  });
+  return {errs:errs,parsed:parsed,msgs:msgs};
+}
+// Thông báo lỗi: nêu rõ ô nào sai vì sao, thay cho câu chung chung.
+function _cpnsToastLoi(v){
+  showToast((v&&v.msgs&&v.msgs.length)?v.msgs.join(' · '):'Vui lòng kiểm tra các ô được tô đỏ.','error');
 }
 function _cpnsMarkErrors(tr,errs){ if(!tr)return; tr.querySelectorAll('[data-f]').forEach(function(el){ el.style.borderColor=(errs.indexOf(el.getAttribute('data-f'))>=0)?'#c0392b':''; }); }
 // HTML một hàng nhập (dùng cho cả 'edit' và 'draft'); data.thang* ở dạng MM/YYYY
@@ -1896,7 +1969,7 @@ function cpnsRemoveDraft(id){ _cpnsSyncDrafts(); _cpnsDrafts=_cpnsDrafts.filter(
 // Ghi 1 bản ghi thêm mới: Admin → thêm thẳng; User → gửi phê duyệt (hiện dòng mờ Chờ phê duyệt)
 function _cpnsCommitAdd(raw,boPhan){
   var v=_cpnsValidate(raw);
-  if(v.errs.length)return {ok:false,errs:v.errs};
+  if(v.errs.length)return {ok:false,errs:v.errs,msgs:v.msgs};
   var now=new Date(); var _mm=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0');
   var nvData={danhSo:raw.danhSo,ten:raw.ten,chucDanh:raw.chucDanh,boPhan:boPhan,loaiNV:'cu',coQuanAo:raw.coQuanAo||'',coGiay:raw.coGiay||'',gioiTinh:raw.gioiTinh==='nu'?'nu':'nam',ngayVaoLam:_mm};
   _CPNS_MONTHS.forEach(function(f){ nvData[f]=v.parsed[f]||''; });
@@ -1915,7 +1988,7 @@ function cpnsSaveDraft(id){
   var boPhan=document.getElementById('cpns-donvi').value;
   var d=_cpnsDrafts.find(function(x){return x.tempId===id;}); if(!d)return;
   var res=_cpnsCommitAdd(d,boPhan);
-  if(!res.ok){ _cpnsMarkErrors(_cpnsRowEl('draft',id),res.errs); showToast('Vui lòng kiểm tra các ô được tô đỏ.','error'); return; }
+  if(!res.ok){ _cpnsMarkErrors(_cpnsRowEl('draft',id),res.errs); _cpnsToastLoi(res); return; }
   _cpnsDrafts=_cpnsDrafts.filter(function(x){return x.tempId!==id;});
   cpRenderNhanSu();
   showToast((typeof isAdmin==='function'&&isAdmin())?'✅ Đã thêm nhân sự.':'📨 Đã gửi nhân sự để phê duyệt.','success');
@@ -1955,9 +2028,9 @@ function cpnsDismissRejected(id){
 function cpnsSaveEdit(id){
   var tr=_cpnsRowEl('edit',String(id)); if(!tr)return;
   var raw=_cpnsReadRowEl(tr);
-  var v=_cpnsValidate(raw);
-  if(v.errs.length){ _cpnsMarkErrors(tr,v.errs); showToast('Vui lòng kiểm tra các ô được tô đỏ.','error'); return; }
   var oldNv=daNhanVien.find(function(x){return String(x.id)===String(id);}); if(!oldNv)return;
+  var v=_cpnsValidate(raw,oldNv);
+  if(v.errs.length){ _cpnsMarkErrors(tr,v.errs); _cpnsToastLoi(v); return; }
   var proposed=Object.assign({},oldNv,{danhSo:raw.danhSo,ten:raw.ten,chucDanh:raw.chucDanh,gioiTinh:raw.gioiTinh==='nu'?'nu':'nam',coQuanAo:raw.coQuanAo||'',coGiay:raw.coGiay||''});
   _CPNS_MONTHS.forEach(function(f){ proposed[f]=v.parsed[f]||''; });
   if(typeof isAdmin==='function'&&isAdmin()){
@@ -2820,6 +2893,18 @@ function saveNV(){
   let ngayVaoLamVal=_todayMM;
   if(loaiNV==='moi'){const m=document.getElementById('nv-moi-thang-m').value;const y=document.getElementById('nv-moi-thang-y').value.trim();if(m&&y&&y.length===4)ngayVaoLamVal=`${y}-${m}`;}
   const _admin=isAdmin();
+  // Nhân viên cũ: tháng cấp gần nhất là tháng ĐÃ nhận, không được nằm ở tương lai.
+  // (Mốc ảo ở tương lai chỉ dành cho nhân viên mới — xem _loiThangCap / _laMocAoNVMoi.)
+  if(loaiNV==='cu'){
+    const _old=editingIds.nv?daNhanVien.find(x=>x.id===editingIds.nv):null;
+    const _nvLike={chucDanh,ngayVaoLam:(_old&&_old.ngayVaoLam)||''};
+    const _loi=[];
+    Object.keys(_NHAN_TRUONG_THANG).forEach(f=>{
+      const m=_loiThangCap(_nvLike,f,nvData[f],_old&&_old[f]);
+      if(m)_loi.push(_NHAN_TRUONG_THANG[f]+': '+m);
+    });
+    if(_loi.length){showToast(_loi.join(' · '),'error');return false;}
+  }
   if(editingIds.nv){
     const idx=daNhanVien.findIndex(x=>x.id===editingIds.nv);
     if(idx<0){showToast('Không tìm thấy nhân viên.','error');return false;}
@@ -3518,10 +3603,11 @@ function _nvWarnings(nv){
     const chuKy=Math.round(_ckSo(d.chuKy));
     const rec=nv[map.field]||'';
     const suggest=chuKy>0?_addMonths(dauQuy,-chuKy):'';
-    // Lưu ý: tháng cấp ở tương lai là HỢP LỆ (nhân viên mới được duyệt → tháng cấp = ngày vào làm + chu kỳ),
-    // nên KHÔNG cảnh báo tháng tương lai.
     if(!rec){ out.push({field:map.field,label:map.label,type:'missing',chuKy,suggest}); return; }
     if(!/^\d{4}-\d{2}$/.test(rec)){ out.push({field:map.field,label:map.label,type:'format',rec,chuKy,suggest}); return; }
+    // Tháng tương lai chỉ hợp lệ với mốc ảo của nhân viên mới (xem _laMocAoNVMoi).
+    // Mọi trường hợp khác là dữ liệu sai — trước đây cảnh báo này bị tắt hoàn toàn.
+    if(rec>_bienTrenThangCap()&&!_laMocAoNVMoi(nv,map.field,rec)){ out.push({field:map.field,label:map.label,type:'future',rec,chuKy,suggest}); return; }
     if(chuKy>0){ const nextDue=_addMonths(rec,chuKy); if(nextDue<dauQuy) out.push({field:map.field,label:map.label,type:'stale',rec,nextDue,chuKy,suggest}); }
   });
   return out;
@@ -3551,7 +3637,7 @@ function openNVWarning(id){
     let reason='';
     if(w.type==='missing') reason=`Chức danh có định mức cấp <b>${w.label}</b> (chu kỳ ${w.chuKy} tháng) nhưng chưa ghi nhận tháng cấp gần nhất.`;
     else if(w.type==='stale') reason=`Lần cấp ghi nhận <b>${_fThangTxt(w.rec)}</b> + chu kỳ ${w.chuKy} tháng → đến hạn <b>${_fThangTxt(w.nextDue)}</b>, đã trước mốc quý <b>${_fThangTxt(dauQuy)}</b>. Nghĩa là đã lố ít nhất một kỳ cấp mà chưa được ghi nhận.`;
-    else if(w.type==='future') reason=`Tháng cấp ghi nhận <b>${_fThangTxt(w.rec)}</b> nằm ở tương lai so với hiện tại.`;
+    else if(w.type==='future') reason=`Tháng cấp ghi nhận <b>${_fThangTxt(w.rec)}</b> nằm sau quý cấp phát muộn nhất đang có phiếu (đến <b>${_fThangTxt(_bienTrenThangCap())}</b>), và cũng không khớp mốc cấp lần đầu của nhân viên mới. Nhiều khả năng do thiếu <b>tháng vào làm</b> hoặc mốc bị cộng dư một chu kỳ.`;
     else reason=`Giá trị tháng cấp "<b>${_escH(w.rec||'')}</b>" không đúng định dạng YYYY-MM.`;
     html+=`<div style="border:1px solid #f0d0cc;background:#fdecea;border-radius:8px;padding:10px 12px;margin-bottom:10px;">
       <div style="font-weight:700;color:#c0392b;font-size:13.5px;margin-bottom:4px;">${w.label} — ${_WARN_TXT[w.type]||''}</div>
@@ -5814,7 +5900,7 @@ function cpwLstSaveDraft(id){
   _cpwSyncDrafts();
   var d=_cpwLstDrafts.find(function(x){return x.tempId===id;}); if(!d)return;
   var v=_cpnsValidate(d);
-  if(v.errs.length){ _cpnsMarkErrors(_cpwRowEl('draft',id),v.errs); showToast('Vui lòng kiểm tra các ô được tô đỏ.','error'); return; }
+  if(v.errs.length){ _cpnsMarkErrors(_cpwRowEl('draft',id),v.errs); _cpnsToastLoi(v); return; }
   var now=new Date(); var _mm=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0');
   var nvData={danhSo:d.danhSo,ten:d.ten,chucDanh:d.chucDanh,boPhan:_cpwDonVi,loaiNV:'cu',coQuanAo:d.coQuanAo||'',coGiay:d.coGiay||'',gioiTinh:d.gioiTinh==='nu'?'nu':'nam',ngayVaoLam:_mm};
   _CPW_MONTHS.forEach(function(fld){ nvData[fld]=v.parsed[fld]||''; });
@@ -5848,9 +5934,9 @@ function cpwLstCancelEdit(){ _cpwLstEditId=null; cpwRenderList(); }
 function cpwLstSaveEdit(id){
   var tr=_cpwRowEl('edit',String(id)); if(!tr)return;
   var raw=_cpnsReadRowEl(tr);
-  var v=_cpnsValidate(raw);
-  if(v.errs.length){ _cpnsMarkErrors(tr,v.errs); showToast('Vui lòng kiểm tra các ô được tô đỏ.','error'); return; }
   var oldNv=daNhanVien.find(function(x){return String(x.id)===String(id);}); if(!oldNv)return;
+  var v=_cpnsValidate(raw,oldNv);
+  if(v.errs.length){ _cpnsMarkErrors(tr,v.errs); _cpnsToastLoi(v); return; }
   var proposed=Object.assign({},oldNv,{danhSo:raw.danhSo,ten:raw.ten,chucDanh:raw.chucDanh,gioiTinh:raw.gioiTinh==='nu'?'nu':'nam',coQuanAo:raw.coQuanAo||'',coGiay:raw.coGiay||''});
   _CPW_MONTHS.forEach(function(fld){ proposed[fld]=v.parsed[fld]||''; });
   var diff=_buildNvDiff(oldNv,proposed);
