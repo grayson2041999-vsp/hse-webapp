@@ -4829,7 +4829,268 @@ function _matrixCode(ten){
   return ten;
 }
 // Xuất Excel ma trận cấp phát (mẫu BM02): STT, Danh số, Họ tên + 8 trang bị, mỗi trang bị kèm ô Ký tên
+/* ═══════════════════════════════════════════════════════════════════
+   EXCEL KÝ NHẬN — dựng bằng ExcelJS để có viền, nền và gạch chéo.
+
+   Thư viện XLSX bản cộng đồng đang dùng cho các bản xuất khác KHÔNG ghi
+   được định dạng ô (không viền, không nền, không gạch chéo), nên tờ ký
+   nhận in ra toàn ô trắng giống nhau, khó phân biệt ô ghi số lượng với ô
+   để ký. ExcelJS chỉ được nạp khi người dùng bấm xuất, không làm nặng
+   trang lúc mở. Nếu mạng chặn CDN thì tự quay về bản XLSX cũ.
+   ═══════════════════════════════════════════════════════════════════ */
+var _EXCELJS_URL='https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js';
+function _napExcelJS(){
+  if(window.ExcelJS)return Promise.resolve(window.ExcelJS);
+  if(_napExcelJS._p)return _napExcelJS._p;
+  _napExcelJS._p=new Promise(function(res,rej){
+    var el=document.createElement('script'); el.src=_EXCELJS_URL;
+    el.onload=function(){ window.ExcelJS?res(window.ExcelJS):rej(new Error('ExcelJS nạp không thành công')); };
+    el.onerror=function(){ _napExcelJS._p=null; rej(new Error('Không tải được thư viện Excel')); };
+    document.head.appendChild(el);
+  });
+  return _napExcelJS._p;
+}
+
+/* Gom dữ liệu cho tờ ký nhận. Số lượng ưu tiên lấy từ items của PHIẾU đã gửi
+   (đồng bộ trên server, máy nào mở cũng thấy); chỉ khi chưa có phiếu mới đọc
+   phieuData trong localStorage của máy đang dùng. */
+function _kyNhanPayload(quyStr,dv){
+  var res=(typeof computeQuyData==='function')?computeQuyData(quyStr,dv):{rows:[]};
+  var rows=res.rows||[];
+  if(!rows.length)return null;
+  // Bảng tra số thực tế: ưu tiên phiếu, sau đó tới dữ liệu nhập tay trên máy
+  var tt={}, phieu=(typeof _cpwPhieu==='function')?_cpwPhieu(dv,quyStr):null;
+  if(phieu){
+    (typeof _parsePhieuItems==='function'?_parsePhieuItems(phieu.items):[]).forEach(function(it){
+      if(it.nvId)tt[it.nvId+'_'+it.tbId]=it.thucTe;
+    });
+  }
+  var qData=(typeof phieuData!=='undefined'&&phieuData[quyStr])||{};
+  function soThucTe(nvId,tbId){
+    var k=nvId+'_'+tbId;
+    if(tt[k]!==undefined&&tt[k]!=='')return Number(tt[k])||0;
+    var s=qData[k]||{};
+    return (s.thucTe!==undefined&&s.thucTe!=='')?(Number(s.thucTe)||0):0;
+  }
+  var CATS=[['quanao','Quần áo'],['giay','Giày'],['mu','Mũ'],['kinh','Kính'],
+            ['aomua','Áo mưa'],['qahan','QA thợ hàn'],['gangtay','Găng tay'],['khautrang','Khẩu trang']];
+  var SIZED={quanao:1,giay:1,qahan:1};
+  // Xếp nhân viên theo nhóm nội bộ, nhóm theo thu_tu rồi tới tên; chưa xếp nhóm xuống cuối
+  var gInfo={};
+  (typeof daGroups!=='undefined'?daGroups:[]).forEach(function(g){
+    if(g&&_uSame(g.donVi,dv))gInfo[g.ten]={thuTu:(g.thu_tu==null?9999:Number(g.thu_tu)),ten:g.ten};
+  });
+  var buckets={};
+  rows.forEach(function(rr){
+    var ten=(rr.nv.nhomNoiBo||'').trim()||'__CHUA__';
+    (buckets[ten]=buckets[ten]||[]).push(rr);
+  });
+  var tenNhoms=Object.keys(buckets).sort(function(a,b){
+    if(a==='__CHUA__')return 1; if(b==='__CHUA__')return -1;
+    var ta=gInfo[a]?gInfo[a].thuTu:9999, tb=gInfo[b]?gInfo[b].thuTu:9999;
+    return ta!==tb?ta-tb:a.localeCompare(b,'vi');
+  });
+  var stt=0, nhoms=[];
+  tenNhoms.forEach(function(tn){
+    var ds=buckets[tn].map(function(rr){
+      stt++;
+      var byCat={};
+      rr.items.forEach(function(it){var k=it.cat||'khac';(byCat[k]=byCat[k]||[]).push(it);});
+      var o=CATS.map(function(c){
+        var arr=byCat[c[0]]||[], vals=[], so=0;
+        arr.forEach(function(it){
+          var tv=soThucTe(rr.nv.id,it.tbId);
+          if(!tv)return;
+          so+=tv;
+          if(SIZED[c[0]]){var code=(typeof _matrixCode==='function')?_matrixCode(it.ten):it.ten;vals.push(tv>1?(code+' ×'+tv):code);}
+          else vals.push(tv);
+        });
+        if(!vals.length)return {capPhat:false,v:''};
+        return {capPhat:true, so:so,
+                v:(!SIZED[c[0]]&&vals.length===1)?vals[0]:vals.join(', ')};
+      });
+      return {stt:stt,danhSo:rr.nv.danhSo||'',ten:rr.nv.ten||'',o:o};
+    });
+    nhoms.push({ten:(tn==='__CHUA__'?'Chưa xếp nhóm':tn),ds:ds});
+  });
+  var extras=(dv&&typeof _cpwExtraGet==='function')
+    ?_cpwExtraGet(quyStr,dv).filter(function(x){return Number(x.soLuong)>0;}):[];
+  var pz=quyStr.split('/');
+  return {quyStr:quyStr, donVi:dv, quyLabel:'Quý '+pz[0].replace(/^Q/,'')+' năm '+pz[1],
+          cats:CATS, sized:SIZED, nhoms:nhoms, extras:extras, tongNV:stt};
+}
+
+/* Dựng workbook. Hàm THUẦN (chỉ phụ thuộc ExcelJS + payload) để test được. */
+function _kyNhanBuild(ExcelJS,P){
+  var FONT='Times New Roman';
+  var wb=new ExcelJS.Workbook();
+  var ws=wb.addWorksheet('Cấp phát',{
+    pageSetup:{paperSize:9,orientation:'landscape',fitToPage:true,fitToWidth:1,fitToHeight:0,
+               margins:{left:0.4,right:0.3,top:0.5,bottom:0.4,header:0.2,footer:0.2}}
+  });
+  var nCat=P.cats.length, nCol=3+nCat*2;
+  var VIEN={top:{style:'thin'},left:{style:'thin'},bottom:{style:'thin'},right:{style:'thin'}};
+  var XAM={type:'pattern',pattern:'solid',fgColor:{argb:'FFD9D9D9'}};
+  var XANH={type:'pattern',pattern:'solid',fgColor:{argb:'FFD9E2F3'}};
+  var NHAT={type:'pattern',pattern:'solid',fgColor:{argb:'FFF2F6FC'}};
+  var NHOMBG={type:'pattern',pattern:'solid',fgColor:{argb:'FFE8EEF7'}};
+  function o(r,c){return ws.getCell(r,c);}
+  function set(r,c,v,st){var cell=o(r,c);if(v!==undefined&&v!==null)cell.value=v;
+    st=st||{};
+    cell.font=Object.assign({name:FONT,size:11},st.font||{});
+    if(st.fill)cell.fill=st.fill;
+    cell.border=st.border||VIEN;
+    cell.alignment=Object.assign({vertical:'middle',wrapText:true},st.align||{});
+    return cell;}
+  var r=1;
+  // ── Khối tiêu đề biểu mẫu ──
+  ws.mergeCells(1,1,3,nCol-3);
+  set(1,1,'XN DVC&CƯVTTB\nQUY TRÌNH\nDANH SÁCH CẤP PHÁT TRANG BỊ BẢO HỘ LAO ĐỘNG VÀ PHƯƠNG TIỆN CÁ NHÂN',
+      {font:{bold:true,size:12},align:{horizontal:'center'}});
+  [['QT-KTVT-05/BM02',1],['Lần ban hành: 01',2],['Ngày hiệu lực: 01.02.2022',3]].forEach(function(x){
+    ws.mergeCells(x[1],nCol-2,x[1],nCol);
+    set(x[1],nCol-2,x[0],{align:{horizontal:'center'},font:{bold:x[1]===1}});
+  });
+  ws.getRow(1).height=34;
+  r=5;
+  // Gộp ô và tắt xuống dòng, nếu không cột STT rộng 5 sẽ bẻ chữ theo chiều dọc
+  ws.mergeCells(r,1,r,4);
+  set(r,1,'XN DVC&CƯVTTB',{font:{bold:true},border:{},align:{horizontal:'left',wrapText:false}}); r++;
+  ws.mergeCells(r,1,r,4);
+  set(r,1,'Đơn vị: '+P.donVi,{font:{bold:true},border:{},align:{horizontal:'left',wrapText:false}}); r+=2;
+  ws.mergeCells(r,1,r,nCol);
+  set(r,1,'DANH SÁCH CẤP PHÁT TRANG BỊ BẢO HỘ LAO ĐỘNG VÀ PHƯƠNG TIỆN CÁ NHÂN',
+      {font:{bold:true,size:14},align:{horizontal:'center'},border:{}}); r++;
+  ws.mergeCells(r,1,r,nCol);
+  set(r,1,P.quyLabel,{font:{italic:true,size:12},align:{horizontal:'center'},border:{}}); r+=2;
+  // ── Tiêu đề bảng (2 dòng) ──
+  var hr=r;
+  ['STT','Danh số','Họ và tên'].forEach(function(t,i){
+    ws.mergeCells(hr,i+1,hr+1,i+1);
+    set(hr,i+1,t,{font:{bold:true},fill:XANH,align:{horizontal:'center'}});
+    set(hr+1,i+1,null,{fill:XANH});
+  });
+  P.cats.forEach(function(c,i){
+    var col=4+i*2;
+    ws.mergeCells(hr,col,hr,col+1);
+    set(hr,col,c[1],{font:{bold:true},fill:XANH,align:{horizontal:'center'}});
+    set(hr,col+1,null,{fill:XANH});
+    set(hr+1,col,  P.sized[c[0]]?'Cỡ / SL':'Số lượng',{font:{bold:true,size:9},fill:NHAT,align:{horizontal:'center'}});
+    set(hr+1,col+1,'Ký nhận',{font:{bold:true,size:9},fill:XANH,align:{horizontal:'center'}});
+  });
+  ws.getRow(hr).height=20; ws.getRow(hr+1).height=18;
+  r=hr+2;
+  var dong1=r;
+  // ── Dữ liệu, chia theo nhóm ──
+  P.nhoms.forEach(function(nh){
+    ws.mergeCells(r,1,r,nCol);
+    set(r,1,'NHÓM: '+nh.ten.toUpperCase()+'   ('+nh.ds.length+' người)',
+        {font:{bold:true,size:11},fill:NHOMBG,align:{horizontal:'left'}});
+    ws.getRow(r).height=18; r++;
+    nh.ds.forEach(function(d){
+      set(r,1,d.stt,{align:{horizontal:'center'}});
+      set(r,2,d.danhSo,{align:{horizontal:'center'}});
+      set(r,3,d.ten,{align:{horizontal:'left'}});
+      d.o.forEach(function(x,i){
+        var col=4+i*2;
+        if(x.capPhat){
+          set(r,col,x.v,{align:{horizontal:'center'},fill:NHAT});
+          set(r,col+1,null,{});                      // ô trắng để ký
+        }else{
+          // Không cấp món này trong quý: nền xám + gạch chéo cả ô số lượng lẫn ô ký
+          var g={top:{style:'thin'},left:{style:'thin'},bottom:{style:'thin'},right:{style:'thin'},
+                 diagonal:{up:true,down:true,style:'thin',color:{argb:'FF9AA5B5'}}};
+          set(r,col,null,{fill:XAM,border:g});
+          set(r,col+1,null,{fill:XAM,border:g});
+        }
+      });
+      ws.getRow(r).height=26;                        // đủ chỗ ký tay
+      r++;
+    });
+  });
+  var dongCuoi=r-1;
+  // ── Tổng cộng cho các cột chỉ là số lượng ──
+  set(r,1,'TỔNG CỘNG',{font:{bold:true},fill:XANH,align:{horizontal:'center'}});
+  ws.mergeCells(r,1,r,3);
+  set(r,2,null,{fill:XANH}); set(r,3,null,{fill:XANH});
+  P.cats.forEach(function(c,i){
+    var col=4+i*2, L=ws.getColumn(col).letter;
+    if(P.sized[c[0]]) set(r,col,null,{fill:XANH});
+    else set(r,col,{formula:'SUM('+L+dong1+':'+L+dongCuoi+')'},{font:{bold:true},fill:XANH,align:{horizontal:'center'}});
+    set(r,col+1,null,{fill:XANH});
+  });
+  ws.getRow(r).height=20;
+  r+=2;
+  // ── Chú thích ──
+  ws.mergeCells(r,1,r,nCol);
+  set(r,1,'Ghi chú: Quần áo — L: Liền, R: Rời, N: Nữ. Giày — T: Thấp cổ, C: Cao cổ, U: Ủng da. '+
+          'QA thợ hàn — H: Bộ đồ hàn. Số sau chữ là cỡ (VD: L52 = Bộ liền quần cỡ 52). '+
+          'Ô tô xám gạch chéo: quý này nhân viên không được cấp món đó.',
+      {font:{italic:true,size:10},align:{horizontal:'left'},border:{}});
+  ws.getRow(r).height=28; r+=2;
+  // ── Vật tư khác ──
+  if(P.extras&&P.extras.length){
+    ws.mergeCells(r,1,r,nCol);
+    set(r,1,'VẬT TƯ KHÁC CẤP PHÁT (ngoài định mức)',{font:{bold:true},fill:XANH,align:{horizontal:'center'}});
+    r++;
+    ['STT','Mã vật tư','Tên vật tư','ĐVT','SL cấp','Ghi chú','Ký nhận'].forEach(function(t,i){
+      set(r,i+1,t,{font:{bold:true,size:10},fill:XANH,align:{horizontal:'center'}});
+    });
+    r++;
+    var e1=r;
+    P.extras.forEach(function(ex,i){
+      set(r,1,i+1,{align:{horizontal:'center'}});
+      set(r,2,ex.ma||'',{align:{horizontal:'center'}});
+      set(r,3,ex.ten||'',{align:{horizontal:'left'}});
+      set(r,4,ex.donVi||'',{align:{horizontal:'center'}});
+      set(r,5,Number(ex.soLuong)||0,{align:{horizontal:'center'},fill:NHAT});
+      set(r,6,(ex.ghiChu&&String(ex.ghiChu).trim())||'',{align:{horizontal:'left'}});
+      set(r,7,null,{});
+      ws.getRow(r).height=26; r++;
+    });
+    set(r,1,'TỔNG CỘNG',{font:{bold:true},fill:XANH,align:{horizontal:'center'}});
+    ws.mergeCells(r,1,r,4);
+    [2,3,4].forEach(function(c){set(r,c,null,{fill:XANH});});
+    set(r,5,{formula:'SUM(E'+e1+':E'+(r-1)+')'},{font:{bold:true},fill:XANH,align:{horizontal:'center'}});
+    set(r,6,null,{fill:XANH}); set(r,7,null,{fill:XANH});
+  }
+  // ── Độ rộng cột, khoá tiêu đề, lặp tiêu đề khi in ──
+  // Cột 2 rộng 14 để bảng "Vật tư khác" bên dưới đủ chỗ cho mã vật tư 13 ký tự
+  ws.getColumn(1).width=5; ws.getColumn(2).width=14; ws.getColumn(3).width=28;
+  P.cats.forEach(function(c,i){
+    ws.getColumn(4+i*2).width=P.sized[c[0]]?11:8;    // ô ghi số/cỡ: hẹp
+    ws.getColumn(5+i*2).width=13;                    // ô ký nhận: rộng hơn hẳn
+  });
+  ws.views=[{state:'frozen',xSplit:3,ySplit:hr+1}];
+  ws.pageSetup.printTitlesRow=hr+':'+(hr+1);
+  return wb;
+}
+
 function exportPhieuMatrixExcel(quyArg,dvArg){
+  var quyStr=quyArg, dv=dvArg;
+  if(!quyStr){var sel=document.getElementById('bc-quy'); quyStr=sel?sel.value:'';}
+  if(dv===undefined||dv===null){var dvEl=document.getElementById('bc-don-vi'); dv=dvEl?dvEl.value:'';}
+  if(!quyStr){showToast('⚠️ Vui lòng chọn quý!','warning');return;}
+  if(!dv){showToast('⚠️ Vui lòng chọn đơn vị để xuất!','warning');return;}
+  var P=_kyNhanPayload(quyStr,dv);
+  if(!P){showToast('Không có nhân viên cần cấp phát trong quý này cho đơn vị đã chọn.','warning');return;}
+  showToast('Đang dựng file Excel…','info');
+  _napExcelJS().then(function(ExcelJS){
+    var wb=_kyNhanBuild(ExcelJS,P);
+    return wb.xlsx.writeBuffer();
+  }).then(function(buf){
+    var blob=new Blob([buf],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+    var url=URL.createObjectURL(blob), a=document.createElement('a');
+    a.href=url; a.download='CapPhat_'+quyStr.replace('/','_')+'_'+dv.replace(/[\/\\?*\[\]:\s]+/g,'-')+'.xlsx';
+    a.click(); setTimeout(function(){URL.revokeObjectURL(url);},2000);
+    showToast('✅ Đã xuất Excel cấp phát – '+quyStr+' – '+dv+'!');
+  }).catch(function(e){
+    console.warn('[BHLĐ] ExcelJS lỗi, quay về bản XLSX cũ:',e);
+    showToast('Không tải được thư viện định dạng, dùng bản Excel đơn giản.','warning');
+    _exportMatrixExcelXLSX(quyStr,dv);
+  });
+}
+function _exportMatrixExcelXLSX(quyArg,dvArg){   // bản dự phòng, dùng khi không nạp được ExcelJS
   if(typeof XLSX==='undefined'){showToast('⚠️ Thư viện Excel chưa tải.','error');return;}
   var quyStr=quyArg, dv=dvArg;
   if(!quyStr){var sel=document.getElementById('bc-quy'); quyStr=sel?sel.value:'';}
@@ -5969,12 +6230,13 @@ function cpwStep4Body(s3,phieu){
   if(s3==='xong')return '<div style="display:flex;align-items:center;gap:6px;color:var(--success);font-size:13.5px;">'+_ic('check',16)+'<span>Đã hoàn tất'+(_cpwState.hoanTatAt?' vào '+new Date(_cpwState.hoanTatAt).toLocaleDateString('vi-VN'):'')+'. Thời hạn cấp phát của nhân viên đã được cập nhật.</span></div>';
   var xw=_cpwDaXuat('word'), xx=_cpwDaXuat('excel'), du=xw&&xx;
   var thieu=[]; if(!xw)thieu.push('Word'); if(!xx)thieu.push('Excel');
-  var ok='<span style="color:var(--success);font-weight:600;">✓ đã xuất</span>';
+  // Dấu tích thay cho chữ; title để vẫn đọc được bằng trình đọc màn hình
+  var ok='<span title="Đã xuất" style="color:var(--success);font-size:17px;font-weight:700;line-height:1;margin:0 2px;">✓</span>';
   return _demoApprovedNote(phieu)+
     '<p style="font-size:13.5px;color:var(--text-light);margin:'+(_demoApprovedNote(phieu)?'8px':'0')+' 0 10px;">Xuất phiếu để trình ký. Sau khi trình ký, xác nhận để hệ thống cập nhật thời hạn cấp phát mới cho nhân viên.</p>'+
     '<div style="background:#fdf3e0;border:1px solid #e8c98a;border-radius:8px;padding:10px 12px;margin-bottom:12px;font-size:12.5px;color:#7a4a00;line-height:1.55;">'+
       '<b>Hãy lưu lại cả hai file trước khi xác nhận.</b> Sau khi cập nhật thời hạn, webapp '+
-      'không xuất lại được hai file này cho quý đã hoàn tất — nút xuất sẽ đóng cùng với bước này.'+
+      'không xuất lại được hai file này cho quý đã hoàn tất.'+
     '</div>'+
     '<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">'+
       '<button class="btn btn-doc btn-sm" onclick="cpwExport()">'+_ic('file',15)+' Xuất phiếu (Word)</button>'+
