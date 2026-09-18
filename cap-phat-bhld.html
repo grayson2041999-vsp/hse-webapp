@@ -205,8 +205,50 @@
     .cp-tile.cp-task .cp-ic{background:var(--primary);color:#fff}
     .cp-tile h4{margin:0;font-size:15px;font-weight:700;color:var(--primary)}
     .cp-tile p{margin:0;font-size:12.5px;color:var(--text-light);line-height:1.45}
+    /* ===== DASHBOARD TỔNG QUAN ===== */
+    .dash{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:16px 18px;margin-bottom:22px}
+    .dash-head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:14px}
+    .dash-title{font-size:15px;font-weight:700;color:var(--primary);display:flex;align-items:center;gap:8px}
+    .dash-nam{display:flex;align-items:center;gap:2px}
+    .dash-nam button{border:1px solid var(--border);background:#fff;color:var(--primary);width:26px;height:26px;
+      border-radius:6px;cursor:pointer;font-size:14px;line-height:1;padding:0}
+    .dash-nam button:disabled{opacity:.35;cursor:default}
+    .dash-nam span{font-weight:700;font-size:14px;color:var(--primary);min-width:52px;text-align:center}
+    .dash-sec{border-top:1px dashed var(--border);margin-top:16px;padding-top:14px}
+    .dash-sec-t{font-size:11.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--text-light);margin-bottom:10px}
+    /* Ô chỉ số */
+    .dash-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px}
+    .dash-kpi{border:1px solid var(--border);border-radius:10px;padding:11px 13px;background:#fbfcfe}
+    .dash-kpi.act{cursor:pointer}
+    .dash-kpi.act:hover{border-color:var(--primary);background:#f2f7fd}
+    .dash-kpi .v{font-size:23px;font-weight:700;line-height:1.1;color:var(--text-light)}
+    .dash-kpi.has .v{color:var(--accent)}
+    .dash-kpi .l{font-size:12px;color:var(--text-light);margin-top:2px}
+    /* Ma trận tiến độ */
+    .dash-mt{width:100%;border-collapse:separate;border-spacing:0 5px;font-size:12.5px}
+    .dash-mt th{font-size:11px;font-weight:700;color:var(--text-light);text-align:center;padding:0 3px 2px}
+    .dash-mt th.u{text-align:left;padding-left:2px}
+    .dash-mt td{padding:0 3px}
+    .dash-mt td.u{font-size:13px;font-weight:600;color:var(--text);white-space:nowrap;padding-right:10px}
+    .dash-mt td.n{font-size:11.5px;color:var(--text-light);white-space:nowrap;padding-right:10px;text-align:right}
+    .dash-mt col.now{background:#f4f8ff}
+    .dash-o{display:block;border-radius:7px;padding:6px 4px;text-align:center;font-size:11.5px;font-weight:600;
+      border:1px solid transparent;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    a.dash-o{text-decoration:none;cursor:pointer}
+    a.dash-o:hover{filter:brightness(.96);box-shadow:0 0 0 2px rgba(0,48,135,.18)}
+    .d-xong{background:#e8f5ec;color:#146c33;border-color:#bfe0cb}
+    .d-daduyet{background:#e7f0fb;color:#004a8f;border-color:#c2d8f0}
+    .d-choduyet{background:#f1ecfb;color:#5b3fa8;border-color:#d8cdf0}
+    .d-danglam{background:#fdf3e0;color:#8a5300;border-color:#f0dcb4}
+    .d-chua{background:#f3f5f9;color:#6b7c93;border-color:#dfe6ef}
+    .d-ngoai{background:repeating-linear-gradient(135deg,#fafbfc,#fafbfc 4px,#f1f3f7 4px,#f1f3f7 8px);
+      color:#aab4c4;border-color:#eceff4}
+    .dash-chu{display:flex;gap:14px;flex-wrap:wrap;margin-top:10px;font-size:11.5px;color:var(--text-light)}
+    .dash-chu i{display:inline-block;width:11px;height:11px;border-radius:3px;border:1px solid;vertical-align:-1px;margin-right:5px}
+    @media(max-width:700px){.dash-mt td.n{display:none}.dash-mt th.n{display:none}}
   </style>
   <div id="cp-home">
+    <div id="cp-dashboard"></div>
     <div class="cp-sec-title">Tác vụ chính</div>
     <div class="cp-grid">
       <div class="cp-tile cp-task" onclick="cpGoQuarterly()">
@@ -1549,6 +1591,137 @@ function showPage(page){
 }
 
 /* ===== ĐIỀU HƯỚNG TRANG CHỦ CẤP PHÁT (thẻ tác vụ + tra cứu) ===== */
+/* ═════════════════════════════════════════════════════════════════
+   DASHBOARD TỔNG QUAN (khối trên cùng trang chủ Cấp phát BHLĐ)
+
+   Nguyên tắc: MỌI trạng thái đều suy ra từ tiến độ thực tế (đã có phiếu
+   chưa, phiếu ở trạng thái nào, đã hoàn tất chưa) qua _cpwTrangThaiBuoc,
+   KHÔNG đọc thẳng các cờ b1TrangThai / b2TrangThai — chúng không đáng tin.
+   ═════════════════════════════════════════════════════════════════ */
+var _dashTT=null;      // cache bảng tiến trình; bảng này KHÔNG nằm trong PULL_SHEETS
+var _dashNam=null;     // năm đang xem trên ma trận
+
+var _DASH_TT={
+  xong:    {nhan:'Hoàn tất',       lop:'d-xong'},
+  daduyet: {nhan:'Chờ xuất phiếu', lop:'d-daduyet'},
+  choduyet:{nhan:'Chờ duyệt',      lop:'d-choduyet'},
+  danglam: {nhan:'Đang làm',       lop:'d-danglam'},
+  chua:    {nhan:'Chưa làm',       lop:'d-chua'},
+  ngoai:   {nhan:'–',              lop:'d-ngoai'}
+};
+
+// Trạng thái một ô (đơn vị × quý). Hàm THUẦN — xem tests/dashboard.test.js.
+function _dashTrangThaiO(donVi,quyStr,dsTienTrinh,dsPhieu,quyStart){
+  if(quyStart&&_compareQuy(quyStr,quyStart)<0)return 'ngoai';
+  var st=(dsTienTrinh||[]).filter(function(t){return t.quyStr===quyStr&&_uSame(t.donVi,donVi);})[0]||{};
+  var phieu=(dsPhieu||[]).filter(function(p){return p.type==='quy'&&p.quyStr===quyStr&&_uSame(p.donVi,donVi);})
+    .sort(function(a,b){return new Date(b.createdAt||0)-new Date(a.createdAt||0);})[0]||null;
+  var tt=_cpwTrangThaiBuoc(st,phieu,0);
+  if(tt.s4==='xong')return 'xong';
+  if(phieu&&phieu.status==='approved')return 'daduyet';
+  if(phieu&&phieu.status==='pending')return 'choduyet';
+  if(tt.b1done||tt.b2done)return 'danglam';
+  return 'chua';
+}
+
+function _dashNapTienTrinh(){
+  if(_dashTT)return Promise.resolve(_dashTT);
+  var sb=window.HSE_SB; if(!sb)return Promise.resolve([]);
+  return sb.from(BHLD.tbl('cap_phat_tien_trinh')).select('*').then(function(r){
+    _dashTT=(r&&r.data)||[]; return _dashTT;
+  }).catch(function(){ _dashTT=[]; return _dashTT; });
+}
+function _dashDoiNam(d){
+  var qs=_getQuyStartRef(), namMin=parseInt(String(qs).split('/')[1])||new Date().getFullYear();
+  var namMax=new Date().getFullYear()+1;
+  var n=(_dashNam||new Date().getFullYear())+d;
+  if(n<namMin)n=namMin; if(n>namMax)n=namMax;
+  _dashNam=n; renderCPDashboard();
+}
+function _dashMoQuy(donVi,quyStr){
+  if(typeof cpGoQuarterly!=='function')return;
+  cpGoQuarterly();
+  setTimeout(function(){
+    var dv=document.getElementById('cpw-donvi'),q=document.getElementById('cpw-quy');
+    if(dv){ for(var i=0;i<dv.options.length;i++) if(_uSame(dv.options[i].value,donVi)){dv.selectedIndex=i;break;} }
+    if(q){ for(var j=0;j<q.options.length;j++) if(q.options[j].value===quyStr){q.selectedIndex=j;break;} }
+    if(typeof cpwOnSelect==='function')cpwOnSelect();   // handler thật của hai ô chọn
+  },60);
+}
+
+function renderCPDashboard(){
+  var host=document.getElementById('cp-dashboard'); if(!host)return;
+  var quyStart=_getQuyStartRef();
+  var namNay=new Date().getFullYear();
+  var namMin=parseInt(String(quyStart).split('/')[1])||namNay, namMax=namNay+1;
+  if(_dashNam===null)_dashNam=namNay;
+  if(_dashNam<namMin)_dashNam=namMin;
+  var nam=_dashNam;
+  var quys=['Q1/'+nam,'Q2/'+nam,'Q3/'+nam,'Q4/'+nam];
+  var quyNay=getCurrentQuy();
+  var units=(typeof nhuCauUnits==='function')?nhuCauUnits():[];
+  var P=BHLD.lsGet('phieu_requests')||[];
+  var TT=_dashTT||[];
+
+  /* ── Việc đang chờ xử lý ── */
+  var soPhieu=P.filter(function(p){return p.status==='pending';}).length;
+  var soNhanSu=(BHLD.lsGet('pending_changes')||[]).filter(function(c){return c.status==='pending';}).length;
+  var soNVMoi=(typeof daNhanVien!=='undefined'?daNhanVien:[]).filter(function(n){return n.loaiNV==='moi';}).length;
+  var laAdmin=(typeof isAdmin==='function'&&isAdmin());
+  function kpi(v,nhan,hanhDong){
+    var act=(v>0&&hanhDong)?' act':'';
+    return '<div class="dash-kpi'+(v>0?' has':'')+act+'"'+((v>0&&hanhDong)?' onclick="'+hanhDong+'"':'')+'>'+
+      '<div class="v">'+v+'</div><div class="l">'+nhan+'</div></div>';
+  }
+  var h='<div class="dash">'+
+    '<div class="dash-head"><div class="dash-title">'+_ic('chart',17)+'Tổng quan cấp phát BHLĐ</div>'+
+      '<div class="dash-nam">'+
+        '<button onclick="_dashDoiNam(-1)"'+(nam<=namMin?' disabled':'')+' title="Năm trước">‹</button>'+
+        '<span>'+nam+'</span>'+
+        '<button onclick="_dashDoiNam(1)"'+(nam>=namMax?' disabled':'')+' title="Năm sau">›</button>'+
+      '</div></div>'+
+    '<div class="dash-kpis">'+
+      kpi(soPhieu,'Phiếu chờ Admin duyệt',laAdmin?'cpGoApprove()':'')+
+      kpi(soNhanSu,'Thay đổi nhân sự chờ duyệt',laAdmin?'cpGoApprove()':'')+
+      kpi(soNVMoi,'Nhân viên mới chưa lập phiếu','cpGoNewEmployee()')+
+    '</div>';
+
+  /* ── Ma trận tiến độ ── */
+  h+='<div class="dash-sec"><div class="dash-sec-t">Tiến độ cấp phát theo quý</div>';
+  if(!units.length){
+    h+='<div style="font-size:12.5px;color:var(--text-light);">Chưa có đơn vị nào có nhân viên.</div>';
+  }else{
+    var trongPham=quys.filter(function(q){return _compareQuy(q,quyStart)>=0;}).length;
+    h+='<table class="dash-mt"><colgroup><col style="width:1%"><col style="width:1%">'+
+       quys.map(function(q){return '<col style="width:21%"'+(q===quyNay?' class="now"':'')+'>';}).join('')+'</colgroup>'+
+       '<thead><tr><th class="u">Đơn vị</th><th class="n">Hoàn tất</th>'+
+       quys.map(function(q){return '<th'+(q===quyNay?' title="Quý hiện tại"':'')+'>'+q.split('/')[0]+(q===quyNay?' •':'')+'</th>';}).join('')+
+       '</tr></thead><tbody>';
+    units.forEach(function(u){
+      var xong=0;
+      var o=quys.map(function(q){
+        var ma=_dashTrangThaiO(u,q,TT,P,quyStart);
+        if(ma==='xong')xong++;
+        var c=_DASH_TT[ma];
+        if(ma==='ngoai')return '<td><span class="dash-o '+c.lop+'" title="Trước mốc bắt đầu theo dõi ('+quyStart+')">'+c.nhan+'</span></td>';
+        return '<td><a class="dash-o '+c.lop+'" href="#" onclick="event.preventDefault();_dashMoQuy('+
+          JSON.stringify(u).replace(/"/g,'&quot;')+','+JSON.stringify(q).replace(/"/g,'&quot;')+')" '+
+          'title="'+_escH(u)+' – '+q+': '+c.nhan+'">'+c.nhan+'</a></td>';
+      }).join('');
+      h+='<tr><td class="u">'+_escH(u)+'</td><td class="n">'+xong+'/'+trongPham+'</td>'+o+'</tr>';
+    });
+    h+='</tbody></table>'+
+      '<div class="dash-chu">'+
+        ['xong','daduyet','choduyet','danglam','chua','ngoai'].map(function(k){
+          return '<span><i class="'+_DASH_TT[k].lop+'"></i>'+(k==='ngoai'?'Ngoài phạm vi theo dõi':_DASH_TT[k].nhan)+'</span>';
+        }).join('')+
+      '</div>';
+  }
+  h+='</div>';   // đóng .dash-sec của ma trận
+  h+='</div>';   // đóng .dash
+  host.innerHTML=h;
+}
+
 function cpShowHome(){
   var h=document.getElementById('cp-home'); if(h)h.style.display='block';
   var pk=document.getElementById('nv-unit-picker'); if(pk)pk.style.display='none';
@@ -1559,6 +1732,8 @@ function cpShowHome(){
   var sc=document.getElementById('cp-sizechart'); if(sc)sc.style.display='none';
   var mt=document.getElementById('cp-main-title'); if(mt)mt.style.display='';
   cpUpdateApproveTile();
+  renderCPDashboard();                                   // vẽ ngay với dữ liệu đang có
+  _dashNapTienTrinh().then(function(){ renderCPDashboard(); });  // rồi vẽ lại khi có tiến trình
 }
 // ===== TRA CỨU KÍCH CỠ QUẦN ÁO =====
 function cpOpenSizeChart(){
@@ -3152,6 +3327,7 @@ function _ic(n,s){var P={
   undo:'<path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H10"/>',
   clip:'<rect width="8" height="4" x="8" y="2" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/>',
   back:'<path d="m12 19-7-7 7-7"/><path d="M19 12H5"/>',
+  chart:'<path d="M3 3v16a2 2 0 0 0 2 2h16"/><path d="M7 16v-5"/><path d="M12 16V8"/><path d="M17 16v-3"/>',
   check:'<path d="M20 6 9 17l-5-5"/>',
   cal:'<rect width="18" height="18" x="3" y="4" rx="2"/><path d="M16 2v4"/><path d="M8 2v4"/><path d="M3 10h18"/>',
   calc:'<rect width="16" height="20" x="4" y="2" rx="2"/><line x1="8" x2="16" y1="6" y2="6"/><line x1="16" x2="16" y1="14" y2="18"/><path d="M12 10h.01"/><path d="M8 10h.01"/><path d="M8 14h.01"/><path d="M12 14h.01"/><path d="M8 18h.01"/><path d="M12 18h.01"/>',
