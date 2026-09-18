@@ -246,6 +246,16 @@
     .dash-chu{display:flex;gap:14px;flex-wrap:wrap;margin-top:10px;font-size:11.5px;color:var(--text-light)}
     .dash-chu i{display:inline-block;width:11px;height:11px;border-radius:3px;border:1px solid;vertical-align:-1px;margin-right:5px}
     @media(max-width:700px){.dash-mt td.n{display:none}.dash-mt th.n{display:none}}
+    /* Dải tiến độ năm trong wizard cấp phát quý */
+    .cpw-td{margin-top:14px;border-top:1px dashed var(--border);padding-top:12px}
+    .cpw-td-h{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;margin-bottom:8px}
+    .cpw-td-h b{font-size:11.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--text-light)}
+    .cpw-td-h span{font-size:11.5px;color:var(--text-light)}
+    .cpw-td-g{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+    .cpw-td-q{font-size:10.5px;font-weight:700;color:var(--text-light);text-align:center;margin-bottom:3px}
+    .cpw-td-q.now{color:var(--primary)}
+    .cpw-td .dash-o{padding:7px 4px}
+    .cpw-td .mo{box-shadow:0 0 0 2px var(--primary);font-weight:700}
   </style>
   <div id="cp-home">
     <div id="cp-dashboard"></div>
@@ -311,6 +321,7 @@
         <div class="form-group"><label>Đơn vị</label><select id="cpw-donvi" onchange="cpwOnSelect()"></select></div>
         <div class="form-group"><label>Quý cấp phát</label><select id="cpw-quy" onchange="cpwOnSelect()"></select></div>
       </div>
+      <div id="cpw-tiendo"></div>
     </div>
     <div id="cpw-steps"></div>
   </div>
@@ -2717,6 +2728,7 @@ function cpGoQuarterly(){
   var wz=document.getElementById('cp-wizard'); if(wz)wz.style.display='block';
   var mt=document.getElementById('cp-main-title'); if(mt)mt.style.display='none';
   cpwInit();
+  _dashNapTienTrinh().then(function(){ renderCpwTienDo(); });   // dải cần tiến trình của cả năm
 }
 // Mở trang Phê duyệt (chỉ tab Chờ duyệt)
 function cpGoApprove(){
@@ -5776,6 +5788,45 @@ function cpwInit(){
   qSel.innerHTML=qOpts.map(function(q){return '<option value="'+q+'"'+(q===curQ?' selected':'')+'>'+q+'</option>';}).join('');
   cpwOnSelect();
 }
+/* Dải tiến độ cả năm của ĐƠN VỊ ĐANG CHỌN, hiện ngay trong wizard.
+   Không cần logic phân quyền riêng: ô chọn đơn vị vốn đã lọc theo canEditUnit
+   (admin thấy mọi đơn vị, user chỉ thấy đơn vị của mình), nên dải luôn bám
+   đúng đơn vị mà người dùng được phép làm việc.
+   Năm lấy theo quý đang mở, không có nút chuyển năm — chọn quý khác ở ô trên
+   (hoặc bấm thẳng vào một ô trong dải) là dải tự nhảy năm theo. */
+function renderCpwTienDo(){
+  var host=document.getElementById('cpw-tiendo'); if(!host)return;
+  if(!_cpwDonVi||!_cpwQuy){host.innerHTML='';return;}
+  var nam=String(_cpwQuy).split('/')[1];
+  var quys=['Q1/'+nam,'Q2/'+nam,'Q3/'+nam,'Q4/'+nam];
+  var quyStart=_getQuyStartRef(), quyNay=getCurrentQuy();
+  var P=BHLD.lsGet('phieu_requests')||[], TT=_dashTT||[];
+  var coTrongOChon={};
+  var qSel=document.getElementById('cpw-quy');
+  if(qSel)for(var i=0;i<qSel.options.length;i++)coTrongOChon[qSel.options[i].value]=1;
+  var xong=0, trongPham=0;
+  var o=quys.map(function(q){
+    var ma=_dashTrangThaiO(_cpwDonVi,q,TT,P,quyStart);
+    if(ma!=='ngoai')trongPham++;
+    if(ma==='xong')xong++;
+    var c=_DASH_TT[ma];
+    var lop='dash-o '+c.lop+(q===_cpwQuy?' mo':'');
+    var nhan='<div class="cpw-td-q'+(q===quyNay?' now':'')+'">'+q.split('/')[0]+(q===quyNay?' •':'')+'</div>';
+    if(ma==='ngoai'||!coTrongOChon[q]||q===_cpwQuy)
+      return '<div>'+nhan+'<span class="'+lop+'" title="'+_escH(q)+' – '+c.nhan+
+        (q===_cpwQuy?' (đang mở)':(ma==='ngoai'?' (trước mốc theo dõi '+quyStart+')':''))+'">'+c.nhan+'</span></div>';
+    return '<div>'+nhan+'<a class="'+lop+'" href="#" title="Chuyển sang '+_escH(q)+'" '+
+      'onclick="event.preventDefault();_cpwChonQuy('+JSON.stringify(q).replace(/"/g,'&quot;')+')">'+c.nhan+'</a></div>';
+  }).join('');
+  host.innerHTML='<div class="cpw-td"><div class="cpw-td-h">'+
+    '<b>Tiến độ năm '+nam+' — '+_escH(_cpwDonVi)+'</b>'+
+    '<span>hoàn tất '+xong+'/'+trongPham+' quý'+(trongPham<4?' (các quý còn lại nằm trước mốc theo dõi '+quyStart+')':'')+'</span>'+
+    '</div><div class="cpw-td-g">'+o+'</div></div>';
+}
+function _cpwChonQuy(q){
+  var qSel=document.getElementById('cpw-quy'); if(!qSel)return;
+  for(var i=0;i<qSel.options.length;i++) if(qSel.options[i].value===q){qSel.selectedIndex=i;cpwOnSelect();return;}
+}
 function cpwOnSelect(){
   _cpwDonVi=document.getElementById('cpw-donvi').value||'';
   _cpwQuy=document.getElementById('cpw-quy').value||'';
@@ -5873,6 +5924,7 @@ function cpwRender(){
     '</div>';
   }
   document.getElementById('cpw-steps').innerHTML=html;
+  renderCpwTienDo();
   if(s1==='dang_lam'){ _cpwListReadOnly=false; cpwRenderList(); } // nhúng bảng kiểm tra/sửa vào Bước 1
   else if(s1==='cho_duyet'){ _cpwListReadOnly=true; cpwRenderList(); } // xem read-only trong lúc chờ duyệt
   if(s2==='dang_lam')cpwRenderQuantity(); // nhúng bảng nhập số lượng vào Bước 2
