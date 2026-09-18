@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Kiểm tra dữ liệu Cấp phát BHLĐ</title>
+<style>
+  :root{--bg:#f6f8fb;--card:#fff;--line:#dfe6ef;--txt:#1e2733;--mut:#6b7a8d;--pri:#003087;--err:#c0392b;--warn:#b7791f;--ok:#1a7a3c}
+  *{box-sizing:border-box}
+  body{margin:0;padding:24px 16px;background:var(--bg);color:var(--txt);font:14px/1.6 -apple-system,Segoe UI,Roboto,Arial,sans-serif}
+  .wrap{max-width:1100px;margin:0 auto}
+  h1{font-size:20px;color:var(--pri);margin:0 0 4px}
+  .sub{color:var(--mut);font-size:13px;margin-bottom:18px}
+  .bar{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:18px}
+  button{padding:8px 16px;border:1px solid var(--pri);background:var(--pri);color:#fff;border-radius:6px;font-size:13.5px;cursor:pointer}
+  button.alt{background:#fff;color:var(--pri)}
+  button:disabled{opacity:.5;cursor:default}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 16px;margin-bottom:12px}
+  .card h2{font-size:15px;margin:0 0 8px;display:flex;align-items:center;gap:8px}
+  .tag{font-size:11.5px;font-weight:700;padding:2px 8px;border-radius:20px}
+  .t-err{background:#fdecea;color:var(--err)}.t-warn{background:#fdf6e3;color:var(--warn)}.t-ok{background:#eaf7ef;color:var(--ok)}
+  .desc{color:var(--mut);font-size:12.5px;margin-bottom:8px}
+  table{width:100%;border-collapse:collapse;font-size:12.5px}
+  th{background:#eef3f9;text-align:left;padding:5px 8px;border:1px solid var(--line);font-weight:600}
+  td{padding:4px 8px;border:1px solid var(--line);vertical-align:top}
+  code{background:#eef3f9;padding:1px 5px;border-radius:4px;font-size:12px}
+  #log{white-space:pre-wrap;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;color:var(--mut)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Kiểm tra dữ liệu Cấp phát BHLĐ</h1>
+  <div class="sub">Đọc trực tiếp từ Supabase (chỉ đọc, không ghi) và soát các lỗi ảnh hưởng tới cách tính “Tháng cấp gần nhất”.</div>
+  <div class="bar">
+    <button id="run">Chạy kiểm tra</button>
+    <button id="dl" class="alt" disabled>Tải dữ liệu thô (JSON)</button>
+  </div>
+  <div id="log">Bấm “Chạy kiểm tra” để bắt đầu.</div>
+  <div id="out"></div>
+</div>
+<script>
+/* ===== CẤU HÌNH — trùng với assets/supabase-config.js ===== */
+const SB_URL = "https://wvohlxxeatwirbusbtnj.supabase.co";
+const SB_KEY = "sb_publishable_eCNPCoifzbMRnRTyHBtI1Q_f8yMQb8k";
+
+const TABLES = {
+  nhanVien:    "CapPhatBHLD_NhanVien",
+  dinhMuc:     "CapPhatBHLD_DinhMuc",
+  danhMuc:     "CapPhatBHLD_DanhMuc",
+  nhomTB:      "CapPhatBHLD_NhomTrangBi",
+  chucDanh:    "CapPhatBHLD_ChucDanh",
+  phieu:       "CapPhatBHLD_PhieuYeuCau",
+  tienTrinh:   "CapPhatBHLD_TienTrinh",
+  quyList:     "CapPhatBHLD_DanhSachQuy",
+  choDuyet:    "CapPhatBHLD_ChoDuyet",
+  lichSu:      "CapPhatBHLD_LichSuNhapXuat",
+  tonKho:      "CapPhatBHLD_TonKho",
+  nhomNV:      "CapPhatBHLD_NhomNhanVien",
+  bangSize:    "CapPhatBHLD_BangSize"
+};
+
+/* ===== Tiện ích ===== */
+const $ = s => document.querySelector(s);
+const esc = s => String(s==null?'':s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const mm  = v => String(v==null?'':v).slice(0,7);
+const isMM = v => /^\d{4}-\d{2}$/.test(v);
+const addM = (v,n) => { const [y,m]=v.split('-').map(Number); const d=new Date(y,m-1+n,1);
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'); };
+const nowMM = () => { const d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'); };
+const quyMonths = q => { const [qq,y]=q.split('/'); const n=parseInt(qq.slice(1)); const out=[];
+  for(let m=(n-1)*3+1;m<=n*3;m++) out.push(y+'-'+String(m).padStart(2,'0')); return out; };
+const parseItems = x => Array.isArray(x) ? x : (()=>{ try{ return JSON.parse(x||'[]'); }catch(e){ return []; } })();
+
+/* Bản sao của logic map trang bị -> cột tháng trong cap-phat-bhld.html.
+   Nếu sửa app thì sửa cả đây để công cụ soát đúng cái app đang chạy. */
+function thangField(tb){
+  if(!tb) return null;
+  const t = tb.ten || '';
+  if(t.includes('Găng tay') || t === 'Khẩu trang') return null;     // cấp theo quý
+  if(t.includes('Mũ'))                    return ['thangCapMu','Mũ'];
+  if(tb.loaiCo === 'quan_ao' && t !== 'Áo mưa' && t !== 'Bộ quần áo thợ hàn')
+                                          return ['thangCapQuanAo','Quần áo'];
+  if(t === 'Áo mưa')                      return ['thangCapAoMua','Áo mưa'];
+  if(t === 'Bộ quần áo thợ hàn')          return ['thangCapQAHan','QA thợ hàn'];
+  if(tb.loaiCo === 'giay')                return ['thangCapGiay','Giày'];
+  if(t === 'Kính bảo hộ')                 return ['thangCapKinh','Kính'];
+  return null;                                                      // KHÔNG theo dõi được
+}
+const CAP_DOI_LAN_DAU = ['thangCapQuanAo','thangCapGiay','thangCapKinh','thangCapQAHan'];
+
+let RAW = null;
+
+async function fetchAll(){
+  const out = {};
+  for(const [k,t] of Object.entries(TABLES)){
+    $('#log').textContent = 'Đang tải ' + t + ' …';
+    const r = await fetch(SB_URL + '/rest/v1/' + t + '?select=*', { headers: { apikey: SB_KEY } });
+    if(!r.ok) throw new Error(t + ' → HTTP ' + r.status + ' ' + (await r.text()).slice(0,200));
+    out[k] = await r.json();
+  }
+  return out;
+}
+
+/* ===== Các phép kiểm tra ===== */
+function audit(D){
+  const R = [];
+  const tbById = new Map(D.nhomTB.map(n => [String(n.id), n]));
+  const dmucById = new Map(D.danhMuc.map(d => [String(d.id), d]));
+  const cdByTen = new Map(D.chucDanh.map(c => [c.ten, c]));
+  const cdById  = new Map(D.chucDanh.map(c => [String(c.id), c]));
+  const NOW = nowMM();
+  const quyStart = (D.quyList[0] && D.quyList[0].quyStr) || null;
+  const dauQuy = quyStart ? quyMonths(quyStart)[0] : NOW;
+
+  const nhomCuaItem = tbId => {
+    const d = dmucById.get(String(tbId));
+    if(d) return tbById.get(String(d.nhomId)) || null;
+    return tbById.get(String(tbId)) || null;
+  };
+
+  /* 1. Định mức trỏ tới nhóm trang bị không còn tồn tại */
+  {
+    const bad = D.dinhMuc.filter(d => !tbById.has(String(d.trangBiId || d.nhomTBId)));
+    R.push({
+      title: 'Định mức trỏ tới nhóm trang bị đã bị xoá',
+      level: bad.length ? 'err' : 'ok',
+      desc: 'getTB() trả null nên tinhThangCapTiepTheo / computeQuyData / applyQuarterlyDeadlines đều bỏ qua dòng này mà không báo gì.',
+      cols: ['nhomId', 'chức danh', 'chu kỳ', 'số lượng'],
+      rows: bad.map(d => {
+        const c = cdById.get(String(d.chucDanhId));
+        return [d.trangBiId || d.nhomTBId, (c ? c.ten : d.chucDanh) || '(không rõ)', d.chuKy, d.soLuong];
+      })
+    });
+  }
+
+  /* 2. Chu kỳ không đọc được thành số */
+  {
+    const bad = D.dinhMuc.filter(d => {
+      if(d.chuKy === null || d.chuKy === '' || d.chuKy === undefined) return false;
+      return !isFinite(Number(d.chuKy));
+    });
+    R.push({
+      title: 'Chu kỳ không phải số hợp lệ (ví dụ dùng dấu phẩy thập phân)',
+      level: bad.length ? 'err' : 'ok',
+      desc: 'Number("0,25") = NaN. computeQuyData tính Math.round((3/chuKy)*soLuong) → NaN, và "NaN < 1" là false nên không bị chặn: số lượng NaN lọt thẳng vào phiếu quý và vào bảng dự trù nhu cầu.',
+      cols: ['trang bị', 'chức danh', 'chuKy (thô)', 'Number()'],
+      rows: bad.map(d => {
+        const tb = tbById.get(String(d.trangBiId || d.nhomTBId));
+        const c = cdById.get(String(d.chucDanhId));
+        return [tb ? tb.ten : '(nhóm ' + (d.trangBiId||d.nhomTBId) + ')', (c ? c.ten : d.chucDanh) || '(không rõ)', JSON.stringify(d.chuKy), String(Number(d.chuKy))];
+      })
+    });
+  }
+
+  /* 3. Chu kỳ rỗng */
+  {
+    const bad = D.dinhMuc.filter(d => d.chuKy === null || d.chuKy === '' || d.chuKy === undefined);
+    const live = bad.filter(d => cdById.has(String(d.chucDanhId)) || (d.chucDanh && cdByTen.has(d.chucDanh)));
+    R.push({
+      title: 'Định mức thiếu chu kỳ',
+      level: live.length ? 'err' : (bad.length ? 'warn' : 'ok'),
+      desc: 'Ba nơi xử lý chu kỳ rỗng khác nhau: tinhThangCapTiepTheo lấy null → cộng 0 tháng (hạn kế tiếp = chính tháng cấp → đến hạn vĩnh viễn), approvePhieu thay bằng 12, _duBaoNhuCau thì bỏ qua. Dòng có chức danh còn sống mới thực sự nguy hiểm.',
+      cols: ['trang bị', 'chức danh', 'chức danh còn tồn tại?'],
+      rows: bad.map(d => {
+        const tb = tbById.get(String(d.trangBiId || d.nhomTBId));
+        const c = cdById.get(String(d.chucDanhId));
+        const sống = !!(c || (d.chucDanh && cdByTen.has(d.chucDanh)));
+        return [tb ? tb.ten : '(nhóm ' + (d.trangBiId||d.nhomTBId) + ')', (c ? c.ten : d.chucDanh) || '(không rõ)', sống ? 'CÒN — ảnh hưởng thật' : 'đã xoá — dòng chết'];
+      })
+    });
+  }
+
+  /* 4. Nhóm trang bị theo chu kỳ tháng nhưng không map được cột tháng nào */
+  {
+    const seen = new Map();
+    D.dinhMuc.forEach(d => {
+      const tb = tbById.get(String(d.trangBiId || d.nhomTBId));
+      if(!tb) return;
+      const t = tb.ten || '';
+      if(t.includes('Găng tay') || t === 'Khẩu trang') return;
+      if(thangField(tb)) return;
+      const c = cdById.get(String(d.chucDanhId));
+      const sống = !!(c || (d.chucDanh && cdByTen.has(d.chucDanh)));
+      const k = tb.ten;
+      if(!seen.has(k)) seen.set(k, { n: 0, sống: 0 });
+      seen.get(k).n++; if(sống) seen.get(k).sống++;
+    });
+    R.push({
+      title: 'Trang bị có định mức nhưng không map được sang cột tháng nào',
+      level: [...seen.values()].some(v => v.sống) ? 'err' : (seen.size ? 'warn' : 'ok'),
+      desc: 'Việc map dựa trên so khớp chuỗi tên. Nhóm không khớp sẽ khiến tinhThangCapTiepTheo trả null với nhân viên cũ → món đó KHÔNG BAO GIỜ vào phiếu quý, và không có cảnh báo nào.',
+      cols: ['trang bị', 'số dòng định mức', 'trong đó chức danh còn sống'],
+      rows: [...seen.entries()].map(([k,v]) => [k, v.n, v.sống])
+    });
+  }
+
+  /* 5. Nhân viên: định dạng, tương lai, thiếu, quá hạn */
+  {
+    const fields = ['thangCapQuanAo','thangCapGiay','thangCapMu','thangCapKinh','thangCapAoMua','thangCapQAHan'];
+    const badFmt = [], future = [], missing = [], stale = [];
+    D.nhanVien.forEach(nv => {
+      const c = cdByTen.get(nv.chucDanh);
+      const dmList = D.dinhMuc.filter(d => (c && String(d.chucDanhId) === String(c.id)) || d.chucDanh === nv.chucDanh);
+      const seen = {};
+      dmList.forEach(d => {
+        const tb = tbById.get(String(d.trangBiId || d.nhomTBId)); if(!tb) return;
+        const f = thangField(tb); if(!f) return;
+        if(seen[f[0]]) return; seen[f[0]] = 1;
+        const rec = mm(nv[f[0]]);
+        if(!rec){ missing.push([nv.boPhan, nv.ten, f[1], '(trống)', d.chuKy]); return; }
+        if(!isMM(rec)){ badFmt.push([nv.boPhan, nv.ten, f[1], JSON.stringify(nv[f[0]]), d.chuKy]); return; }
+        if(rec > NOW) future.push([nv.boPhan, nv.ten, f[1], rec, d.chuKy]);
+        const ck = Math.round(Number(d.chuKy) || 0);
+        if(ck > 0){ const due = addM(rec, ck); if(due < dauQuy) stale.push([nv.boPhan, nv.ten, f[1], rec, ck, due]); }
+      });
+    });
+    R.push({ title: 'Tháng cấp nằm ở TƯƠNG LAI (nhân viên cũ)', level: future.length ? 'err' : 'ok',
+      desc: 'Theo quy ước, chỉ nhân viên vừa được duyệt phiếu nhân viên mới mới được có mốc tương lai (và chỉ với món cấp đôi). Mọi trường hợp khác nghĩa là cột đang lưu HẠN KẾ TIẾP chứ không phải tháng cấp gần nhất.',
+      cols: ['đơn vị','họ tên','món','giá trị','chu kỳ'], rows: future });
+    R.push({ title: 'Tháng cấp sai định dạng YYYY-MM', level: badFmt.length ? 'err' : 'ok',
+      desc: 'Giá trị không khớp YYYY-MM sẽ làm mọi phép cộng chu kỳ ra Invalid Date.',
+      cols: ['đơn vị','họ tên','món','giá trị','chu kỳ'], rows: badFmt });
+    R.push({ title: 'Thiếu tháng cấp dù chức danh có định mức', level: missing.length ? 'warn' : 'ok',
+      desc: 'tinhThangCapTiepTheo trả null → món này không bao giờ được đưa vào phiếu quý.',
+      cols: ['đơn vị','họ tên','món','giá trị','chu kỳ'], rows: missing });
+    R.push({ title: 'Đã quá hạn trước mốc quý ' + (quyStart||'(chưa đặt)'), level: stale.length ? 'warn' : 'ok',
+      desc: 'Đã lố ít nhất một kỳ cấp mà chưa được ghi nhận.',
+      cols: ['đơn vị','họ tên','món','tháng cấp','chu kỳ','đến hạn'], rows: stale });
+  }
+
+  /* 6. Phiếu quý: item mồ côi + trùng cột tháng trong cùng một phiếu */
+  {
+    const orphan = [], dupField = [];
+    D.phieu.filter(p => p.type === 'quy').forEach(p => {
+      const items = parseItems(p.items).filter(it => it.nvId && parseFloat(it.thucTe) > 0);
+      const map = {};
+      items.forEach(it => {
+        const tb = nhomCuaItem(it.tbId);
+        if(!tb){ orphan.push([p.donVi, p.quyStr, it.nvTen, it.ten, it.tbId]); return; }
+        const f = thangField(tb); if(!f) return;
+        const k = it.nvId + '|' + f[0];
+        (map[k] = map[k] || []).push(it.ten);
+      });
+      Object.entries(map).filter(([,v]) => v.length > 1).forEach(([k,v]) => {
+        const nv = D.nhanVien.find(x => String(x.id) === k.split('|')[0]);
+        dupField.push([p.donVi, p.quyStr, nv ? nv.ten : k, k.split('|')[1], v.join(' + ')]);
+      });
+    });
+    R.push({ title: 'Item trong phiếu quý trỏ tới danh mục/nhóm đã bị xoá', level: orphan.length ? 'err' : 'ok',
+      desc: 'applyQuarterlyDeadlines gặp getTB() null sẽ bỏ qua item → nhân viên đó được phát đồ nhưng tháng cấp không được cập nhật, nên quý sau lại vào phiếu tiếp.',
+      cols: ['đơn vị','quý','nhân viên','trang bị','tbId'], rows: orphan });
+    R.push({ title: 'Một nhân viên có nhiều item cùng đổ về một cột tháng trong cùng phiếu', level: dupField.length ? 'err' : 'ok',
+      desc: 'applyQuarterlyDeadlines ghi đè daNhanVien[idx] ngay trong vòng lặp, nên item thứ hai đọc phải giá trị vừa ghi và cộng chu kỳ thêm một lần nữa.',
+      cols: ['đơn vị','quý','nhân viên','cột','các item'], rows: dupField });
+  }
+
+  /* 7. Mô phỏng: hạn kế tiếp theo dữ liệu hiện tại */
+  {
+    const rows = [];
+    const qNext = [];
+    let q = quyStart || ('Q' + Math.ceil((new Date().getMonth()+1)/3) + '/' + new Date().getFullYear());
+    for(let i=0;i<4;i++){ qNext.push(q); const [qq,y]=q.split('/'); const n=parseInt(qq.slice(1)); q = n<4 ? ('Q'+(n+1)+'/'+y) : ('Q1/'+(parseInt(y)+1)); }
+    qNext.forEach(qs => {
+      const qEnd = quyMonths(qs)[2];
+      let count = 0;
+      D.nhanVien.forEach(nv => {
+        const c = cdByTen.get(nv.chucDanh);
+        const dmList = D.dinhMuc.filter(d => (c && String(d.chucDanhId) === String(c.id)) || d.chucDanh === nv.chucDanh);
+        const seen = {};
+        dmList.forEach(d => {
+          const tb = tbById.get(String(d.trangBiId || d.nhomTBId)); if(!tb) return;
+          const f = thangField(tb); if(!f) return;
+          if(seen[f[0]]) return; seen[f[0]] = 1;
+          const rec = mm(nv[f[0]]); if(!isMM(rec)) return;
+          const ck = Math.round(Number(d.chuKy) || 0); if(ck <= 0) return;
+          if(addM(rec, ck) <= qEnd) count++;
+        });
+      });
+      rows.push([qs, count]);
+    });
+    R.push({ title: 'Mô phỏng số lượt cấp đến hạn theo quý (dữ liệu hiện tại)', level: 'ok',
+      desc: 'Dùng để đối chiếu với phiếu quý thực tế. Con số cộng dồn vì item quá hạn vẫn nằm trong danh sách của mọi quý sau.',
+      cols: ['quý','số lượt (nhân viên × món) đến hạn tính đến hết quý'], rows });
+  }
+
+  return R;
+}
+
+function render(R){
+  const lvlTag = { err: ['t-err','CÓ LỖI'], warn: ['t-warn','CẦN XEM'], ok: ['t-ok','OK'] };
+  $('#out').innerHTML = R.map(r => {
+    const n = r.rows.length;
+    const lv = (r.level === 'ok' && n === 0) ? 'ok' : r.level;
+    const [cls, txt] = lvlTag[lv] || lvlTag.ok;
+    const head = '<h2>' + esc(r.title) + ' <span class="tag ' + cls + '">' + txt + (n ? ' · ' + n : '') + '</span></h2>';
+    const desc = '<div class="desc">' + esc(r.desc) + '</div>';
+    if(!n) return '<div class="card">' + head + desc + '<div style="color:var(--ok);font-size:12.5px;">Không có bản ghi nào.</div></div>';
+    const cap = r.rows.slice(0, 60);
+    const tbl = '<table><thead><tr>' + r.cols.map(c => '<th>' + esc(c) + '</th>').join('') + '</tr></thead><tbody>'
+      + cap.map(row => '<tr>' + row.map(v => '<td>' + esc(v) + '</td>').join('') + '</tr>').join('')
+      + '</tbody></table>' + (n > 60 ? '<div class="desc" style="margin-top:6px;">… còn ' + (n-60) + ' dòng nữa, xem trong file JSON.</div>' : '');
+    return '<div class="card">' + head + desc + tbl + '</div>';
+  }).join('');
+}
+
+$('#run').onclick = async () => {
+  $('#run').disabled = true; $('#out').innerHTML = '';
+  try{
+    RAW = await fetchAll();
+    $('#log').textContent = Object.entries(RAW).map(([k,v]) => k + '=' + v.length).join('  ·  ');
+    const R = audit(RAW);
+    render(R);
+    window.__AUDIT = R;
+    $('#dl').disabled = false;
+  }catch(e){
+    $('#log').textContent = 'Lỗi: ' + e.message;
+  }
+  $('#run').disabled = false;
+};
+
+$('#dl').onclick = () => {
+  const blob = new Blob([JSON.stringify({ raw: RAW, audit: window.__AUDIT }, null, 1)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'bhld-audit-' + nowMM() + '.json';
+  a.click();
+};
+</script>
+</body>
+</html>

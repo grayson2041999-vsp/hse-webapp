@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Sửa mốc Tháng cấp bị cộng thừa một chu kỳ</title>
+<style>
+  :root{--bg:#f6f8fb;--card:#fff;--line:#dfe6ef;--txt:#1e2733;--mut:#6b7a8d;--pri:#003087;--err:#c0392b;--warn:#b7791f;--ok:#1a7a3c}
+  *{box-sizing:border-box}
+  body{margin:0;padding:24px 16px;background:var(--bg);color:var(--txt);font:14px/1.6 -apple-system,Segoe UI,Roboto,Arial,sans-serif}
+  .wrap{max-width:1000px;margin:0 auto}
+  h1{font-size:20px;color:var(--pri);margin:0 0 4px}
+  .sub{color:var(--mut);font-size:13px;margin-bottom:16px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 16px;margin-bottom:12px}
+  .bar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:14px}
+  button{padding:8px 16px;border:1px solid var(--pri);background:var(--pri);color:#fff;border-radius:6px;font-size:13.5px;cursor:pointer}
+  button.alt{background:#fff;color:var(--pri)}
+  button.danger{background:var(--err);border-color:var(--err)}
+  button:disabled{opacity:.45;cursor:not-allowed}
+  table{width:100%;border-collapse:collapse;font-size:12.5px}
+  th{background:#eef3f9;text-align:left;padding:6px 8px;border:1px solid var(--line);position:sticky;top:0}
+  td{padding:4px 8px;border:1px solid var(--line)}
+  tr.grp td{background:#f0f5fb;font-weight:700;color:var(--pri)}
+  .old{color:var(--err)}.new{color:var(--ok);font-weight:700}
+  .note{font-size:12.5px;color:var(--mut)}
+  .warnbox{background:#fdf6e3;border:1px solid #f0e0b0;border-radius:8px;padding:10px 12px;font-size:12.5px;margin-bottom:12px}
+  .errbox{background:#fdecea;border:1px solid #f0d0cc;border-radius:8px;padding:10px 12px;font-size:12.5px;color:var(--err)}
+  #log{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;color:var(--mut);white-space:pre-wrap}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Sửa mốc “Tháng cấp gần nhất” bị cộng thừa một chu kỳ</h1>
+  <div class="sub">
+    Trang này phải được mở <b>cùng tên miền với webapp</b> (ví dụ <code>…/tools/sua-thang-cap.html</code>) để dùng chung phiên đăng nhập.
+    Hãy đăng nhập vào webapp bằng tài khoản Admin ở một tab khác trước.
+  </div>
+
+  <div class="warnbox">
+    <b>Nguyên nhân:</b> trước khi sửa, <code>applyQuarterlyDeadlines</code> ghi <i>mốc cũ + chu kỳ</i> — tức là hạn cấp kế tiếp — vào ô
+    “tháng cấp gần nhất”. Khi Bước 3 chạy hai lần cho cùng một phiếu, mốc bị đẩy thêm trọn một chu kỳ, làm nhân viên
+    bị lùi một kỳ cấp phát. Trang này trừ lại đúng một chu kỳ cho những bản ghi đó.
+    <br><br>
+    <b>Được loại trừ tự động:</b> mốc ảo hợp lệ của nhân viên mới (giá trị đúng bằng <code>ngày vào làm + chu kỳ</code> với
+    quần áo / giày / kính / QA thợ hàn, hoặc đúng bằng <code>ngày vào làm</code> với mũ / áo mưa).
+  </div>
+
+  <div class="bar">
+    <button id="load">1 · Đọc dữ liệu &amp; tính toán</button>
+    <button id="backup" class="alt" disabled>2 · Tải bản sao lưu (bắt buộc)</button>
+    <button id="apply" disabled>3 · Áp dụng cho các dòng đã tick</button>
+    <span id="who" class="note"></span>
+  </div>
+  <div id="log">Bấm nút 1 để bắt đầu.</div>
+  <div id="out"></div>
+
+  <div class="card" style="margin-top:18px;">
+    <h2 style="font-size:15px;margin:0 0 6px;">Hoàn tác</h2>
+    <div class="note" style="margin-bottom:8px;">Chọn file sao lưu đã tải ở bước 2 để khôi phục nguyên trạng.</div>
+    <input type="file" id="undofile" accept="application/json">
+    <button id="undo" class="danger" style="margin-left:8px;" disabled>Khôi phục từ file</button>
+    <div id="undolog" class="note" style="margin-top:8px;"></div>
+  </div>
+</div>
+
+<script type="module" src="../assets/supabase-config.js"></script>
+<script src="../assets/bhld-sync.js"></script>
+<script>
+const $ = s => document.querySelector(s);
+const esc = s => String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const mm = v => String(v==null?'':v).slice(0,7);
+const isMM = v => /^\d{4}-\d{2}$/.test(v);
+const addM = (v,n) => { const [y,m]=v.split('-').map(Number); const d=new Date(y,m-1+n,1);
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'); };
+const quyMonths = q => { const [qq,y]=q.split('/'); const n=parseInt(qq.slice(1)); const o=[];
+  for(let m=(n-1)*3+1;m<=n*3;m++) o.push(y+'-'+String(m).padStart(2,'0')); return o; };
+const qRank = q => { const [qq,y]=q.split('/'); return parseInt(y)*4+parseInt(qq.slice(1)); };
+const ckSo = v => { if(v===null||v===undefined||v==='') return 0;
+  const n=Number(String(v).replace(',','.')); return isFinite(n)?n:0; };
+const parseItems = x => Array.isArray(x)?x:(()=>{try{return JSON.parse(x||'[]')}catch(e){return[]}})();
+
+/* Giữ khớp với _tbToThangField() trong cap-phat-bhld.html */
+function thangField(tb){
+  if(!tb) return null;
+  const t = tb.ten || '';
+  if(t.includes('Găng tay') || t === 'Khẩu trang') return null;
+  if(t.includes('Mũ'))                    return ['thangCapMu','Mũ'];
+  if(tb.loaiCo === 'quan_ao' && t !== 'Áo mưa' && t !== 'Bộ quần áo thợ hàn')
+                                          return ['thangCapQuanAo','Quần áo'];
+  if(t === 'Áo mưa')                      return ['thangCapAoMua','Áo mưa'];
+  if(t === 'Bộ quần áo thợ hàn')          return ['thangCapQAHan','QA thợ hàn'];
+  if(tb.loaiCo === 'giay')                return ['thangCapGiay','Giày'];
+  if(t === 'Kính bảo hộ')                 return ['thangCapKinh','Kính'];
+  return null;
+}
+const CAP_DOI = ['thangCapQuanAo','thangCapGiay','thangCapKinh','thangCapQAHan'];
+
+const T = {
+  nhanVien:'CapPhatBHLD_NhanVien', dinhMuc:'CapPhatBHLD_DinhMuc', danhMuc:'CapPhatBHLD_DanhMuc',
+  nhomTB:'CapPhatBHLD_NhomTrangBi', chucDanh:'CapPhatBHLD_ChucDanh',
+  phieu:'CapPhatBHLD_PhieuYeuCau', tienTrinh:'CapPhatBHLD_TienTrinh'
+};
+let D = null, ROWS = [], daTaiSaoLuu = false;
+
+function sbReady(){
+  if(window.HSE_SB) return Promise.resolve(window.HSE_SB);
+  return new Promise((res,rej)=>{ const to=setTimeout(()=>rej(new Error('Không nạp được supabase-config.js — hãy mở trang này cùng tên miền với webapp.')),12000);
+    window.addEventListener('hse-sb-ready',()=>{clearTimeout(to);res(window.HSE_SB);},{once:true}); });
+}
+
+async function load(){
+  const sb = await sbReady();
+  const { data: sess } = await sb.auth.getSession();
+  $('#who').textContent = sess && sess.session
+    ? 'Đang đăng nhập: ' + sess.session.user.email
+    : '⚠ CHƯA ĐĂNG NHẬP — thao tác ghi sẽ bị từ chối.';
+  D = {};
+  for(const [k,t] of Object.entries(T)){
+    $('#log').textContent = 'Đang tải ' + t + ' …';
+    const r = await sb.from(t).select('*');
+    if(r.error) throw new Error(t + ': ' + r.error.message);
+    D[k] = r.data || [];
+  }
+  $('#log').textContent = Object.entries(D).map(([k,v])=>k+'='+v.length).join('  ·  ');
+  ROWS = tinhToan();
+  render();
+}
+
+function tinhToan(){
+  const tbById  = new Map(D.nhomTB.map(n=>[String(n.id),n]));
+  const dmucById= new Map(D.danhMuc.map(d=>[String(d.id),d]));
+  const cdByTen = new Map(D.chucDanh.map(c=>[c.ten,c]));
+
+  // Quý cuối cùng đã chạy Bước 3 cho mỗi đơn vị
+  const lastQ = {};
+  D.tienTrinh.filter(t=>t.b3TrangThai==='xong'&&t.quyStr).forEach(t=>{
+    if(!lastQ[t.donVi] || qRank(t.quyStr)>qRank(lastQ[t.donVi])) lastQ[t.donVi]=t.quyStr;
+  });
+
+  // Những cặp (nhân viên, cột tháng) thực sự có trong phiếu đã hoàn tất
+  const daNhan = new Set();
+  D.phieu.filter(p=>p.type==='quy'&&lastQ[p.donVi]&&qRank(p.quyStr)<=qRank(lastQ[p.donVi])).forEach(p=>{
+    parseItems(p.items).filter(it=>it.nvId&&parseFloat(it.thucTe)>0).forEach(it=>{
+      const dm=dmucById.get(String(it.tbId));
+      const tb=dm?tbById.get(String(dm.nhomId)):tbById.get(String(it.tbId));
+      const f=thangField(tb); if(f) daNhan.add(it.nvId+'|'+f[0]);
+    });
+  });
+
+  const out=[];
+  D.nhanVien.forEach(nv=>{
+    const q = lastQ[nv.boPhan]; if(!q) return;          // đơn vị chưa từng chạy Bước 3
+    const qEnd = quyMonths(q)[2];
+    const c = cdByTen.get(nv.chucDanh);
+    const dmList = D.dinhMuc.filter(d=>(c&&String(d.chucDanhId)===String(c.id))||d.chucDanh===nv.chucDanh);
+    const seen = {};
+    dmList.forEach(d=>{
+      const tb = tbById.get(String(d.trangBiId||d.nhomTBId)); if(!tb) return;
+      const f = thangField(tb); if(!f) return;
+      if(seen[f[0]]) return; seen[f[0]] = 1;
+      const now = mm(nv[f[0]]); if(!isMM(now)) return;
+      if(now <= qEnd) return;                            // hợp lệ
+      const ck = Math.round(ckSo(d.chuKy)); if(!(ck>0)) return;
+      // Mốc ảo hợp lệ của nhân viên mới → bỏ qua
+      const vl = mm(nv.ngayVaoLam);
+      if(isMM(vl)){
+        const aoMong = CAP_DOI.includes(f[0]) ? addM(vl,ck) : vl;
+        if(now === aoMong) return;
+      }
+      const fix = addM(now,-ck);
+      if(fix > qEnd) return;                             // trừ một chu kỳ vẫn chưa hợp lý → không tự sửa
+      out.push({ id:String(nv.id), ds:nv.danhSo||'', ten:nv.ten, dv:nv.boPhan,
+                 mon:f[1], field:f[0], ck, now, fix, q,
+                 chacChan: daNhan.has(String(nv.id)+'|'+f[0]) });
+    });
+  });
+  out.sort((a,b)=>a.dv.localeCompare(b.dv,'vi')||a.mon.localeCompare(b.mon,'vi')||a.ten.localeCompare(b.ten,'vi'));
+  return out;
+}
+
+function render(){
+  const chac = ROWS.filter(r=>r.chacChan), ngo = ROWS.filter(r=>!r.chacChan);
+  if(!ROWS.length){
+    $('#out').innerHTML = '<div class="card" style="color:var(--ok);font-weight:600;">✓ Không còn bản ghi nào cần sửa.</div>';
+    $('#backup').disabled = true; $('#apply').disabled = true; return;
+  }
+  const bang = (list, tick) => {
+    let html='<table><thead><tr><th style="width:34px;"></th><th>Danh số</th><th>Họ và tên</th><th>Món</th><th>Chu kỳ</th><th>Hiện tại</th><th>Sửa thành</th></tr></thead><tbody>';
+    let g='';
+    list.forEach(r=>{
+      const key=r.dv+' › '+r.mon+' (chu kỳ '+r.ck+' tháng): '+r.now+' → '+r.fix;
+      if(key!==g){g=key;html+='<tr class="grp"><td colspan="7">'+esc(key)+'</td></tr>';}
+      const id=r.id+'__'+r.field;
+      html+='<tr><td><input type="checkbox" class="pick" data-key="'+esc(id)+'"'+(tick?' checked':'')+'></td>'
+          + '<td>'+esc(r.ds||'—')+'</td><td>'+esc(r.ten)+'</td><td>'+esc(r.mon)+'</td>'
+          + '<td style="text-align:center;">'+r.ck+'</td><td class="old">'+r.now+'</td><td class="new">'+r.fix+'</td></tr>';
+    });
+    return html+'</tbody></table>';
+  };
+  let h = '<div class="card"><h2 style="font-size:15px;margin:0 0 4px;">Đã đối chiếu với phiếu đã hoàn tất — '+chac.length+' dòng</h2>'
+        + '<div class="note" style="margin-bottom:8px;">Nhân viên có mặt trong phiếu quý đã hoàn tất với số lượng thực tế lớn hơn 0. Mặc định tick sẵn.</div>'
+        + bang(chac,true) + '</div>';
+  if(ngo.length) h += '<div class="card"><h2 style="font-size:15px;margin:0 0 4px;color:var(--warn);">Cần xem thủ công — '+ngo.length+' dòng</h2>'
+        + '<div class="note" style="margin-bottom:8px;">Không tìm thấy trong phiếu đã hoàn tất. Thường là nhân viên mới bị nhập thiếu hoặc sai <code>ngày vào làm</code>. Mặc định KHÔNG tick.</div>'
+        + bang(ngo,false) + '</div>';
+  $('#out').innerHTML = h;
+  $('#backup').disabled = false;
+  capNhatNutApDung();
+  $('#out').addEventListener('change', capNhatNutApDung);
+}
+function daChon(){
+  const keys = new Set([...document.querySelectorAll('.pick:checked')].map(e=>e.dataset.key));
+  return ROWS.filter(r=>keys.has(r.id+'__'+r.field));
+}
+function capNhatNutApDung(){
+  const n = daChon().length;
+  $('#apply').textContent = '3 · Áp dụng cho ' + n + ' dòng đã tick';
+  $('#apply').disabled = !(n>0 && daTaiSaoLuu);
+}
+
+$('#load').onclick = async () => {
+  $('#load').disabled=true;
+  try{ await load(); }catch(e){ $('#log').innerHTML='<div class="errbox">Lỗi: '+esc(e.message)+'</div>'; }
+  $('#load').disabled=false;
+};
+
+$('#backup').onclick = () => {
+  const sao = ROWS.map(r=>({id:r.id, danhSo:r.ds, ten:r.ten, donVi:r.dv, field:r.field,
+                            giaTriCu:r.now, giaTriMoi:r.fix, chuKy:r.ck, quy:r.q, chacChan:r.chacChan}));
+  const blob = new Blob([JSON.stringify({taoLuc:new Date().toISOString(), soDong:sao.length, banGhi:sao}, null, 1)],
+                        {type:'application/json'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download='saoluu-thangcap-'+new Date().toISOString().slice(0,19).replace(/[:T]/g,'')+'.json';
+  a.click();
+  daTaiSaoLuu = true;
+  capNhatNutApDung();
+};
+
+$('#apply').onclick = async () => {
+  const list = daChon();
+  if(!list.length) return;
+  if(!confirm('Cập nhật ' + list.length + ' ô tháng cấp cho ' + new Set(list.map(r=>r.id)).size + ' nhân viên?\n\nHãy chắc chắn đã tải file sao lưu.')) return;
+  $('#apply').disabled = true;
+  // Gom theo nhân viên để mỗi người chỉ ghi một lần
+  const theoNv = {};
+  list.forEach(r=>{ (theoNv[r.id] = theoNv[r.id] || {})[r.field] = r.fix; });
+  const ids = Object.keys(theoNv);
+  let ok=0; const loi=[];
+  for(let i=0;i<ids.length;i++){
+    $('#log').textContent = 'Đang ghi ' + (i+1) + '/' + ids.length + ' …';
+    try{ await BHLD.push.update('nhanvien', ids[i], theoNv[ids[i]]); ok++; }
+    catch(e){ const r=list.find(x=>x.id===ids[i]); loi.push((r?r.ten:ids[i])+': '+e.message); }
+  }
+  $('#log').innerHTML = '✔ Đã cập nhật ' + ok + '/' + ids.length + ' nhân viên.'
+    + (loi.length ? '<div class="errbox" style="margin-top:8px;">Lỗi:<br>'+loi.map(esc).join('<br>')+'</div>' : '');
+  await load();   // tính lại để kiểm chứng
+};
+
+$('#undofile').onchange = () => { $('#undo').disabled = !$('#undofile').files.length; };
+$('#undo').onclick = async () => {
+  const f = $('#undofile').files[0]; if(!f) return;
+  let data; try{ data = JSON.parse(await f.text()); }catch(e){ $('#undolog').textContent='File không đọc được.'; return; }
+  const bg = data.banGhi || [];
+  if(!bg.length){ $('#undolog').textContent='File không có bản ghi nào.'; return; }
+  if(!confirm('Khôi phục ' + bg.length + ' ô về giá trị cũ?')) return;
+  $('#undo').disabled = true;
+  await sbReady();
+  const theoNv = {};
+  bg.forEach(r=>{ (theoNv[r.id] = theoNv[r.id] || {})[r.field] = r.giaTriCu; });
+  const ids = Object.keys(theoNv); let ok=0; const loi=[];
+  for(let i=0;i<ids.length;i++){
+    $('#undolog').textContent = 'Đang khôi phục ' + (i+1) + '/' + ids.length + ' …';
+    try{ await BHLD.push.update('nhanvien', ids[i], theoNv[ids[i]]); ok++; }
+    catch(e){ loi.push(ids[i]+': '+e.message); }
+  }
+  $('#undolog').textContent = 'Đã khôi phục ' + ok + '/' + ids.length + ' nhân viên.' + (loi.length?' Lỗi: '+loi.join('; '):'');
+  $('#undo').disabled = false;
+};
+</script>
+</body>
+</html>

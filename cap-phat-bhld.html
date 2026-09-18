@@ -5367,46 +5367,93 @@ document.addEventListener('DOMContentLoaded',()=>{
   }
 });
 /* =====================================================================
-   CẬP NHẬT THỜI HẠN CẤP PHÁT (dời từ approvePhieu → gọi ở Bước 3 wizard)
+   CẬP NHẬT THỜI HẠN CẤP PHÁT (gọi ở Bước 3 wizard)
+
+   QUY ƯỚC: thangCap* là MỐC TÍNH CHU KỲ ("tháng cấp gần nhất").
+     • Nhân viên cũ  → tháng đã nhận thực tế, KHÔNG BAO GIỜ nằm ở tương lai.
+     • Nhân viên mới → tháng vào làm + 1 chu kỳ với các món cấp đôi lần đầu
+       (quần áo / giày / kính / QA thợ hàn). Mốc "ảo" này cố ý nằm ở tương
+       lai, đại diện cho suất thứ hai, và chỉ tồn tại đúng một lần.
+   Hạn cấp kế tiếp LUÔN = thangCap* + chuKy (xem tinhThangCapTiepTheo).
+
+   Khi phát đồ trong quý Q, mốc mới KHÔNG phải "mốc cũ + chuKy" — đó là hạn
+   kế tiếp chứ không phải tháng cấp, ghi như vậy sẽ đẩy nhân viên lùi trọn
+   một kỳ. Mốc mới là MỐC ĐẾN HẠN CUỐI CÙNG CÒN NẰM TRONG QUÝ Q.
+   Nhảy theo bội số chu kỳ nên:
+     • giữ nguyên nhịp của định mức kể cả khi chu kỳ không chia hết cho 3
+       (chu kỳ 4 tháng: 01/2026 → 05/2026 → 09/2026 → 01/2027…);
+     • đuổi kịp phần bị bỏ sót trong MỘT lần, thay vì lặp lại từng quý;
+     • KHÔNG sinh ra tháng tương lai vượt quá quý đang cấp;
+     • và quan trọng nhất: hàm trở nên IDEMPOTENT — chạy lại lần thứ hai
+       không thay đổi gì, nên việc bấm "Hoàn tất" hai lần hoặc mở hai tab
+       không còn cộng dồn chu kỳ nữa.
    ===================================================================== */
+// Đọc chu kỳ về số. Chấp nhận cả dạng nhập sai dấu thập phân ("0,25").
+// Trả 0 nếu không đọc được — nơi gọi phải tự quyết định bỏ qua.
+function _ckSo(v){
+  if(v===null||v===undefined||v==='')return 0;
+  const n=Number(String(v).replace(',','.'));
+  return isFinite(n)?n:0;
+}
+// Mốc đến hạn cuối cùng còn nằm trong quý cấp (tháng cuối quý = qEnd).
+function _mocCapMoi(mocCu,chuKy,qEnd){
+  const a0=String(mocCu||'').slice(0,7);
+  if(!/^\d{4}-\d{2}$/.test(a0))return null;
+  const b=Math.round(chuKy);if(!(b>0))return null;
+  let a=a0,next=_addMonths(a,b),guard=0;
+  while(next<=qEnd&&guard++<600){a=next;next=_addMonths(a,b);}
+  // Không mốc nào tới hạn trong quý này (nhân viên được phát sớm hơn hạn):
+  // lấy tháng cuối quý làm mốc để món đó không lọt vào phiếu một lần nữa.
+  return a===a0?qEnd:a;
+}
+var _cpwApplying=false;   // chặn hai lần gọi chồng nhau trong cùng một phiên
 function applyQuarterlyDeadlines(p){
-  if(!p||p.type!=='quy')return;
-  const items=_parsePhieuItems(p.items);
-  const changesPerNv={};
-  items.forEach(it=>{
-    if(!it.nvId)return;
-    const nv=daNhanVien.find(n=>String(n.id)===String(it.nvId));if(!nv)return;
-    if(it.thucTe===''||it.thucTe===undefined||parseFloat(it.thucTe)===0)return;
-    const dmItem=daDanhMuc.find(x=>String(x.id)===String(it.tbId));
-    const tb=getTB(it.tbId)||(dmItem?getTB(dmItem.nhomId):null);
-    if(!tb)return;
-    const tenTB=tb.ten||'';
-    if(tenTB.includes('Găng tay')||tenTB==='Khẩu trang')return;
-    const _cd=getChucDanhByTen(nv.chucDanh);
-    const dmEntry=daDinhMuc.find(d=>{
-      if(!((_cd&&d.chucDanhId==_cd.id)||d.chucDanh===nv.chucDanh))return false;
-      if(d.trangBiId==tb.id||d.nhomTBId==tb.id)return true;
-      if(tenTB==='Bộ quần áo nữ'){const dTb=getTB(d.trangBiId||d.nhomTBId);return dTb&&dTb.loaiCo==='quan_ao'&&dTb.ten!=='Bộ quần áo thợ hàn';}
-      return false;
+  if(!p||p.type!=='quy'||!p.quyStr)return 0;
+  if(_cpwApplying)return 0;
+  _cpwApplying=true;
+  try{
+    const qMonths=getQuarterMonths(p.quyStr);
+    const qEnd=qMonths[qMonths.length-1];
+    const items=_parsePhieuItems(p.items);
+    const changesPerNv={};
+    const boQua=[];
+    items.forEach(it=>{
+      if(!it.nvId)return;
+      if(it.thucTe===''||it.thucTe===undefined||parseFloat(it.thucTe)===0)return;
+      const idx=daNhanVien.findIndex(n=>String(n.id)===String(it.nvId));
+      if(idx<0){boQua.push('Nhân viên không còn trong danh sách: '+(it.nvTen||it.nvId));return;}
+      const nv=daNhanVien[idx];
+      const dmItem=daDanhMuc.find(x=>String(x.id)===String(it.tbId));
+      const tb=getTB(it.tbId)||(dmItem?getTB(dmItem.nhomId):null);
+      if(!tb){boQua.push('Trang bị đã bị xoá khỏi danh mục: "'+(it.ten||'')+'" (tbId '+it.tbId+') – '+(it.nvTen||''));return;}
+      const tenTB=tb.ten||'';
+      const map=_tbToThangField(tb);
+      if(!map)return;   // găng tay / khẩu trang / món không theo dõi theo tháng
+      const _cd=getChucDanhByTen(nv.chucDanh);
+      const dmEntry=daDinhMuc.find(d=>{
+        if(!((_cd&&d.chucDanhId==_cd.id)||d.chucDanh===nv.chucDanh))return false;
+        if(d.trangBiId==tb.id||d.nhomTBId==tb.id)return true;
+        if(tenTB==='Bộ quần áo nữ'){const dTb=getTB(d.trangBiId||d.nhomTBId);return dTb&&dTb.loaiCo==='quan_ao'&&dTb.ten!=='Bộ quần áo thợ hàn';}
+        return false;
+      });
+      if(!dmEntry){boQua.push('Không tìm được định mức cho "'+tenTB+'" – '+(it.nvTen||'')+' ('+(nv.chucDanh||'')+')');return;}
+      const chuKy=_ckSo(dmEntry.chuKy);
+      if(!(chuKy>0)){boQua.push('Định mức thiếu chu kỳ hợp lệ: "'+tenTB+'" – chức danh '+(nv.chucDanh||'')+' (chuKy='+JSON.stringify(dmEntry.chuKy)+')');return;}
+      const mocCu=String(nv[map.field]||'').slice(0,7);
+      const mocMoi=_mocCapMoi(mocCu,chuKy,qEnd);
+      if(!mocMoi){boQua.push('Mốc cũ không hợp lệ: "'+tenTB+'" – '+(it.nvTen||'')+' = '+JSON.stringify(nv[map.field]));return;}
+      if(mocMoi===mocCu)return;   // đã đúng rồi (chạy lại lần hai)
+      if(!changesPerNv[it.nvId])changesPerNv[it.nvId]={};
+      changesPerNv[it.nvId][map.field]=mocMoi;
+      daNhanVien[idx]={...daNhanVien[idx],[map.field]:mocMoi};
     });
-    const nextMonth=dmEntry?tinhThangCapTiepTheo(nv,dmEntry):null;
-    if(!nextMonth||nextMonth==='quarterly')return;
-    let field=null;
-    if(tenTB.includes('Mũ'))field='thangCapMu';
-    else if(tb.loaiCo==='quan_ao'&&tenTB!=='Áo mưa'&&tenTB!=='Bộ quần áo thợ hàn')field='thangCapQuanAo';
-    else if(tenTB==='Áo mưa')field='thangCapAoMua';
-    else if(tenTB==='Bộ quần áo thợ hàn')field='thangCapQAHan';
-    else if(tb.loaiCo==='giay')field='thangCapGiay';
-    else if(tenTB==='Kính bảo hộ')field='thangCapKinh';
-    if(!field)return;
-    const idx=daNhanVien.findIndex(n=>String(n.id)===String(it.nvId));if(idx<0)return;
-    if(!changesPerNv[it.nvId])changesPerNv[it.nvId]={};
-    changesPerNv[it.nvId][field]=nextMonth;
-    daNhanVien[idx]={...daNhanVien[idx],[field]:nextMonth};
-  });
-  Object.entries(changesPerNv).forEach(([nvId,ch])=>BHLD.push.update('nhanvien',nvId,ch));
-  saveData('nhanvien',daNhanVien);BHLD.lsSet('nhanvien',daNhanVien);
-  return Object.keys(changesPerNv).length;
+    if(boQua.length)console.warn('[BHLĐ] applyQuarterlyDeadlines ('+p.donVi+' – '+p.quyStr+'): bỏ qua '+boQua.length+' dòng\n  • '+boQua.join('\n  • '));
+    Object.entries(changesPerNv).forEach(([nvId,ch])=>BHLD.push.update('nhanvien',nvId,ch));
+    saveData('nhanvien',daNhanVien);BHLD.lsSet('nhanvien',daNhanVien);
+    return Object.keys(changesPerNv).length;
+  }finally{
+    _cpwApplying=false;
+  }
 }
 
 /* =====================================================================
