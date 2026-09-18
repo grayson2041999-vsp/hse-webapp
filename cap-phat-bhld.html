@@ -5647,27 +5647,40 @@ function _cpwStepCard(n,title,icon,status,body){
       '<strong style="font-size:15px;color:var(--primary);">'+title+'</strong></div>'+_cpwBadge(status)+'</div>'+
     '<div style="padding-left:38px;">'+body+'</div></div>';
 }
-function cpwRender(){
-  var dv=_cpwDonVi,q=_cpwQuy,st=_cpwState;
-  var pend=_cpwPendingChanges(dv),phieu=_cpwPhieu(dv,q);
-  var b1done=st.b1TrangThai==='dat';
+/* Trạng thái 4 bước của wizard cấp phát quý — hàm THUẦN để test được.
+   Nguyên tắc: suy ra từ tiến độ THỰC TẾ (đã có phiếu chưa, phiếu ở trạng thái
+   nào, đã hoàn tất chưa), không chỉ đọc mấy cờ b1TrangThai / b2TrangThai.
+   Lý do: nhiều bản ghi tiến trình có b1TrangThai='chua' trong khi phiếu đã
+   được duyệt và Bước 4 đã hoàn tất — cờ này không phải lúc nào cũng được ghi,
+   và "Làm lại từ đầu" cũng đặt nó về 'chua' mà không đụng các bước sau. Khi đó
+   Bước 1 vẫn hiện nút "Danh sách đã đúng — Tiếp tục" và Bước 2 báo "Đang khoá",
+   trong khi cả quy trình đã xong từ lâu. */
+function _cpwTrangThaiBuoc(st,phieu,soThayDoiChoDuyet){
+  st=st||{};
   var pStatus=phieu?phieu.status:null;
-  var s1=b1done?'dat':(pend.length?'cho_duyet':'dang_lam');
-  // Bước 2 đã xác nhận số lượng: dùng cột "buoc" sẵn có (>=3), hoặc đã có phiếu / đã hoàn tất → true (migrate phiếu đang chạy)
+  // Bước 2 coi như xong khi: cột "buoc" đã >=3, hoặc đã có phiếu, hoặc đã hoàn tất.
   var b2done=(Number(st.buoc)||0)>=3||!!phieu||st.b3TrangThai==='xong';
-  // Bước 2 — Điền số lượng
+  // Bước 1 xong khi cờ đã đặt HOẶC khi các bước sau đã đi tiếp — không thể có
+  // chuyện phiếu đã gửi mà danh sách nhân viên lại chưa được xác nhận.
+  var b1done=st.b1TrangThai==='dat'||b2done;
+  var s1=b1done?'dat':((soThayDoiChoDuyet||0)?'cho_duyet':'dang_lam');
   var s2;
   if(!b1done)s2='khoa';
   else if(pStatus==='pending'||pStatus==='approved')s2='dat';
   else s2=b2done?'dat':'dang_lam';
-  // Bước 3 — Chọn vật tư khác & gửi duyệt
   var s3;
   if(!b2done)s3='khoa';
   else if(pStatus==='pending')s3='cho_duyet';
   else if(pStatus==='approved')s3='dat';
   else s3='san_sang';
-  // Bước 4 — Xuất phiếu & trình ký (mở khi phiếu được duyệt)
   var s4=(pStatus==='approved')?(st.b3TrangThai==='xong'?'xong':'san_sang'):'khoa';
+  return {s1:s1,s2:s2,s3:s3,s4:s4,b1done:b1done,b2done:b2done};
+}
+function cpwRender(){
+  var dv=_cpwDonVi,q=_cpwQuy,st=_cpwState;
+  var pend=_cpwPendingChanges(dv),phieu=_cpwPhieu(dv,q);
+  var tt=_cpwTrangThaiBuoc(st,phieu,pend.length);
+  var s1=tt.s1,s2=tt.s2,s3=tt.s3,s4=tt.s4,b2done=tt.b2done;
   var html='';
   html+=_cpwStepCard(1,'Kiểm tra danh sách nhân viên','search',s1,cpwStep1Body(s1,pend,b2done));
   html+=_cpwStepCard(2,'Điền số lượng yêu cầu cấp phát','edit',s2,cpwStep2Body(s2,phieu));
