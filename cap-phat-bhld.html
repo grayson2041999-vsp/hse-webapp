@@ -5481,6 +5481,9 @@ document.addEventListener('DOMContentLoaded',()=>{
      • và quan trọng nhất: hàm trở nên IDEMPOTENT — chạy lại lần thứ hai
        không thay đổi gì, nên việc bấm "Hoàn tất" hai lần hoặc mở hai tab
        không còn cộng dồn chu kỳ nữa.
+
+   Cột "Thực tế" KHÔNG dùng để lọc: phiếu đã lập là đã cấp theo định mức,
+   nhân viên không nhận thì thôi, mốc vẫn tính từ lần đó — giống approvePhieu.
    ===================================================================== */
 // Đọc chu kỳ về số. Chấp nhận cả dạng nhập sai dấu thập phân ("0,25").
 // Trả 0 nếu không đọc được — nơi gọi phải tự quyết định bỏ qua.
@@ -5523,7 +5526,10 @@ function applyQuarterlyDeadlines(p){
     const boQua=[];
     items.forEach(it=>{
       if(!it.nvId)return;
-      if(it.thucTe===''||it.thucTe===undefined||parseFloat(it.thucTe)===0)return;
+      // KHÔNG lọc theo cột "Thực tế". Quy ước nghiệp vụ: phiếu đã lập là đã cấp
+      // theo định mức cho nhân viên; họ không nhận thì thôi, mốc chu kỳ vẫn tính
+      // từ lần đó. Đây cũng là cách luồng phiếu nhân viên mới (approvePhieu) làm,
+      // nên hai luồng dùng chung một quy tắc.
       const idx=daNhanVien.findIndex(n=>String(n.id)===String(it.nvId));
       if(idx<0){boQua.push('Nhân viên không còn trong danh sách: '+(it.nvTen||it.nvId));return;}
       const nv=daNhanVien[idx];
