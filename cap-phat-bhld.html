@@ -1087,7 +1087,25 @@ let daNhomTB=(()=>{const bhld=BHLD.lsGet('nhom_tb');if(bhld.length)return bhld;c
 const _MONTH_FIELDS=['ngayVaoLam','thangCapQuanAo','thangCapQAHan','thangCapAoMua','thangCapGiay','thangCapMu','thangCapKinh'];
 function _normalizeNV(arr){return(arr||[]).map(n=>{const r={...n};_MONTH_FIELDS.forEach(f=>{if(!r[f])return;const v=String(r[f]);if(v.includes('T')||v.length>10){const d=new Date(v);if(!isNaN(d.getTime()))r[f]=_yyyymm(d);else r[f]='';}else if(v.length>7){r[f]=v.slice(0,7);}});return r;});}
 // Sort nhân viên theo stt (trong cùng boPhan) để đồng bộ thứ tự kéo thả sau khi pull
-function _sortNVByStt(arr){return[...arr].sort((a,b)=>{if(a.boPhan!==b.boPhan)return 0;const sa=a.stt!=null?Number(a.stt):9999;const sb=b.stt!=null?Number(b.stt):9999;return sa-sb;});}
+/* Sắp nhân viên theo đơn vị rồi tới stt (thứ tự kéo thả thủ công).
+
+   Bản cũ trả 0 khi hai người KHÁC đơn vị, tức là coi họ "bằng nhau". Nhưng
+   A≠B (bằng), B≠C (bằng) mà A,C cùng đơn vị lại so theo stt (không bằng)
+   → vi phạm tính bắc cầu. Array.prototype.sort với hàm so sánh như vậy cho
+   ra thứ tự phụ thuộc thuật toán và thứ tự đầu vào: trên dữ liệu thật vẫn
+   còn 20 cặp sai thứ tự ở Cảng biển, 19 ở Đội xe VCHK… và sắp lại sau mỗi
+   lần pull có thể ra thứ tự khác, nên màn hình và file Excel lệch nhau.
+
+   Bản mới là thứ tự toàn phần thực sự: cùng một dữ liệu luôn ra cùng kết quả. */
+function _sortNVByStt(arr){
+  return [...arr].sort((a,b)=>{
+    const da=String(a.boPhan||''), db=String(b.boPhan||'');
+    if(da!==db) return da.localeCompare(db,'vi');
+    const sa=a.stt!=null?Number(a.stt):9999, sb=b.stt!=null?Number(b.stt):9999;
+    if(sa!==sb) return sa-sb;
+    return String(a.ten||'').localeCompare(String(b.ten||''),'vi');   // chốt hạ để không còn chỗ nào mơ hồ
+  });
+}
 // Rebuild nhomId từ nhomNoiBo sau khi pull (sheet không lưu nhomId)
 function _rebuildNhomId(nvArr,groups){return nvArr.map(n=>{if(n.nhomId)return n;if(!n.nhomNoiBo)return n;const g=groups.find(g=>g.ten===n.nhomNoiBo&&g.donVi===n.boPhan);return g?{...n,nhomId:g.id}:n;});}
 let daNhanVien=(()=>{const bhld=BHLD.lsGet('nhanvien');const raw=bhld.length?bhld:loadData('nhanvien',[]);return _sortNVByStt(_normalizeNV(raw));})();
@@ -2929,7 +2947,7 @@ function renderTableNV(){
   const tbody=document.getElementById('tbody-nv');
   if(filtered.length===0){tbody.innerHTML=`<tr><td colspan="12" style="text-align:center;padding:32px;color:var(--text-light);">Không tìm thấy nhân viên nào.</td></tr>`;return;}
   if(bp){
-    const groups=daGroups.filter(g=>g.donVi===bp);
+    const groups=_cpnsUnitGroups(bp);   // sắp theo thu_tu, giống tab Tra cứu nhân sự
     let html='';let globalIdx=0;
     groups.forEach(g=>{
       const members=filtered.filter(n=>n.nhomId===g.id);
@@ -3291,7 +3309,21 @@ function setNhomNV(nvId,nhomIdStr){
 // Xuất NV
 function openExportNV(){document.getElementById('modal-export-nv').style.display='flex';}
 function closeExportNV(){document.getElementById('modal-export-nv').style.display='none';}
-function _getExportData(){const bp=_currentUnit||'';const nvList=bp?daNhanVien.filter(n=>n.boPhan===bp):[...daNhanVien];const groups=bp?daGroups.filter(g=>g.donVi===bp):[];return{bp,nvList,groups};}
+function _getExportData(){
+  const bp=_currentUnit||'';
+  const nvList=bp?daNhanVien.filter(n=>n.boPhan===bp):[...daNhanVien];
+  // Dùng chung _cpnsUnitGroups để nhóm sắp theo thu_tu đúng như trên màn hình.
+  // Trước đây lấy daGroups.filter() thô — thứ tự phụ thuộc thứ tự server trả về,
+  // nên file xuất ra có thể xếp nhóm khác với thứ tự đang nhìn thấy.
+  const groups=bp?_cpnsUnitGroups(bp):[];
+  return{bp,nvList,groups};
+}
+// "Chưa xếp nhóm" phải tính GIỐNG màn hình: gồm cả người có nhomId trỏ tới
+// nhóm đã bị xoá hoặc thuộc đơn vị khác. Bản cũ chỉ lọc !n.nhomId nên những
+// người đó biến mất khỏi file xuất dù màn hình vẫn hiện.
+function _nvChuaXepNhom(nvList,bp){
+  return nvList.filter(n=>!n.nhomId||!daGroups.find(g=>g.id===n.nhomId&&g.donVi===bp));
+}
 function _nvToExcelRow(n,stt){const isHan=(n.chucDanh||'')==='Thợ hàn';return[stt,n.danhSo||'',n.ten||'',n.chucDanh||'',n.coQuanAo||'',n.coGiay||'',_fThangTxt(n.thangCapQuanAo)||'-',_fThangTxt(n.thangCapGiay)||'-',_fThangTxt(n.thangCapMu)||'-',_fThangTxt(n.thangCapKinh)||'-',_fThangTxt(n.thangCapAoMua)||'-',isHan?(_fThangTxt(n.thangCapQAHan)||'-'):'-'];}
 function exportNV_Excel(){
   if(typeof XLSX==='undefined'){showToast('⚠️ Thư viện Excel chưa tải xong.');return;}
@@ -3299,7 +3331,7 @@ function exportNV_Excel(){
   const headers=['STT','Danh số','Họ và Tên','Chức danh','Cỡ QA','Cỡ Giày','T.cấp Quần áo','T.cấp Giày','T.cấp Mũ BH','T.cấp Kính BH','T.cấp Áo mưa','T.cấp QA thợ hàn'];
   const rows=[];rows.push([`DANH SÁCH NHÂN VIÊN – ${title.toUpperCase()}`]);rows.push([`Xuất ngày: ${new Date().toLocaleDateString('vi-VN')}`]);rows.push([]);rows.push(headers);
   let stt=1;
-  if(bp&&groups.length>0){groups.forEach(g=>{const members=nvList.filter(n=>n.nhomId===g.id);rows.push([`[Nhóm ${g.id}] ${g.ten}`]);members.forEach(n=>rows.push(_nvToExcelRow(n,stt++)));});const unassigned=nvList.filter(n=>!n.nhomId);if(unassigned.length){rows.push(['[Chưa xếp nhóm]']);unassigned.forEach(n=>rows.push(_nvToExcelRow(n,stt++)));}}
+  if(bp&&groups.length>0){groups.forEach(g=>{const members=nvList.filter(n=>n.nhomId===g.id);rows.push([`[Nhóm ${g.id}] ${g.ten}`]);members.forEach(n=>rows.push(_nvToExcelRow(n,stt++)));});const unassigned=_nvChuaXepNhom(nvList,bp);if(unassigned.length){rows.push(['[Chưa xếp nhóm]']);unassigned.forEach(n=>rows.push(_nvToExcelRow(n,stt++)));}}
   else{nvList.forEach(n=>rows.push(_nvToExcelRow(n,stt++)));}
   const ws=XLSX.utils.aoa_to_sheet(rows);ws['!cols']=[{wch:5},{wch:13},{wch:26},{wch:22},{wch:8},{wch:8},{wch:15},{wch:13},{wch:13},{wch:13},{wch:15},{wch:20}];
   const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Nhân viên');XLSX.writeFile(wb,`NhanVien_${title.replace(/[\/\\?*[\]:]/g,'_')}.xlsx`);closeExportNV();showToast('✅ Đã xuất file Excel thành công!');
@@ -3308,7 +3340,7 @@ function exportNV_PDF(){
   const{bp,nvList,groups}=_getExportData();const title=bp||'Tất cả nhân viên';
   let bodyHTML='';let stt=1;
   const nvRow=(n,s)=>`<tr><td style="text-align:center;">${s}</td><td>${_escH(n.ma)}</td><td><strong>${_escH(n.ten)}</strong></td><td>${_escH(n.chucDanh)}</td><td style="text-align:center;">${_escH(n.coQuanAo)}</td><td style="text-align:center;">${_escH(n.coGiay)}</td><td style="text-align:center;">${_fThangTxt(n.thangCapQuanAo)||'-'}</td><td style="text-align:center;">${_fThangTxt(n.thangCapGiay)||'-'}</td><td style="text-align:center;">${_fThangTxt(n.thangCapNon)||'-'}</td><td style="text-align:center;">${_fThangTxt(n.thangCapKinh)||'-'}</td><td style="text-align:center;">${_fThangTxt(n.thangCapAoMua)||'-'}</td><td style="text-align:center;">${(n.chucDanh==='Thợ hàn'?(_fThangTxt(n.thangCapQAHan)||'-'):'-')}</td></tr>`;
-  if(bp&&groups.length>0){groups.forEach(g=>{const members=nvList.filter(n=>n.nhomId===g.id);bodyHTML+=`<tr style="background:#dce8f5;"><td colspan="12"><b>[${g.id}] ${_escH(g.ten)}</b></td></tr>`;members.forEach(n=>{bodyHTML+=nvRow(n,stt++);});});const unassigned=nvList.filter(n=>!n.nhomId);if(unassigned.length){bodyHTML+=`<tr style="background:#f7f7f7;"><td colspan="12"><b>Chưa xếp nhóm</b></td></tr>`;unassigned.forEach(n=>{bodyHTML+=nvRow(n,stt++);});}}
+  if(bp&&groups.length>0){groups.forEach(g=>{const members=nvList.filter(n=>n.nhomId===g.id);bodyHTML+=`<tr style="background:#dce8f5;"><td colspan="12"><b>[${g.id}] ${_escH(g.ten)}</b></td></tr>`;members.forEach(n=>{bodyHTML+=nvRow(n,stt++);});});const unassigned=_nvChuaXepNhom(nvList,bp);if(unassigned.length){bodyHTML+=`<tr style="background:#f7f7f7;"><td colspan="12"><b>Chưa xếp nhóm</b></td></tr>`;unassigned.forEach(n=>{bodyHTML+=nvRow(n,stt++);});}}
   else{nvList.forEach(n=>{bodyHTML+=nvRow(n,stt++);});}
   const win=window.open('','_blank');
   win.document.write(`<!DOCTYPE html><html lang="vi"><head><meta charset="UTF-8"><title>Danh sách NV – ${_escH(title)}</title><style>@page{size:A4 landscape;margin:15mm 10mm;}body{font-family:Arial,sans-serif;font-size:10px;}h1{font-size:13px;color:#003087;text-align:center;}table{width:100%;border-collapse:collapse;}th{background:#003087;color:#fff;padding:5px;text-align:center;font-size:9px;border:1px solid #0048a8;}td{padding:3px 5px;border:1px solid #d5dff0;font-size:9.5px;}tr:nth-child(even)td{background:#f4f8ff;}</style></head><body><h1>DANH SÁCH NHÂN VIÊN – ${_escH(title)}</h1><p style="text-align:center;font-size:9px;color:#666;margin-bottom:10px;">Xuất ngày: ${new Date().toLocaleDateString('vi-VN')} | Tổng: ${nvList.length} người</p><table><thead><tr><th>STT</th><th>Danh số</th><th>Họ và Tên</th><th>Chức danh</th><th>Cỡ QA</th><th>Cỡ Giày</th><th>T.cấp QA</th><th>T.cấp Giày</th><th>T.cấp Mũ BH</th><th>T.cấp Kính BH</th><th>T.cấp Áo mưa</th><th>T.cấp QA thợ hàn</th></tr></thead><tbody>${bodyHTML}</tbody></table>
