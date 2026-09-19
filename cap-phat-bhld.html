@@ -6434,14 +6434,38 @@ function cpwRenderList(){
   var thS='style="text-align:center;position:sticky;top:0;z-index:5;background:#f8fafc;font-size:11.5px;padding:6px 8px;"';
   var thS2='style="text-align:center;position:sticky;top:32px;z-index:4;background:#f8fafc;font-size:11px;padding:5px 6px;"';
   var body='';var stt=0;
-  list.forEach(function(n){
+  // Một dòng nhân viên: đang sửa thì hiện ô nhập, còn lại hiện dòng xem.
+  function _dong(n){
     if(!readonly&&String(n.id)===String(_cpwLstEditId)){
       var src=_cpwStagedEdits[n.id]?_cpwStagedEdits[n.id].proposed:n;
       var ed={danhSo:src.danhSo,ten:src.ten,chucDanh:src.chucDanh,gioiTinh:src.gioiTinh,coQuanAo:src.coQuanAo,coGiay:src.coGiay};
       _CPW_MONTHS.forEach(function(fld){ ed[fld]=_cpnsToMMYYYY(src[fld]); });
-      body+=_cpwInputRow('edit',String(n.id),ed);
-    } else { stt++; body+=_cpwViewRowExisting(n,stt); }
-  });
+      return _cpwInputRow('edit',String(n.id),ed);
+    }
+    stt++; return _cpwViewRowExisting(n,stt);
+  }
+  // Tiêu đề nhóm — chỉ để đọc, không kèm nút sửa/xoá nhóm như ở tab Tra cứu
+  // nhân sự, vì Bước 1 là để KIỂM TRA danh sách chứ không phải quản lý nhóm.
+  function _tieuDeNhom(ten,soNguoi,roman){
+    var badge=roman?('<span style="display:inline-flex;align-items:center;justify-content:center;background:var(--primary);color:#fff;font-weight:800;font-size:11px;border-radius:50%;min-width:24px;height:20px;padding:0 5px;margin-right:6px;">'+_escH(roman)+'</span>'+_escH(ten)):('📂 '+_escH(ten));
+    return '<tr style="background:#eaf2fb;"><td colspan="13" style="padding:7px 12px;font-weight:700;color:var(--primary);font-size:13px;border-bottom:2px solid #b0cde8;">'+
+      badge+' <span style="font-weight:400;color:var(--text-light);font-size:12px;">('+soNguoi+' người)</span></td></tr>';
+  }
+  // Chia theo nhóm nội bộ, giống hệt tab Tra cứu nhân sự
+  var unitGroups=_cpnsUnitGroups(dv);
+  if(unitGroups.length){
+    unitGroups.forEach(function(g,gi){
+      var mem=_sapThanhVien(list.filter(function(n){return String(n.nhomId)===String(g.id);}));
+      body+=_tieuDeNhom(g.ten,mem.length,_roman(gi+1));
+      body+=mem.map(_dong).join('');
+    });
+    var noG=_sapThanhVien(list.filter(function(n){
+      return !n.nhomId||!unitGroups.find(function(g){return String(g.id)===String(n.nhomId);});
+    }));
+    if(noG.length){ body+=_tieuDeNhom('Chưa xếp nhóm',noG.length,''); body+=noG.map(_dong).join(''); }
+  } else {
+    body+=list.map(_dong).join('');
+  }
   if(!readonly){
     _cpwStagedAdds.forEach(function(a){ stt++; body+=_cpwStagedAddRow(a,stt); });
     _cpwLstDrafts.forEach(function(d){ body+=_cpwInputRow('draft',d.tempId,d); });
