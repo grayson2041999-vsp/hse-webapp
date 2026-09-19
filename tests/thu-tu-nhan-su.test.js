@@ -3,11 +3,14 @@
    Chạy: node tests/thu-tu-nhan-su.test.js                                  */
 const fs = require('fs'), vm = require('vm'), path = require('path');
 const SRC = fs.readFileSync(path.join(__dirname, '..', 'cap-phat-bhld.html'), 'utf8');
-const m = SRC.match(/\nfunction _sortNVByStt\(arr\)\{[\s\S]*?\n\}/);
-if (!m) { console.error('KHÔNG tìm thấy _sortNVByStt'); process.exit(1); }
-const ctx = vm.createContext({ Number, String, Array });
-vm.runInContext(m[0], ctx);
-const { _sortNVByStt } = ctx;
+const lay = n => {
+  const m = SRC.match(new RegExp('\\nfunction ' + n + '\\([\\s\\S]*?\\n\\}'));
+  if (!m) { console.error('KHÔNG tìm thấy ' + n); process.exit(1); }
+  return m[0];
+};
+const ctx = vm.createContext({ Number, String, Array, Math });
+vm.runInContext(lay('_sortNVByStt') + '\n' + lay('_sapThanhVien'), ctx);
+const { _sortNVByStt, _sapThanhVien } = ctx;
 
 let fail = 0, total = 0;
 const T = (ten, got, mong) => { total++; const ok = String(got)===String(mong); if(!ok) fail++;
@@ -53,6 +56,19 @@ T('stt rỗng xuống cuối đơn vị',
 T('cùng đơn vị, cùng stt → theo tên',
   ids(_sortNVByStt([nv('A', 1, 'Bình'), nv('A', 1, 'An')])), 'A|An , A|Bình');
 T('thiếu boPhan không làm vỡ hàm', _sortNVByStt([{ten:'x'},{ten:'y'}]).length, 2);
+
+G('_sapThanhVien — hàm dùng chung cho màn hình và file xuất');
+const nhom = [nv('A', 3, 'Cường'), nv('A', 1, 'An'), nv('A', 2, 'Bình')];
+T('sắp theo stt', ids(_sapThanhVien(nhom)), 'A|An , A|Bình , A|Cường');
+T('không làm thay đổi mảng gốc', ids(nhom), 'A|Cường , A|An , A|Bình');
+T('thiếu stt thì theo tên',
+  ids(_sapThanhVien([nv('A', null, 'Bình'), nv('A', null, 'An')])), 'A|An , A|Bình');
+T('stt = 0 vẫn được tôn trọng, không bị coi là thiếu',
+  ids(_sapThanhVien([nv('A', 5, 'Sau'), nv('A', 0, 'Truoc')])), 'A|Truoc , A|Sau');
+T('người có stt luôn đứng trước người thiếu stt',
+  ids(_sapThanhVien([nv('A', null, 'An'), nv('A', 9, 'Zét')])), 'A|Zét , A|An');
+const xaoTron = [...nhom].sort(() => Math.random() - 0.5);
+T('kết quả không phụ thuộc thứ tự đầu vào', ids(_sapThanhVien(xaoTron)), ids(_sapThanhVien(nhom)));
 
 console.log('\n' + (fail ? '✗ '+fail+'/'+total+' ca FAIL' : '✓ '+total+'/'+total+' ca PASS'));
 process.exit(fail ? 1 : 0);
