@@ -1949,7 +1949,10 @@ function cpnsExportExcel(){
     if(cd&&n.chucDanh!==cd)return false;
     if(q&&(((n.ten||'')+' '+(n.danhSo||'')).toLowerCase().indexOf(q)<0))return false;
     return true;
-  }).sort(function(a,b){return (a.ten||'').localeCompare(b.ten||'','vi');});
+  });
+  // KHÔNG sắp theo tên ở đây. Thứ tự phải là stt (thứ tự kéo thả) giống hệt
+  // bảng đang hiển thị — việc sắp do _sapThanhVien lo trong từng nhóm bên dưới.
+  // Bản cũ sắp theo tên nên file xuất ra hoàn toàn khác thứ tự trên màn hình.
   if(!list.length){showToast('Không có nhân viên nào để xuất.','warning');return;}
   var groups=_cpnsUnitGroups(dv);
   var headers=['STT','Danh số','Họ và Tên','Chức danh','Cỡ QA','Cỡ Giày','T.cấp Quần áo','T.cấp Giày','T.cấp Mũ BH','T.cấp Kính BH','T.cấp Áo mưa','T.cấp QA thợ hàn'];
@@ -1958,15 +1961,15 @@ function cpnsExportExcel(){
   var stt=1;
   if(groups.length){
     groups.forEach(function(g){
-      var mem=list.filter(function(n){return String(n.nhomId)===String(g.id);});
+      var mem=_sapThanhVien(list.filter(function(n){return String(n.nhomId)===String(g.id);}));
       if(!mem.length)return;
       rows.push(['[Nhóm] '+g.ten]);
       mem.forEach(function(n){rows.push(_nvToExcelRow(n,stt++));});
     });
-    var noG=list.filter(function(n){return !n.nhomId||!groups.find(function(g){return String(g.id)===String(n.nhomId);});});
+    var noG=_sapThanhVien(list.filter(function(n){return !n.nhomId||!groups.find(function(g){return String(g.id)===String(n.nhomId);});}));
     if(noG.length){rows.push(['[Chưa xếp nhóm]']);noG.forEach(function(n){rows.push(_nvToExcelRow(n,stt++));});}
   } else {
-    list.forEach(function(n){rows.push(_nvToExcelRow(n,stt++));});
+    _sapThanhVien(list).forEach(function(n){rows.push(_nvToExcelRow(n,stt++));});
   }
   var ws=XLSX.utils.aoa_to_sheet(rows);
   ws['!cols']=[{wch:5},{wch:13},{wch:26},{wch:22},{wch:8},{wch:8},{wch:15},{wch:13},{wch:13},{wch:13},{wch:15},{wch:20}];
@@ -2366,7 +2369,7 @@ function _cpnsApplyDrop(srcId,newNhom,beforeId){
   var grp=newNhom?daGroups.find(function(g){return String(g.id)===String(newNhom)&&g.donVi===unit;}):null;
   src.nhomId=grp?grp.id:null; src.nhomNoiBo=grp?grp.ten:'';
   var unitGroups=daGroups.filter(function(g){return g.donVi===unit;}).sort(function(a,b){return (a.thu_tu||0)-(b.thu_tu||0)||String(a.id).localeCompare(String(b.id));});
-  function ms(arr){return arr.sort(function(a,b){var sa=a.stt!=null?+a.stt:9999,sb=b.stt!=null?+b.stt:9999;if(sa!==sb)return sa-sb;return (a.ten||'').localeCompare(b.ten||'','vi');});}
+  var ms=_sapThanhVien;   // dùng chung, xem _sapThanhVien
   var members=daNhanVien.filter(function(n){return n.boPhan===unit;});
   var ordered=[];
   unitGroups.forEach(function(g){ordered=ordered.concat(ms(members.filter(function(n){return String(n.nhomId)===String(g.id)&&String(n.id)!==String(srcId);})));});
@@ -6427,7 +6430,7 @@ function cpwRenderList(){
   var dv=_cpwDonVi;
   var readonly=_cpwListReadOnly;
   var canEd=(typeof canEditUnit==='function'&&canEditUnit(dv));
-  var list=daNhanVien.filter(function(n){return n.boPhan===dv;}).sort(function(a,b){var sa=a.stt!=null?+a.stt:9999,sb=b.stt!=null?+b.stt:9999;if(sa!==sb)return sa-sb;return (a.ten||'').localeCompare(b.ten||'','vi');});
+  var list=_sapThanhVien(daNhanVien.filter(function(n){return n.boPhan===dv;}));
   var thS='style="text-align:center;position:sticky;top:0;z-index:5;background:#f8fafc;font-size:11.5px;padding:6px 8px;"';
   var thS2='style="text-align:center;position:sticky;top:32px;z-index:4;background:#f8fafc;font-size:11px;padding:5px 6px;"';
   var body='';var stt=0;
