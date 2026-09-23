@@ -256,6 +256,10 @@
     .cp-tile.cp-task .cp-ic{background:var(--primary);color:#fff}
     .cp-tile h4{margin:0;font-size:15px;font-weight:700;color:var(--primary)}
     .cp-tile p{margin:0;font-size:12.5px;color:var(--text-light);line-height:1.45}
+    #cp-approve-tile{position:relative}
+    #cp-approve-badge{position:absolute;top:14px;right:14px;min-width:24px;height:24px;padding:0 8px;border-radius:12px;
+      background:var(--accent,#C8102E);color:#fff;font-size:12.5px;font-weight:700;line-height:24px;text-align:center;
+      box-shadow:0 2px 6px rgba(200,16,46,.3)}
     /* ===== DASHBOARD TỔNG QUAN ===== */
     .dash{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:16px 18px;margin-bottom:22px}
     .dash-head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:14px}
@@ -269,7 +273,11 @@
     .dash-sec-t{font-size:11.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--text-light);margin-bottom:10px}
     /* Ô chỉ số */
     .dash-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px}
-    .dash-kpi{border:1px solid var(--border);border-radius:10px;padding:11px 13px;background:#fbfcfe}
+    .dash-kpi{border:1px solid var(--border);border-radius:10px;padding:11px 13px;background:#fbfcfe;display:flex;align-items:center;gap:12px}
+    .dash-kpi .ic{width:38px;height:38px;border-radius:10px;flex-shrink:0;display:flex;align-items:center;justify-content:center;background:#eef3fb;color:var(--primary)}
+    .dash-kpi.has .ic{background:#fdecea;color:var(--accent)}
+    .dash-kpi.info .v{color:var(--primary)}
+    .dash-kpi.info .v small{font-size:14px;font-weight:600;color:var(--text-light)}
     .dash-kpi.act{cursor:pointer}
     .dash-kpi.act:hover{border-color:var(--primary);background:#f2f7fd}
     .dash-kpi .v{font-size:23px;font-weight:700;line-height:1.1;color:var(--text-light)}
@@ -282,6 +290,11 @@
     .dash-mt td{padding:0 3px}
     .dash-mt td.u{font-size:13px;font-weight:600;color:var(--text);white-space:nowrap;padding-right:10px}
     .dash-mt td.n{font-size:11.5px;color:var(--text-light);white-space:nowrap;padding-right:10px;text-align:right}
+    .dash-mt th.n{white-space:nowrap;padding-right:10px}
+    .dash-pg{display:inline-flex;align-items:center;gap:7px}
+    .dash-pg .bar{width:56px;height:6px;border-radius:3px;background:#e3e9f2;overflow:hidden}
+    .dash-pg .bar i{display:block;height:100%;border-radius:3px;background:#2e9e5b}
+    .dash-pg b{font-weight:600;color:var(--text);font-variant-numeric:tabular-nums;min-width:22px;text-align:right}
     .dash-mt col.now{background:#f4f8ff}
     .dash-o{display:block;border-radius:7px;padding:6px 4px;text-align:center;font-size:11.5px;font-weight:600;
       border:1px solid transparent;line-height:1.3;overflow-wrap:break-word}
@@ -326,35 +339,34 @@
       </div>
       <div class="cp-tile cp-task" id="cp-approve-tile" style="display:none;" onclick="cpGoApprove()">
         <div class="cp-ic"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></div>
-        <h4>Phê duyệt <span id="cp-approve-badge" style="display:none;background:var(--accent,#C8102E);color:#fff;font-size:11px;font-weight:700;border-radius:20px;padding:1px 8px;margin-left:4px;vertical-align:middle;">0</span></h4>
+        <span id="cp-approve-badge" style="display:none;" title="Số mục đang chờ duyệt">0</span>
+        <h4>Phê duyệt</h4>
       </div>
     </div>
     <div class="cp-sec-title">Tra cứu</div>
     <div class="cp-grid">
-      <div class="cp-tile" onclick="cpOpenTraCuu()" style="border:2px solid var(--primary);background:#eef5fd;box-shadow:0 2px 8px rgba(0,48,135,.10);">
+      <div class="cp-tile" onclick="cpOpenTraCuu()">
         <div class="cp-ic"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
         <h4>Nhân sự</h4>
-        <p>Tra cứu danh sách và thông tin nhân viên theo đơn vị.</p>
       </div>
-      <div class="cp-tile" onclick="showPage('ton-kho')" style="border:2px solid var(--primary);background:#eef5fd;box-shadow:0 2px 8px rgba(0,48,135,.10);">
+      <div class="cp-tile" onclick="showPage('ton-kho')">
         <div class="cp-ic"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 8.35V20a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V8.35A2 2 0 0 1 3.26 6.5l8-3.2a2 2 0 0 1 1.48 0l8 3.2A2 2 0 0 1 22 8.35Z"/><path d="M6 18h12"/><path d="M6 14h12"/><path d="M6 10h12"/></svg></div>
         <h4>Tồn kho</h4>
-        <p>Số lượng tồn hiện tại và lịch sử nhập/xuất.</p>
       </div>
-      <div class="cp-tile" onclick="cpOpenSizeChart()" style="border:2px solid var(--primary);background:#eef5fd;box-shadow:0 2px 8px rgba(0,48,135,.10);">
+      <div class="cp-tile" onclick="cpOpenSizeChart()">
         <div class="cp-ic"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.38 3.46 16 2a4 4 0 0 1-8 0L3.62 3.46a2 2 0 0 0-1.34 2.23l.58 3.47a1 1 0 0 0 .99.84H6v10c0 1.1.9 2 2 2h8a2 2 0 0 0 2-2V10h2.15a1 1 0 0 0 .99-.84l.58-3.47a2 2 0 0 0-1.34-2.23z"/></svg></div>
         <h4>Tra cứu kích cỡ quần áo</h4>
-        <p>Bảng thông số kích cỡ theo từng loại quần áo.</p>
       </div>
-      <div class="cp-tile" onclick="showPage('dinh-muc')" style="opacity:.62;">
+    </div>
+    <div class="cp-sec-title">Cấu hình</div>
+    <div class="cp-grid">
+      <div class="cp-tile" onclick="showPage('dinh-muc')">
         <div class="cp-ic"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21.3 15.3a2.4 2.4 0 0 1 0 3.4l-2.6 2.6a2.4 2.4 0 0 1-3.4 0L2.7 8.7a2.4 2.4 0 0 1 0-3.4l2.6-2.6a2.4 2.4 0 0 1 3.4 0Z"/><path d="m14.5 12.5 2-2"/><path d="m11.5 9.5 2-2"/><path d="m8.5 6.5 2-2"/><path d="m17.5 15.5 2-2"/></svg></div>
         <h4>Định mức cấp phát</h4>
-        <p>Định mức theo chức danh (VSP-000-ATMT-411).</p>
       </div>
-      <div class="cp-tile" onclick="showPage('danh-muc')" style="opacity:.62;">
+      <div class="cp-tile" onclick="showPage('danh-muc')">
         <div class="cp-ic"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 5h.01"/><path d="M3 12h.01"/><path d="M3 19h.01"/><path d="M8 5h13"/><path d="M8 12h13"/><path d="M8 19h13"/></svg></div>
         <h4>Danh mục</h4>
-        <p>Nhóm trang bị và chi tiết vật tư BHLĐ.</p>
       </div>
     </div>
   </div>
@@ -1744,11 +1756,18 @@ function renderCPDashboard(){
   var soNhanSu=(BHLD.lsGet('pending_changes')||[]).filter(function(c){return c.status==='pending';}).length;
   var soNVMoi=(typeof daNhanVien!=='undefined'?daNhanVien:[]).filter(function(n){return n.loaiNV==='moi';}).length;
   var laAdmin=(typeof isAdmin==='function'&&isAdmin());
-  function kpi(v,nhan,hanhDong){
+  function kpi(v,nhan,hanhDong,icon){
     var act=(v>0&&hanhDong)?' act':'';
     return '<div class="dash-kpi'+(v>0?' has':'')+act+'"'+((v>0&&hanhDong)?' onclick="'+hanhDong+'"':'')+'>'+
-      '<div class="v">'+v+'</div><div class="l">'+nhan+'</div></div>';
+      '<div class="ic">'+_ic(icon,18)+'</div><div><div class="v">'+v+'</div><div class="l">'+nhan+'</div></div></div>';
   }
+  // Ô thông tin (không phải việc chờ): luôn màu thương hiệu, không đổi sang đỏ
+  function kpiInfo(vHtml,nhan,icon){
+    return '<div class="dash-kpi info"><div class="ic">'+_ic(icon,18)+'</div><div><div class="v">'+vHtml+'</div><div class="l">'+nhan+'</div></div></div>';
+  }
+  var _unitsKpi=units.filter(function(u){return u;});
+  var tongNS=(typeof daNhanVien!=='undefined'?daNhanVien:[]).filter(function(n){return _unitsKpi.some(function(u){return _uSame(u,n.boPhan);});}).length;
+  var dvXongQuy=_unitsKpi.filter(function(u){return _dashTrangThaiO(u,quyNay,TT,P,quyStart)==='xong';}).length;
   var h='<div class="dash">'+
     '<div class="dash-head"><div class="dash-title">'+_ic('chart',17)+'Tổng quan cấp phát BHLĐ</div>'+
       '<div class="dash-nam">'+
@@ -1757,9 +1776,11 @@ function renderCPDashboard(){
         '<button onclick="_dashDoiNam(1)"'+(nam>=namMax?' disabled':'')+' title="Năm sau">›</button>'+
       '</div></div>'+
     '<div class="dash-kpis">'+
-      kpi(soPhieu,'Phiếu chờ Admin duyệt',laAdmin?'cpGoApprove()':'')+
-      kpi(soNhanSu,'Thay đổi nhân sự chờ duyệt',laAdmin?'cpGoApprove()':'')+
-      kpi(soNVMoi,'Nhân viên mới chưa lập phiếu','cpGoNewEmployee()')+
+      kpiInfo(String(tongNS),'Tổng nhân sự','users')+
+      kpiInfo(dvXongQuy+'<small> / '+_unitsKpi.length+'</small>','Đơn vị hoàn tất '+quyNay,'check')+
+      kpi(soPhieu,'Phiếu chờ Admin duyệt',laAdmin?'cpGoApprove()':'','clip')+
+      kpi(soNhanSu,'Thay đổi nhân sự chờ duyệt',laAdmin?'cpGoApprove()':'','edit')+
+      kpi(soNVMoi,'Nhân viên mới chưa lập phiếu','cpGoNewEmployee()','userplus')+
     '</div>';
 
   /* ── Ma trận tiến độ ── */
@@ -1784,7 +1805,9 @@ function renderCPDashboard(){
           JSON.stringify(u).replace(/"/g,'&quot;')+','+JSON.stringify(q).replace(/"/g,'&quot;')+')" '+
           'title="'+_escH(u)+' – '+q+': '+c.nhan+'">'+c.nhan+'</a></td>';
       }).join('');
-      h+='<tr><td class="u">'+_escH(u)+'</td><td class="n">'+xong+'/'+trongPham+'</td>'+o+'</tr>';
+      var pct=trongPham?Math.round(xong/trongPham*100):0;
+      h+='<tr><td class="u">'+_escH(u)+'</td><td class="n"><span class="dash-pg" title="Hoàn tất '+xong+'/'+trongPham+' quý trong năm">'+
+         '<span class="bar"><i style="width:'+pct+'%"></i></span><b>'+xong+'/'+trongPham+'</b></span></td>'+o+'</tr>';
     });
     h+='</tbody></table>'+
       '<div class="dash-chu">'+
@@ -3469,6 +3492,7 @@ function _ic(n,s){var P={
   back:'<path d="m12 19-7-7 7-7"/><path d="M19 12H5"/>',
   chart:'<path d="M3 3v16a2 2 0 0 0 2 2h16"/><path d="M7 16v-5"/><path d="M12 16V8"/><path d="M17 16v-3"/>',
   check:'<path d="M20 6 9 17l-5-5"/>',
+  users:'<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>',
   cal:'<rect width="18" height="18" x="3" y="4" rx="2"/><path d="M16 2v4"/><path d="M8 2v4"/><path d="M3 10h18"/>',
   calc:'<rect width="16" height="20" x="4" y="2" rx="2"/><line x1="8" x2="16" y1="6" y2="6"/><line x1="16" x2="16" y1="14" y2="18"/><path d="M12 10h.01"/><path d="M8 10h.01"/><path d="M8 14h.01"/><path d="M12 14h.01"/><path d="M8 18h.01"/><path d="M12 18h.01"/>',
   hour:'<path d="M5 22h14"/><path d="M5 2h14"/><path d="M17 22v-4.172a2 2 0 0 0-.586-1.414L12 12l-4.414 4.414A2 2 0 0 0 7 17.828V22"/><path d="M7 2v4.172a2 2 0 0 0 .586 1.414L12 12l4.414-4.414A2 2 0 0 0 17 6.172V2"/>',
