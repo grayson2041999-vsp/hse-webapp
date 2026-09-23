@@ -51,6 +51,27 @@
     .nv-act-edit:hover { background: #dceaf7; }
     .nv-act-del { color: var(--danger); border-color: #eab7b2; margin-left: 8px; }
     .nv-act-del:hover { background: #fdecea; }
+    /* Nút icon dùng chung cho Sửa / Xoá (bảng nhân sự, tiêu đề nhóm, wizard) */
+    .ib { display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; padding: 0; border-radius: 7px; background: transparent; border: 1px solid var(--border); cursor: pointer; transition: background .15s, border-color .15s, opacity .15s; vertical-align: middle; }
+    .ib + .ib { margin-left: 6px; }
+    .ib svg { width: 14px; height: 14px; }
+    .ib-sm { width: 24px; height: 24px; border-radius: 6px; }
+    .ib-sm svg { width: 12px; height: 12px; }
+    .ib-sm + .ib-sm { margin-left: 4px; }
+    .ib-edit { color: var(--primary); border-color: #b0cde8; }
+    .ib-edit:hover { background: #dceaf7; }
+    .ib-del { color: var(--danger); border-color: #eab7b2; }
+    .ib-del:hover { background: #fdecea; }
+    .ib:focus-visible { outline: 2px solid var(--primary-light); outline-offset: 1px; }
+    .cpns-grp .ib { background: #fff; }
+    .cpns-grp .ib-edit:hover { background: #dceaf7; }
+    .cpns-grp .ib-del:hover { background: #fdecea; }
+    .grp-act { float: right; }
+    /* Nút ở tiêu đề nhóm chỉ hiện khi rê chuột; màn hình cảm ứng luôn hiện */
+    @media (hover: hover) {
+      .cpns-grp .grp-act { opacity: 0; }
+      .cpns-grp:hover .grp-act, .cpns-grp .grp-act:focus-within { opacity: 1; }
+    }
     table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
     th { background: #dde6f3; padding: 10px 12px; text-align: left; font-weight: 600; color: var(--primary); font-size: 12px; text-transform: uppercase; letter-spacing: 0.4px; border-bottom: 2px solid var(--border); }
     td { padding: 10px 12px; border-bottom: 1px solid var(--border); vertical-align: middle; }
@@ -2266,7 +2287,7 @@ function _cpnsLiveRow(n,stt,draggable,grpSelHtml){
   var act=_pc
     ? '<span style="display:inline-flex;align-items:center;gap:4px;background:#fff3cd;color:#856404;font-size:11px;font-weight:700;border-radius:20px;padding:3px 10px;white-space:nowrap;">⏳ Chờ duyệt</span>'
     : ( canEd
-      ? (grpSelHtml||'')+'<button class="btn btn-ghost btn-sm" style="padding:4px 8px;" title="Sửa" onclick="cpNsEdit(\''+n.id+'\')">'+_ic('edit',13)+'</button> <button class="btn btn-danger btn-sm" style="padding:4px 8px;" title="Xoá" onclick="cpNsDelete(\''+n.id+'\')">'+_ic('del',13)+'</button>'
+      ? (grpSelHtml||'')+'<button class="ib ib-edit" title="Sửa" onclick="cpNsEdit(\''+n.id+'\')">'+_ic('edit',13)+'</button><button class="ib ib-del" title="Xoá" onclick="cpNsDelete(\''+n.id+'\')">'+_ic('del',13)+'</button>'
       : '<span style="color:var(--text-light);">—</span>' );
   var canDrag=draggable&&!_pc;
   var dragAttr=canDrag?' draggable="true" data-nv-id="'+n.id+'"':'';
@@ -2332,8 +2353,8 @@ function _cpnsMoveNhom(gid,dir){
 // Dòng tiêu đề nhóm (full width) — cho phép thả vào để chuyển nhóm; nhãn = số La Mã theo thứ tự
 function _cpnsGroupHeaderRow(g,count,canManage,roman){
   var badge=g?'<span style="display:inline-flex;align-items:center;justify-content:center;background:var(--primary);color:#fff;font-weight:800;font-size:11px;border-radius:50%;min-width:24px;height:20px;padding:0 5px;margin-right:6px;">'+_escH(roman||'')+'</span>'+_escH(g.ten):'📂 Chưa xếp nhóm';
-  var manage=(g&&canManage)?(' <button onclick="openModalNhom(\''+_escH(String(g.id))+'\')" style="background:none;border:none;cursor:pointer;font-size:12.5px;padding:0 2px;" title="Đổi tên">✏️</button><button onclick="deleteNhom(\''+_escH(String(g.id))+'\')" style="background:none;border:none;cursor:pointer;font-size:12.5px;padding:0 2px;color:var(--danger);" title="Xoá nhóm">🗑️</button>'):'';
-  return '<tr class="cpns-grp" data-nhom-drop="'+(g?_escH(String(g.id)):'')+'" style="background:#eaf2fb;"><td colspan="14" style="padding:7px 12px;font-weight:700;color:var(--primary);font-size:13px;border-bottom:2px solid #b0cde8;">'+badge+' <span style="font-weight:400;color:var(--text-light);font-size:12px;">('+count+' người)</span>'+manage+'</td></tr>';
+  var manage=(g&&canManage)?('<span class="grp-act"><button class="ib ib-edit" onclick="openModalNhom(\''+_escH(String(g.id))+'\')" title="Đổi tên nhóm" aria-label="Đổi tên nhóm">'+_ic('edit',13)+'</button><button class="ib ib-del" onclick="deleteNhom(\''+_escH(String(g.id))+'\')" title="Xoá nhóm" aria-label="Xoá nhóm">'+_ic('del',13)+'</button></span>'):'';
+  return '<tr class="cpns-grp" data-nhom-drop="'+(g?_escH(String(g.id)):'')+'" style="background:#eaf2fb;"><td colspan="14" style="padding:7px 12px;font-weight:700;color:var(--primary);font-size:13px;border-bottom:2px solid #b0cde8;">'+manage+badge+' <span style="font-weight:400;color:var(--text-light);font-size:12px;">('+count+' người)</span></td></tr>';
 }
 // Khởi tạo kéo-thả cho bảng Tra cứu (chỉ gắn 1 lần)
 var _cpnsDragId=null;
@@ -2634,7 +2655,7 @@ function _cpnvViewRow(n,stt,pending){
     return '<tr style="opacity:.6;background:#f7f8fb;"><td style="text-align:center;">'+stt+'</td>'+cells+
       '<td style="text-align:center;"><span style="display:inline-flex;align-items:center;gap:4px;background:#fff3cd;color:#856404;font-size:11px;font-weight:700;border-radius:20px;padding:3px 10px;white-space:nowrap;">⏳ Chờ duyệt</span></td></tr>';
   }
-  var act='<button class="btn btn-ghost btn-sm" style="padding:4px 8px;" title="Sửa" onclick="cpnvEditRow(\''+n.id+'\')">'+_ic('edit',13)+'</button> <button class="btn btn-danger btn-sm" style="padding:4px 8px;" title="Xoá" onclick="cpnvDelRow(\''+n.id+'\')">'+_ic('del',13)+'</button>';
+  var act='<button class="ib ib-edit" title="Sửa" onclick="cpnvEditRow(\''+n.id+'\')">'+_ic('edit',13)+'</button><button class="ib ib-del" title="Xoá" onclick="cpnvDelRow(\''+n.id+'\')">'+_ic('del',13)+'</button>';
   return '<tr><td style="text-align:center;color:var(--text-light);">'+stt+'</td>'+cells+'<td style="text-align:center;white-space:nowrap;">'+act+'</td></tr>';
 }
 function cpnvUnitChange(u){ _cpnvUnit=u; _cpnvEditId=null; _cpnvDrafts=[]; cpnvRender(); }
@@ -3260,7 +3281,7 @@ function renderNhomPanel(donVi){
   const groups=daGroups.filter(g=>g.donVi===donVi);
   const list=document.getElementById('nhom-list');const empty=document.getElementById('nhom-empty');const hint=document.getElementById('nhom-empty-hint');
   if(!groups.length){list.style.display='none';empty.style.display='block';hint.textContent=canManage?'Nhấn "➕ Tạo nhóm" để bắt đầu.':'';}
-  else{list.style.display='flex';empty.style.display='none';list.innerHTML=groups.map(g=>{const count=daNhanVien.filter(n=>n.boPhan===donVi&&n.nhomId===g.id).length;return`<div style="display:inline-flex;align-items:center;gap:6px;background:#eaf2fb;border:1.5px solid #b0cde8;border-radius:20px;padding:5px 12px;font-size:13px;"><span style="display:inline-flex;align-items:center;justify-content:center;background:var(--primary);color:#fff;font-weight:800;font-size:11px;border-radius:50%;width:20px;height:20px;flex-shrink:0;">${g.id}</span><span style="font-weight:600;color:var(--primary);">${g.ten}</span><span style="font-size:11.5px;color:var(--text-light);">(${count})</span>${canManage?`<button onclick="openModalNhom('${g.id}')" style="background:none;border:none;cursor:pointer;padding:0 2px;font-size:13px;">✏️</button><button onclick="deleteNhom('${g.id}')" style="background:none;border:none;cursor:pointer;padding:0 2px;font-size:13px;color:var(--danger);">🗑️</button>`:''}</div>`;}).join('');}
+  else{list.style.display='flex';empty.style.display='none';list.innerHTML=groups.map(g=>{const count=daNhanVien.filter(n=>n.boPhan===donVi&&n.nhomId===g.id).length;return`<div style="display:inline-flex;align-items:center;gap:6px;background:#eaf2fb;border:1.5px solid #b0cde8;border-radius:20px;padding:5px 12px;font-size:13px;"><span style="display:inline-flex;align-items:center;justify-content:center;background:var(--primary);color:#fff;font-weight:800;font-size:11px;border-radius:50%;width:20px;height:20px;flex-shrink:0;">${g.id}</span><span style="font-weight:600;color:var(--primary);">${g.ten}</span><span style="font-size:11.5px;color:var(--text-light);">(${count})</span>${canManage?`<button class="ib ib-sm ib-edit" onclick="openModalNhom('${g.id}')" aria-label="Đổi tên nhóm">${_ic('edit',12)}</button><button class="ib ib-sm ib-del" onclick="deleteNhom('${g.id}')" aria-label="Xoá nhóm">${_ic('del',12)}</button>`:''}</div>`;}).join('');}
 }
 function openModalNhom(id){
   const donVi=_currentUnit||'';if(!canManageNhom(donVi)){showToast('Bạn không có quyền quản lý nhóm.','error');return;}
@@ -6390,22 +6411,22 @@ function _cpwViewRowExisting(n,stt){
   var canEd=(typeof canEditUnit==='function'&&canEditUnit(n.boPhan));
   if(staged&&!readonly){
     var act='<div style="display:inline-flex;gap:4px;">'+
-      '<button class="btn btn-ghost btn-sm" style="padding:4px 8px;" title="Sửa tiếp" onclick="cpwLstEdit(\''+n.id+'\')">'+_ic('edit',13)+'</button>'+
-      '<button class="btn btn-ghost btn-sm" style="padding:4px 8px;color:var(--danger);" title="Hoàn tác" onclick="cpwLstRevertEdit(\''+n.id+'\')">'+_ic('undo',13)+'</button></div>';
+      '<button class="ib ib-edit" title="Sửa tiếp" onclick="cpwLstEdit(\''+n.id+'\')">'+_ic('edit',13)+'</button>'+
+      '<button class="ib ib-del" title="Hoàn tác" onclick="cpwLstRevertEdit(\''+n.id+'\')">'+_ic('undo',13)+'</button></div>';
     return '<tr style="background:#fff8e1;">'+
       '<td style="text-align:center;color:var(--text-light);">'+stt+'</td>'+
       _cpwDataCells(staged.proposed,' <span style="background:#ffe08a;color:#7a5c00;font-size:10px;font-weight:700;border-radius:20px;padding:1px 8px;white-space:nowrap;">✎ Đã sửa (chưa gửi)</span>')+
       '<td style="text-align:center;white-space:nowrap;">'+act+'</td></tr>';
   }
   var act2=(!readonly&&canEd)
-    ? '<button class="btn btn-ghost btn-sm" style="padding:4px 8px;" title="Sửa" onclick="cpwLstEdit(\''+n.id+'\')">'+_ic('edit',13)+'</button>'
+    ? '<button class="ib ib-edit" title="Sửa" onclick="cpwLstEdit(\''+n.id+'\')">'+_ic('edit',13)+'</button>'
     : '<span style="color:var(--text-light);">—</span>';
   return '<tr><td style="text-align:center;color:var(--text-light);">'+stt+'</td>'+_cpwDataCells(n,'')+'<td style="text-align:center;white-space:nowrap;">'+act2+'</td></tr>';
 }
 function _cpwStagedAddRow(a,stt){
   var act='<div style="display:inline-flex;gap:4px;">'+
-    '<button class="btn btn-ghost btn-sm" style="padding:4px 8px;" title="Sửa" onclick="cpwLstEditStagedAdd(\''+a.tempId+'\')">'+_ic('edit',13)+'</button>'+
-    '<button class="btn btn-ghost btn-sm" style="padding:4px 8px;color:var(--danger);" title="Xoá" onclick="cpwLstRemoveStagedAdd(\''+a.tempId+'\')">'+_ic('del',13)+'</button></div>';
+    '<button class="ib ib-edit" title="Sửa" onclick="cpwLstEditStagedAdd(\''+a.tempId+'\')">'+_ic('edit',13)+'</button>'+
+    '<button class="ib ib-del" title="Xoá" onclick="cpwLstRemoveStagedAdd(\''+a.tempId+'\')">'+_ic('del',13)+'</button></div>';
   return '<tr style="background:#eafaf1;">'+
     '<td style="text-align:center;color:var(--success);font-weight:700;">＋</td>'+
     _cpwDataCells(a.data,' <span style="background:#bfead0;color:#1a7a3c;font-size:10px;font-weight:700;border-radius:20px;padding:1px 8px;white-space:nowrap;">Mới (chưa gửi)</span>')+
