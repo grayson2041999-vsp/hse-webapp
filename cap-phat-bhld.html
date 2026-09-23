@@ -67,6 +67,19 @@
     .cpns-grp .ib-edit:hover { background: #dceaf7; }
     .cpns-grp .ib-del:hover { background: #fdecea; }
     .grp-act { float: right; }
+    /* Bước 2 wizard: điều chỉnh hàng loạt theo cột */
+    .cpw-adj{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;padding:0;border-radius:6px;border:1px solid #b0cde8;background:#fff;color:var(--primary);cursor:pointer;margin-left:6px;vertical-align:middle}
+    .cpw-adj:hover,.cpw-adj.on{background:#dceaf7}
+    .cpw-adj.mod{background:#fff3cd;border-color:var(--warning);color:#8a5300}
+    #cpw-bulk-pop{position:fixed;z-index:1000;width:290px;background:#fff;border:1px solid var(--border);border-radius:10px;box-shadow:0 10px 30px rgba(0,30,80,.18);padding:14px;display:none;font-size:13px}
+    #cpw-bulk-pop .t{font-size:13.5px;font-weight:700;color:var(--primary);margin-bottom:10px;display:flex;justify-content:space-between;align-items:center}
+    #cpw-bulk-pop .x{cursor:pointer;color:var(--text-light);font-size:18px;line-height:1;background:none;border:none}
+    #cpw-bulk-pop .f{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+    #cpw-bulk-pop input{width:80px;padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:14px;font-weight:700;text-align:center;color:var(--primary)}
+    #cpw-bulk-pop .f span{color:var(--text-light);font-size:12.5px}
+    #cpw-bulk-pop .pv{background:#f4f8fe;border:1px solid #d6e3f5;border-radius:7px;padding:8px 10px;font-size:12.5px;margin-bottom:12px;line-height:1.5}
+    #cpw-bulk-pop .pv b{color:var(--primary)}
+    #cpw-bulk-pop .a{display:flex;justify-content:space-between;align-items:center;gap:6px}
     /* ── Bảng Tra cứu nhân sự ── */
     #cpns-table { border-collapse: separate; border-spacing: 0; table-layout: fixed; width: 100%; min-width: 980px; }
     #cpns-table th, #cpns-table td { border-right: 1px solid #e1e7f0; border-bottom: 1px solid #e1e7f0; padding: 7px 6px; }
@@ -6871,7 +6884,12 @@ function cpwRenderQuantity(){
   var cols=CATS.slice(); if(hasKhac)cols.push(['khac','Khác']);
   var thB='position:sticky;top:0;z-index:5;background:#f8fafc;font-size:11.5px;padding:6px 8px;text-align:center;border-bottom:2px solid #dbe4ee;';
   var head='<tr><th style="'+thB+'width:34px;">STT</th><th style="'+thB+'text-align:left;min-width:190px;">Nhân viên</th>'+
-    cols.map(function(c){return '<th style="'+thB+'min-width:118px;">'+c[1]+'</th>';}).join('')+'</tr>';
+    cols.map(function(c){
+      // Cột đã bị chỉnh (có người khác định mức) → nút ⚙ màu vàng
+      var mod=rows.some(function(r){return r.items.some(function(it){if((it.cat||'khac')!==c[0])return false;var sv=(qData[r.nv.id+'_'+it.tbId]||{}).thucTe;return sv!==undefined&&sv!==''&&Number(sv)!==Number(it.soLuong);});});
+      var has=rows.some(function(r){return r.items.some(function(it){return (it.cat||'khac')===c[0];});});
+      return '<th style="'+thB+'min-width:118px;">'+c[1]+(has?'<button type="button" class="cpw-adj'+(mod?' mod':'')+'" title="Điều chỉnh hàng loạt cột '+c[1]+'" onclick="cpwBulkOpen(event,\''+c[0]+'\',\''+c[1]+'\')">'+_ic('adjust',13)+'</button>':'')+'</th>';
+    }).join('')+'</tr>';
   var body='';var stt=0;
   rows.forEach(function(r){
     stt++;
@@ -6952,6 +6970,58 @@ function cpwFillDinhMuc(){
   _lastBcRows.forEach(function(r){r.items.forEach(function(it){var key=r.nv.id+'_'+it.tbId;if(!phieuData[quyStr][key])phieuData[quyStr][key]={};phieuData[quyStr][key].thucTe=it.soLuong;});});
   if(typeof saveData==='function')saveData('phieu-data',phieuData);
   cpwRenderQuantity();
+}
+/* ── Điều chỉnh hàng loạt một cột ở Bước 2: số thực tế = X% định mức ──
+   Luôn tính lại TỪ ĐỊNH MỨC (không cộng dồn lên lần trước), làm tròn thông thường,
+   không vượt định mức. Áp dụng cho tất cả nhân viên có vật tư thuộc cột đó. */
+var _cpwBulk={cat:null,ten:''};
+function _cpwBulkSl(dm,pct){ dm=Number(dm)||0; return Math.max(0,Math.min(dm,Math.round(dm*pct/100))); }
+function _cpwBulkEl(){
+  var el=document.getElementById('cpw-bulk-pop'); if(el)return el;
+  el=document.createElement('div'); el.id='cpw-bulk-pop';
+  el.innerHTML='<div class="t"><span id="cpw-bulk-t"></span><button type="button" class="x" onclick="cpwBulkClose()" aria-label="Đóng">×</button></div>'+
+    '<div class="f"><input type="number" id="cpw-bulk-v" min="0" max="100" step="1" value="50"><span>% định mức (làm tròn)</span></div>'+
+    '<div class="pv" id="cpw-bulk-pv"></div>'+
+    '<div class="a"><button type="button" class="btn btn-outline btn-sm" onclick="cpwBulkApply(100)">'+_ic('undo',13)+' Về định mức</button>'+
+    '<span><button type="button" class="btn btn-outline btn-sm" onclick="cpwBulkClose()">Huỷ</button> <button type="button" class="btn btn-primary btn-sm" onclick="cpwBulkApply()">Áp dụng</button></span></div>';
+  document.body.appendChild(el);
+  var inp=el.querySelector('#cpw-bulk-v');
+  inp.addEventListener('input',cpwBulkPreview);
+  inp.addEventListener('keydown',function(e){ if(e.key==='Enter')cpwBulkApply(); if(e.key==='Escape')cpwBulkClose(); });
+  document.addEventListener('mousedown',function(e){ if(el.style.display==='block'&&!el.contains(e.target)&&!(e.target.closest&&e.target.closest('.cpw-adj')))cpwBulkClose(); });
+  return el;
+}
+function cpwBulkOpen(e,cat,ten){
+  e.stopPropagation();
+  var el=_cpwBulkEl(); _cpwBulk={cat:cat,ten:ten};
+  document.getElementById('cpw-bulk-t').textContent='Điều chỉnh '+ten+' · tất cả nhân viên';
+  var r=e.currentTarget.getBoundingClientRect();
+  el.style.display='block';
+  el.style.left=Math.min(window.innerWidth-300,Math.max(8,r.left-140))+'px';
+  el.style.top=Math.min(window.innerHeight-200,r.bottom+6)+'px';
+  var inp=document.getElementById('cpw-bulk-v'); inp.value=50; cpwBulkPreview(); inp.focus(); inp.select();
+}
+function cpwBulkClose(){ var el=document.getElementById('cpw-bulk-pop'); if(el)el.style.display='none'; _cpwBulk.cat=null; }
+function _cpwBulkItems(){
+  var out=[]; (_lastBcRows||[]).forEach(function(r){ r.items.forEach(function(it){ if((it.cat||'khac')===_cpwBulk.cat)out.push({key:r.nv.id+'_'+it.tbId,dm:it.soLuong,dvt:it.donVi||''}); }); });
+  return out;
+}
+function cpwBulkPreview(){
+  var pv=document.getElementById('cpw-bulk-pv'); if(!pv||!_cpwBulk.cat)return;
+  var pct=Math.max(0,Math.min(100,parseFloat(document.getElementById('cpw-bulk-v').value)||0));
+  var qd=phieuData[_cpwQuy]||{}, items=_cpwBulkItems(), nv={}, truoc=0, sau=0;
+  items.forEach(function(x){ nv[x.key.split('_')[0]]=1; var sv=(qd[x.key]||{}).thucTe; truoc+=(sv===undefined||sv==='')?0:Number(sv)||0; sau+=_cpwBulkSl(x.dm,pct); });
+  var dvt=(items[0]&&items[0].dvt)||'';
+  pv.innerHTML='Sẽ đổi <b>'+Object.keys(nv).length+' người</b>:<br>'+_escH(_cpwBulk.ten)+' <b>'+truoc.toLocaleString('vi-VN')+' → '+sau.toLocaleString('vi-VN')+'</b> '+_escH(dvt);
+}
+function cpwBulkApply(pctCo){
+  if(!_cpwBulk.cat)return;
+  var pct=(pctCo!==undefined)?pctCo:Math.max(0,Math.min(100,parseFloat(document.getElementById('cpw-bulk-v').value)||0));
+  var q=_cpwQuy; if(!phieuData[q])phieuData[q]={};
+  _cpwBulkItems().forEach(function(x){ if(!phieuData[q][x.key])phieuData[q][x.key]={}; phieuData[q][x.key].thucTe=_cpwBulkSl(x.dm,pct); });
+  if(typeof saveData==='function')saveData('phieu-data',phieuData);
+  var ten=_cpwBulk.ten; cpwBulkClose(); cpwRenderQuantity();
+  showToast(pct===100?('Đã đưa '+ten+' về định mức.'):('Đã đặt '+ten+' = '+pct+'% định mức cho tất cả nhân viên.'));
 }
 // Tô nền cảnh báo khi thực tế khác định mức (cập nhật ngay, không re-render cả trang)
 function cpwMarkCell(inp,dm){
