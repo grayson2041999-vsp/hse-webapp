@@ -68,8 +68,9 @@
     .cpns-grp .ib-del:hover { background: #fdecea; }
     .grp-act { float: right; }
     /* ── Bảng Tra cứu nhân sự ── */
-    #cpns-table { border-collapse: separate; border-spacing: 0; table-layout: fixed; width: max-content; min-width: 100%; }
-    #cpns-table th, #cpns-table td { border-right: 1px solid #e1e7f0; border-bottom: 1px solid #e1e7f0; padding: 7px 8px; }
+    #cpns-table { border-collapse: separate; border-spacing: 0; table-layout: fixed; width: 100%; min-width: 980px; }
+    #cpns-table th, #cpns-table td { border-right: 1px solid #e1e7f0; border-bottom: 1px solid #e1e7f0; padding: 7px 6px; }
+    #cpns-table td:nth-child(3) { overflow-wrap: anywhere; }
     #cpns-table th:last-child, #cpns-table td:last-child { border-right: none; }
     #cpns-table thead th { position: sticky; top: 0; z-index: 5; background: #f3f6fb; text-align: left; vertical-align: middle; border-bottom: 1px solid var(--border); }
     #cpns-table thead tr:first-child th.cpns-th-grp { height: 39px; background: #d0e4f7; text-align: center; font-size: 11px; }
@@ -83,10 +84,11 @@
     #cpns-table .cpns-ell { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     #cpns-table .cpns-s1, #cpns-table .cpns-s2, #cpns-table .cpns-s3 { position: sticky; z-index: 2; }
     #cpns-table .cpns-s1 { left: 0; }
-    #cpns-table .cpns-s2 { left: 56px; }
-    #cpns-table .cpns-s3 { left: 148px; box-shadow: inset -2px 0 0 #9fb6d6; }
+    #cpns-table .cpns-s2 { left: 50px; }
+    #cpns-table .cpns-s3 { left: 134px; }
     #cpns-table thead th.cpns-s1, #cpns-table thead th.cpns-s2, #cpns-table thead th.cpns-s3 { z-index: 7; }
-    #cpns-wrap.cpns-scrolled .cpns-s3 { box-shadow: inset -2px 0 0 #9fb6d6, 6px 0 8px -6px rgba(0,30,80,.25); }
+    #cpns-wrap.cpns-scrolled .cpns-s3 { box-shadow: inset -2px 0 0 #9fb6d6, 6px 0 8px -6px rgba(0,30,80,.25); }   /* chỉ khi màn hình quá hẹp phải cuộn */
+    #cpns-table input[data-f^="thangCap"] { padding-left: 2px !important; padding-right: 2px !important; }
     #cpns-table.cpns-no-dv .cpns-dv { display: none; }
     #cpns-table input[data-f^="thangCap"] { width: 100% !important; max-width: 74px; }
     /* Ô chọn nhóm thu gọn: hiện số La Mã, bấm mở danh sách tên nhóm đầy đủ */
@@ -398,15 +400,15 @@
       <div id="cpns-size-warn" style="margin-bottom:10px;"></div>
       <div class="table-wrap" id="cpns-wrap" style="max-height:66vh;"><table id="cpns-table"><thead>
         <tr>
-          <th rowspan="2" class="cpns-s1 cpns-c" style="width:56px;">STT</th>
-          <th rowspan="2" class="cpns-s2" style="width:92px;">Danh số</th>
-          <th rowspan="2" class="cpns-s3" style="width:200px;">Họ và tên</th>
-          <th rowspan="2" style="width:180px;">Chức danh</th>
-          <th rowspan="2" class="cpns-dv" style="width:170px;">Đơn vị</th>
-          <th rowspan="2" class="cpns-c cpns-bl" style="width:70px;">Cỡ QA</th>
-          <th rowspan="2" class="cpns-c" style="width:80px;">Cỡ giày</th>
-          <th colspan="6" class="cpns-th-grp cpns-bl" style="width:480px;color:var(--primary);">Tháng cấp gần nhất</th>
-          <th rowspan="2" class="cpns-c cpns-bl" style="width:170px;">Thao tác</th>
+          <th rowspan="2" class="cpns-s1 cpns-c" style="width:50px;">STT</th>
+          <th rowspan="2" class="cpns-s2" style="width:84px;">Danh số</th>
+          <th rowspan="2" class="cpns-s3">Họ và tên</th>
+          <th rowspan="2">Chức danh</th>
+          <th rowspan="2" class="cpns-dv">Đơn vị</th>
+          <th rowspan="2" class="cpns-c cpns-bl" style="width:64px;white-space:nowrap;">Cỡ QA</th>
+          <th rowspan="2" class="cpns-c" style="width:68px;">Cỡ giày</th>
+          <th colspan="6" class="cpns-th-grp cpns-bl" style="width:408px;color:var(--primary);">Tháng cấp gần nhất</th>
+          <th rowspan="2" id="cpns-th-act" class="cpns-c cpns-bl" style="width:136px;">Thao tác</th>
         </tr>
         <tr>
           <th class="cpns-c cpns-bl">Quần áo</th><th class="cpns-c">Giày</th><th class="cpns-c">Mũ</th><th class="cpns-c">Kính</th><th class="cpns-c">Áo mưa</th><th class="cpns-c">Quần áo<br>thợ hàn</th>
@@ -2454,6 +2456,7 @@ function cpRenderNhanSu(){
   var dv=document.getElementById('cpns-donvi').value||'';
   var _nCol=dv?13:14;   // khi lọc 1 đơn vị thì ẩn cột Đơn vị
   var _tbl=document.getElementById('cpns-table'); if(_tbl)_tbl.classList.toggle('cpns-no-dv',!!dv);
+  var _thAct=document.getElementById('cpns-th-act'); if(_thAct)_thAct.style.width=dv?'136px':'96px';
   var _wrap=document.getElementById('cpns-wrap');
   if(_wrap&&!_wrap._cpnsScrollBound){ _wrap._cpnsScrollBound=true; _wrap.addEventListener('scroll',function(){ _wrap.classList.toggle('cpns-scrolled',_wrap.scrollLeft>0); }); }
   if(dv)_currentUnit=dv; // để openModalNhom/saveNhom/deleteNhom/setNhomNV dùng đúng đơn vị
@@ -2565,7 +2568,7 @@ function cpRenderNhanSu(){
     return '<tr style="background:#fdf0ef;color:#7d3a34;" title="'+(reason?('Lý do trả lại: '+_escH(reason)):'Yêu cầu thêm đã bị trả lại')+'">'+
       '<td class="cpns-s1" style="text-align:center;">❌</td>'+
       _cpnsPRCells(n)+
-      '<td class="cpns-bl" style="text-align:center;white-space:nowrap;">'+badge+okBtn+'</td>'+
+      '<td class="cpns-bl" style="text-align:center;">'+badge+okBtn+'</td>'+
     '</tr>';
   }).join('');
   // ── Các hàng THÊM MỚI đang nhập (draft) ──
