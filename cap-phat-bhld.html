@@ -233,7 +233,7 @@
     <span class="nav-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle" aria-hidden="true"><path d="M22 8.35V20a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V8.35A2 2 0 0 1 3.26 6.5l8-3.2a2 2 0 0 1 1.48 0l8 3.2A2 2 0 0 1 22 8.35Z"/><path d="M6 18h12"/><path d="M6 14h12"/><path d="M6 10h12"/></svg></span> Tồn kho
   </div>
   <div class="nav-item" onclick="showPage('nhu-cau')">
-    <span class="nav-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle" aria-hidden="true"><circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"/></svg></span> Nhu cầu mua sắm
+    <span class="nav-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle" aria-hidden="true"><circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"/></svg></span> Dự trù vật tư
   </div>
 </nav>
 
@@ -334,8 +334,8 @@
         <h4>Cấp phát cho nhân viên mới</h4>
       </div>
       <div class="cp-tile cp-task" onclick="showPage('nhu-cau')">
-        <div class="cp-ic"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"/></svg></div>
-        <h4>Tính toán nhu cầu mua sắm</h4>
+        <div class="cp-ic"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3v16a2 2 0 0 0 2 2h16"/><path d="M7 16v-5"/><path d="M12 16V8"/><path d="M17 16v-3"/></svg></div>
+        <h4>Dự trù vật tư</h4>
       </div>
       <div class="cp-tile cp-task" id="cp-approve-tile" style="display:none;" onclick="cpGoApprove()">
         <div class="cp-ic"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></div>
@@ -720,29 +720,68 @@
      TRANG: NHU CẦU MUA SẮM
      ============================ -->
 <div id="page-nhu-cau" class="page">
+  <style>
+    #page-nhu-cau .dt-bar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:14px}
+    #page-nhu-cau .dt-bar input[type=search]{flex:1;min-width:220px}
+    #page-nhu-cau .dt-bar label{font-size:12.5px;color:var(--text-light);display:inline-flex;align-items:center;gap:6px}
+    #page-nhu-cau .dt-chk{color:var(--text)!important;font-size:13px!important;font-weight:400!important;cursor:pointer;user-select:none}
+    #page-nhu-cau .dt-chk input{width:16px;height:16px;accent-color:var(--primary)}
+    .dt-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;margin-bottom:14px}
+    .dt-kpi{border:1px solid var(--border);border-radius:10px;padding:11px 13px;background:#fbfcfe;display:flex;align-items:center;gap:12px}
+    .dt-kpi .ic{width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;background:#eef3fb;color:var(--primary);flex-shrink:0}
+    .dt-kpi.bad .ic{background:#fdecea;color:var(--danger)}
+    .dt-kpi .v{font-size:22px;font-weight:700;color:var(--primary);line-height:1.1}
+    .dt-kpi .v.sm{font-size:16px}
+    .dt-kpi.bad .v{color:var(--danger)}
+    .dt-kpi .l{font-size:12px;color:var(--text-light);margin-top:2px}
+    #dt-wrap{border:1px solid var(--border);border-radius:8px;overflow:auto;max-height:68vh}
+    #dt-table{width:100%;border-collapse:separate;border-spacing:0;table-layout:fixed;min-width:980px}
+    #dt-table th,#dt-table td{border-right:1px solid #e1e7f0;border-bottom:1px solid #e1e7f0;padding:7px 8px;vertical-align:middle;background:inherit}
+    #dt-table th:last-child,#dt-table td:last-child{border-right:none}
+    #dt-table > thead th{position:sticky;top:0;z-index:3;background:#f3f6fb;text-align:left;border-bottom:1px solid var(--border)}
+    #dt-table > thead th.q{text-align:center;text-transform:none;letter-spacing:0;padding:6px 6px 7px}
+    #dt-table th.q .qn{font-size:13px;font-weight:700;display:block}
+    #dt-table th.q .qs{display:block;font-size:10.5px;font-weight:500;color:var(--text-light);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    #dt-table th.q.part .qs{color:#8a5300}
+    #dt-table > tbody > tr{background:#fff}
+    #dt-table > tbody > tr.r{cursor:pointer}
+    #dt-table > tbody > tr.r:hover{background:#f3f7fd}
+    #dt-table > tbody > tr.r.open{background:#eef5ff}
+    #dt-table .c{text-align:center} #dt-table .rt{text-align:right}
+    #dt-table .num{font-variant-numeric:tabular-nums}
+    #dt-table .bl{border-left:2px solid #9fb6d6}
+    #dt-table .ell{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    #dt-table .z{color:#b3bfd0}
+    #dt-table td.thieu-tu{background:#fdecea!important;box-shadow:inset 0 0 0 1px #f3b8b2}
+    #dt-table td.thieu-tu .num{color:var(--danger);font-weight:700}
+    #dt-table .tt{font-weight:700} #dt-table .tt.am{color:var(--danger)} #dt-table .tt.duong{color:var(--success)}
+    #dt-table .caret{display:inline-block;width:14px;color:var(--text-light);transition:transform .15s}
+    #dt-table tr.open .caret{transform:rotate(90deg)}
+    #dt-table > tbody > tr.det > td{background:#f7faff;padding:0}
+    .dt-det{padding:10px 14px 12px 40px}
+    .dt-det table{width:auto!important;min-width:0!important;border-collapse:separate;border-spacing:0;border:1px solid #e1e7f0;border-radius:6px;overflow:hidden}
+    .dt-det th,.dt-det td{font-size:12px;padding:5px 12px;background:#fff;border-bottom:1px solid #e1e7f0}
+    .dt-det th{background:#eef3fb;color:var(--primary);font-weight:600;text-transform:none;letter-spacing:0;min-width:84px}
+    .dt-det td.u{font-weight:600}
+    .dt-legend{display:flex;gap:16px;flex-wrap:wrap;font-size:12px;color:var(--text-light);margin-top:10px}
+    .dt-legend i{display:inline-block;width:12px;height:12px;border-radius:3px;vertical-align:-2px;margin-right:5px;background:#fdecea;border:1px solid #f3b8b2}
+  </style>
   <button class="btn btn-outline" onclick="showPage('quan-ly-cap-phat')" style="padding:7px 16px;font-size:13px;margin-bottom:16px;">← Trang chủ</button>
-  <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:20px;">
-    <div class="page-title" style="margin:0;"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0" aria-hidden="true"><circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"/></svg>Nhu cầu mua sắm</div>
-    <button id="btn-export-nhucau" class="btn btn-xls" onclick="exportNhuCauExcel()" style="display:none;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;flex-shrink:0" aria-hidden="true"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v5h5"/><path d="M8 13h2"/><path d="M14 13h2"/><path d="M8 17h2"/><path d="M14 17h2"/></svg>Xuất Excel</button>
-  </div>
-
-  <div style="background:#f8f9fa;border-radius:10px;padding:16px 20px;margin-bottom:18px;display:flex;flex-wrap:wrap;gap:14px;align-items:flex-end;">
-    <div>
-      <label style="font-size:13px;font-weight:600;display:block;margin-bottom:6px;">Quý bắt đầu</label>
-      <div style="display:flex;gap:8px;align-items:center;">
-        <select id="nhucau-q" style="min-width:80px;padding:7px 10px;border:1px solid #ccc;border-radius:6px;font-size:13px;">
-          <option value="1">Q1</option><option value="2">Q2</option><option value="3">Q3</option><option value="4">Q4</option>
-        </select>
-        <span style="font-size:13px;color:#666;">/</span>
-        <input id="nhucau-y" type="number" min="2020" max="2099" placeholder="Năm" style="width:90px;padding:7px 8px;border:1px solid #ccc;border-radius:6px;font-size:13px;text-align:center;">
-      </div>
+  <div class="page-title"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0" aria-hidden="true"><path d="M3 3v16a2 2 0 0 0 2 2h16"/><path d="M7 16v-5"/><path d="M12 16V8"/><path d="M17 16v-3"/></svg>Dự trù vật tư theo quý</div>
+  <div class="card">
+    <div class="dt-bar">
+      <input type="search" id="dt-search" class="search-input" autocomplete="off" placeholder="Tìm vật tư, mã vật tư…" oninput="_duTruRender()">
+      <label>Số quý
+        <select id="dt-nquy" onchange="initNhuCauPage()"><option value="2">2</option><option value="4" selected>4</option><option value="6">6</option><option value="8">8</option></select>
+      </label>
+      <label class="dt-chk"><input type="checkbox" id="dt-only-short" onchange="_duTruRender()"> Chỉ hiện vật tư thiếu</label>
+      <button id="btn-export-nhucau" class="btn btn-xls" onclick="exportNhuCauExcel()" disabled><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;flex-shrink:0" aria-hidden="true"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v5h5"/><path d="M8 13h2"/><path d="M14 13h2"/><path d="M8 17h2"/><path d="M14 17h2"/></svg> Xuất Excel</button>
     </div>
-    <div style="padding-bottom:2px;color:#666;font-size:13px;line-height:1.6;">→ Tính nhu cầu cho <strong>4 quý liên tiếp</strong> từ quý được chọn</div>
-    <button class="btn btn-primary" onclick="tinhNhuCau()" style="padding:8px 20px;font-size:13px;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px" aria-hidden="true"><rect width="16" height="20" x="4" y="2" rx="2"/><line x1="8" x2="16" y1="6" y2="6"/><line x1="16" x2="16" y1="14" y2="18"/><path d="M12 10h.01"/><path d="M8 10h.01"/><path d="M8 14h.01"/><path d="M12 14h.01"/><path d="M8 18h.01"/><path d="M12 18h.01"/></svg>Tính nhu cầu</button>
+    <div id="dt-kpis" class="dt-kpis"></div>
+    <div id="dt-warn"></div>
+    <div id="dt-wrap"><table id="dt-table"></table></div>
+    <div class="dt-legend"><span><i></i>Quý bắt đầu thiếu (nhu cầu cộng dồn vượt tồn kho)</span><span>Bấm vào một dòng để xem số lượng theo từng đơn vị</span></div>
   </div>
-
-  <div id="nhucau-quy-label" style="display:none;margin-bottom:12px;font-size:14px;color:var(--primary);font-weight:600;"></div>
-  <div id="nhucau-result" style="overflow-x:auto;"></div>
 </div>
 
 
@@ -3492,6 +3531,7 @@ function _ic(n,s){var P={
   back:'<path d="m12 19-7-7 7-7"/><path d="M19 12H5"/>',
   chart:'<path d="M3 3v16a2 2 0 0 0 2 2h16"/><path d="M7 16v-5"/><path d="M12 16V8"/><path d="M17 16v-3"/>',
   check:'<path d="M20 6 9 17l-5-5"/>',
+  alert:'<path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/>',
   users:'<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>',
   cal:'<rect width="18" height="18" x="3" y="4" rx="2"/><path d="M16 2v4"/><path d="M8 2v4"/><path d="M3 10h18"/>',
   calc:'<rect width="16" height="20" x="4" y="2" rx="2"/><line x1="8" x2="16" y1="6" y2="6"/><line x1="16" x2="16" y1="14" y2="18"/><path d="M12 10h.01"/><path d="M8 10h.01"/><path d="M8 14h.01"/><path d="M12 14h.01"/><path d="M8 18h.01"/><path d="M12 18h.01"/>',
@@ -5862,122 +5902,255 @@ function xacNhanKho(type){
 /* Đơn vị đưa vào tính nhu cầu — loại đơn vị "Test" (dữ liệu thử).
    Phải là HÀM: danh mục tải bất đồng bộ nên không tính sẵn lúc nạp trang. */
 function nhuCauUnits(){ return unitOrder().filter(u=>_uMa(u)!=='test'); }
-function initNhuCauPage(){
-  const qEl=document.getElementById('nhucau-q');const yEl=document.getElementById('nhucau-y');if(!qEl||!yEl)return;
-  // Mặc định = quý + năm hiện tại
-  const [qp,yp]=getCurrentQuy().split('/');
-  if(!qEl.value||qEl.value==='')qEl.value=qp.slice(1);
-  if(!yEl.value)yEl.value=yp;
-  document.getElementById('nhucau-result').innerHTML='';document.getElementById('nhucau-quy-label').style.display='none';document.getElementById('btn-export-nhucau').style.display='none';
-}
-function tinhNhuCau(){
-  const q=document.getElementById('nhucau-q').value;
-  const y=(document.getElementById('nhucau-y').value||'').trim();
-  if(!q||!y||y.length!==4){showToast('Vui lòng chọn quý và nhập năm (4 chữ số).','error');return;}
-  const startQ=`Q${q}/${y}`;
-  const curQ=getCurrentQuy();if(_compareQuy(startQ,curQ)<0){showToast('Quý bắt đầu không được trước quý hiện tại ('+curQ+').','error');return;}
-  const quyList=[startQ];for(let i=1;i<4;i++)quyList.push(_nextQuy(quyList[i-1]));
-  const labelEl=document.getElementById('nhucau-quy-label');labelEl.innerHTML=_ic('cal',15)+' 4 quý tính toán: '+_escH(quyList.join(' → '));labelEl.style.display='';
-  const data=_computeNhuCauData(quyList);
-  const warnHtml=_nhucauMissingWarnHtml();
-  if(!data.length){document.getElementById('nhucau-result').innerHTML=warnHtml+'<div style="padding:20px;color:#888;text-align:center;">Không có nhu cầu trang bị nào.</div>';document.getElementById('btn-export-nhucau').style.display='none';return;}
-  _renderNhuCauTable(data,quyList);
-  var _res=document.getElementById('nhucau-result'); _res.innerHTML=warnHtml+_res.innerHTML;
-  document.getElementById('btn-export-nhucau').style.display='';
-  window._nhucauData=data;window._nhucauQuyList=quyList;
-}
-function _nhucauMissingWarnHtml(){
-  var m=window._nhucauMissing||[]; if(!m.length)return '';
-  var rows=m.map(function(x){return '<li>'+_escH(x.ten||'')+' <span style="color:#999;font-size:12px;">('+_escH(x.danhSo||'—')+' · '+_escH(x.boPhan||'')+')</span> — thiếu <b>'+_escH(x.thieu)+'</b></li>';}).join('');
-  return '<div style="background:#fff8e1;border:1px solid #ffe082;border-radius:8px;padding:12px 14px;margin-bottom:14px;font-size:13px;color:#7a5c00;">'+
-    '<div style="font-weight:600;margin-bottom:6px;">⚠️ '+m.length+' nhân viên chưa có cỡ nên chưa được tính nhu cầu quần áo/giày:</div>'+
-    '<ul style="margin:0;padding-left:20px;line-height:1.7;">'+rows+'</ul>'+
-    '<div style="margin-top:6px;font-size:12px;">Bổ sung cỡ ở tab Nhân sự rồi bấm “Tính nhu cầu” lại để tính đủ.</div></div>';
-}
-function _computeNhuCauData(quyList){
-  // Cửa sổ tính = từ tháng đầu của quý đầu tiên đến tháng cuối của quý cuối cùng
-  const wStart=getQuarterMonths(quyList[0])[0];
-  const lastQMonths=getQuarterMonths(quyList[quyList.length-1]);
-  const wEnd=lastQMonths[lastQMonths.length-1];
-  const nQuarters=quyList.length;
-  const map={};
-  const _missSet={}; // nhân viên thiếu cỡ → không tính được quần áo/giày
-  function _row(tbSized,tb){
-    const key=tbSized.id;
-    if(!map[key]){map[key]={tbId:tbSized.id,ten:tbSized.ten,ma:tbSized.ma||'',dvUnit:tbSized.donVi||tb.donVi||'',perUnit:{}};nhuCauUnits().forEach(u=>map[key].perUnit[u]=0);}
-    return map[key];
+/* ═════════════════════════════════════════════════════════════════════
+   DỰ TRÙ VẬT TƯ THEO QUÝ
+   Mỗi quý cần chuẩn bị bao nhiêu vật tư để cấp cho toàn bộ nhân viên.
+
+   Cách tính: giả lập lần lượt từng quý trên BẢN NHÁP tháng cấp của nhân
+   viên (không ghi gì vào dữ liệu thật):
+     1. Lọc món đến hạn đúng như wizard (hạn ≤ tháng cuối quý; găng tay,
+        khẩu trang theo quý) → cộng số lượng.
+     2. Coi như quý đó đã cấp: dời mốc nháp bằng CHÍNH _mocCapMoi mà Bước 4
+        wizard dùng → quý sau tính tiếp từ mốc giả định này.
+   Nhờ dùng chung quy tắc với wizard, số dự trù khớp với phiếu thật khi
+   tới quý đó (trừ khi nhân sự / định mức thay đổi).
+
+   Trạng thái từng (đơn vị × quý), lấy giống ma trận Dashboard:
+     xong      → không cần gì, mốc thật đã được dời trong dữ liệu.
+     daduyet   → vật tư đã phát, không cần; chỉ dời mốc nháp.
+     choduyet  → lấy SỐ TRONG PHIẾU đã gửi (kể cả vật tư khác); dời mốc nháp.
+     danglam / chua → tính theo định mức; dời mốc nháp.
+   Nhân viên mới (loaiNV 'moi') đi luồng riêng → bỏ qua.
+   ═════════════════════════════════════════════════════════════════════ */
+// Lõi THUẦN — mọi thứ phụ thuộc dữ liệu trang được truyền qua cfg (xem tests/du-tru.test.js)
+//   cfg.quyList            ['Q4/2026', …]
+//   cfg.units              danh sách đơn vị
+//   cfg.nhanVien           mảng nhân viên (hàm tự sao chép, không sửa bản gốc)
+//   cfg.cungDonVi(a,b)     so tên đơn vị
+//   cfg.trangThai(u,q)     'xong'|'daduyet'|'choduyet'|'danglam'|'chua'|'ngoai'
+//   cfg.phieu(u,q)         phiếu quý (dùng khi 'choduyet')
+//   cfg.dinhMuc(nv)        [{d,tb}] định mức theo chức danh
+//   cfg.hanTiepTheo(nv,d)  'YYYY-MM' | 'quarterly' | null   (tinhThangCapTiepTheo)
+//   cfg.truongThang(tb)    tên trường tháng cấp | null        (_tbToThangField)
+//   cfg.vatTu(tb,nv)       {id,ten,ma,dvt} | null (null = chưa phân giải được, VD thiếu cỡ)
+//   cfg.vatTuTheoId(tbId,it) {id,ten,ma,dvt} cho dòng phiếu
+function _duTruMoPhong(cfg){
+  var nhap=(cfg.nhanVien||[]).map(function(n){return Object.assign({},n);});
+  var theoDv={};
+  cfg.units.forEach(function(u){
+    theoDv[u]=nhap.filter(function(n){return n.loaiNV!=='moi'&&cfg.cungDonVi(n.boPhan,u);});
+  });
+  var map={}, trangThai={};
+  function cong(vt,q,u,sl){
+    if(!vt||!(sl>0))return;
+    var k=String(vt.id);
+    if(!map[k])map[k]={id:vt.id,ten:vt.ten,ma:vt.ma||'',dvt:vt.dvt||'',q:{}};
+    var o=map[k].q[q]||(map[k].q[q]={});
+    o[u]=(o[u]||0)+sl;
   }
-  nhuCauUnits().forEach(unit=>{
-    daNhanVien.filter(n=>n.boPhan===unit).forEach(nv=>{
-      const _cd=getChucDanhByTen(nv.chucDanh);
-      const dmList=daDinhMuc.filter(d=>(_cd&&d.chucDanhId==_cd.id)||d.chucDanh===nv.chucDanh);
-      dmList.forEach(d=>{
-        const tb=getTB(d.trangBiId||d.nhomTBId);if(!tb)return;
-        const tenTB=tb.ten||'';
-        let tbSized=getTBSized(tb,nv);
-        // Trang bị không cỡ (áo mưa, mũ, kính, khẩu trang, găng tay, ghệt da): getTBSized trả về nhóm trang bị,
-        // nhưng tồn kho lưu theo id danh mục → map sang danh mục để khớp mã vật tư & tồn kho
-        if(tb.loaiCo===''){const _dm=daDanhMuc.find(d=>d.nhomId===tb.id);if(_dm)tbSized=_dm;}
-        // Chỉ tính khi phân giải được về 1 trang bị cụ thể (danh mục con có mã). Nếu chỉ ra tới NHÓM
-        // (nhân viên chưa có cỡ quần áo/giày, hoặc nhóm chưa có danh mục con) thì bỏ qua, không đưa nhóm vào bảng.
-        if(!tbSized||tbSized.nhomId==null){
-          if(tb.loaiCo==='quan_ao'&&!nv.coQuanAo){var _k1=nv.id+'|qa';if(!_missSet[_k1])_missSet[_k1]={ten:nv.ten,danhSo:nv.danhSo||'',boPhan:unit,thieu:'Cỡ quần áo'};}
-          else if(tb.loaiCo==='giay'&&!nv.coGiay){var _k2=nv.id+'|giay';if(!_missSet[_k2])_missSet[_k2]={ten:nv.ten,danhSo:nv.danhSo||'',boPhan:unit,thieu:'Cỡ giày'};}
-          return;
-        }
-        // Găng tay & khẩu trang: cấp theo quý → mỗi quý 1 lượng, nhân với số quý trong cửa sổ
-        if(tenTB.includes('Găng tay')||tenTB==='Khẩu trang'){
-          const slQuy=_slTheoQuy(d.chuKy,d.soLuong,'round');if(!slQuy)return;
-          _row(tbSized,tb).perUnit[unit]+=slQuy*nQuarters;
-          return;
-        }
-        // Trang bị theo chu kỳ tháng: giả lập các mốc cấp tiếp theo, đếm mốc rơi trong cửa sổ
-        const chuKy=Math.round(_ckSo(d.chuKy));if(chuKy<=0)return;
-        let due=tinhThangCapTiepTheo(nv,d);   // mốc cấp tiếp theo đầu tiên
-        if(!due||due==='quarterly')return;
-        let guard=0;
-        while(due<=wEnd && guard<240){
-          if(due>=wStart) _row(tbSized,tb).perUnit[unit]+=(parseFloat(d.soLuong)||0);
-          due=_addMonths(due,chuKy);
-          guard++;
-        }
+  cfg.quyList.forEach(function(q){
+    var qm=getQuarterMonths(q), qEnd=qm[qm.length-1];
+    trangThai[q]={};
+    cfg.units.forEach(function(u){
+      var tt=cfg.trangThai(u,q); trangThai[q][u]=tt;
+      if(tt==='xong'||tt==='ngoai')return;
+      var phieu=(tt==='choduyet')?cfg.phieu(u,q):null;
+      var tinhDinhMuc=(tt!=='daduyet'&&!phieu);
+      theoDv[u].forEach(function(nv){
+        cfg.dinhMuc(nv).forEach(function(x){
+          var d=x.d, tb=x.tb;
+          var han=cfg.hanTiepTheo(nv,d);
+          var theoQuy=(han==='quarterly');
+          if(!theoQuy&&!(han&&han<=qEnd))return;          // chưa tới hạn trong quý này
+          if(tinhDinhMuc){
+            var sl=theoQuy?_slTheoQuy(d.chuKy,d.soLuong,'round'):(parseFloat(d.soLuong)||0);
+            cong(cfg.vatTu(tb,nv),q,u,sl);
+          }
+          if(!theoQuy){                                    // coi như đã cấp → dời mốc nháp
+            var f=cfg.truongThang(tb), ck=_ckSo(d.chuKy);
+            if(f&&ck>0){var moi=_mocCapMoi(nv[f],ck,qEnd); if(moi)nv[f]=moi;}
+          }
+        });
       });
+      if(phieu){
+        _parsePhieuItems(phieu.items).forEach(function(it){
+          var v=(it.thucTe!==''&&it.thucTe!==undefined&&it.thucTe!==null)?Number(it.thucTe):Number(it.soLuongDinhMuc||0);
+          if(!(v>0))return;
+          cong(cfg.vatTuTheoId(it.tbId,it),q,u,v);
+        });
+      }
     });
   });
-  window._nhucauMissing=Object.values(_missSet).sort((a,b)=>((a.boPhan||'').localeCompare(b.boPhan||'','vi'))||((a.ten||'').localeCompare(b.ten||'','vi')));
-  // Xếp theo đúng thứ tự admin đặt ở tab Danh mục (không xếp A→Z nữa) để đối chiếu
-  // với bảng Tồn kho cho dễ. Vật tư không nằm trong danh mục thì đẩy xuống cuối.
-  const _order={};_dmAllSorted().forEach((d,i)=>{_order[String(d.id)]=i;});
-  const _pos=r=>{const i=_order[String(r.tbId)];return i===undefined?1e9:i;};
-  return Object.values(map).map(row=>{const tongNhuCau=nhuCauUnits().reduce((s,u)=>s+(row.perUnit[u]||0),0);const tonKho=daTonKho[row.tbId]||0;const canMua=Math.max(0,tongNhuCau-tonKho);return{...row,tongNhuCau,tonKho,canMua};}).filter(row=>row.tongNhuCau>0).sort((a,b)=>(_pos(a)-_pos(b))||a.ten.localeCompare(b.ten,'vi'));
+  return {rows:Object.keys(map).map(function(k){return map[k];}), trangThai:trangThai};
 }
-function _renderNhuCauTable(data,quyList){
-  const el=document.getElementById('nhucau-result');
-  const unitCols=nhuCauUnits().map(u=>`<th style="min-width:80px;text-align:center;font-size:12px;white-space:normal;">${u}</th>`).join('');
-  const rows=data.map((row,idx)=>{
-    const unitCells=nhuCauUnits().map(u=>`<td style="text-align:center;">${row.perUnit[u]>0?row.perUnit[u]:'—'}</td>`).join('');
-    const canMuaStyle=row.canMua>0?'color:#c0392b;font-weight:700;':'color:#27ae60;font-weight:600;';
-    return`<tr><td style="text-align:center;">${idx+1}</td><td style="font-size:12px;color:#666;">${row.ma||'—'}</td><td>${row.ten}</td><td style="text-align:center;font-size:12px;">${row.dvUnit||''}</td>${unitCells}<td style="text-align:center;font-weight:700;">${row.tongNhuCau}</td><td style="text-align:center;color:#2980b9;font-weight:600;">${row.tonKho}</td><td style="text-align:center;${canMuaStyle}">${row.canMua}</td></tr>`;
-  }).join('');
-  el.innerHTML=`<p style="font-size:13px;color:#555;margin-bottom:10px;">Tổng <strong>${data.length}</strong> loại trang bị. <span style="color:#c0392b;">Đỏ</span> = cần mua thêm | <span style="color:#27ae60;">Xanh</span> = tồn đủ.</p>
-  <table style="width:100%;border-collapse:collapse;font-size:13px;min-width:900px;">
-    <thead><tr style="background:var(--primary);color:white;"><th style="width:40px;text-align:center;padding:8px 10px;">STT</th><th style="min-width:80px;padding:8px 10px;">Mã vật tư</th><th style="min-width:200px;padding:8px 10px;">Tên trang bị</th><th style="width:50px;text-align:center;padding:8px 10px;">ĐVT</th>${unitCols}<th style="min-width:70px;text-align:center;padding:8px 10px;">Tổng NC</th><th style="min-width:70px;text-align:center;padding:8px 10px;">Tồn kho</th><th style="min-width:70px;text-align:center;padding:8px 10px;">Cần mua</th></tr></thead>
-    <tbody>${rows}</tbody>
-  </table>`;
-  el.querySelectorAll('tbody tr').forEach((tr,i)=>{if(i%2===1)tr.style.background='#f8f9fa';tr.querySelectorAll('td').forEach(td=>{td.style.borderBottom='1px solid #eee';td.style.padding='7px 10px';});});
+// Quý bắt đầu dự trù = quý sớm nhất (từ mốc theo dõi) còn đơn vị chưa cấp xong.
+function _duTruQuyDau(units,quyStart,quyNay,trangThai){
+  var q=quyStart, guard=0;
+  while(_compareQuy(q,quyNay)<=0&&guard++<80){
+    var conViec=units.some(function(u){var t=trangThai(u,q);return t!=='xong'&&t!=='ngoai';});
+    if(conViec)return q;
+    q=_nextQuy(q);
+  }
+  return _compareQuy(q,quyNay)>0?q:_nextQuy(quyNay);
 }
+// Tổng + so với tồn kho. quyThieu = quý đầu tiên mà nhu cầu CỘNG DỒN vượt tồn.
+function _duTruTongHop(rows,quyList,tonKho){
+  return rows.map(function(r){
+    var perQ={}, tong=0, quyThieu=null, cd=0, ton=Number(tonKho(r.id))||0;
+    quyList.forEach(function(q){
+      var s=0, o=r.q[q]||{}; Object.keys(o).forEach(function(u){s+=o[u];});
+      perQ[q]=s; tong+=s; cd+=s;
+      if(quyThieu===null&&cd>ton)quyThieu=q;
+    });
+    return Object.assign({},r,{perQ:perQ,tong:tong,tonKho:ton,thuaThieu:ton-tong,quyThieu:quyThieu});
+  }).filter(function(r){return r.tong>0;});
+}
+// Gắn lõi vào dữ liệu thật của trang
+function _duTruTinh(nQuy){
+  var units=nhuCauUnits();
+  var quyStart=_getQuyStartRef();
+  var P=BHLD.lsGet('phieu_requests')||[], TT=_dashTT||[];
+  function trangThai(u,q){return _dashTrangThaiO(u,q,TT,P,quyStart);}
+  var quyDau=_duTruQuyDau(units,quyStart,getCurrentQuy(),trangThai);
+  var quyList=[quyDau]; for(var i=1;i<(nQuy||4);i++)quyList.push(_nextQuy(quyList[i-1]));
+  var thieuCo={};
+  function dmCon(tb){ return daDanhMuc.filter(function(x){return String(x.nhomId)===String(tb.id);}); }
+  function vtTu(x,tb){ return {id:x.id,ten:x.ten,ma:x.ma||'',dvt:x.donVi||(tb&&tb.donVi)||''}; }
+  var res=_duTruMoPhong({
+    quyList:quyList, units:units, nhanVien:daNhanVien, cungDonVi:_uSame,
+    trangThai:trangThai,
+    phieu:function(u,q){ return P.filter(function(p){return p.type==='quy'&&p.quyStr===q&&_uSame(p.donVi,u)&&p.status==='pending';})
+                          .sort(function(a,b){return new Date(b.createdAt||0)-new Date(a.createdAt||0);})[0]||null; },
+    dinhMuc:function(nv){
+      var cd=getChucDanhByTen(nv.chucDanh);
+      return daDinhMuc.filter(function(d){return (cd&&d.chucDanhId==cd.id)||d.chucDanh===nv.chucDanh;})
+        .map(function(d){return {d:d,tb:getTB(d.trangBiId||d.nhomTBId)};}).filter(function(x){return x.tb;});
+    },
+    hanTiepTheo:tinhThangCapTiepTheo,
+    truongThang:function(tb){var m=_tbToThangField(tb);return m?m.field:null;},
+    vatTu:function(tb,nv){
+      var s=getTBSized(tb,nv);
+      if(s&&s.nhomId!=null)return vtTu(s,tb);                     // đã ra đúng danh mục con
+      if(tb.loaiCo==='quan_ao'&&!nv.coQuanAo){thieuCo[nv.id+'|qa']={ten:nv.ten,danhSo:nv.danhSo||'',boPhan:nv.boPhan,thieu:'Cỡ quần áo'};return null;}
+      if(tb.loaiCo==='giay'&&!nv.coGiay){thieuCo[nv.id+'|giay']={ten:nv.ten,danhSo:nv.danhSo||'',boPhan:nv.boPhan,thieu:'Cỡ giày'};return null;}
+      var con=dmCon(tb);                                           // món không cỡ → danh mục con đầu tiên (để khớp tồn kho)
+      return con.length?vtTu(con[0],tb):{id:tb.id,ten:tb.ten,ma:'',dvt:tb.donVi||''};
+    },
+    vatTuTheoId:function(id,it){
+      var dm=daDanhMuc.find(function(x){return String(x.id)===String(id);});
+      if(dm)return vtTu(dm,getTB(dm.nhomId));
+      var tb=getTB(id);
+      if(tb){var con=dmCon(tb); if(con.length===1||(con.length&&tb.loaiCo!=='quan_ao'&&tb.loaiCo!=='giay'))return vtTu(con[0],tb); return {id:tb.id,ten:tb.ten,ma:'',dvt:tb.donVi||''};}
+      return {id:id,ten:it.ten||String(id),ma:it.ma||'',dvt:it.donVi||''};
+    }
+  });
+  var rows=_duTruTongHop(res.rows,quyList,function(id){return daTonKho[id]||0;});
+  var ord={}; _dmAllSorted().forEach(function(d,i){ord[String(d.id)]=i;});
+  rows.sort(function(a,b){var ia=ord[String(a.id)],ib=ord[String(b.id)];return (ia===undefined?1e9:ia)-(ib===undefined?1e9:ib);});
+  return {quyList:quyList, units:units, rows:rows, trangThai:res.trangThai,
+          thieuCo:Object.keys(thieuCo).map(function(k){return thieuCo[k];})};
+}
+var _duTruKQ=null, _duTruMo={};
+function initNhuCauPage(){
+  var tb=document.getElementById('dt-table'); if(!tb)return;
+  tb.innerHTML='<tbody><tr><td style="padding:24px;text-align:center;color:var(--text-light);">Đang tính…</td></tr></tbody>';
+  // Trạng thái đơn vị × quý cần bảng tiến trình (không nằm trong dữ liệu đã pull)
+  _dashNapTienTrinh().then(function(){
+    var n=parseInt((document.getElementById('dt-nquy')||{}).value)||4;
+    try{ _duTruKQ=_duTruTinh(n); }catch(e){ console.error('[BHLĐ] Dự trù lỗi',e); _duTruKQ=null; }
+    _duTruMo={}; _duTruRender();
+  });
+}
+function _duTruFmt(n){ return Number(n||0).toLocaleString('vi-VN'); }
+function _duTruConDv(q){
+  var R=_duTruKQ, tt=(R&&R.trangThai[q])||{};
+  return R.units.filter(function(u){var t=tt[u];return t!=='xong'&&t!=='ngoai';});
+}
+function _duTruRender(){
+  var R=_duTruKQ, tb=document.getElementById('dt-table'); if(!tb)return;
+  var btn=document.getElementById('btn-export-nhucau');
+  if(!R){ tb.innerHTML='<tbody><tr><td style="padding:24px;text-align:center;color:var(--text-light);">Không tính được dự trù.</td></tr></tbody>'; if(btn)btn.disabled=true; return; }
+  var QL=R.quyList, U=R.units, nC=7+QL.length;
+  // Ô tổng quan
+  var thieu=R.rows.filter(function(r){return r.thuaThieu<0;}).length;
+  var thieuNgay=R.rows.filter(function(r){return r.quyThieu===QL[0];}).length;
+  function kpi(v,l,ic,bad,sm){return '<div class="dt-kpi'+(bad?' bad':'')+'"><div class="ic">'+_ic(ic,18)+'</div><div><div class="v'+(sm?' sm':'')+'">'+v+'</div><div class="l">'+l+'</div></div></div>';}
+  document.getElementById('dt-kpis').innerHTML=
+    kpi(QL[0]+' → '+QL[QL.length-1],QL.length+' quý dự trù','cal',false,true)+
+    kpi(R.rows.length,'Vật tư cần chuẩn bị','pkg')+
+    kpi(thieu,'Vật tư thiếu so với tồn kho','alert',thieu>0)+
+    kpi(thieuNgay,'Thiếu ngay trong '+QL[0],thieuNgay?'alert':'check',thieuNgay>0);
+  // Cảnh báo nhân viên thiếu cỡ
+  var w=R.thieuCo||[];
+  document.getElementById('dt-warn').innerHTML=w.length?('<div style="background:#fff8e1;border:1px solid #ffe082;border-radius:8px;padding:10px 12px;font-size:12.5px;color:#7a5c00;margin-bottom:12px;"><b>'+w.length+' nhân viên chưa có cỡ</b> nên chưa được tính quần áo/giày: '+
+    w.map(function(x){return _escH(x.ten)+' ('+_escH(x.boPhan)+' – '+_escH(x.thieu)+')';}).join('; ')+'</div>'):'';
+  // Lọc
+  var kw=(document.getElementById('dt-search').value||'').trim().toLowerCase();
+  var onlyShort=document.getElementById('dt-only-short').checked;
+  var list=R.rows.filter(function(r){
+    if(onlyShort&&r.thuaThieu>=0)return false;
+    if(kw&&((r.ten||'')+' '+(r.ma||'')).toLowerCase().indexOf(kw)<0)return false;
+    return true;
+  });
+  // Tiêu đề
+  var h='<colgroup><col style="width:44px"><col style="width:112px"><col><col style="width:56px">'+QL.map(function(){return '<col style="width:92px">';}).join('')+
+    '<col style="width:92px"><col style="width:92px"><col style="width:104px"></colgroup><thead><tr><th class="c">STT</th><th>Mã vật tư</th><th>Vật tư</th><th class="c">ĐVT</th>'+
+    QL.map(function(q,qi){
+      var con=_duTruConDv(q), part=con.length<U.length;
+      var sub=!con.length?'Đã cấp xong':(part?('Còn: '+con.join(', ')):('Cả '+U.length+' đơn vị'));
+      return '<th class="q'+(qi===0?' bl':'')+(part?' part':'')+'" title="'+_escH(con.join(', ')||'Đã cấp xong')+'"><span class="qn">'+q+'</span><span class="qs">'+_escH(sub)+'</span></th>';
+    }).join('')+'<th class="rt bl">Tổng</th><th class="rt">Tồn kho</th><th class="rt">Thừa / Thiếu</th></tr></thead><tbody>';
+  if(!list.length)h+='<tr><td colspan="'+nC+'" style="padding:24px;text-align:center;color:var(--text-light);">'+(R.rows.length?'Không có vật tư phù hợp.':'Không có vật tư nào cần chuẩn bị trong '+QL.length+' quý tới.')+'</td></tr>';
+  list.forEach(function(r,idx){
+    var k=String(r.id), mo=!!_duTruMo[k];
+    h+='<tr class="r'+(mo?' open':'')+'" onclick="_duTruToggle(\''+_escH(k).replace(/'/g,"\\'")+'\')">'+
+      '<td class="c num" style="color:var(--text-light)">'+(idx+1)+'</td>'+
+      '<td class="ell"><code style="font-size:11.5px;color:var(--text-light)">'+_escH(r.ma||'—')+'</code></td>'+
+      '<td class="ell" title="'+_escH(r.ten)+'"><span class="caret">›</span>'+_escH(r.ten)+'</td>'+
+      '<td class="c">'+_escH(r.dvt||'')+'</td>'+
+      QL.map(function(q,qi){var v=r.perQ[q]||0, th=(q===r.quyThieu);
+        return '<td class="rt'+(qi===0?' bl':'')+(th?' thieu-tu':'')+'"'+(th?' title="Từ quý này tồn kho không còn đủ"':'')+'><span class="num'+(v?'':' z')+'">'+(v?_duTruFmt(v):'–')+'</span></td>';}).join('')+
+      '<td class="rt bl num" style="font-weight:700">'+_duTruFmt(r.tong)+'</td>'+
+      '<td class="rt num">'+_duTruFmt(r.tonKho)+'</td>'+
+      '<td class="rt"><span class="tt num '+(r.thuaThieu<0?'am':(r.thuaThieu>0?'duong':''))+'">'+(r.thuaThieu>0?'+':'')+_duTruFmt(r.thuaThieu)+'</span></td></tr>';
+    if(mo){
+      var body=U.map(function(u){
+        var vals=QL.map(function(q){return ((r.q[q]||{})[u])||0;});
+        if(!vals.some(Boolean))return '';
+        return '<tr><td class="u">'+_escH(u)+'</td>'+vals.map(function(v){return '<td class="rt num">'+(v?_duTruFmt(v):'<span class="z">–</span>')+'</td>';}).join('')+'</tr>';
+      }).join('');
+      h+='<tr class="det"><td colspan="'+nC+'"><div class="dt-det"><table><thead><tr><th>Đơn vị</th>'+QL.map(function(q){return '<th class="rt">'+q+'</th>';}).join('')+'</tr></thead><tbody>'+body+'</tbody></table></div></td></tr>';
+    }
+  });
+  tb.innerHTML=h+'</tbody>';
+  if(btn)btn.disabled=!R.rows.length;
+}
+function _duTruToggle(k){ _duTruMo[k]=!_duTruMo[k]; _duTruRender(); }
 function exportNhuCauExcel(){
-  const data=window._nhucauData;const quyList=window._nhucauQuyList;if(!data||!data.length){showToast('Chưa có dữ liệu.','error');return;}
+  var R=_duTruKQ; if(!R||!R.rows.length){showToast('Chưa có dữ liệu.','error');return;}
   if(typeof XLSX==='undefined'){showToast('⚠️ Thư viện Excel chưa tải.','error');return;}
-  const header=['STT','Mã vật tư','Tên trang bị','ĐVT',...nhuCauUnits(),'Tổng nhu cầu','Tồn kho','Cần mua thêm'];
-  const rows=data.map((row,idx)=>[idx+1,row.ma||'',row.ten,row.dvUnit||'',...nhuCauUnits().map(u=>_xlNum(row.perUnit[u]||0)),_xlNum(row.tongNhuCau),_xlNum(row.tonKho),_xlNum(row.canMua)]);
-  // cộng tất cả cột số: các đơn vị + Tổng nhu cầu + Tồn kho + Cần mua thêm
-  const _nC=4+nhuCauUnits().length+3, _sumCols=[];
-  for(let c=4;c<_nC;c++)_sumCols.push(c);
-  const _tot=_xlTotalRow(_nC,_sumCols,'TỔNG CỘNG',2);
-  const ws=XLSX.utils.aoa_to_sheet([[`Nhu cầu mua sắm BHLĐ – ${quyList[0]} đến ${quyList[3]}`],[`Xuất ngày: ${new Date().toLocaleDateString('vi-VN')}`],[],header,...rows,_tot]);
-  _xlSetTotals(ws,5+rows.length,_sumCols,5,4+rows.length);
-  const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Nhu cầu');XLSX.writeFile(wb,`NhuCauMuaSam_${quyList[0]}_${quyList[3]}.xlsx`.replace(/\//g,'_'));showToast('📥 Đã tải file Excel!');
+  var QL=R.quyList, U=R.units;
+  // Sheet 1: tổng theo quý + so tồn kho
+  var h1=['STT','Mã vật tư','Vật tư','ĐVT'].concat(QL,['Tổng','Tồn kho','Thừa / Thiếu','Bắt đầu thiếu từ']);
+  var r1=R.rows.map(function(r,i){return [i+1,r.ma||'',r.ten,r.dvt||''].concat(QL.map(function(q){return _xlNum(r.perQ[q]||0);}),[_xlNum(r.tong),_xlNum(r.tonKho),_xlNum(r.thuaThieu),r.quyThieu||'']);});
+  var nC1=h1.length, sc1=[]; for(var c=4;c<=4+QL.length;c++)sc1.push(c);   // các quý + Tổng
+  var ws1=XLSX.utils.aoa_to_sheet([['Dự trù vật tư BHLĐ – '+QL[0]+' đến '+QL[QL.length-1]],['Xuất ngày: '+new Date().toLocaleDateString('vi-VN')],[],h1].concat(r1,[_xlTotalRow(nC1,sc1,'TỔNG CỘNG',2)]));
+  _xlSetTotals(ws1,5+r1.length,sc1,5,4+r1.length);
+  // Sheet 2: chi tiết theo đơn vị
+  var h2=['STT','Mã vật tư','Vật tư','ĐVT','Đơn vị'].concat(QL,['Tổng']), r2=[], stt=0;
+  R.rows.forEach(function(r){
+    U.forEach(function(u){
+      var vals=QL.map(function(q){return ((r.q[q]||{})[u])||0;}), t=vals.reduce(function(a,b){return a+b;},0);
+      if(!t)return; stt++;
+      r2.push([stt,r.ma||'',r.ten,r.dvt||'',u].concat(vals.map(_xlNum),[_xlNum(t)]));
+    });
+  });
+  var ws2=XLSX.utils.aoa_to_sheet([['Dự trù vật tư theo đơn vị – '+QL[0]+' đến '+QL[QL.length-1]],[],h2].concat(r2));
+  var wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,ws1,'Dự trù theo quý');
+  XLSX.utils.book_append_sheet(wb,ws2,'Theo đơn vị');
+  XLSX.writeFile(wb,('DuTruVatTu_'+QL[0]+'_'+QL[QL.length-1]+'.xlsx').replace(/\//g,'_'));
+  showToast('📥 Đã tải file Excel!');
 }
 
 // ========= ĐỒNG BỘ SHEETS (bhld-sync.js) =========
