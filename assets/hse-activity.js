@@ -31,7 +31,7 @@
     ke_hoach_mot_lan: { label:"Kế hoạch HSE",        icon:"📋", noun:"kế hoạch" },
     ke_hoach_lap_lai: { label:"Kế hoạch HSE",        icon:"📋", noun:"kế hoạch định kỳ" },
     pccc_devices:     { label:"PCCC & CNCH",         icon:"🧯", noun:"thiết bị PCCC" },
-    pccc_errors:      { label:"PCCC & CNCH",         icon:"🧯", noun:"sự cố PCCC" },
+    pccc_errors:      { label:"PCCC & CNCH",         icon:"🧯", noun:"báo lỗi HTBCTĐ" },
     hl_nhansu:        { label:"Huấn luyện – Đào tạo", icon:"🎓", noun:"hồ sơ đào tạo" },
     sop:              { label:"SOP / Quy trình",     icon:"📑", noun:"quy trình SOP" }
   };
