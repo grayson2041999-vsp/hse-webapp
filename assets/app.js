@@ -980,6 +980,9 @@
       '<div class="page-desc" style="margin-bottom:4px">'+greeting+'</div>'+
       '<div style="font-size:12px;color:var(--text-muted);margin-bottom:20px">'+ORG+' · '+ORG_PARENT+'</div>'));
 
+    // Cảnh báo đơn vị chưa nộp số liệu kiểm tra cấp 1/2 (điền ngầm sau khi tải dữ liệu)
+    var ktNop = el("div"); ktNop.id = "dash-kt-nop"; wrap.appendChild(ktNop);
+
     // Lưới launcher: 2 nhóm ô điều hướng (icon to trên, chữ dưới)
     wrap.appendChild(buildLauncher(u));
 
@@ -987,6 +990,7 @@
     renderShell("tong-quan", wrap);
     var dl = document.getElementById("dashLoginLink");
     if(dl){ dl.addEventListener("click", function(e){ e.preventDefault(); openLoginModal(); }); }
+    renderKtNopDashboard();
 
     // Fetch ngầm — cập nhật lại phần kế hoạch khi có data mới
     if(typeof DB !== "undefined" && DB.isReady()){
@@ -1041,6 +1045,42 @@
         }
       }).catch(function(e){ console.warn("[Dashboard] Pull kế hoạch thất bại:", e && e.message || e); });
     }
+  }
+
+  /* =========================================================
+     WIDGET: ĐƠN VỊ CHƯA NỘP SỐ LIỆU KIỂM TRA CẤP 1/2 (trang Tổng quan)
+     Quy tắc (hạn ngày 1 tháng sau, mốc theo dõi) ở assets/kt-nop.js —
+     dùng chung với kiem-tra-cac-cap.html. Chỉ hiện khi đã đăng nhập
+     và có đơn vị quá hạn; đủ hết thì không chiếm chỗ trang chủ.
+     ========================================================= */
+  function renderKtNopDashboard(){
+    var K = window.HSE_KT_NOP;
+    if(!document.getElementById("dash-kt-nop") || !K || !window.HSE_UNITS) return;
+    if(typeof DB === "undefined" || !DB.isReady() || !currentUser()) return;
+    Promise.all([ DB.getAll("kiem_tra_cap12"), HSE_UNITS.ready() ]).then(function(rs){
+      var box = document.getElementById("dash-kt-nop");
+      if(!box) return;                                   // đã chuyển sang trang khác
+      var rows = (rs[0] || []).map(function(r){
+        var t = String(r.thang || ""), m = t.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+        if(m) t = m[3] + "-" + String(m[2]).padStart(2, "0");
+        else t = t.slice(0, 7);
+        return Object.assign({}, r, { thang: t });
+      });
+      var norm = function(v){ return HSE_UNITS.norm(HSE_UNITS.label(v || "")); };
+      var thieu = K.danhSachThieu(rows, HSE_UNITS.list("kiem-tra-cac-cap"), new Date(), null, norm);
+      if(!thieu.length){ box.innerHTML = ""; return; }
+      var nhom = K.nhomTheoDonVi(thieu), soThang = 0;
+      nhom.forEach(function(d){ soThang += d.thang.length; });
+      box.innerHTML =
+        '<div style="background:#fdedec;border:1px solid #f5c6cb;color:#7b1d14;border-radius:10px;padding:12px 16px;margin:0 0 18px;font-size:13px;line-height:1.55">'+
+          '<div style="font-weight:700;margin-bottom:4px">Kiểm tra cấp 1, cấp 2: '+nhom.length+' đơn vị chưa nộp số liệu ('+soThang+' tháng quá hạn)</div>'+
+          nhom.map(function(d){
+            return '<div><b>'+esc(d.donVi)+'</b>: '+d.thang.map(function(t){ return esc(K.moTaThang(t)); }).join(", ")+'</div>';
+          }).join("")+
+          '<div style="margin-top:6px;font-size:12px">Hạn nộp: ngày 1 tháng sau. '+
+          '<a href="kiem-tra-cac-cap.html" style="color:#a12a1c;font-weight:700">Mở trang Kiểm tra các cấp →</a></div>'+
+        '</div>';
+    }).catch(function(e){ console.warn("[Dashboard] Theo dõi nộp số liệu cấp 1/2:", e && e.message || e); });
   }
 
   /* =========================================================

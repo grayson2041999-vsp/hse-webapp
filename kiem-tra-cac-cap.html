@@ -225,6 +225,35 @@
       .form-row{grid-template-columns:1fr;}
       .form-row.cols3{grid-template-columns:1fr;}
     }
+    /* ── Theo dõi nộp số liệu cấp 1/2 (assets/kt-nop.js) ── */
+    .nop-banner{border-radius:10px;padding:12px 16px;margin:4px 0 16px;font-size:13px;line-height:1.55;}
+    .nop-banner.nb-red{background:#fdedec;border:1px solid #f5c6cb;color:#7b1d14;}
+    .nop-banner.nb-ok{background:#eafaf1;border:1px solid #bfe5cc;color:#1a5c32;padding:8px 14px;}
+    .nop-banner .nb-title{font-weight:700;font-size:13.5px;margin-bottom:6px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+    .nop-banner .nb-row{margin:2px 0;}
+    .nop-banner .nb-note{margin-top:6px;font-size:12px;opacity:.85;}
+    .nb-chip{display:inline-block;padding:1px 8px;margin:1px 2px;border-radius:12px;background:#fff;border:1px solid #f1b0a8;color:#a12a1c;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;}
+    .nb-chip:hover{background:#c0392b;color:#fff;border-color:#c0392b;}
+    .nb-chip.nb-denhan{border-color:#f3cf7a;color:#8a5a00;}
+    .nb-chip.nb-denhan:hover{background:#e68900;color:#fff;border-color:#e68900;}
+    .nop-tbl{width:100%;border-collapse:collapse;font-size:12.5px;}
+    .nop-tbl th{background:#dde6f3;color:var(--primary);padding:7px 8px;border:1px solid #c0cbe0;text-align:center;white-space:nowrap;}
+    .nop-tbl th.nop-dv{text-align:left;min-width:160px;}
+    .nop-tbl td{border:1px solid #e2e8f0;padding:6px 6px;text-align:center;white-space:nowrap;vertical-align:middle;}
+    .nop-tbl td.nop-dv{text-align:left;font-weight:500;}
+    .nop-tbl tfoot td{background:#f8fafc;font-weight:600;color:var(--text-light);font-size:12px;}
+    .nop-o{display:inline-block;min-width:78px;padding:3px 6px;border-radius:6px;font-weight:600;font-size:12px;}
+    .nop-o small{display:block;font-weight:500;font-size:10.5px;opacity:.85;}
+    .nop-danop{background:#eafaf1;color:#1a7a3c;}
+    .nop-noptre{background:#fff4e0;color:#a35f00;}
+    .nop-quahan{background:#fdedec;color:#c0392b;}
+    .nop-denhan{background:#fff7d6;color:#8a5a00;}
+    .nop-trongky{background:#eef4fb;color:#4a6a92;font-weight:500;}
+    .nop-chuadenky,.nop-ngoai{color:#a0aec0;font-weight:500;}
+    .nop-click{cursor:pointer;}
+    .nop-click:hover{outline:2px solid var(--primary-light);}
+    .nop-legend{display:flex;flex-wrap:wrap;gap:10px 16px;margin-top:8px;font-size:11.5px;color:var(--text-light);}
+    .nop-legend .nop-o{min-width:0;padding:1px 7px;}
   </style>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
   <link rel="stylesheet" href="assets/flatpickr.min.css">
@@ -251,6 +280,8 @@
   <div class="content-wrap">
     <div class="page-title"><svg class="lic-emoji" width="1.05em" height="1.05em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex-shrink:0" aria-hidden="true"><rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M12 11h4"/><path d="M12 16h4"/><path d="M8 11h.01"/><path d="M8 16h.01"/></svg> Kiểm tra các cấp</div>
     <div class="page-desc" id="pageDesc"></div>
+    <!-- Thông báo đơn vị chưa nhập số liệu cấp 1/2 — renderNopBanner() -->
+    <div id="nopBanner" style="display:none;"></div>
 
     <!-- ─── TAB: BÁO CÁO (màn hình mặc định) ─── -->
     <div class="tab-pane active" id="tab-baocao">
@@ -305,6 +336,27 @@
                 <tr><td colspan="9" style="text-align:center;padding:20px;color:var(--text-light);">Đang tải...</td></tr>
               </tbody>
             </table>
+          </div>
+        </div>
+
+        <!-- Bảng theo dõi nộp số liệu cấp 1 & 2 theo tháng — renderTheoDoiNop() -->
+        <div style="margin-top:28px;" id="nopSection">
+          <div class="sec-div" style="margin-bottom:6px;font-weight:700;color:var(--primary);" id="nopTitle">Tình hình nộp số liệu cấp 1 &amp; 2</div>
+          <div style="font-size:12px;color:var(--text-light);margin-bottom:10px;">Hạn nộp: <b>ngày 1 tháng sau</b>. Nhập "0 lần kiểm tra" vẫn tính là đã nộp. Ô "Chưa nhập" bấm vào để mở form nhập (nếu có quyền).</div>
+          <div class="table-wrap" style="overflow-x:auto;">
+            <table class="nop-tbl">
+              <thead id="nopHead"></thead>
+              <tbody id="nopBody"><tr><td colspan="7" style="padding:20px;color:var(--text-light);">Đang tải...</td></tr></tbody>
+              <tfoot id="nopFoot"></tfoot>
+            </table>
+          </div>
+          <div class="nop-legend">
+            <span><span class="nop-o nop-danop">✓</span> Đã nộp đúng hạn</span>
+            <span><span class="nop-o nop-noptre">✓</span> Nộp sau hạn</span>
+            <span><span class="nop-o nop-quahan">Chưa nhập</span> Quá hạn</span>
+            <span><span class="nop-o nop-denhan">Hạn hôm nay</span></span>
+            <span><span class="nop-o nop-trongky">Trong kỳ</span> Tháng hiện tại</span>
+            <span><span class="nop-o nop-chuadenky">—</span> Chưa đến kỳ / ngoài phạm vi theo dõi</span>
           </div>
         </div>
 
@@ -625,6 +677,8 @@
 <script src="assets/db.js?v=20260904b"></script>
 <!-- Danh mục Phòng/Ban/Đơn vị dùng chung (nạp SAU db.js) -->
 <script src="assets/don-vi.js?v=20260905"></script>
+<!-- Quy tắc theo dõi nộp số liệu cấp 1/2 (dùng chung với trang Tổng quan) -->
+<script src="assets/kt-nop.js?v=20261002"></script>
 <script src="assets/hse-activity.js"></script>
 <script>
 /* ═══════════════════════════════════════════════════
@@ -1345,22 +1399,46 @@ function saveMonth(btn){
     violations.push({nd:nd.trim(),viTri:vt.trim(),bienPhapKP:bpkp.trim(),tinhTrangKP:ttkp,loaiVP:loai});
   }
 
-  var item={id:editId||genId(),type:currentCap,thang:thang,donVi:donVi,soLanKiemTra:soLan,soViPham:soVP,violations:violations,createdBy:u?u.username:"?",createdAt:new Date().toISOString()};
-  var list=load(LS_KEY12,[]);
-  if(editId) list=list.map(function(r){return r.id===editId?item:r;}); else list.push(item);
-  save(LS_KEY12,list);
-
-  if(typeof DB!=="undefined"){
-    var flat=Object.assign({},item,{violations:JSON.stringify(item.violations)});
-    (editId?DB.update(SHEET12,item.id,flat):DB.insert(SHEET12,flat)).catch(function(e){
-      if(e.message&&e.message.indexOf("tìm thấy")>=0)return DB.insert(SHEET12,flat);
-      console.warn(e);
-    });
+  /* Bản ghi đang có: theo editId, hoặc cùng (cấp, tháng, đơn vị) — tránh tạo
+     bản ghi trùng khi khối tháng được mở trước lúc dữ liệu tải xong. */
+  var nowIso=new Date().toISOString();
+  var cu=null, list0=load(LS_KEY12,[]);
+  for(var li=0;li<list0.length;li++){
+    var r0=list0[li];
+    if(editId ? r0.id===editId
+              : (r0.type===currentCap && r0.thang===thang && _ktNopNorm(r0.donVi)===_ktNopNorm(donVi))){cu=r0;break;}
   }
-  // đánh dấu block đã lưu → lần lưu sau sẽ cập nhật thay vì tạo mới
-  block.dataset.editId=item.id;
-  renderList();
-  toast("✅ Đã lưu "+CAP_LABELS[currentCap]+" tháng "+thang+" — "+donVi);
+  /* createdAt = thời điểm NỘP LẦN ĐẦU (dùng để xét đúng hạn / trễ hạn) → giữ nguyên khi sửa.
+     Người sửa và lúc sửa ghi vào updatedBy / updatedAt. */
+  var item={id:cu?cu.id:(editId||genId()),type:currentCap,thang:thang,donVi:donVi,
+    soLanKiemTra:soLan,soViPham:soVP,violations:violations,
+    createdBy:(cu&&cu.createdBy)||(u?u.username:"?"),
+    createdAt:(cu&&cu.createdAt)||nowIso};
+  if(cu){ item.updatedAt=nowIso; item.updatedBy=u?u.username:"?"; }
+
+  function ghiLocal(){
+    var l=load(LS_KEY12,[]), co=false;
+    l=l.map(function(r){ if(r.id===item.id){co=true;return item;} return r; });
+    if(!co) l.push(item);
+    save(LS_KEY12,l);
+  }
+  function xong(){
+    block.dataset.editId=item.id;   // lần lưu sau sẽ cập nhật thay vì tạo mới
+    renderList(); renderBaoCao();
+    toast("✅ Đã lưu "+CAP_LABELS[currentCap]+" tháng "+thang+" — "+donVi);
+  }
+  if(typeof DB==="undefined"){ ghiLocal(); xong(); return; }
+
+  /* Chỉ báo "Đã lưu" khi máy chủ đã nhận — nếu không, bảng theo dõi trên máy
+     người nhập sẽ hiện "đã nộp" trong khi Admin vẫn thấy "chưa nhập". */
+  var nhanNut=btn.innerHTML; btn.disabled=true; btn.innerHTML="⏳ Đang lưu...";
+  var flat=Object.assign({},item,{violations:JSON.stringify(item.violations)});
+  (cu?DB.update(SHEET12,item.id,flat):DB.insert(SHEET12,flat)).then(function(){
+    ghiLocal(); xong();
+  }).catch(function(e){
+    console.warn(e);
+    toast("❌ Chưa lưu được lên máy chủ ("+((e&&e.message)||e)+"). Kiểm tra kết nối rồi bấm Lưu lại.",false);
+  }).then(function(){ btn.disabled=false; btn.innerHTML=nhanNut; });
 }
 
 /* ═══════════════════════════════════════════════════
@@ -1546,10 +1624,12 @@ function renderBaoCao(){
       var daKP=vps.filter(function(v){return v.tinhTrangKP==="hoan-thanh";}).length;
       var dangKP=vps.filter(function(v){return v.tinhTrangKP==="dang";}).length;
       if(r.type==="cap1"){
+        c1.co=(c1.co||0)+1;
         c1.lan+=parseInt(r.soLanKiemTra)||0;
         c1.vp+=vps.length;
         c1.da+=daKP; c1.dang+=dangKP;
       } else if(r.type==="cap2"){
+        c2.co=(c2.co||0)+1;
         c2.lan+=parseInt(r.soLanKiemTra)||0;
         c2.vp+=vps.length;
         c2.da+=daKP; c2.dang+=dangKP;
@@ -1557,14 +1637,17 @@ function renderBaoCao(){
     });
     ["c1","c2"].forEach(function(k){totals[k].lan+=k==="c1"?c1.lan:c2.lan;totals[k].vp+=k==="c1"?c1.vp:c2.vp;totals[k].da+=k==="c1"?c1.da:c2.da;totals[k].dang+=k==="c1"?c1.dang:c2.dang;});
     function td(v,bg){return '<td style="padding:7px 10px;border:1px solid #e2e8f0;text-align:center;background:'+bg+';">'+v+'</td>';}
+    /* Đơn vị không có bản ghi nào của cấp này trong kỳ → "Chưa nhập" thay vì 0,
+       để không lẫn với trường hợp đã nhập "0 lần kiểm tra". */
+    function cum(c,bg){
+      if(!c.co) return '<td colspan="4" style="padding:7px 10px;border:1px solid #e2e8f0;text-align:center;background:#fafafa;color:#a0aec0;font-style:italic;">Chưa nhập</td>';
+      return td(c.lan,bg)+td(c.vp,bg)+
+        td('<span style="color:#16a34a;font-weight:600;">'+c.da+'</span>',bg)+
+        td('<span style="color:#d97706;font-weight:600;">'+c.dang+'</span>',bg);
+    }
     rows12+='<tr>'+
       '<td style="padding:7px 10px;border:1px solid #e2e8f0;font-weight:500;">'+esc(dv)+'</td>'+
-      td(c1.lan,'#f0f7ff')+td(c1.vp,'#f0f7ff')+
-      td('<span style="color:#16a34a;font-weight:600;">'+c1.da+'</span>','#f0f7ff')+
-      td('<span style="color:#d97706;font-weight:600;">'+c1.dang+'</span>','#f0f7ff')+
-      td(c2.lan,'#f0fdf4')+td(c2.vp,'#f0fdf4')+
-      td('<span style="color:#16a34a;font-weight:600;">'+c2.da+'</span>','#f0fdf4')+
-      td('<span style="color:#d97706;font-weight:600;">'+c2.dang+'</span>','#f0fdf4')+
+      cum(c1,'#f0f7ff')+cum(c2,'#f0fdf4')+
     '</tr>';
   });
   // Hàng tổng
@@ -1579,6 +1662,10 @@ function renderBaoCao(){
     tdT('<span style="color:#d97706;">'+totals.c2.dang+'</span>','#dcfce7')+
   '</tr>';
   tbody12.innerHTML=rows12||'<tr><td colspan="9" style="text-align:center;padding:20px;color:var(--text-light);">Không có dữ liệu trong quý này.</td></tr>';
+
+  // Bảng theo dõi nộp số liệu (cùng quý/năm) + thông báo đầu trang
+  renderTheoDoiNop(nam, Math.ceil(mStart12/3));
+  renderNopBanner();
 
   // Bảng 2: cap3/4/khác — lọc theo năm
   var data34=load(LS_KEY34,[]).filter(function(r){
@@ -1731,6 +1818,142 @@ function renderBaoCao(){
 /* ═══════════════════════════════════════════════════
    RENDER LIST
 ═══════════════════════════════════════════════════ */
+/* ═══════════════════════════════════════════════════
+   THEO DÕI NỘP SỐ LIỆU CẤP 1 / CẤP 2
+   Quy tắc (hạn nộp, mốc bắt đầu theo dõi) nằm ở assets/kt-nop.js.
+   Đơn vị theo dõi = danh mục đơn vị gán cho trang này.
+═══════════════════════════════════════════════════ */
+function _ktNopNorm(v){return donViNorm(donViCanon(v||""));}
+function _ktNgay(iso,coNam){
+  if(!iso) return ""; var d=new Date(iso); if(isNaN(d)) return "";
+  var s=(d.getDate()<10?"0":"")+d.getDate()+"/"+(d.getMonth()<9?"0":"")+(d.getMonth()+1);
+  return coNam?s+"/"+d.getFullYear():s;
+}
+
+/* Bảng đơn vị × tháng (cấp 1, cấp 2) của một quý */
+function renderTheoDoiNop(nam,q){
+  var K=window.HSE_KT_NOP;
+  var head=document.getElementById("nopHead"), body=document.getElementById("nopBody"),
+      foot=document.getElementById("nopFoot"), title=document.getElementById("nopTitle");
+  if(!K||!head||!body||!QUY_MONTHS[q]) return;
+  var u=currentUser(), homNay=new Date();
+  var months=QUY_MONTHS[q].map(function(m){return nam+"-"+(m<10?"0":"")+m;});
+  var caps=K.CAU_HINH.caps;
+  var dvs=donViList();
+  title.textContent="Tình hình nộp số liệu cấp 1 & 2 — Quý "+q+"/"+nam;
+
+  head.innerHTML='<tr><th rowspan="2" class="nop-dv">Đơn vị</th>'+
+    months.map(function(ym){return '<th colspan="'+caps.length+'">Tháng '+K.nhanThang(ym).slice(1)+'</th>';}).join("")+'</tr>'+
+    '<tr>'+months.map(function(){return caps.map(function(c){return '<th>'+(c==="cap1"?"Cấp 1":"Cấp 2")+'</th>';}).join("");}).join("")+'</tr>';
+
+  if(!dvs.length){
+    body.innerHTML='<tr><td colspan="'+(1+months.length*caps.length)+'" style="padding:18px;color:var(--text-light);">Chưa có đơn vị nào được gán cho trang này (Quản trị hệ thống → Danh mục đơn vị).</td></tr>';
+    foot.innerHTML=""; return;
+  }
+
+  var idx=K.lapChiMuc(load(LS_KEY12,[]),_ktNopNorm);
+  var dem={}, cot={};   // dem[ym|cap] = số đơn vị đã nộp; cot[ym|cap] = trạng thái mẫu của cột
+  var rows=dvs.map(function(dv){
+    var tds=months.map(function(ym){
+      return caps.map(function(cap){
+        var key=ym+"|"+cap;
+        var rec=idx[_ktNopNorm(dv)+"|"+ym+"|"+cap];
+        var tt=K.trangThaiO(ym,rec,homNay);
+        cot[key]=tt;
+        var o;
+        if(tt==="danop"||tt==="noptre"){
+          dem[key]=(dem[key]||0)+1;
+          var ai=rec.createdBy?getFullname(rec.createdBy):"";
+          var tip=(tt==="noptre"?"Nộp sau hạn — ":"Đã nộp — ")+"ngày "+_ktNgay(rec.createdAt,true)+(ai?" · "+ai:"")+
+                  " · "+(parseInt(rec.soLanKiemTra)||0)+" lần KT";
+          o='<span class="nop-o nop-'+tt+'" title="'+esc(tip)+'">✓<small>'+(_ktNgay(rec.createdAt)||"&nbsp;")+'</small></span>';
+        } else {
+          var nhan={quahan:"Chưa nhập",denhan:"Hạn hôm nay",trongky:"Trong kỳ",chuadenky:"—",ngoai:"—"}[tt];
+          var tip2={quahan:"Quá hạn nộp (hạn ngày 1 tháng sau)",denhan:"Hôm nay là hạn chót",trongky:"Tháng đang diễn ra",
+                    chuadenky:"Chưa đến kỳ",ngoai:"Trước mốc bắt đầu theo dõi"}[tt];
+          var click=(tt==="quahan"||tt==="denhan"||tt==="trongky")&&canInputCap(u,cap);
+          o='<span class="nop-o nop-'+tt+(click?' nop-click':'')+'" title="'+esc(tip2+(click?" — bấm để nhập":""))+'"'+
+            (click?' data-dv="'+esc(dv)+'" data-cap="'+cap+'" data-ym="'+ym+'" onclick="moNhapTu(this)"':'')+'>'+nhan+'</span>';
+        }
+        return '<td>'+o+'</td>';
+      }).join("");
+    }).join("");
+    return '<tr><td class="nop-dv">'+esc(dv)+'</td>'+tds+'</tr>';
+  });
+  body.innerHTML=rows.join("");
+  foot.innerHTML='<tr><td class="nop-dv">Số đơn vị đã nộp</td>'+months.map(function(ym){
+    return caps.map(function(cap){
+      var key=ym+"|"+cap, tt=cot[key];
+      if(tt==="chuadenky"||(tt==="ngoai"&&!dem[key])) return '<td>—</td>';
+      var n=dem[key]||0, full=n===dvs.length;
+      return '<td style="color:'+(full?'#1a7a3c':'#c0392b')+';">'+n+'/'+dvs.length+'</td>';
+    }).join("");
+  }).join("")+'</tr>';
+}
+
+/* Thông báo đầu trang: đơn vị nào còn thiếu số liệu tháng nào (từ mốc theo dõi) */
+function renderNopBanner(){
+  var K=window.HSE_KT_NOP, el=document.getElementById("nopBanner");
+  if(!K||!el) return;
+  var dvs=donViList();
+  if(!dvs.length){el.style.display="none";return;}
+  var homNay=new Date();
+  var thieu=K.danhSachThieu(load(LS_KEY12,[]),dvs,homNay,null,_ktNopNorm);
+  var thangTruoc=K.ymCong(K.ymCua(homNay),-1);
+  if(!thieu.length){
+    if(thangTruoc<K.CAU_HINH.tuThang){el.style.display="none";return;}
+    el.className="nop-banner nb-ok";
+    el.innerHTML="✓ Tất cả đơn vị đã nộp đủ số liệu kiểm tra cấp 1, cấp 2 đến hết "+K.nhanThang(thangTruoc)+".";
+    el.style.display="block"; return;
+  }
+  var nhom=K.nhomTheoDonVi(thieu);
+  var soThang=0, denHan=false;
+  nhom.forEach(function(d){ soThang+=d.thang.length; d.thang.forEach(function(t){ if(t.trangThai==="denhan") denHan=true; }); });
+  var html='<div class="nb-title"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>'+
+    'Chưa nhập số liệu kiểm tra cấp 1, cấp 2 — '+nhom.length+' đơn vị, '+soThang+' tháng</div>';
+  nhom.forEach(function(d){
+    html+='<div class="nb-row"><b>'+esc(d.donVi)+'</b>: '+d.thang.map(function(t){
+      return '<button type="button" class="nb-chip'+(t.trangThai==="denhan"?" nb-denhan":"")+'" onclick="xemTheoDoi(\''+t.ym+'\')" title="'+
+        (t.trangThai==="denhan"?"Hôm nay là hạn chót":"Quá hạn")+' — bấm để xem bảng theo dõi">'+esc(K.moTaThang(t))+'</button>';
+    }).join(" ")+'</div>';
+  });
+  html+='<div class="nb-note">Hạn nộp: ngày 1 tháng sau. Tháng không ghi chú cấp là thiếu cả cấp 1 và cấp 2.'+
+    (denHan?' <b>Hôm nay là hạn chót nộp số liệu '+K.nhanThang(thangTruoc)+'.</b>':'')+'</div>';
+  el.className="nop-banner nb-red";
+  el.innerHTML=html;
+  el.style.display="block";
+}
+
+/* Bấm chip tháng ở thông báo → mở tab Báo cáo đúng quý, cuộn tới bảng theo dõi */
+function xemTheoDoi(ym){
+  var p=String(ym).split("-"), y=p[0], m=parseInt(p[1],10);
+  var namSel=document.getElementById("bcNam");
+  if(!Array.prototype.some.call(namSel.options,function(o){return o.value===y;})){
+    var o=document.createElement("option"); o.value=y; o.textContent=y; namSel.appendChild(o);
+  }
+  namSel.value=y;
+  document.getElementById("bcThang12").value="q"+quyCuaThang(m);
+  switchTab("baocao");
+  setTimeout(function(){var s=document.getElementById("nopSection"); if(s) s.scrollIntoView({behavior:"smooth",block:"start"});},60);
+}
+
+/* Bấm ô "Chưa nhập" → mở form nhập đúng cấp / đơn vị / quý, cuộn tới tháng đó */
+function moNhapTu(el){
+  var dv=el.getAttribute("data-dv"), cap=el.getAttribute("data-cap"), ym=el.getAttribute("data-ym");
+  if(!dv||!cap||!ym||!canInputCap(currentUser(),cap)) return;
+  var p=ym.split("-"), y=p[0], m=parseInt(p[1],10);
+  switchTab("nhap");
+  selectCap(cap);
+  setDonVi1(dv);
+  document.getElementById("c12NamSel").value=y;
+  document.getElementById("c12QuySel").value=quyCuaThang(m);
+  goStep2();
+  setTimeout(function(){
+    var sec=document.querySelector('#c12QuarterWrap .qm-section[data-ym="'+ym+'"]');
+    if(sec){ sec.scrollIntoView({behavior:"smooth",block:"center"}); sec.style.boxShadow="0 0 0 3px #f5c6cb"; }
+  },60);
+}
+
 function renderList(){
   var u=currentUser();
   var capF=document.getElementById("filterCap").value;
@@ -2094,7 +2317,7 @@ function confirmDel(id,sheet){
     var sName=sheet==="12"?SHEET12:SHEET34;
     save(lsKey,load(lsKey,[]).filter(function(r){return r.id!==id;}));
     if(typeof DB!=="undefined") DB.delete(sName,id).catch(function(e){console.warn(e);});
-    closeModal("modalDel"); renderList(); toast("Đã xoá bản ghi.");
+    closeModal("modalDel"); renderList(); renderBaoCao(); toast("Đã xoá bản ghi.");
   };
   openModal("modalDel");
 }
