@@ -1140,7 +1140,17 @@
     c.perms=asArr(c.perms); c.capPhatUnits=asArr(c.capPhatUnits); c.ktUnits=asArr(c.ktUnits);
     return c;
   }
-  function editablePages(){ return MENU.filter(function(m){ return !m.adminOnly && !m.adminEditOnly; }); }
+  /* Trang có cấp quyền sửa cho user được. Bỏ:
+       - tong-quan: trang chủ, không có gì để sửa
+       - tra-cuu-atvsld: chỉ Admin sửa (renderTraCuuAtvsld nhận isAdmin) */
+  var NO_EDIT_PERM = ["tong-quan","tra-cuu-atvsld"];
+  function editablePages(){
+    return MENU.filter(function(m){ return !m.adminOnly && !m.adminEditOnly && NO_EDIT_PERM.indexOf(m.slug)<0; });
+  }
+  function editablePerms(perms){
+    var ok=editablePages().map(function(m){ return m.slug; });
+    return asArr(perms).filter(function(s){ return ok.indexOf(s)>=0; });
+  }
   // Gợi ý quyền khi duyệt tài khoản tự đăng ký (giữ như bản cũ)
   var DEFAULT_APPROVE_PERMS=["tong-quan","bao-chay-tu-dong","cap-phat-bhld","huan-luyen-dao-tao",
     "kiem-tra-cac-cap","quan-ly-thiet-bi","kham-suc-khoe","moi-truong","quan-ly-nha-thau","ke-hoach"];
@@ -1166,7 +1176,6 @@
       ".adm2-un{min-height:44px;background:none;border:none;cursor:pointer;text-align:left;padding:0 4px;font-family:inherit;display:flex;flex-direction:column;justify-content:center;gap:1px}",
       ".adm2-un b{font-size:13.5px;color:var(--text)}.adm2-un small{font-size:12px;color:var(--text-muted)}.adm2-list tr.sel .adm2-un b{color:var(--brand)}",
       ".adm2-pill{display:inline-block;font-size:11.5px;font-weight:700;padding:3px 9px;border-radius:20px;white-space:nowrap}",
-      ".adm2-pill.r-admin{background:#fdeaea;color:#a5141f}.adm2-pill.r-user{background:#e8eefb;color:#003087}.adm2-pill.r-viewer{background:#eef1f4;color:#4a5568}",
       ".adm2-pill.s-active{background:#e6f4ea;color:#17663a}.adm2-pill.s-locked{background:#eef1f4;color:#4a5568}.adm2-pill.s-pending{background:#fff3cd;color:#7a5500}",
       ".adm2-sum b{font-weight:600}.adm2-sum div{font-size:12px;color:var(--text-muted);line-height:1.45}.adm2-warn{color:#9a3412!important;font-weight:600}",
       ".adm2-drawer{flex:1 1 380px;min-width:0;max-width:100%;background:#fff;border-radius:12px;box-shadow:var(--shadow);display:flex;flex-direction:column}",
@@ -1200,7 +1209,7 @@
       ".adm2-empty{padding:40px 20px;text-align:center;color:var(--text-muted);font-size:13.5px}",
       ".adm2-modbar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:14px}",
       ".adm2-modbar .adm2-seg{grid-template-columns:repeat(2,auto)}.adm2-modbar .adm2-seg button{padding:0 16px}",
-      ".adm2-cards{flex:999 1 620px;min-width:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:14px}",
+      ".adm2-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:14px}",
       ".adm2-card{background:#fff;border-radius:12px;box-shadow:var(--shadow);padding:16px;display:flex;flex-direction:column;gap:12px;min-height:200px;box-sizing:border-box}",
       ".adm2-card.empty{outline:2px dashed #f0b27a;outline-offset:-2px}",
       ".adm2-card h3{margin:0;font-size:15px;color:var(--brand)}",
@@ -1210,10 +1219,8 @@
       ".adm2-person button{width:32px;height:32px;border:none;background:none;color:var(--brand);cursor:pointer;font-size:16px;border-radius:16px;font-family:inherit}",
       ".adm2-person button:hover{background:#d5e0f6}",
       ".adm2-card select{height:40px;padding:0 10px;border:1px solid var(--border);border-radius:8px;background:#fff;font-size:13px;width:100%;font-family:inherit}",
-      ".adm2-side{flex:1 1 280px;min-width:0;display:flex;flex-direction:column;gap:14px}",
       ".adm2-box{background:#fff;border-radius:12px;box-shadow:var(--shadow);padding:16px 18px;display:flex;flex-direction:column;gap:8px;font-size:13px;color:#3d4c63;line-height:1.5}",
       ".adm2-box h3{margin:0;font-size:14.5px;color:var(--brand)}",
-      ".adm2-orphan{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:8px 10px;background:#fff7ed;border-radius:8px}",
       "@media (max-width:640px){.adm2-grid2{grid-template-columns:1fr}}"
     ].join("\n");
     document.head.appendChild(st);
@@ -1266,10 +1273,6 @@
     if(typeof HSE_UNITS!=="undefined" && HSE_UNITS.onChange){
       HSE_UNITS.onChange(function(){ if(!document.body.contains(root)) return; usersUI.refresh(); if(pcUI) pcUI.refresh(); });
     }
-
-    var dbSection = el("div");
-    panes.users.appendChild(dbSection);
-    renderDBSettings(dbSection);
   }
 
   /* ---------- Tab NGƯỜI DÙNG: danh sách + ngăn chi tiết ---------- */
@@ -1305,7 +1308,7 @@
     function summary(x){
       if(isPending(x)) return '<b>Chưa phân quyền</b>';
       if(x.role==="admin") return '<b style="color:var(--brand)">Toàn quyền</b>';
-      var perms=asArr(x.perms);
+      var perms=editablePerms(x.perms);
       if(x.role==="viewer" || !perms.length) return '<b>Chỉ xem</b>';
       var parts=[];
       UNIT_SCOPED.forEach(function(sc){
@@ -1342,15 +1345,14 @@
     }
     function drawList(){
       var rows=getUsers().filter(matches);
-      var html='<table><thead><tr><th>Tài khoản</th><th>Vai trò</th><th>Quyền sửa</th><th>Trạng thái</th></tr></thead><tbody>';
+      var html='<table><thead><tr><th>Tài khoản</th><th>Quyền sửa</th></tr></thead><tbody>';
       rows.forEach(function(x){
         var s=userStatus(x), on=String(x.id)===String(st.selId);
         html+='<tr data-id="'+esc(x.id)+'"'+(on?' class="sel"':'')+'>'+
-          '<td><button type="button" class="adm2-un" aria-label="Mở phân quyền của '+esc(x.username)+'"><b>'+esc(x.username)+'</b>'+
+          '<td><button type="button" class="adm2-un" aria-label="Mở phân quyền của '+esc(x.username)+'"><b>'+esc(x.username)+
+            (s[0]!=="active"?' <span class="adm2-pill s-'+s[0]+'">'+s[1]+'</span>':'')+'</b>'+
             '<small>'+esc(x.fullname||"")+(x.danhSo?' · '+esc(x.danhSo):'')+'</small></button></td>'+
-          '<td><span class="adm2-pill r-'+(x.role==="admin"?"admin":"user")+'">'+(x.role==="admin"?"Admin":"User")+'</span></td>'+
-          '<td class="adm2-sum">'+summary(x)+'</td>'+
-          '<td><span class="adm2-pill s-'+s[0]+'">'+s[1]+'</span></td></tr>';
+          '<td class="adm2-sum">'+summary(x)+'</td></tr>';
       });
       html+='</tbody></table>';
       if(!rows.length) html+='<div class="adm2-empty">Không có người dùng phù hợp.</div>';
@@ -1376,6 +1378,7 @@
     function markDirty(){
       st.dirty=true; st.saved=false;
       var d=drawer.querySelector(".adm2-state"); if(d){ d.className="adm2-state adm2-dirty"; d.textContent="Có thay đổi chưa lưu"; }
+      var c=drawer.querySelector('[data-act="cancel"]'); if(c) c.style.display="";
     }
 
     function drawDrawer(){
@@ -1384,17 +1387,17 @@
       var me=currentUser(), isMe=!st.isNew && me && String(me.id)===String(d.id);
       var s=userStatus(d), pend=!st.isNew && isPending(d);
       var h='<div class="adm2-dh"><h2>'+(st.isNew?'Tài khoản mới':esc(d.username))+'</h2>'+
-        (st.isNew?'':'<span class="adm2-pill s-'+s[0]+'">'+s[1]+'</span>')+'</div><div class="adm2-db">';
+        (st.isNew||s[0]==="active"?'':'<span class="adm2-pill s-'+s[0]+'">'+s[1]+'</span>')+'</div><div class="adm2-db">';
       if(pend){
         h+='<div class="adm2-approve"><span>Tài khoản tự đăng ký, chưa được duyệt nên chưa đăng nhập được.</span>'+
           (d._approve ? '<b>✓ Sẽ duyệt khi bấm Lưu thay đổi.</b>'
                       : '<button type="button" class="btn btn-sm" data-act="approve" style="align-self:flex-start;background:var(--brand);color:#fff;min-height:36px">Duyệt thành User</button>')+'</div>';
       }
+      if(st.isNew) h+='<label class="adm2-field">Email / tài khoản<input class="inp" data-k="username" value="'+esc(d.username||"")+'" placeholder="VD: sonlhh.sd" autocomplete="off"></label>';
       h+='<div class="adm2-grid2">'+
-          '<label class="adm2-field">Email / tài khoản<input class="inp" data-k="username" value="'+esc(d.username||"")+'"'+(st.isNew?'':' disabled')+' placeholder="VD: sonlhh.sd" autocomplete="off"></label>'+
+          '<label class="adm2-field">Họ và tên<input class="inp" data-k="fullname" value="'+esc(d.fullname||"")+'"></label>'+
           '<label class="adm2-field">Danh số<input class="inp" data-k="danhSo" value="'+esc(d.danhSo||"")+'" placeholder="VD: 21398"></label>'+
-        '</div>'+
-        '<label class="adm2-field">Họ và tên<input class="inp" data-k="fullname" value="'+esc(d.fullname||"")+'"></label>';
+        '</div>';
       if(st.isNew){
         h+='<div class="adm2-grid2">'+
           '<label class="adm2-field">Mật khẩu<input class="inp" type="password" data-k="_pw" autocomplete="new-password" placeholder="Tối thiểu 6 ký tự"></label>'+
@@ -1430,7 +1433,7 @@
       }
       h+='</div><div class="adm2-df">'+
         '<button type="button" class="btn btn-accent" data-act="save">'+(st.isNew?'Tạo tài khoản':'Lưu thay đổi')+'</button>'+
-        '<button type="button" class="btn btn-ghost" data-act="cancel">Huỷ</button>'+
+        '<button type="button" class="btn btn-ghost" data-act="cancel"'+(st.isNew||st.dirty?'':' style="display:none"')+'>Huỷ</button>'+
         '<span class="adm2-state '+(st.dirty?'adm2-dirty':(st.saved?'adm2-saved':''))+'">'+(st.dirty?'Có thay đổi chưa lưu':(st.saved?'✓ Đã lưu':''))+'</span>'+
         '<div style="flex:1 1 0"></div>'+
         (st.isNew?'':
@@ -1474,7 +1477,7 @@
       var ap=drawer.querySelector('[data-act="approve"]');
       if(ap) ap.addEventListener("click", function(){
         d._approve=true; d.role="user";
-        if(!d.perms.length) d.perms=DEFAULT_APPROVE_PERMS.filter(function(s){ return !!menuBySlug(s); });
+        if(!d.perms.length) d.perms=editablePerms(DEFAULT_APPROVE_PERMS);
         markDirty(); drawDrawer();
       });
       drawer.querySelector('[data-act="save"]').addEventListener("click", save);
@@ -1598,8 +1601,10 @@
         '<div class="adm2-seg" role="group" aria-label="Chọn trang">'+UNIT_SCOPED.map(function(s){
           var on=s.slug===st.slug, t=(menuBySlug(s.slug)||{}).title||s.slug;
           return '<button type="button" class="'+(on?'on':'')+'" aria-pressed="'+on+'" data-mod="'+s.slug+'">'+esc(t)+'</button>';
-        }).join("")+'</div><span style="font-size:12.5px;color:var(--text-muted)">'+esc(sc.hint.replace(/:$/,""))+'.</span></div>';
-      h+='<div class="adm2-row"><section class="adm2-cards" aria-label="Các đơn vị">';
+        }).join("")+'</div></div>'+
+        '<p style="margin:-4px 0 14px;font-size:12.5px;color:var(--text-muted)">'+esc(sc.hint.replace(/:$/,""))+
+        '. Một người có thể phụ trách nhiều đơn vị; thêm người vào đơn vị sẽ tự cấp quyền sửa trang '+esc(title)+'. Thay đổi được lưu ngay.</p>';
+      h+='<section class="adm2-cards" aria-label="Các đơn vị">';
       if(!units.length) h+='<div class="adm2-box">Chưa có đơn vị nào được gán cho trang '+esc(title)+' (tab Danh mục đơn vị).</div>';
       units.forEach(function(name, ui){
         var mine=people.filter(function(x){ return asArr(x.perms).indexOf(sc.slug)>=0 && hasUnit(x[sc.field], name); });
@@ -1620,18 +1625,7 @@
               (hasPerm ? (n?' · đang phụ trách '+n+' ĐV':'') : ' (sẽ được cấp quyền trang)')+'</option>';
           }).join("")+'</select></label></article>';
       });
-      h+='</section><aside class="adm2-side">';
-      var orphans=people.filter(function(x){ return asArr(x.perms).indexOf(sc.slug)>=0 && !asArr(x[sc.field]).length; });
-      h+='<div class="adm2-box"><h3>Có quyền trang, chưa giao đơn vị</h3>'+
-        (orphans.length ? orphans.map(function(x){
-            return '<div class="adm2-orphan"><b>'+esc(x.username)+'</b><span style="font-size:12px;color:#9a3412">chỉ xem được</span></div>';
-          }).join("")
-          : '<span style="color:#17663a">✓ Ai có quyền trang này cũng đã được giao đơn vị.</span>')+'</div>';
-      h+='<div class="adm2-box"><h3>Quy tắc</h3>'+
-        '<span>Một người có thể phụ trách nhiều đơn vị, một đơn vị có thể có nhiều người.</span>'+
-        '<span>Thêm người vào đơn vị sẽ tự cấp quyền sửa trang '+esc(title)+' cho họ.</span>'+
-        '<span>Admin luôn sửa được mọi đơn vị, không cần giao.</span>'+
-        '<span>Thay đổi ở đây được lưu ngay.</span></div></aside></div>';
+      h+='</section>';
       pane.innerHTML=h;
 
       Array.prototype.forEach.call(pane.querySelectorAll("[data-mod]"), function(b){
