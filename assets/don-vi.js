@@ -89,6 +89,7 @@
     { sheet: "kiem_tra_cap12",   col: "donVi",        type: "text",  via: "db",   label: "Kiểm tra các cấp (cấp 1-2)" },
     { sheet: "hl_nhansu",        col: "unit",         type: "text",  via: "db",   label: "Huấn luyện - Đào tạo — Nhân sự" },
     { sheet: "users",            col: "capPhatUnits", type: "array", via: "db",   label: "Phân quyền đơn vị cấp phát" },
+    { sheet: "users",            col: "ktUnits",      type: "array", via: "db",   label: "Phân quyền đơn vị Kiểm tra các cấp" },
     /* ── Đọc qua bhld-sync.js — trang Cấp phát BHLĐ có bảng ánh xạ RIÊNG,
          KHÔNG nằm trong db.js. Phải hỏi BHLD.tbl() để lấy đúng tên bảng. ── */
     { sheet: "nhanvien",            col: "boPhan", type: "text", via: "bhld", label: "Cấp phát BHLĐ — Nhân viên" },

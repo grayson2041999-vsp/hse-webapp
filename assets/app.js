@@ -64,11 +64,13 @@
   function _profileToUser(p){
     return { id:p.id, username:p.username, fullname:p.fullname||"", danhSo:p.danhSo||"",
       role:p.role||"viewer", perms:p.perms||[], capPhatUnits:p.capPhatUnits||[],
+      ktUnits:p.ktUnits||[],
       active:p.active, pendingApproval:p.pendingApproval, created:p.created };
   }
   function _profilePayload(u){
     var o={ username:u.username, fullname:u.fullname||"", danhSo:u.danhSo||"", role:u.role,
-      perms:u.perms||[], capPhatUnits:u.capPhatUnits||[], updated:new Date().toISOString() };
+      perms:u.perms||[], capPhatUnits:u.capPhatUnits||[], ktUnits:u.ktUnits||[],
+      updated:new Date().toISOString() };
     if(typeof u.active!=="undefined") o.active=(u.active!==false);
     if(typeof u.pendingApproval!=="undefined") o.pendingApproval=!!u.pendingApproval;
     return o;
@@ -317,13 +319,21 @@
               action:'create', username:userOrId.username, password:userOrId.password,
               fullname:userOrId.fullname, danhSo:userOrId.danhSo||"", role:userOrId.role,
               perms:userOrId.perms||[], capPhatUnits:userOrId.capPhatUnits||[],
+              ktUnits:userOrId.ktUnits||[],
               active: userOrId.active!==false
-            }}).then(_edgeCheck);
+            }}).then(_edgeCheck).then(function(r){
+              /* Edge Function có thể chưa biết cột ktUnits (mới thêm 03/10/2026)
+                 → ghi bổ sung thẳng vào profiles cho chắc. */
+              var ku=userOrId.ktUnits||[];
+              if(!ku.length) return r;
+              return sb.from('profiles').update({ ktUnits:ku }).eq('username', userOrId.username)
+                .then(function(x){ if(x && x.error) throw x.error; return r; });
+            });
       } else {
         // Tự đăng ký → signUp (chờ Admin duyệt); KHÔNG giữ đăng nhập người mới
         p = sb.auth.signUp({ email: emailOf(userOrId.username), password: userOrId.password,
               options:{ data:{ username:userOrId.username, fullname:userOrId.fullname,
-                danhSo:userOrId.danhSo||"", role:'viewer', perms:[], capPhatUnits:[],
+                danhSo:userOrId.danhSo||"", role:'viewer', perms:[], capPhatUnits:[], ktUnits:[],
                 active:false, pendingApproval:true } } })
             .then(function(r){ if(r.error) throw r.error; return sb.auth.signOut(); });
         refresh = false;
@@ -1086,252 +1096,586 @@
   /* =========================================================
      RENDER: QUẢN TRỊ HỆ THỐNG (quản lý user + phân quyền)
      ========================================================= */
+  /* =========================================================
+     QUẢN TRỊ HỆ THỐNG — 3 tab: Người dùng · Phân công đơn vị · Danh mục đơn vị
+     ---------------------------------------------------------
+     Thiết kế đã chốt 03/10/2026 (phương án A + C):
+       • Người dùng: danh sách gọn + ngăn chi tiết bên phải (công tắc quyền
+         từng trang; trang phân theo đơn vị hiện thêm nút chọn đơn vị).
+       • Phân công đơn vị: mỗi đơn vị một thẻ, ai phụ trách, còn thiếu tháng nào.
+     Hai tab dùng chung dữ liệu profiles (perms, capPhatUnits, ktUnits).
+     ========================================================= */
+
+  /* Trang có quyền theo đơn vị → cột lưu danh sách TÊN đơn vị trong profiles.
+     Thêm trang mới cần phân theo đơn vị: khai báo ở đây + cột trong profiles
+     + RENAME_TARGETS trong assets/don-vi.js. */
+  var UNIT_SCOPED = [
+    { slug:"kiem-tra-cac-cap", field:"ktUnits",      short:"KT",
+      hint:"Được nhập kiểm tra cấp 1, cấp 2 cho đơn vị:" },
+    { slug:"cap-phat-bhld",    field:"capPhatUnits", short:"BHLĐ",
+      hint:"Được lập phiếu cấp phát BHLĐ cho đơn vị:" }
+  ];
+  function unitScopeOf(slug){ for(var i=0;i<UNIT_SCOPED.length;i++) if(UNIT_SCOPED[i].slug===slug) return UNIT_SCOPED[i]; return null; }
+  function scopeUnitList(sc){ return (typeof HSE_UNITS!=="undefined") ? HSE_UNITS.list(sc.slug,{excludeGop:true}) : []; }
+  function unitEq(a,b){
+    return (typeof HSE_UNITS!=="undefined")
+      ? HSE_UNITS.norm(HSE_UNITS.label(a))===HSE_UNITS.norm(HSE_UNITS.label(b))
+      : String(a)===String(b);
+  }
+  function asArr(v){
+    if(Array.isArray(v)) return v.slice();
+    if(typeof v==="string" && v){ try{ var a=JSON.parse(v); return Array.isArray(a)?a:[]; }catch(e){ return []; } }
+    return [];
+  }
+  function hasUnit(arr,name){ return asArr(arr).some(function(x){ return unitEq(x,name); }); }
+  function userStatus(x){
+    if(x.pendingApproval && x.active===false) return ["pending","Chờ duyệt"];
+    if(x.active===false) return ["locked","Đã khoá"];
+    return ["active","Hoạt động"];
+  }
+  function cloneUser(u){
+    var c=JSON.parse(JSON.stringify(u||{}));
+    c.perms=asArr(c.perms); c.capPhatUnits=asArr(c.capPhatUnits); c.ktUnits=asArr(c.ktUnits);
+    return c;
+  }
+  function editablePages(){ return MENU.filter(function(m){ return !m.adminOnly && !m.adminEditOnly; }); }
+  // Gợi ý quyền khi duyệt tài khoản tự đăng ký (giữ như bản cũ)
+  var DEFAULT_APPROVE_PERMS=["tong-quan","bao-chay-tu-dong","cap-phat-bhld","huan-luyen-dao-tao",
+    "kiem-tra-cac-cap","quan-ly-thiet-bi","kham-suc-khoe","moi-truong","quan-ly-nha-thau","ke-hoach"];
+
+  function ensureAdminCss(){
+    if(document.getElementById("adm2-css")) return;
+    var st=document.createElement("style"); st.id="adm2-css";
+    st.textContent=[
+      ".adm-tab{background:none;border:none;border-bottom:3px solid transparent;margin-bottom:-2px;padding:10px 16px;font-size:13.5px;font-weight:600;color:var(--text-muted);cursor:pointer;font-family:inherit;min-height:44px}",
+      ".adm-tab:hover{color:var(--brand)}.adm-tab.on{color:var(--brand);border-bottom-color:var(--brand);font-weight:700}",
+      ".adm2-pending{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;background:#fff8e1;border:1px solid #f0d58a;border-radius:10px;padding:10px 16px;margin-bottom:14px;font-size:13px;color:#6b4e00}",
+      ".adm2-bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:14px}",
+      ".adm2-bar .inp{height:40px;flex:1 1 240px;max-width:340px}",
+      ".adm2-chip{min-height:36px;padding:0 12px;border-radius:18px;border:1px solid var(--border);background:#fff;color:#3d4c63;font-weight:600;font-size:13px;cursor:pointer;font-family:inherit}",
+      ".adm2-chip.on{background:var(--brand);border-color:var(--brand);color:#fff}.adm2-chip span{opacity:.75;margin-left:3px}",
+      ".adm2-row{display:flex;gap:16px;flex-wrap:wrap;align-items:flex-start}",
+      ".adm2-list{flex:999 1 520px;min-width:0;background:#fff;border-radius:12px;box-shadow:var(--shadow);overflow-x:auto}",
+      ".adm2-list table{width:100%;border-collapse:collapse;font-size:13.5px}",
+      ".adm2-list th{background:#f4f7fc;color:#3d4c63;font-size:12px;font-weight:700;text-align:left;padding:11px 12px;text-transform:none;letter-spacing:0;border:none}",
+      ".adm2-list td{padding:6px 12px;border-top:1px solid #edf1f7;vertical-align:middle}",
+      ".adm2-list tbody tr{cursor:pointer}.adm2-list tbody tr:hover td{background:#f8fafd}",
+      ".adm2-list tr.sel td{background:#eef3fc}.adm2-list tr.sel td:first-child{box-shadow:inset 3px 0 0 var(--brand)}",
+      ".adm2-un{min-height:44px;background:none;border:none;cursor:pointer;text-align:left;padding:0 4px;font-family:inherit;display:flex;flex-direction:column;justify-content:center;gap:1px}",
+      ".adm2-un b{font-size:13.5px;color:var(--text)}.adm2-un small{font-size:12px;color:var(--text-muted)}.adm2-list tr.sel .adm2-un b{color:var(--brand)}",
+      ".adm2-pill{display:inline-block;font-size:11.5px;font-weight:700;padding:3px 9px;border-radius:20px;white-space:nowrap}",
+      ".adm2-pill.r-admin{background:#fdeaea;color:#a5141f}.adm2-pill.r-user{background:#e8eefb;color:#003087}.adm2-pill.r-viewer{background:#eef1f4;color:#4a5568}",
+      ".adm2-pill.s-active{background:#e6f4ea;color:#17663a}.adm2-pill.s-locked{background:#eef1f4;color:#4a5568}.adm2-pill.s-pending{background:#fff3cd;color:#7a5500}",
+      ".adm2-sum b{font-weight:600}.adm2-sum div{font-size:12px;color:var(--text-muted);line-height:1.45}.adm2-warn{color:#9a3412!important;font-weight:600}",
+      ".adm2-drawer{flex:1 1 380px;min-width:0;max-width:100%;background:#fff;border-radius:12px;box-shadow:var(--shadow);display:flex;flex-direction:column}",
+      ".adm2-dh{padding:16px 20px;border-bottom:1px solid #e3e9f3;display:flex;align-items:center;justify-content:space-between;gap:8px}",
+      ".adm2-dh h2{margin:0;font-size:17px;color:var(--brand)}",
+      ".adm2-db{padding:16px 20px;display:flex;flex-direction:column;gap:16px}",
+      ".adm2-df{padding:14px 20px;border-top:1px solid #e3e9f3;display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:auto}",
+      ".adm2-grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}",
+      ".adm2-field{display:flex;flex-direction:column;gap:4px;font-size:12px;font-weight:700;color:#3d4c63}",
+      ".adm2-field .inp{height:38px;font-weight:400;font-size:13.5px;width:100%;box-sizing:border-box}",
+      ".adm2-lbl{font-size:12px;font-weight:700;color:#3d4c63;margin-bottom:6px}",
+      ".adm2-seg{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));border:1px solid var(--border);border-radius:8px;overflow:hidden}",
+      ".adm2-seg button{min-height:40px;border:none;background:#fff;color:#3d4c63;font-weight:700;cursor:pointer;font-family:inherit;font-size:13px}",
+      ".adm2-seg button.on{background:var(--brand);color:#fff}",
+      ".adm2-gt{font-size:12px;font-weight:700;padding:0 0 2px;display:flex;justify-content:space-between;align-items:center}",
+      ".adm2-gt a{font-weight:600;font-size:12px}",
+      ".adm2-sw{width:100%;min-height:44px;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:0 4px;background:none;border:none;cursor:pointer;text-align:left;font-size:13.5px;color:var(--text);font-family:inherit;border-radius:6px}",
+      ".adm2-sw:hover{background:#f6f8fc}",
+      ".adm2-sw i{flex:none;width:40px;height:22px;border-radius:11px;background:#c3cddd;position:relative;transition:background .15s}",
+      ".adm2-sw i:after{content:'';position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:8px;background:#fff;transition:left .15s}",
+      ".adm2-sw[aria-pressed=true] i{background:var(--brand)}.adm2-sw[aria-pressed=true] i:after{left:21px}",
+      ".adm2-units{background:#f6f8fc;border-radius:8px;padding:8px 10px 12px;margin:0 0 6px;display:flex;flex-direction:column;gap:8px;font-size:12px;color:#3d4c63}",
+      ".adm2-uchips{display:flex;flex-wrap:wrap;gap:6px}",
+      ".adm2-uc{min-height:36px;padding:0 12px;border-radius:18px;border:1px solid var(--border);background:#fff;color:#3d4c63;font-size:12.5px;font-weight:600;cursor:pointer;font-family:inherit}",
+      ".adm2-uc[aria-pressed=true]{background:#e8eefb;color:var(--brand);border:1.5px solid var(--brand)}",
+      ".adm2-note{margin:0;padding:12px;background:#f4f7fc;border-radius:8px;color:#3d4c63;font-size:13px}",
+      ".adm2-approve{background:#fff8e1;border:1px solid #f0d58a;border-radius:8px;padding:12px;display:flex;flex-direction:column;gap:8px;font-size:13px;color:#6b4e00}",
+      ".adm2-dirty{font-size:12.5px;color:#9a6700;font-weight:600}.adm2-saved{font-size:12.5px;color:#17663a;font-weight:600}",
+      ".adm2-link{min-height:40px;padding:0 10px;border:none;background:none;color:var(--text-muted);font-weight:600;cursor:pointer;font-family:inherit;font-size:13px}",
+      ".adm2-link.danger{color:#b42318}.adm2-link:disabled{opacity:.4;cursor:not-allowed}",
+      ".adm2-empty{padding:40px 20px;text-align:center;color:var(--text-muted);font-size:13.5px}",
+      ".adm2-modbar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:14px}",
+      ".adm2-modbar .adm2-seg{grid-template-columns:repeat(2,auto)}.adm2-modbar .adm2-seg button{padding:0 16px}",
+      ".adm2-cards{flex:999 1 620px;min-width:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:14px}",
+      ".adm2-card{background:#fff;border-radius:12px;box-shadow:var(--shadow);padding:16px;display:flex;flex-direction:column;gap:12px;min-height:200px;box-sizing:border-box}",
+      ".adm2-card.empty{outline:2px dashed #f0b27a;outline-offset:-2px}",
+      ".adm2-card h3{margin:0;font-size:15px;color:var(--brand)}",
+      ".adm2-st{font-size:12px;font-weight:600;margin-top:3px}.adm2-st.bad{color:#b42318}.adm2-st.ok{color:#17663a}",
+      ".adm2-people{display:flex;flex-wrap:wrap;gap:6px}",
+      ".adm2-person{display:inline-flex;align-items:center;gap:2px;background:#e8eefb;color:var(--brand);border-radius:18px;padding-left:12px;font-size:13px;font-weight:600}",
+      ".adm2-person button{width:32px;height:32px;border:none;background:none;color:var(--brand);cursor:pointer;font-size:16px;border-radius:16px;font-family:inherit}",
+      ".adm2-person button:hover{background:#d5e0f6}",
+      ".adm2-card select{height:40px;padding:0 10px;border:1px solid var(--border);border-radius:8px;background:#fff;font-size:13px;width:100%;font-family:inherit}",
+      ".adm2-side{flex:1 1 280px;min-width:0;display:flex;flex-direction:column;gap:14px}",
+      ".adm2-box{background:#fff;border-radius:12px;box-shadow:var(--shadow);padding:16px 18px;display:flex;flex-direction:column;gap:8px;font-size:13px;color:#3d4c63;line-height:1.5}",
+      ".adm2-box h3{margin:0;font-size:14.5px;color:var(--brand)}",
+      ".adm2-orphan{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:8px 10px;background:#fff7ed;border-radius:8px}",
+      "@media (max-width:640px){.adm2-grid2{grid-template-columns:1fr}}"
+    ].join("\n");
+    document.head.appendChild(st);
+  }
+
   function renderAdmin(root){
     root.innerHTML="";
+    ensureAdminCss();
     root.appendChild(el("div","",
       '<div class="page-title" style="display:flex;align-items:center;gap:9px">'+lic("settings",22)+'Quản trị hệ thống</div>'+
-      '<div class="page-desc">Quản lý người dùng, phân quyền truy cập và danh mục phòng/ban/đơn vị.</div>'));
+      '<div class="page-desc">Quản lý tài khoản, quyền sửa từng trang và đơn vị được phụ trách.</div>'));
 
-    /* ── Thanh tab: Người dùng · Danh mục đơn vị ── */
     var tabBar = el("div");
-    tabBar.style.cssText="display:flex;gap:6px;border-bottom:2px solid var(--border);margin:4px 0 16px;flex-wrap:wrap";
+    tabBar.style.cssText="display:flex;gap:4px;border-bottom:2px solid var(--border);margin:4px 0 16px;flex-wrap:wrap";
     tabBar.innerHTML=
-      '<button class="adm-tab on" data-tab="users">Người dùng &amp; phân quyền</button>'+
+      '<button class="adm-tab on" data-tab="users">Người dùng</button>'+
+      '<button class="adm-tab" data-tab="phancong">Phân công đơn vị</button>'+
       '<button class="adm-tab" data-tab="donvi">Danh mục đơn vị</button>';
     root.appendChild(tabBar);
-    if(!document.getElementById("adm-tab-css")){
-      var _st=document.createElement("style"); _st.id="adm-tab-css";
-      _st.textContent=".adm-tab{background:none;border:none;border-bottom:2px solid transparent;margin-bottom:-2px;"+
-        "padding:9px 14px;font-size:13.5px;font-weight:600;color:var(--text-muted);cursor:pointer;font-family:inherit}"+
-        ".adm-tab:hover{color:var(--brand)}"+
-        ".adm-tab.on{color:var(--brand);border-bottom-color:var(--brand)}";
-      document.head.appendChild(_st);
-    }
 
-    var panes = {
-      users: el("div"),
-      donvi: el("div")
-    };
-    var drawn = {};
+    var panes = { users: el("div"), phancong: el("div"), donvi: el("div") };
     Object.keys(panes).forEach(function(k){
       if(k!=="users") panes[k].style.display="none";
       root.appendChild(panes[k]);
     });
+
+    var usersUI = renderUsersAdmin(panes.users);
+    var pcUI = null, donviDrawn = false;
+    function show(tab){
+      Array.prototype.forEach.call(tabBar.querySelectorAll(".adm-tab"), function(x){ x.classList.toggle("on", x.getAttribute("data-tab")===tab); });
+      Object.keys(panes).forEach(function(k){ panes[k].style.display = (k===tab) ? "" : "none"; });
+      if(tab==="users") usersUI.refresh();
+      if(tab==="phancong"){ if(!pcUI) pcUI = renderPhanCongAdmin(panes.phancong); else pcUI.refresh(); }
+      if(tab==="donvi" && !donviDrawn){ donviDrawn = true; renderDonViAdmin(panes.donvi); }
+    }
     Array.prototype.forEach.call(tabBar.querySelectorAll(".adm-tab"), function(b){
       b.addEventListener("click", function(){
-        var tab = b.getAttribute("data-tab");
-        Array.prototype.forEach.call(tabBar.querySelectorAll(".adm-tab"), function(x){ x.classList.remove("on"); });
-        b.classList.add("on");
-        Object.keys(panes).forEach(function(k){ panes[k].style.display = (k===tab) ? "" : "none"; });
-        if(drawn[tab]) return;
-        drawn[tab] = true;
-        if(tab==="donvi") renderDonViAdmin(panes.donvi);
+        var tab=b.getAttribute("data-tab");
+        if(tab!=="users" && !usersUI.confirmLeave()) return;
+        show(tab);
       });
     });
-    var paneUsers = panes.users;
 
-    // Từ đây trở xuống là phần "Người dùng" cũ — giữ nguyên, chỉ gắn vào khung tab.
-    var container = paneUsers;
-    var bar = el("div","toolbar");
-    bar.innerHTML='<div class="muted">Vai trò: <b>Admin</b> toàn quyền · <b>User</b> thao tác theo phân quyền · <b>Viewer</b> chỉ xem.</div>'+
-      '<div class="spacer"></div><input class="inp" id="q" type="search" name="hse_user_search" autocomplete="off" placeholder="Tìm theo tên / tài khoản...">';
-    container.appendChild(bar);
-
-    var tw = el("div","table-wrap"); var tbl = el("table"); tbl.id="utbl"; tw.appendChild(tbl); container.appendChild(tw);
-
-    // Nút "Thêm người dùng" đặt dưới cùng bảng, canh giữa
-    var addBar = el("div","", '<button class="btn btn-accent" id="addU">＋ Thêm người dùng</button>');
-    addBar.style.cssText = "display:flex;justify-content:center;margin:16px 0 4px;";
-    container.appendChild(addBar);
-
-    var modal = buildModal(); container.appendChild(modal.bg);
-
-    // Trả về tên & nhóm trang tương ứng với slug (để hiển thị cột "Trang được phép sửa")
-    function slugMenu(slug){ for(var i=0;i<MENU.length;i++){ if(MENU[i].slug===slug) return MENU[i]; } return null; }
-    function slugTitle(slug){ var m=slugMenu(slug); return m?m.title:slug; }
-    // Danh sách các trang có thể phân quyền (loại trừ trang chỉ admin / chỉ admin sửa)
-    function editablePages(){ return MENU.filter(function(m){ return !m.adminOnly && !m.adminEditOnly; }); }
-    function permCellHtml(x){
-      if(x.role==="admin") return '<b style="color:var(--brand)">Tất cả</b>';
-      var perms = x.perms||[];
-      if(!perms.length) return '<span class="muted">Chưa phân quyền</span>';
-      var chips = perms.map(function(s){
-        var m = slugMenu(s);
-        // Nhóm "theo-doi" (tra cứu) → xanh navy · "ung-dung" (ứng dụng) → đỏ, giống trang Tổng quan
-        var color = (m && m.group==="ung-dung") ? "var(--accent)" : "var(--brand)";
-        return '<span class="badge" style="font-weight:600;margin:1px 2px 1px 0;display:inline-block;color:'+color+';background:#fff;border:1px solid '+color+';">'+esc(slugTitle(s))+'</span>';
-      }).join('');
-      return '<div style="max-width:340px;line-height:1.7">'+chips+'</div>';
+    // Đồng bộ profiles từ Supabase xong → vẽ lại (giữ thay đổi chưa lưu trong ngăn chi tiết)
+    _onUsersSynced = function(){
+      if(!document.body.contains(root)) return;
+      usersUI.refresh();
+      if(pcUI) pcUI.refresh();
+    };
+    if(typeof HSE_UNITS!=="undefined" && HSE_UNITS.onChange){
+      HSE_UNITS.onChange(function(){ if(!document.body.contains(root)) return; usersUI.refresh(); if(pcUI) pcUI.refresh(); });
     }
 
-    function draw(filter){
-      var u = getUsers(); var me = currentUser();
-      var rows = u.filter(function(x){
-        if(!filter) return true; var f=filter.toLowerCase();
-        return (x.username+" "+(x.fullname||"")).toLowerCase().indexOf(f)!==-1;
-      });
-      var nMod = MENU.length;
-      var html='<thead><tr><th>Tài khoản</th><th>Danh số</th><th>Họ tên</th><th>Vai trò</th><th>Trang được phép sửa</th><th>Trạng thái</th><th>Thao tác</th></tr></thead><tbody>';
-      rows.forEach(function(x){
-        var isPending = x.pendingApproval && x.active===false;
-        var statusHtml = isPending
-          ? '<span class="badge" style="background:#fef9e7;color:#856404;"><svg class="lic-emoji" width="1.05em" height="1.05em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex-shrink:0" aria-hidden="true"><path d="M5 22h14"/><path d="M5 2h14"/><path d="M17 22v-4.172a2 2 0 0 0-.586-1.414L12 12l-4.414 4.414A2 2 0 0 0 7 17.828V22"/><path d="M7 2v4.172a2 2 0 0 0 .586 1.414L12 12l4.414-4.414A2 2 0 0 0 17 6.172V2"/></svg> Chờ duyệt</span>'
-          : (x.active===false
-            ? '<span class="badge badge-viewer">Đã khoá</span>'
-            : '<span class="badge badge-user">Hoạt động</span>');
-        html+='<tr>'+
-          '<td><b>'+esc(x.username)+'</b></td>'+
-          '<td style="color:var(--text-muted);font-size:12.5px;">'+(x.danhSo||'—')+'</td>'+
-          '<td>'+esc(x.fullname||"")+'</td>'+
-          '<td><span class="badge badge-'+x.role+'"'+(x.role==="user"?' style="color:#1a1a1a;background:#fff;border:1px solid #1a1a1a;font-weight:700;"':'')+'>'+roleLabel(x.role)+'</span></td>'+
-          '<td>'+permCellHtml(x)+'</td>'+
-          '<td>'+statusHtml+'</td>'+
-          '<td>'+
-            '<button class="btn btn-ghost btn-sm" data-act="edit" data-id="'+esc(x.id)+'">'+(isPending?'✅ Duyệt / Sửa':'Sửa')+'</button> '+
-            (!isPending?'<button class="btn btn-ghost btn-sm" data-act="lock" data-id="'+esc(x.id)+'">'+(x.active===false?"Mở khoá":"Khoá")+'</button> ':'')+
-            '<button class="btn btn-danger btn-sm" data-act="del" data-id="'+esc(x.id)+'"'+((me&&String(x.id)===String(me.id))?' disabled':'')+'>Xoá</button>'+
-          '</td></tr>';
-      });
-      if(!rows.length) html+='<tr><td colspan="7" class="muted" style="text-align:center;padding:24px">Không có người dùng phù hợp.</td></tr>';
-      html+='</tbody>';
-      tbl.innerHTML=html;
+    var dbSection = el("div");
+    panes.users.appendChild(dbSection);
+    renderDBSettings(dbSection);
+  }
 
-      Array.prototype.forEach.call(tbl.querySelectorAll("button[data-act]"), function(b){
+  /* ---------- Tab NGƯỜI DÙNG: danh sách + ngăn chi tiết ---------- */
+  function renderUsersAdmin(pane){
+    var st = { filter:"all", q:"", selId:null, draft:null, dirty:false, isNew:false, saved:false };
+    var pendEl = el("div"), bar = el("div","adm2-bar"), row = el("div","adm2-row");
+    var list = el("section","adm2-list"), drawer = el("aside","adm2-drawer");
+    drawer.setAttribute("aria-label","Phân quyền người dùng đang chọn");
+    row.appendChild(list); row.appendChild(drawer);
+    pane.appendChild(pendEl); pane.appendChild(bar); pane.appendChild(row);
+
+    bar.innerHTML=
+      '<input class="inp" type="search" name="hse_user_search" autocomplete="off" placeholder="Tìm theo tài khoản, họ tên, danh số…" aria-label="Tìm người dùng">'+
+      '<div class="adm2-chipset" role="group" aria-label="Lọc theo vai trò, trạng thái" style="display:flex;gap:6px;flex-wrap:wrap"></div>'+
+      '<div style="flex:1 1 0"></div>'+
+      '<button class="btn btn-accent" type="button" data-act="add">＋ Thêm người dùng</button>';
+    var qEl = bar.querySelector("input"), chipsEl = bar.querySelector(".adm2-chipset");
+    qEl.addEventListener("input", function(){ st.q=this.value; drawList(); });
+    bar.querySelector('[data-act="add"]').addEventListener("click", function(){ if(confirmLeave()) openNew(); });
+
+    function confirmLeave(){
+      if(!st.dirty) return true;
+      if(!confirm("Có thay đổi chưa lưu. Bỏ các thay đổi này?")) return false;
+      st.dirty=false; return true;
+    }
+    function isPending(x){ return x.pendingApproval && x.active===false; }
+    function matches(x){
+      var q=(st.q||"").trim().toLowerCase();
+      if(q && ((x.username||"")+" "+(x.fullname||"")+" "+(x.danhSo||"")).toLowerCase().indexOf(q)<0) return false;
+      if(st.filter==="admin") return x.role==="admin";
+      if(st.filter==="user") return x.role==="user" && !isPending(x);
+      if(st.filter==="pending") return isPending(x);
+      if(st.filter==="locked") return x.active===false && !isPending(x);
+      return true;
+    }
+    function summary(x){
+      if(isPending(x)) return '<b>Chưa phân quyền</b>';
+      if(x.role==="admin") return '<b style="color:var(--brand)">Toàn quyền</b>';
+      var perms=asArr(x.perms);
+      if(x.role==="viewer" || !perms.length) return '<b>Chỉ xem</b>';
+      var parts=[];
+      UNIT_SCOPED.forEach(function(sc){
+        if(perms.indexOf(sc.slug)<0) return;
+        var a=asArr(x[sc.field]);
+        parts.push(a.length ? esc(sc.short+": "+a.join(", "))
+                            : '<span class="adm2-warn">'+esc(sc.short)+': chưa giao đơn vị</span>');
+      });
+      return '<b>'+perms.length+' trang</b>'+(parts.length?'<div>'+parts.join(" · ")+'</div>':'');
+    }
+
+    function drawPending(){
+      var p=getUsers().filter(isPending);
+      if(!p.length){ pendEl.innerHTML=""; return; }
+      pendEl.innerHTML='<div class="adm2-pending"><span><b>'+p.length+' tài khoản</b> đăng ký mới đang chờ duyệt: '+
+        esc(p.map(function(x){return x.username;}).join(", "))+'</span>'+
+        '<button type="button" class="btn btn-ghost btn-sm" style="min-height:36px">Xem để duyệt</button></div>';
+      pendEl.querySelector("button").addEventListener("click", function(){
+        if(!confirmLeave()) return;
+        st.filter="pending"; drawChips(); select(p[0].id, true);
+      });
+    }
+    function drawChips(){
+      var all=getUsers();
+      var n={ all:all.length,
+        user:all.filter(function(x){return x.role==="user"&&!isPending(x);}).length,
+        admin:all.filter(function(x){return x.role==="admin";}).length,
+        pending:all.filter(isPending).length,
+        locked:all.filter(function(x){return x.active===false&&!isPending(x);}).length };
+      chipsEl.innerHTML=[["all","Tất cả"],["user","User"],["admin","Admin"],["pending","Chờ duyệt"],["locked","Đã khoá"]].map(function(f){
+        var on=st.filter===f[0];
+        return '<button type="button" class="adm2-chip'+(on?' on':'')+'" aria-pressed="'+on+'" data-f="'+f[0]+'">'+f[1]+'<span>'+n[f[0]]+'</span></button>';
+      }).join("");
+      Array.prototype.forEach.call(chipsEl.querySelectorAll("button"), function(b){
+        b.addEventListener("click", function(){ st.filter=b.getAttribute("data-f"); drawChips(); drawList(); });
+      });
+    }
+    function drawList(){
+      var rows=getUsers().filter(matches);
+      var html='<table><thead><tr><th>Tài khoản</th><th>Vai trò</th><th>Quyền sửa</th><th>Trạng thái</th></tr></thead><tbody>';
+      rows.forEach(function(x){
+        var s=userStatus(x), on=String(x.id)===String(st.selId);
+        html+='<tr data-id="'+esc(x.id)+'"'+(on?' class="sel"':'')+'>'+
+          '<td><button type="button" class="adm2-un" aria-label="Mở phân quyền của '+esc(x.username)+'"><b>'+esc(x.username)+'</b>'+
+            '<small>'+esc(x.fullname||"")+(x.danhSo?' · '+esc(x.danhSo):'')+'</small></button></td>'+
+          '<td><span class="adm2-pill r-'+esc(x.role||"viewer")+'">'+roleLabel(x.role)+'</span></td>'+
+          '<td class="adm2-sum">'+summary(x)+'</td>'+
+          '<td><span class="adm2-pill s-'+s[0]+'">'+s[1]+'</span></td></tr>';
+      });
+      html+='</tbody></table>';
+      if(!rows.length) html+='<div class="adm2-empty">Không có người dùng phù hợp.</div>';
+      list.innerHTML=html;
+      Array.prototype.forEach.call(list.querySelectorAll("tbody tr"), function(tr){
+        tr.addEventListener("click", function(){ select(tr.getAttribute("data-id")); });
+      });
+    }
+
+    function select(id, force){
+      if(!force && String(id)===String(st.selId) && !st.isNew) return;
+      if(!force && !confirmLeave()) return;
+      var u=findUserById(id);
+      st.isNew=false; st.selId=id; st.draft=u?cloneUser(u):null; st.dirty=false; st.saved=false;
+      drawList(); drawDrawer();
+    }
+    function openNew(){
+      st.isNew=true; st.selId=null; st.dirty=false; st.saved=false;
+      st.draft={ username:"", fullname:"", danhSo:"", role:"user", perms:[], capPhatUnits:[], ktUnits:[], active:true, _pw:"", _pw2:"" };
+      drawList(); drawDrawer();
+      var f=drawer.querySelector('[data-k="username"]'); if(f) f.focus();
+    }
+    function markDirty(){
+      st.dirty=true; st.saved=false;
+      var d=drawer.querySelector(".adm2-state"); if(d){ d.className="adm2-state adm2-dirty"; d.textContent="Có thay đổi chưa lưu"; }
+    }
+
+    function drawDrawer(){
+      var d=st.draft;
+      if(!d){ drawer.innerHTML='<div class="adm2-empty">Chọn một người trong danh sách để xem và sửa quyền.</div>'; return; }
+      var me=currentUser(), isMe=!st.isNew && me && String(me.id)===String(d.id);
+      var s=userStatus(d), pend=!st.isNew && isPending(d);
+      var h='<div class="adm2-dh"><h2>'+(st.isNew?'Tài khoản mới':esc(d.username))+'</h2>'+
+        (st.isNew?'':'<span class="adm2-pill s-'+s[0]+'">'+s[1]+'</span>')+'</div><div class="adm2-db">';
+      if(pend){
+        h+='<div class="adm2-approve"><span>Tài khoản tự đăng ký, chưa được duyệt nên chưa đăng nhập được.</span>'+
+          (d._approve ? '<b>✓ Sẽ duyệt khi bấm Lưu thay đổi.</b>'
+                      : '<button type="button" class="btn btn-sm" data-act="approve" style="align-self:flex-start;background:var(--brand);color:#fff;min-height:36px">Duyệt thành User</button>')+'</div>';
+      }
+      h+='<div class="adm2-grid2">'+
+          '<label class="adm2-field">Email / tài khoản<input class="inp" data-k="username" value="'+esc(d.username||"")+'"'+(st.isNew?'':' disabled')+' placeholder="VD: sonlhh.sd" autocomplete="off"></label>'+
+          '<label class="adm2-field">Danh số<input class="inp" data-k="danhSo" value="'+esc(d.danhSo||"")+'" placeholder="VD: 21398"></label>'+
+        '</div>'+
+        '<label class="adm2-field">Họ và tên<input class="inp" data-k="fullname" value="'+esc(d.fullname||"")+'"></label>';
+      if(st.isNew){
+        h+='<div class="adm2-grid2">'+
+          '<label class="adm2-field">Mật khẩu<input class="inp" type="password" data-k="_pw" autocomplete="new-password" placeholder="Tối thiểu 6 ký tự"></label>'+
+          '<label class="adm2-field">Nhập lại mật khẩu<input class="inp" type="password" data-k="_pw2" autocomplete="new-password"></label></div>';
+      }
+      h+='<div><div class="adm2-lbl">Vai trò</div><div class="adm2-seg" role="group" aria-label="Vai trò">'+
+        [["user","User"],["admin","Admin"],["viewer","Viewer"]].map(function(r){
+          var on=d.role===r[0];
+          return '<button type="button" class="'+(on?'on':'')+'" aria-pressed="'+on+'" data-role="'+r[0]+'">'+r[1]+'</button>';
+        }).join("")+'</div></div>';
+      if(d.role==="admin") h+='<p class="adm2-note">Admin có toàn quyền trên mọi trang và mọi đơn vị.</p>';
+      else if(d.role==="viewer") h+='<p class="adm2-note">Viewer chỉ xem, không sửa được trang nào.</p>';
+      else {
+        [["theo-doi","THEO DÕI & BÁO CÁO","var(--brand)"],["ung-dung","ỨNG DỤNG NGHIỆP VỤ","#a5141f"]].forEach(function(g){
+          var pages=editablePages().filter(function(m){ return m.group===g[0]; });
+          h+='<div><div class="adm2-gt" style="color:'+g[2]+'"><span>'+g[1]+'</span>'+
+            '<span><a href="#" data-all="'+g[0]+'">bật hết</a> · <a href="#" data-none="'+g[0]+'">tắt hết</a></span></div>';
+          pages.forEach(function(m){
+            var on=d.perms.indexOf(m.slug)>=0, sc=unitScopeOf(m.slug);
+            h+='<button type="button" class="adm2-sw" aria-pressed="'+on+'" data-perm="'+esc(m.slug)+'"><span>'+esc(m.title)+'</span><i aria-hidden="true"></i></button>';
+            if(on && sc){
+              var units=scopeUnitList(sc), cur=asArr(d[sc.field]);
+              var extra=cur.filter(function(v){ return !units.some(function(n){ return unitEq(v,n); }); });
+              h+='<div class="adm2-units"><span>'+esc(sc.hint)+'</span><div class="adm2-uchips">'+
+                units.concat(extra).map(function(n){
+                  var has=hasUnit(cur,n), old=extra.indexOf(n)>=0;
+                  return '<button type="button" class="adm2-uc" aria-pressed="'+has+'" data-scope="'+sc.field+'" data-unit="'+esc(n)+'">'+
+                    (has?'✓ ':'')+esc(n)+(old?' (không còn trong danh mục)':'')+'</button>';
+                }).join("")+'</div>'+
+                (cur.length?'':'<span class="adm2-warn">Chưa chọn đơn vị nào — người này chỉ xem được, chưa nhập được.</span>')+'</div>';
+            }
+          });
+          h+='</div>';
+        });
+      }
+      h+='</div><div class="adm2-df">'+
+        '<button type="button" class="btn btn-accent" data-act="save">'+(st.isNew?'Tạo tài khoản':'Lưu thay đổi')+'</button>'+
+        '<button type="button" class="btn btn-ghost" data-act="cancel">Huỷ</button>'+
+        '<span class="adm2-state '+(st.dirty?'adm2-dirty':(st.saved?'adm2-saved':''))+'">'+(st.dirty?'Có thay đổi chưa lưu':(st.saved?'✓ Đã lưu':''))+'</span>'+
+        '<div style="flex:1 1 0"></div>'+
+        (st.isNew?'':
+          (pend?'':'<button type="button" class="adm2-link" data-act="lock"'+(isMe?' disabled title="Không thể khoá tài khoản đang đăng nhập"':'')+'>'+(d.active===false?'Mở khoá':'Khoá tài khoản')+'</button>')+
+          '<button type="button" class="adm2-link danger" data-act="del"'+(isMe?' disabled title="Không thể xoá tài khoản đang đăng nhập"':'')+'>Xoá</button>')+
+        '</div>';
+      drawer.innerHTML=h;
+      bindDrawer();
+    }
+
+    function bindDrawer(){
+      var d=st.draft;
+      Array.prototype.forEach.call(drawer.querySelectorAll("input[data-k]"), function(inp){
+        inp.addEventListener("input", function(){ d[inp.getAttribute("data-k")]=inp.value; markDirty(); });
+      });
+      Array.prototype.forEach.call(drawer.querySelectorAll("[data-role]"), function(b){
         b.addEventListener("click", function(){
-          var id=b.getAttribute("data-id"), act=b.getAttribute("data-act");
-          if(act==="edit") modal.open(findUserById(id));
-          else if(act==="del") delUser(id);
-          else if(act==="lock") lockUser(id);
+          var r=b.getAttribute("data-role");
+          var me=currentUser();
+          if(!st.isNew && me && String(me.id)===String(d.id) && r!=="admin"){ alert("Không thể tự bỏ quyền Admin của chính mình."); return; }
+          if(d.role===r) return;
+          d.role=r; markDirty(); drawDrawer();
+        });
+      });
+      Array.prototype.forEach.call(drawer.querySelectorAll("[data-perm]"), function(b){
+        b.addEventListener("click", function(){
+          var slug=b.getAttribute("data-perm"), i=d.perms.indexOf(slug);
+          if(i>=0){ d.perms.splice(i,1); var sc=unitScopeOf(slug); if(sc) d[sc.field]=[]; }
+          else d.perms.push(slug);
+          markDirty(); drawDrawer();
+        });
+      });
+      Array.prototype.forEach.call(drawer.querySelectorAll("[data-all],[data-none]"), function(a){
+        a.addEventListener("click", function(e){
+          e.preventDefault();
+          var g=a.getAttribute("data-all")||a.getAttribute("data-none"), on=!!a.getAttribute("data-all");
+          editablePages().filter(function(m){ return m.group===g; }).forEach(function(m){
+            var i=d.perms.indexOf(m.slug);
+            if(on && i<0) d.perms.push(m.slug);
+            if(!on && i>=0){ d.perms.splice(i,1); var sc=unitScopeOf(m.slug); if(sc) d[sc.field]=[]; }
+          });
+          markDirty(); drawDrawer();
+        });
+      });
+      Array.prototype.forEach.call(drawer.querySelectorAll("[data-unit]"), function(b){
+        b.addEventListener("click", function(){
+          var f=b.getAttribute("data-scope"), n=b.getAttribute("data-unit");
+          var a=asArr(d[f]);
+          if(hasUnit(a,n)) a=a.filter(function(v){ return !unitEq(v,n); }); else a.push(n);
+          d[f]=a; markDirty(); drawDrawer();
+        });
+      });
+      var ap=drawer.querySelector('[data-act="approve"]');
+      if(ap) ap.addEventListener("click", function(){
+        d._approve=true; d.role="user";
+        if(!d.perms.length) d.perms=DEFAULT_APPROVE_PERMS.filter(function(s){ return !!menuBySlug(s); });
+        markDirty(); drawDrawer();
+      });
+      drawer.querySelector('[data-act="save"]').addEventListener("click", save);
+      drawer.querySelector('[data-act="cancel"]').addEventListener("click", function(){
+        if(st.isNew){ st.isNew=false; st.draft=null; st.dirty=false; drawList(); drawDrawer(); return; }
+        st.dirty=false; select(st.selId, true);
+      });
+      var lk=drawer.querySelector('[data-act="lock"]'); if(lk) lk.addEventListener("click", lockUser);
+      var dl=drawer.querySelector('[data-act="del"]'); if(dl) dl.addEventListener("click", delUser);
+    }
+
+    function normalizeDraft(d){
+      if(d.role==="admin"){
+        d.perms=allSlugs();
+        UNIT_SCOPED.forEach(function(sc){ d[sc.field]=scopeUnitList(sc); });
+      } else if(d.role==="viewer"){
+        d.perms=[]; UNIT_SCOPED.forEach(function(sc){ d[sc.field]=[]; });
+      } else {
+        UNIT_SCOPED.forEach(function(sc){ if(d.perms.indexOf(sc.slug)<0) d[sc.field]=[]; });
+      }
+    }
+    function save(){
+      var d=st.draft;
+      d.username=(d.username||"").trim(); d.fullname=(d.fullname||"").trim(); d.danhSo=(d.danhSo||"").trim();
+      if(st.isNew && !d.username){ alert("Vui lòng nhập email / tài khoản."); return; }
+      if(!d.fullname){ alert("Vui lòng nhập họ tên."); return; }
+      if(st.isNew){
+        if(findUser(d.username)){ alert("Email này đã được sử dụng."); return; }
+        if(!d._pw || d._pw.length<6){ alert("Mật khẩu tối thiểu 6 ký tự."); return; }
+        if(d._pw!==d._pw2){ alert("Mật khẩu xác nhận không khớp."); return; }
+      }
+      normalizeDraft(d);
+      var u=getUsers(), target=null;
+      if(st.isNew){
+        target={ id:Date.now().toString(36), username:d.username, password:d._pw, fullname:d.fullname,
+          danhSo:d.danhSo, role:d.role, perms:d.perms, capPhatUnits:d.capPhatUnits, ktUnits:d.ktUnits,
+          active:true, created:new Date().toISOString() };
+        u.push(target); setUsers(u); _syncUserSheet('insert', target);
+        st.isNew=false; st.selId=target.id;
+      } else {
+        for(var i=0;i<u.length;i++){
+          if(String(u[i].id)!==String(d.id)) continue;
+          u[i].fullname=d.fullname; u[i].danhSo=d.danhSo; u[i].role=d.role; u[i].perms=d.perms;
+          u[i].capPhatUnits=d.capPhatUnits; u[i].ktUnits=d.ktUnits;
+          u[i].updated=new Date().toISOString();
+          if(d._approve){ u[i].active=true; u[i].pendingApproval=false; }
+          target=u[i];
+        }
+        if(!target){ alert("Không tìm thấy tài khoản này nữa — có thể đã bị xoá."); return; }
+        setUsers(u); _syncUserSheet('update', target);
+      }
+      st.draft=cloneUser(findUserById(st.selId)||target); st.dirty=false; st.saved=true;
+      drawPending(); drawChips(); drawList(); drawDrawer();
+    }
+    function lockUser(){
+      var d=st.draft, me=currentUser();
+      if(me && String(me.id)===String(d.id)){ alert("Không thể khoá tài khoản đang đăng nhập."); return; }
+      if(!confirmLeave()) return;
+      var u=getUsers(), t=null;
+      u.forEach(function(x){ if(String(x.id)===String(d.id)){ x.active = x.active===false; t=x; } });
+      if(!t) return;
+      setUsers(u); _syncUserSheet('update', t);
+      select(d.id, true); drawChips();
+    }
+    function delUser(){
+      var d=st.draft, me=currentUser();
+      if(me && String(me.id)===String(d.id)){ alert("Không thể xoá tài khoản đang đăng nhập."); return; }
+      if(!confirm("Xoá hẳn tài khoản \""+(d.username||d.fullname||"")+"\"? Không khôi phục được.")) return;
+      setUsers(getUsers().filter(function(x){ return String(x.id)!==String(d.id); }));
+      _syncUserSheet('delete', d.id);
+      st.selId=null; st.draft=null; st.dirty=false;
+      drawPending(); drawChips(); drawList(); drawDrawer();
+    }
+
+    function refresh(){
+      drawPending(); drawChips(); drawList();
+      if(st.isNew || st.dirty) return;                 // không đè lên thay đổi đang soạn
+      if(st.selId){ var u=findUserById(st.selId); st.draft=u?cloneUser(u):null; if(!u) st.selId=null; }
+      if(!st.selId){
+        var all=getUsers(), first=all.filter(isPending)[0] || all.filter(function(x){ return x.role==="user"; })[0] || all[0];
+        if(first){ st.selId=first.id; st.draft=cloneUser(first); drawList(); }
+      }
+      drawDrawer();
+    }
+    refresh();
+    return { refresh: refresh, confirmLeave: confirmLeave };
+  }
+
+  /* ---------- Tab PHÂN CÔNG ĐƠN VỊ: mỗi đơn vị một thẻ ---------- */
+  function renderPhanCongAdmin(pane){
+    var st = { slug: UNIT_SCOPED[0].slug, ktRows: null };
+    function normRows(rows){
+      return (rows||[]).map(function(r){
+        var t=String(r.thang||""), m=t.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+        t = m ? (m[3]+"-"+String(m[2]).padStart(2,"0")) : t.slice(0,7);
+        return Object.assign({}, r, { thang:t });
+      });
+    }
+    if(typeof DB!=="undefined" && DB.isReady()){
+      DB.getAll("kiem_tra_cap12").then(function(rows){ st.ktRows=normRows(rows); draw(); })
+        .catch(function(e){ console.warn("[Phân công] Không tải được số liệu kiểm tra:", e && e.message || e); });
+    }
+    function ktStatus(name){
+      var K=window.HSE_KT_NOP;
+      if(!K || !st.ktRows) return null;
+      var norm=function(v){ return (typeof HSE_UNITS!=="undefined") ? HSE_UNITS.norm(HSE_UNITS.label(v||"")) : String(v||"").toLowerCase(); };
+      var g=K.nhomTheoDonVi(K.danhSachThieu(st.ktRows, [name], new Date(), null, norm))[0];
+      if(g) return { bad:true, text:"Chưa nộp: "+g.thang.map(function(t){ return K.moTaThang(t); }).join(", ") };
+      var last=K.ymCong(K.ymCua(new Date()), -1);
+      return last<K.CAU_HINH.tuThang ? null : { bad:false, text:"✓ Đã nộp đủ đến "+K.nhanThang(last) };
+    }
+    function patchUser(id, fn){
+      var u=getUsers(), t=null;
+      u.forEach(function(x){ if(String(x.id)===String(id)){ fn(x); x.updated=new Date().toISOString(); t=x; } });
+      if(!t) return;
+      setUsers(u); _syncUserSheet('update', t); draw();
+    }
+    function draw(){
+      var sc=unitScopeOf(st.slug), title=(menuBySlug(st.slug)||{}).title||st.slug;
+      var people=getUsers().filter(function(x){ return x.role==="user" && x.active!==false; });
+      var units=scopeUnitList(sc);
+      var h='<div class="adm2-modbar"><span style="font-size:13px;font-weight:700;color:#3d4c63">Phân công cho trang:</span>'+
+        '<div class="adm2-seg" role="group" aria-label="Chọn trang">'+UNIT_SCOPED.map(function(s){
+          var on=s.slug===st.slug, t=(menuBySlug(s.slug)||{}).title||s.slug;
+          return '<button type="button" class="'+(on?'on':'')+'" aria-pressed="'+on+'" data-mod="'+s.slug+'">'+esc(t)+'</button>';
+        }).join("")+'</div><span style="font-size:12.5px;color:var(--text-muted)">'+esc(sc.hint.replace(/:$/,""))+'.</span></div>';
+      h+='<div class="adm2-row"><section class="adm2-cards" aria-label="Các đơn vị">';
+      if(!units.length) h+='<div class="adm2-box">Chưa có đơn vị nào được gán cho trang '+esc(title)+' (tab Danh mục đơn vị).</div>';
+      units.forEach(function(name, ui){
+        var mine=people.filter(function(x){ return asArr(x.perms).indexOf(sc.slug)>=0 && hasUnit(x[sc.field], name); });
+        var others=people.filter(function(x){ return mine.indexOf(x)<0; });
+        var stt=sc.slug==="kiem-tra-cac-cap" ? ktStatus(name) : null;
+        h+='<article class="adm2-card'+(mine.length?'':' empty')+'"><div><h3>'+esc(name)+'</h3>'+
+          (stt?'<div class="adm2-st '+(stt.bad?'bad':'ok')+'">'+esc(stt.text)+'</div>':'')+'</div>'+
+          '<div><div class="adm2-lbl">NGƯỜI PHỤ TRÁCH</div><div class="adm2-people">'+
+          mine.map(function(x){
+            return '<span class="adm2-person">'+esc(x.username)+'<button type="button" data-rm="'+esc(x.id)+'" data-u="'+ui+'" aria-label="Bỏ '+esc(x.username)+' khỏi '+esc(name)+'">×</button></span>';
+          }).join("")+'</div>'+
+          (mine.length?'':'<div class="adm2-warn" style="font-size:12.5px;margin-top:4px">Chưa có ai phụ trách — không ai nhập được số liệu của đơn vị này.</div>')+'</div>'+
+          '<label class="adm2-field" style="margin-top:auto">Thêm người phụ trách'+
+          '<select data-add="'+ui+'"><option value="">— Chọn tài khoản —</option>'+
+          others.map(function(x){
+            var hasPerm=asArr(x.perms).indexOf(sc.slug)>=0, n=asArr(x[sc.field]).length;
+            return '<option value="'+esc(x.id)+'">'+esc(x.username)+(x.fullname?' — '+esc(x.fullname):'')+
+              (hasPerm ? (n?' · đang phụ trách '+n+' ĐV':'') : ' (sẽ được cấp quyền trang)')+'</option>';
+          }).join("")+'</select></label></article>';
+      });
+      h+='</section><aside class="adm2-side">';
+      var orphans=people.filter(function(x){ return asArr(x.perms).indexOf(sc.slug)>=0 && !asArr(x[sc.field]).length; });
+      h+='<div class="adm2-box"><h3>Có quyền trang, chưa giao đơn vị</h3>'+
+        (orphans.length ? orphans.map(function(x){
+            return '<div class="adm2-orphan"><b>'+esc(x.username)+'</b><span style="font-size:12px;color:#9a3412">chỉ xem được</span></div>';
+          }).join("")
+          : '<span style="color:#17663a">✓ Ai có quyền trang này cũng đã được giao đơn vị.</span>')+'</div>';
+      h+='<div class="adm2-box"><h3>Quy tắc</h3>'+
+        '<span>Một người có thể phụ trách nhiều đơn vị, một đơn vị có thể có nhiều người.</span>'+
+        '<span>Thêm người vào đơn vị sẽ tự cấp quyền sửa trang '+esc(title)+' cho họ.</span>'+
+        '<span>Admin luôn sửa được mọi đơn vị, không cần giao.</span>'+
+        '<span>Thay đổi ở đây được lưu ngay.</span></div></aside></div>';
+      pane.innerHTML=h;
+
+      Array.prototype.forEach.call(pane.querySelectorAll("[data-mod]"), function(b){
+        b.addEventListener("click", function(){ st.slug=b.getAttribute("data-mod"); draw(); });
+      });
+      Array.prototype.forEach.call(pane.querySelectorAll("[data-rm]"), function(b){
+        b.addEventListener("click", function(){
+          var name=units[+b.getAttribute("data-u")];
+          patchUser(b.getAttribute("data-rm"), function(x){ x[sc.field]=asArr(x[sc.field]).filter(function(v){ return !unitEq(v,name); }); });
+        });
+      });
+      Array.prototype.forEach.call(pane.querySelectorAll("select[data-add]"), function(s){
+        s.addEventListener("change", function(){
+          var id=s.value; if(!id) return;
+          var name=units[+s.getAttribute("data-add")];
+          patchUser(id, function(x){
+            x.perms=asArr(x.perms); if(x.perms.indexOf(sc.slug)<0) x.perms.push(sc.slug);
+            var a=asArr(x[sc.field]); if(!hasUnit(a,name)) a.push(name); x[sc.field]=a;
+          });
         });
       });
     }
-
-    function delUser(id){
-      var me=currentUser(); var target=findUserById(id);
-      if(!target) return;
-      if(me && String(target.id)===String(me.id)){ alert("Không thể xoá tài khoản đang đăng nhập."); return; }
-      if(!confirm("Xoá người dùng \""+(target.username||target.fullname||"")+"\"?")) return;
-      setUsers(getUsers().filter(function(x){return String(x.id)!==String(id);}));
-      _syncUserSheet('delete', target.id);
-      draw($("#q").value);
-    }
-    function lockUser(id){
-      var u=getUsers(); var me=currentUser(); var changedUser=null;
-      u.forEach(function(x){ if(String(x.id)===String(id)){ if(me && String(x.id)===String(me.id) && x.active!==false){ alert("Không thể khoá tài khoản đang đăng nhập."); return; } x.active = x.active===false; changedUser=x; } });
-      setUsers(u); if(changedUser) _syncUserSheet('update', changedUser); draw($("#q").value);
-    }
-
-    modal.onSave=function(data, originalId){
-      var u=getUsers(); var sheetUser=null; var sheetAction=null;
-      if(originalId){
-        for(var i=0;i<u.length;i++){
-          if(String(u[i].id)===String(originalId)){
-            u[i].fullname=data.fullname;
-            u[i].danhSo=data.danhSo||"";
-            u[i].role=data.role;
-            u[i].perms=data.perms;
-            u[i].capPhatUnits=data.capPhatUnits||[];
-            u[i].updated=new Date().toISOString();
-            if(data.password){ u[i].password=data.password; }
-            if(data.approve){ u[i].active=true; u[i].pendingApproval=false; }
-            sheetUser=u[i]; sheetAction='update';
-          }
-        }
-      } else {
-        if(findUser(data.username)){ alert("Email này đã được sử dụng."); return false; }
-        var newUser={ id:Date.now().toString(36), username:data.username,
-          password:data.password, fullname:data.fullname,
-          danhSo:data.danhSo||"", role:data.role, perms:data.perms,
-          capPhatUnits:data.capPhatUnits||[],
-          active:true, created:new Date().toISOString() };
-        u.push(newUser);
-        sheetUser=newUser; sheetAction='insert';
-      }
-      setUsers(u); if(sheetUser) _syncUserSheet(sheetAction, sheetUser); draw($("#q").value); return true;
-    };
-
-    // ---- Thêm người dùng kiểu inline (chèn dòng nhập ngay trong bảng) ----
-    var inlineActive = false;
-    function openInlineAdd(){
-      if(inlineActive) return;
-      var tbody = tbl.querySelector("tbody"); if(!tbody) return;
-      inlineActive = true;
-      var addBtn = $("#addU"); if(addBtn) addBtn.disabled = true;
-
-      var permsGridHtml = editablePages().map(function(m){
-        return '<label class="perm-item" style="margin:0"><input type="checkbox" value="'+m.slug+'"><span>'+m.icon+' '+esc(m.title)+'</span></label>';
-      }).join('');
-
-      var mainTr = document.createElement("tr");
-      mainTr.className = "inline-add-row";
-      mainTr.innerHTML =
-        '<td><input class="inp" id="ia_un" placeholder="Email / tài khoản" autocomplete="off" style="width:100%"></td>'+
-        '<td><input class="inp" id="ia_ds" placeholder="Danh số" style="width:100%"></td>'+
-        '<td><input class="inp" id="ia_fn" placeholder="Họ và tên" style="width:100%"></td>'+
-        '<td><select class="inp" id="ia_role" style="width:100%"><option value="user">User</option><option value="admin">Admin</option></select></td>'+
-        '<td><span class="muted" id="ia_permsum">Chọn ở dưới ↓</span></td>'+
-        '<td><input class="inp" id="ia_pw" type="password" placeholder="Mật khẩu *" autocomplete="new-password" style="width:100%"></td>'+
-        '<td style="white-space:nowrap"><button class="btn btn-accent btn-sm" id="ia_save">Lưu</button> <button class="btn btn-ghost btn-sm" id="ia_cancel">Huỷ</button></td>';
-
-      var permTr = document.createElement("tr");
-      permTr.className = "inline-add-perms";
-      permTr.innerHTML = '<td colspan="7" style="background:#f7fafc">'+
-        '<div style="font-size:12px;font-weight:700;color:var(--text-muted);margin-bottom:6px">Trang được phép sửa &nbsp;<a href="#" id="ia_selAll">chọn tất cả</a> · <a href="#" id="ia_selNone">bỏ chọn</a></div>'+
-        '<div class="perm-grid" id="ia_perms">'+permsGridHtml+'</div></td>';
-
-      tbody.appendChild(mainTr);
-      tbody.appendChild(permTr);
-
-      var roleSel = mainTr.querySelector("#ia_role");
-      function getPerms(){ var a=[]; permTr.querySelectorAll("#ia_perms input:checked").forEach(function(c){a.push(c.value);}); return a; }
-      function updateSum(){ var n=getPerms().length; mainTr.querySelector("#ia_permsum").textContent = n ? (n+" trang đã chọn") : "Chọn ở dưới ↓"; }
-      function syncRole(){
-        if(roleSel.value==="admin"){ permTr.style.display="none"; mainTr.querySelector("#ia_permsum").innerHTML='<b style="color:var(--brand)">Tất cả</b>'; }
-        else { permTr.style.display=""; updateSum(); }
-      }
-      roleSel.addEventListener("change", syncRole);
-      permTr.querySelectorAll("#ia_perms input").forEach(function(c){ c.addEventListener("change", updateSum); });
-      permTr.querySelector("#ia_selAll").addEventListener("click", function(e){ e.preventDefault(); permTr.querySelectorAll("#ia_perms input").forEach(function(c){c.checked=true;}); updateSum(); });
-      permTr.querySelector("#ia_selNone").addEventListener("click", function(e){ e.preventDefault(); permTr.querySelectorAll("#ia_perms input").forEach(function(c){c.checked=false;}); updateSum(); });
-
-      function closeInline(){ inlineActive=false; if(addBtn) addBtn.disabled=false; draw($("#q").value); }
-      mainTr.querySelector("#ia_cancel").addEventListener("click", closeInline);
-
-      mainTr.querySelector("#ia_save").addEventListener("click", function(){
-        var un = mainTr.querySelector("#ia_un").value.trim();
-        var pw = mainTr.querySelector("#ia_pw").value;
-        var role = roleSel.value;
-        if(!un){ alert("Vui lòng nhập email / tài khoản."); return; }
-        if(findUser(un)){ alert("Email này đã được sử dụng."); return; }
-        if(!pw || pw.length<6){ alert("Mật khẩu tối thiểu 6 ký tự."); return; }
-        var newUser = { id:Date.now().toString(36), username:un, password:pw,
-          fullname:mainTr.querySelector("#ia_fn").value.trim(),
-          danhSo:mainTr.querySelector("#ia_ds").value.trim(),
-          role:role, perms: role==="admin" ? [] : getPerms(), capPhatUnits:[],
-          active:true, created:new Date().toISOString() };
-        var u = getUsers(); u.push(newUser); setUsers(u); _syncUserSheet('insert', newUser);
-        inlineActive=false; if(addBtn) addBtn.disabled=false; draw($("#q").value);
-      });
-
-      syncRole();
-      mainTr.querySelector("#ia_un").focus();
-    }
-
-    $("#addU").addEventListener("click", openInlineAdd);
-    $("#q").addEventListener("input", function(){ if(inlineActive){ inlineActive=false; var a=$("#addU"); if(a) a.disabled=false; } draw(this.value); });
-    draw("");
-
-    // Khi đồng bộ users từ Sheets hoàn tất (sau ~2s), vẽ lại bảng để hiển thị
-    // đầy đủ người dùng thay vì chỉ tài khoản admin seed sẵn trên localStorage
-    _onUsersSynced = function(){
-      if(!document.body.contains(tbl)) return; // Đã rời trang thì bỏ qua
-      var qEl = $("#q"); draw(qEl ? qEl.value : "");
-    };
-
-    // Phần cài đặt kết nối Google Sheets DB
-    var dbSection = el("div");
-    container.appendChild(dbSection);
-    renderDBSettings(dbSection);
+    draw();
+    return { refresh: draw };
   }
 
 
@@ -1675,192 +2019,6 @@
   }
 
 
-
-  function buildModal(){
-    var bg = el("div","modal-bg");
-    bg.innerHTML=
-      '<div class="modal"><div class="modal-h"><h3 id="mt">Người dùng</h3><button class="x" id="mx">×</button></div>'+
-      '<div class="modal-b">'+
-        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">'+
-          '<div class="field"><label>Email</label><input class="inp" id="m_un" type="text" autocomplete="off" style="width:100%" placeholder="VD: sonlhh.sd"></div>'+
-          '<div class="field"><label>Danh số</label><input class="inp" id="m_ds" style="width:100%" placeholder="VD: 21398"></div>'+
-        '</div>'+
-        '<div class="field"><label>Họ và tên</label><input class="inp" id="m_fn" style="width:100%"></div>'+
-        '<div class="field"><label>Vai trò</label><select id="m_role" style="width:100%">'+
-          '<option value="user">User — thao tác theo phân quyền</option>'+
-          '<option value="admin">Admin — toàn quyền</option></select></div>'+
-        '<div class="field" id="permWrap"><label>Phân quyền truy cập trang '+
-          '<span class="muted">(<a href="#" id="selAll">chọn tất cả</a> · <a href="#" id="selNone">bỏ chọn</a>)</span></label>'+
-          '<div class="perm-grid" id="m_perms"></div>'+
-          '<div class="muted" id="adminNote" style="display:none;margin-top:6px">Admin mặc định có toàn quyền tất cả các trang.</div></div>'+
-        '<div id="m_pw_wrap" style="border-top:1px solid var(--border);margin-top:14px;padding-top:14px;display:none">'+
-          '<div style="font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px;"><svg class="lic-emoji" width="1.05em" height="1.05em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex-shrink:0" aria-hidden="true"><path d="m15.5 7.5 2.3 2.3a1 1 0 0 0 1.4 0l2.1-2.1a1 1 0 0 0 0-1.4L19 4"/><path d="m21 2-9.6 9.6"/><circle cx="7.5" cy="15.5" r="5.5"/></svg> Đặt mật khẩu ban đầu</div>'+
-          '<div style="font-size:12px;color:var(--text-muted);margin-bottom:10px;">Chỉ dùng khi tạo tài khoản mới. Người dùng tự đổi mật khẩu qua hồ sơ cá nhân.</div>'+
-          '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">'+
-            '<div class="field"><label>Mật khẩu <span style="color:var(--danger)">*</span></label><input class="inp" id="m_pw" type="password" autocomplete="new-password" style="width:100%" placeholder="Tối thiểu 6 ký tự"></div>'+
-            '<div class="field"><label>Xác nhận mật khẩu</label><input class="inp" id="m_pw2" type="password" autocomplete="new-password" style="width:100%" placeholder="Nhập lại mật khẩu"></div>'+
-          '</div>'+
-        '</div>'+
-        '<div id="m_approve_wrap" style="display:none;background:#fef9e7;border:1px solid #fde68a;border-radius:8px;padding:10px 14px;margin-top:12px;">'+
-          '<label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;">'+
-            '<input type="checkbox" id="m_approve" style="width:16px;height:16px;accent-color:var(--brand);">'+
-            '<span><svg class="lic-emoji" width="1.05em" height="1.05em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex-shrink:0" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg> Phê duyệt & kích hoạt tài khoản này</span>'+
-          '</label>'+
-        '</div>'+
-      '</div>'+
-      '<div class="modal-f"><button class="btn btn-ghost" id="mc">Huỷ</button><button class="btn btn-accent" id="ms">Lưu</button></div></div>';
-
-    var permBox = $("#m_perms",bg);
-    /* Đơn vị cấp phát BHLĐ — lấy từ DANH MỤC DÙNG CHUNG thay vì viết cứng.
-       excludeGop: "mục gộp" không phải đơn vị cấp phát.
-       Lưu ý: capPhatUnits lưu TÊN đơn vị, và canEditUnit() bên trang Cấp phát
-       BHLĐ so khớp chuẩn hoá — nên tên ở đây phải lấy đúng từ danh mục. */
-    function capPhatUnitList(){
-      return (typeof HSE_UNITS!=="undefined")
-        ? HSE_UNITS.list("cap-phat-bhld",{excludeGop:true})
-        : [];
-    }
-    MENU.forEach(function(item){
-      if(item.adminOnly) return;
-      if(item.adminEditOnly) return;
-      var lab = el("label","perm-item");
-      lab.innerHTML='<input type="checkbox" value="'+item.slug+'"><span>'+item.icon+' '+esc(item.title)+'</span>';
-      permBox.appendChild(lab);
-    });
-
-    // Sub-panel phân quyền đơn vị con cho Cấp phát BHLĐ
-    var cpUnitWrap = document.createElement("div");
-    cpUnitWrap.id = "cpUnitWrap";
-    cpUnitWrap.style.cssText = "display:none;grid-column:1/-1;background:#f0f7ff;border:1.5px solid #b3d0f0;border-radius:8px;padding:12px 14px;margin-top:4px;";
-    cpUnitWrap.innerHTML = '<div style="font-size:12px;font-weight:700;color:#003087;margin-bottom:8px;"><svg class="lic-emoji" width="1.05em" height="1.05em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex-shrink:0" aria-hidden="true"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/></svg> Đơn vị được phép xem trong Cấp phát BHLĐ</div>'+
-      '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:6px;" id="cpUnitGrid"></div>'+
-      '<div style="margin-top:8px;display:flex;gap:10px;"><a href="#" id="cpSelAll" style="font-size:12px;">chọn tất cả</a> · <a href="#" id="cpSelNone" style="font-size:12px;">bỏ chọn</a></div>';
-    permBox.parentNode.insertBefore(cpUnitWrap, permBox.nextSibling);
-    // Dùng querySelector trên cpUnitWrap vì bg chưa được thêm vào document DOM lúc này
-    var cpGrid = cpUnitWrap.querySelector("#cpUnitGrid");
-    function buildCpGrid(){
-      cpGrid.innerHTML="";
-      capPhatUnitList().forEach(function(u){
-        var lab = el("label","perm-item");
-        lab.innerHTML='<input type="checkbox" value="'+esc(u)+'"><span>'+esc(u)+'</span>';
-        cpGrid.appendChild(lab);
-      });
-    }
-    buildCpGrid();
-    cpUnitWrap.querySelector("#cpSelAll").addEventListener("click",function(e){e.preventDefault();cpGrid.querySelectorAll("input").forEach(function(c){c.checked=true;});});
-    cpUnitWrap.querySelector("#cpSelNone").addEventListener("click",function(e){e.preventDefault();cpGrid.querySelectorAll("input").forEach(function(c){c.checked=false;});});
-
-    function getCapPhatUnits(){ var a=[]; cpGrid.querySelectorAll("input:checked").forEach(function(c){a.push(c.value);}); return a; }
-    function setCapPhatUnits(arr){
-      buildCpGrid();
-      var con = (arr||[]).slice();
-      cpGrid.querySelectorAll("input").forEach(function(c){
-        var tick = con.some(function(v){
-          return (typeof HSE_UNITS!=="undefined")
-            ? HSE_UNITS.norm(HSE_UNITS.label(v))===HSE_UNITS.norm(c.value)
-            : v===c.value;
-        });
-        c.checked = tick;
-        if(tick) con = con.filter(function(v){
-          return (typeof HSE_UNITS!=="undefined")
-            ? HSE_UNITS.norm(HSE_UNITS.label(v))!==HSE_UNITS.norm(c.value)
-            : v!==c.value;
-        });
-      });
-      /* Quyền cũ trỏ tới đơn vị không còn trong danh mục: vẫn hiện và giữ tích,
-         nếu không bấm Lưu là user mất quyền mà admin không hay biết. */
-      con.forEach(function(v){
-        var lab = el("label","perm-item");
-        lab.innerHTML='<input type="checkbox" value="'+esc(v)+'" checked><span>'+esc(v)+' <span class="muted">(không còn trong danh mục)</span></span>';
-        cpGrid.appendChild(lab);
-      });
-    }
-    function updateCpUnitWrap(){
-      var cpChk = permBox.querySelector("input[value='cap-phat-bhld']");
-      var isAdm = $("#m_role",bg).value==="admin";
-      cpUnitWrap.style.display = (!isAdm && cpChk && cpChk.checked) ? "block" : "none";
-    }
-    // Lắng nghe thay đổi trên checkbox cap-phat-bhld
-    var cpChkEl = permBox.querySelector("input[value='cap-phat-bhld']");
-    if(cpChkEl) cpChkEl.addEventListener("change", updateCpUnitWrap);
-
-    var editing = null;
-    function setPerms(arr){ Array.prototype.forEach.call(permBox.querySelectorAll("input"), function(c){ c.checked=arr.indexOf(c.value)!==-1; }); updateCpUnitWrap(); }
-    function getPerms(){ var a=[]; Array.prototype.forEach.call(permBox.querySelectorAll("input:checked"), function(c){ a.push(c.value); }); return a; }
-    function toggleRoleUI(){
-      var isAdm = $("#m_role",bg).value==="admin";
-      $("#m_perms",bg).style.display=isAdm?"none":"grid";
-      $("#adminNote",bg).style.display=isAdm?"block":"none";
-      updateCpUnitWrap();
-    }
-
-    var api = { bg:bg, onSave:null };
-    api.open=function(user){
-      editing=user;
-      $("#mt",bg).textContent=user?"Phân quyền người dùng":"Thêm người dùng mới";
-      $("#m_un",bg).value=user?user.username:"";
-      $("#m_un",bg).disabled=!!user;
-      $("#m_fn",bg).value=user?(user.fullname||""):"";
-      $("#m_ds",bg).value=user?(user.danhSo||""):"";
-      $("#m_pw",bg).value="";
-      $("#m_pw2",bg).value="";
-      // Chỉ hiện ô mật khẩu khi tạo mới
-      var pwWrap=document.getElementById("m_pw_wrap");
-      if(pwWrap) pwWrap.style.display=user?"none":"block";
-      $("#m_role",bg).value=user?user.role:"user";
-      setPerms(user?(user.role==="admin"?[]:(user.perms||[])):[]);
-      setCapPhatUnits(user?(Array.isArray(user.capPhatUnits)?user.capPhatUnits:[]):[]);
-      toggleRoleUI();
-      // Hiện ô phê duyệt nếu tài khoản đang chờ
-      var approveWrap=document.getElementById("m_approve_wrap");
-      var approveChk=document.getElementById("m_approve");
-      if(user && user.pendingApproval && !user.active){
-        approveWrap.style.display="block";
-        approveChk.checked=false;
-        // Fix 5: gợi ý phân quyền mặc định khi duyệt (chọn sẵn các trang cơ bản)
-        var defaultPerms=["tong-quan","bao-chay-tu-dong","cap-phat-bhld","huan-luyen-dao-tao",
-          "kiem-tra-cac-cap","quan-ly-thiet-bi",
-          "kham-suc-khoe","moi-truong",
-          "quan-ly-nha-thau","ke-hoach"];
-        if(!(user.perms && user.perms.length)) setPerms(defaultPerms);
-      } else { approveWrap.style.display="none"; }
-      bg.classList.add("open");
-    };
-    function close(){ bg.classList.remove("open"); }
-    $("#mx",bg).addEventListener("click",close);
-    $("#mc",bg).addEventListener("click",close);
-    $("#m_role",bg).addEventListener("change",toggleRoleUI);
-    $("#selAll",bg).addEventListener("click",function(e){e.preventDefault(); setPerms(allSlugs());});
-    $("#selNone",bg).addEventListener("click",function(e){e.preventDefault(); setPerms([]);});
-    bg.addEventListener("click",function(e){ if(e.target===bg) close(); });
-    $("#ms",bg).addEventListener("click",function(){
-      var un=$("#m_un",bg).value.trim();
-      var fn=$("#m_fn",bg).value.trim();
-      var ds=$("#m_ds",bg).value.trim();
-      var role=$("#m_role",bg).value;
-      var pw=$("#m_pw",bg).value;
-      var pw2=$("#m_pw2",bg).value;
-      if(!editing && !un){ alert("Vui lòng nhập tên đăng nhập."); return; }
-      if(!fn){ alert("Vui lòng nhập họ tên."); return; }
-      // Fix 3: bắt buộc nhập mật khẩu khi tạo mới
-      if(!editing && !pw){ alert("Vui lòng nhập mật khẩu cho tài khoản mới."); return; }
-      if(pw && pw.length<6){ alert("Mật khẩu phải có tối thiểu 6 ký tự."); return; }
-      if(pw && pw!==pw2){ alert("Mật khẩu xác nhận không khớp."); return; }
-      var perms = role==="admin" ? allSlugs() : getPerms();
-      var capPhatUnits = role==="admin" ? capPhatUnitList() : getCapPhatUnits();
-      var approve = document.getElementById("m_approve") && document.getElementById("m_approve").checked;
-      var saveBtn=document.getElementById("ms"); if(saveBtn){saveBtn.disabled=true;saveBtn.textContent="Đang lưu...";}
-      function doSave(hashedPw){
-        var data={username:un, fullname:fn, danhSo:ds, role:role, perms:perms, capPhatUnits:capPhatUnits, password:hashedPw, pwHash:!!hashedPw, approve:approve};
-        var ok=api.onSave && api.onSave(data, editing?editing.id:null);
-        if(saveBtn){saveBtn.disabled=false;saveBtn.textContent="Lưu";}
-        if(ok!==false) close();
-      }
-      // Fix 4: hash nếu có mật khẩu mới
-      if(pw){ hashPw(pw).then(doSave); } else { doSave(null); }
-    });
-    return api;
-  }
 
   /* -------- ĐỔI MẬT KHẨU (dùng cho cả admin & user) -------- */
   function openDoiMatKhau(){

@@ -145,9 +145,15 @@ function loadKtccUnitFns() {
   const j = src.indexOf('/* Bước 1 → Bước 2');
   if (i < 0 || j < 0) throw new Error('Không tìm thấy khối hàm đơn vị trong kiem-tra-cac-cap.html');
   const esc = s => String(s==null?'':s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-  const fn = new Function('esc', 'window', 'document',
-    src.slice(i, j) + '; return { donViList, donViAllowOther, donViCanon, donViInList, isKhacDonVi, buildDonViSelect, setDonVi1 };');
-  return fn(esc, global, global.document);
+  /* Quyền theo đơn vị (03/10/2026): droplist Bước 1 hỏi người đang đăng nhập.
+     KT_ME đổi được trong test: mặc định Admin (thấy cả danh mục + "Khác"). */
+  const currentUser = () => global.KT_ME;
+  const isAdmin = u => !!u && u.role === 'admin';
+  const fn = new Function('esc', 'window', 'document', 'currentUser', 'isAdmin', 'myDonViListStub',
+    src.slice(i, j) + '; var myDonViList = function(u){ return isAdmin(u) ? donViList() : myDonViListStub(u, donViList, donViNorm, donViCanon); };' +
+    ' return { donViList, donViAllowOther, donViCanon, donViInList, isKhacDonVi, buildDonViSelect, setDonVi1 };');
+  const stub = (u, list, norm, canon) => list().filter(n => (u && u.ktUnits || []).some(x => norm(canon(x)) === norm(n)));
+  return fn(esc, global, global.document, currentUser, isAdmin, stub);
 }
 
 freshEnv(); U = loadUnits();
@@ -174,6 +180,7 @@ const KT = (() => {
 })();
 
 console.log('\n── Kiểm tra các cấp: droplist Bước 1 ──');
+global.KT_ME = { role:'admin', username:'admin' };
 KT.api.buildDonViSelect();
 check('droplist có 5 đơn vị + placeholder + "Khác"', KT.sel.options.length === 7, KT.sel.options.map(o=>o.value));
 check('đúng 5 đơn vị sản xuất', KT.sel.options.slice(1,6).map(o=>o.value).join('|') ===
@@ -197,6 +204,20 @@ console.log('\n── Kiểm tra các cấp: tắt mục "Khác" ──');
   check('giá trị cũ vẫn được thêm vào droplist và chọn sẵn',
     KT.sel.value === 'Xí nghiệp Cơ khí' && KT.sel.options.some(o => /không còn dùng/.test(o.textContent)));
   const cfg2 = U.config(); cfg2.other['kiem-tra-cac-cap'] = true; U.saveConfig(cfg2);
+}
+
+console.log('\n── Kiểm tra các cấp: user chỉ thấy đơn vị được giao ──');
+{
+  global.KT_ME = { role:'user', username:'taih.at', perms:['kiem-tra-cac-cap'], ktUnits:['cảng  BIỂN', 'Đội xe VCHK'] };
+  KT.api.buildDonViSelect();
+  check('chỉ có 2 đơn vị được giao (so khớp chuẩn hoá) + placeholder',
+    KT.sel.options.map(o=>o.value).join('|') === '|Cảng biển|Đội xe VCHK', KT.sel.options.map(o=>o.value));
+  check('user không có mục "Khác"', !KT.sel.options.some(o => o.value === '__khac__'));
+  global.KT_ME = { role:'user', username:'x', perms:['kiem-tra-cac-cap'], ktUnits:[] };
+  KT.api.buildDonViSelect();
+  check('chưa được giao đơn vị → droplist chỉ còn placeholder', KT.sel.options.length === 1);
+  global.KT_ME = { role:'admin', username:'admin' };
+  KT.api.buildDonViSelect();
 }
 
 console.log('\n── Không còn danh sách viết cứng ở 2 trang mới ──');
@@ -322,7 +343,10 @@ console.log('\n── Không còn danh sách viết cứng ở Cấp phát BHLĐ
 
   const appjs = fs.readFileSync(path.join(ROOT, 'assets', 'app.js'), 'utf8');
   check('app.js không còn hằng CAP_PHAT_UNITS', !/CAP_PHAT_UNITS/.test(appjs));
-  check('app.js lấy đơn vị cấp phát từ danh mục', /HSE_UNITS\.list\("cap-phat-bhld"/.test(appjs));
+  // Từ 03/10/2026: trang phân quyền theo đơn vị khai báo ở UNIT_SCOPED, danh sách lấy qua HSE_UNITS.list(sc.slug)
+  check('app.js lấy đơn vị cấp phát từ danh mục',
+    /slug:"cap-phat-bhld",\s*field:"capPhatUnits"/.test(appjs) && /HSE_UNITS\.list\(sc\.slug/.test(appjs));
+  check('app.js khai báo quyền đơn vị Kiểm tra các cấp (ktUnits)', /slug:"kiem-tra-cac-cap",\s*field:"ktUnits"/.test(appjs));
 }
 
 console.log('\n── Bình áp lực: cờ môi chất phải là boolean thật ──');
@@ -801,7 +825,7 @@ console.log('\n── Thiết bị nâng: ba biểu đồ tròn ──');
 console.log('\n── Đối soát: khai báo cột lưu tên đơn vị ──');
 {
   const T = U.RENAME_TARGETS;
-  check('khai báo đủ 12 cột lưu tên đơn vị', T.length === 12, T.length);
+  check('khai báo đủ 13 cột lưu tên đơn vị', T.length === 13, T.length);
   check('mọi cột đều ghi rõ đọc qua module nào', T.every(t => t.via === 'db' || t.via === 'bhld'));
   check('5 bảng của Cấp phát BHLĐ đọc qua bhld-sync', T.filter(t => t.via === 'bhld').length === 5);
   check('bảng tiến trình cấp phát được đánh dấu có tên trong khoá chính',

@@ -234,6 +234,7 @@
     .nop-banner .nb-note{margin-top:6px;font-size:12px;opacity:.85;}
     .nb-chip{display:inline-block;padding:1px 8px;margin:1px 2px;border-radius:12px;background:#fff;border:1px solid #f1b0a8;color:#a12a1c;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;}
     .nb-chip:hover{background:#c0392b;color:#fff;border-color:#c0392b;}
+    .nb-mine{display:inline-block;padding:0 7px;border-radius:10px;background:#c0392b;color:#fff;font-size:11px;font-weight:700;vertical-align:1px;}
     .nb-chip.nb-denhan{border-color:#f3cf7a;color:#8a5a00;}
     .nb-chip.nb-denhan:hover{background:#e68900;color:#fff;border-color:#e68900;}
     .nop-tbl{width:100%;border-collapse:collapse;font-size:12.5px;}
@@ -729,9 +730,11 @@ function donViInList(v){ var k=donViNorm(v); return donViList().some(function(u)
 function buildDonViSelect(){
   var sel=document.getElementById("c12DonViSel"); if(!sel) return;
   var giu=currentDonVi||sel.value||"";
+  var me=currentUser();
   var html='<option value="">-- Chọn đơn vị --</option>'+
-    donViList().map(function(u){return '<option>'+esc(u)+'</option>';}).join("");
-  if(donViAllowOther()) html+='<option value="__khac__">Khác</option>';
+    myDonViList(me).map(function(u){return '<option>'+esc(u)+'</option>';}).join("");
+  // Mục "Khác" (nhập tên tự do) chỉ dành cho Admin — user bị giới hạn theo đơn vị được giao
+  if(donViAllowOther()&&isAdmin(me)) html+='<option value="__khac__">Khác</option>';
   sel.innerHTML=html;
   if(giu && giu!=="__khac__") setDonVi1(giu);
 }
@@ -801,6 +804,7 @@ function setDonVi1(val){
 function goStep2(){
   var dv=getDonVi1();
   if(!dv){toast("Vui lòng chọn hoặc nhập Đơn vị.",false);document.getElementById("c12DonViSel").focus();return;}
+  if(!canInputUnit(currentUser(),dv)){toast("Bạn không được giao đơn vị \""+dv+"\" — liên hệ Admin.",false);return;}
   currentDonVi=dv;
   document.getElementById("c12DonViLabel").textContent=dv;
   document.getElementById("c12Step1").style.display="none";
@@ -951,13 +955,38 @@ function currentUser(){
   return null;
 }
 function isAdmin(u){return u&&u.role==="admin";}
+/* ── QUYỀN THEO ĐƠN VỊ (cấp 1, cấp 2) ──
+   User có quyền trang chỉ nhập / sửa được đơn vị Admin đã giao (cột ktUnits
+   trong profiles — Quản trị hệ thống → Người dùng / Phân công đơn vị).
+   Chưa được giao đơn vị nào → chỉ xem. Admin: mọi đơn vị. */
+function ktUnitsOf(u){
+  var a=u&&u.ktUnits;
+  if(typeof a==="string"){ try{a=JSON.parse(a);}catch(e){a=[];} }
+  return Array.isArray(a)?a:[];
+}
+function canInputUnit(u,donVi){
+  if(!u||u.active===false||!donVi) return false;
+  if(u.role==="admin") return true;
+  if(u.role!=="user"||(u.perms||[]).indexOf(SLUG)<0) return false;
+  var k=donViNorm(donViCanon(donVi));
+  return ktUnitsOf(u).some(function(x){return donViNorm(donViCanon(x))===k;});
+}
+/* Đơn vị hiện ở droplist Bước 1: Admin → cả danh mục; user → đơn vị được giao */
+function myDonViList(u){
+  if(isAdmin(u)) return donViList();
+  return donViList().filter(function(n){return canInputUnit(u,n);});
+}
+function hasPermNoUnit(u){
+  return !!(u&&u.role==="user"&&u.active!==false&&(u.perms||[]).indexOf(SLUG)>=0&&!ktUnitsOf(u).length);
+}
 function canInputCap(u,cap){
   if(!u||u.role==="viewer") return false;
   if(u.active===false) return false;
   if(u.role==="admin") return ["cap3","cap4","khac"].indexOf(cap)>=0;
   if(u.role==="user"){
     if((u.perms||[]).indexOf(SLUG)<0) return false;
-    return ["cap1","cap2"].indexOf(cap)>=0;
+    if(["cap1","cap2"].indexOf(cap)<0) return false;
+    return ktUnitsOf(u).length>0;           // phải được giao ít nhất 1 đơn vị
   }
   return false;
 }
@@ -966,10 +995,13 @@ function canAccess(u){
   if(u.role==="admin"||u.role==="viewer") return true;
   return (u.perms||[]).indexOf(SLUG)>=0;
 }
-// Quyền chỉnh sửa / xoá: admin được tất cả, user chỉ được bản ghi của mình
+// Quyền chỉnh sửa / xoá: admin được tất cả.
+// Cấp 1, cấp 2: user sửa được mọi bản ghi của ĐƠN VỊ mình được giao.
+// Cấp 3, 4, khác: chỉ bản ghi do chính mình tạo (như cũ).
 function canModify(u,rec){
-  if(!u) return false;
+  if(!u||!rec) return false;
   if(u.role==="admin") return true;
+  if(rec.type==="cap1"||rec.type==="cap2") return canInputUnit(u,rec.donVi);
   return rec.createdBy===u.username;
 }
 function canAnyInput(u){
@@ -994,6 +1026,8 @@ function buildTopbar(){
   }
   var desc=document.getElementById("pageDesc");
   if(!u) desc.textContent='Bạn đang xem ở chế độ khách.';
+  else if(hasPermNoUnit(u)) desc.textContent='Bạn chưa được giao đơn vị nào — hiện chỉ xem được. Liên hệ Admin để được giao đơn vị nhập kiểm tra cấp 1, cấp 2.';
+  else if(canAnyInput(u)&&!isAdmin(u)&&ktUnitsOf(u).length) desc.textContent='Bạn được nhập kiểm tra cấp 1, cấp 2 cho: '+myDonViList(u).join(", ")+'.';
   else if(canAnyInput(u)) desc.textContent='Bạn có quyền thao tác trên trang này.';
   else desc.textContent='Bạn chỉ có quyền xem trang này.';
 }
@@ -1028,7 +1062,7 @@ function buildCapSelector(){
     btn.dataset.cap=c;
     if(!canInputCap(u,c)){
       btn.disabled=true;
-      btn.title="Không có quyền nhập loại này";
+      btn.title=(hasPermNoUnit(u)&&(c==="cap1"||c==="cap2"))?"Bạn chưa được giao đơn vị nào — liên hệ Admin":"Không có quyền nhập loại này";
     } else {
       btn.onclick=function(){selectCap(c);};
     }
@@ -1049,6 +1083,9 @@ function selectCap(cap, forceShow){
     // luôn bắt đầu ở Bước 1 (chọn đơn vị)
     currentDonVi=null;
     setDonVi1("");
+    // Chỉ được giao đúng 1 đơn vị → chọn sẵn
+    var _mine=myDonViList(currentUser());
+    if(!isAdmin(currentUser())&&_mine.length===1) setDonVi1(_mine[0]);
     document.getElementById("c12Step2").style.display="none";
     document.getElementById("c12Step1").style.display="block";
     document.getElementById("c12QuarterWrap").innerHTML="";
@@ -1379,6 +1416,7 @@ function saveMonth(btn){
   var soVP=parseInt(block.querySelector(".qm-sovp").value)||0;
   if(!thang){toast("Không xác định được tháng.",false);return;}
   if(!donVi){toast("Chưa chọn đơn vị. Vui lòng quay lại Bước 1.",false);return;}
+  if(!canInputUnit(u,donVi)){toast("Bạn không được giao đơn vị \""+donVi+"\" — không lưu được.",false);return;}
 
   var violations=[];
   var rows=block.querySelectorAll(".qm-vpbody tr");
@@ -1871,7 +1909,7 @@ function renderTheoDoiNop(nam,q){
           var nhan={quahan:"Chưa nhập",denhan:"Hạn hôm nay",trongky:"Trong kỳ",chuadenky:"—",ngoai:"—"}[tt];
           var tip2={quahan:"Quá hạn nộp (hạn ngày 1 tháng sau)",denhan:"Hôm nay là hạn chót",trongky:"Tháng đang diễn ra",
                     chuadenky:"Chưa đến kỳ",ngoai:"Trước mốc bắt đầu theo dõi"}[tt];
-          var click=(tt==="quahan"||tt==="denhan"||tt==="trongky")&&canInputCap(u,cap);
+          var click=(tt==="quahan"||tt==="denhan"||tt==="trongky")&&canInputCap(u,cap)&&canInputUnit(u,dv);
           o='<span class="nop-o nop-'+tt+(click?' nop-click':'')+'" title="'+esc(tip2+(click?" — bấm để nhập":""))+'"'+
             (click?' data-dv="'+esc(dv)+'" data-cap="'+cap+'" data-ym="'+ym+'" onclick="moNhapTu(this)"':'')+'>'+nhan+'</span>';
         }
@@ -1911,8 +1949,11 @@ function renderNopBanner(){
   nhom.forEach(function(d){ soThang+=d.thang.length; d.thang.forEach(function(t){ if(t.trangThai==="denhan") denHan=true; }); });
   var html='<div class="nb-title"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>'+
     'Chưa nhập số liệu kiểm tra cấp 1, cấp 2 — '+nhom.length+' đơn vị, '+soThang+' tháng</div>';
+  var _me=currentUser();
+  var _cuaToi=function(dv){ return !!_me && !isAdmin(_me) && canInputUnit(_me,dv); };
+  nhom.sort(function(a,b){ return (_cuaToi(b.donVi)?1:0)-(_cuaToi(a.donVi)?1:0); });
   nhom.forEach(function(d){
-    html+='<div class="nb-row"><b>'+esc(d.donVi)+'</b>: '+d.thang.map(function(t){
+    html+='<div class="nb-row"><b>'+esc(d.donVi)+'</b>'+(_cuaToi(d.donVi)?' <span class="nb-mine">đơn vị của bạn</span>':'')+': '+d.thang.map(function(t){
       return '<button type="button" class="nb-chip'+(t.trangThai==="denhan"?" nb-denhan":"")+'" onclick="xemTheoDoi(\''+t.ym+'\')" title="'+
         (t.trangThai==="denhan"?"Hôm nay là hạn chót":"Quá hạn")+' — bấm để xem bảng theo dõi">'+esc(K.moTaThang(t))+'</button>';
     }).join(" ")+'</div>';
@@ -1940,7 +1981,7 @@ function xemTheoDoi(ym){
 /* Bấm ô "Chưa nhập" → mở form nhập đúng cấp / đơn vị / quý, cuộn tới tháng đó */
 function moNhapTu(el){
   var dv=el.getAttribute("data-dv"), cap=el.getAttribute("data-cap"), ym=el.getAttribute("data-ym");
-  if(!dv||!cap||!ym||!canInputCap(currentUser(),cap)) return;
+  if(!dv||!cap||!ym||!canInputCap(currentUser(),cap)||!canInputUnit(currentUser(),dv)) return;
   var p=ym.split("-"), y=p[0], m=parseInt(p[1],10);
   switchTab("nhap");
   selectCap(cap);
@@ -2356,6 +2397,7 @@ function _sbReadyKT(){
 function _profileToUserKT(p){
   return { id:p.id, username:p.username, fullname:p.fullname||"", danhSo:p.danhSo||"",
     role:p.role||"viewer", perms:p.perms||[], capPhatUnits:p.capPhatUnits||[],
+    ktUnits:p.ktUnits||[],
     active:p.active, pendingApproval:p.pendingApproval, created:p.created };
 }
 function _cacheUserKT(u){
@@ -2381,6 +2423,7 @@ function refreshRoleDependentUI(){
   var tb=document.getElementById("tabBtnNhap");
   if(tb) tb.style.display=canAnyInput(u)?"":"none";
   buildCapSelector();
+  buildDonViSelect();
   // Chỉ đánh giá lại quyền của cấp đang chọn khi tab "Nhập mới" đang mở,
   // tránh reset form khi người dùng đang nhập dở.
   var paneNhap=document.getElementById("tab-nhap");
@@ -2388,6 +2431,7 @@ function refreshRoleDependentUI(){
     selectCap(currentCap);
   }
   renderList();
+  renderBaoCao();   // ô bấm được trong bảng theo dõi + "đơn vị của bạn" phụ thuộc quyền
 }
 function hydrateCurrentUser(){
   return _sbReadyKT().then(function(sb){
