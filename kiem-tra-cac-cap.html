@@ -250,9 +250,14 @@
     .nop-click{cursor:pointer;}
     .nop-click:hover{outline:2px solid var(--primary-light);}
     /* Thanh chọn quý (thay droplist) */
-    .quy-bar{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));border:1px solid var(--border);border-radius:10px;overflow:hidden;background:#fff;min-width:min(100%,420px);}
-    .quy-btn{border:none;border-left:1px solid var(--border);background:#fff;padding:5px 10px;min-height:40px;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;font-family:inherit;color:#3d4c63;}
-    .quy-btn:first-child{border-left:none;}
+    .quy-bar{display:flex;align-items:stretch;border:1px solid var(--border);border-radius:10px;overflow:hidden;background:#fff;height:42px;max-width:100%;}
+    .nam-step{display:flex;align-items:stretch;background:#f4f7fc;border-right:1px solid var(--border);}
+    .nam-step span{display:flex;align-items:center;padding:0 4px;font-weight:700;font-size:14px;color:var(--primary);}
+    .nam-step button{width:32px;border:none;background:none;color:var(--primary);font-size:17px;cursor:pointer;font-family:inherit;}
+    .nam-step button:hover:not(:disabled){background:#e6edf8;}
+    .nam-step button:disabled{color:#b6c2d6;cursor:default;}
+    .quy-btn{flex:1 1 0;min-width:72px;border:none;border-left:1px solid var(--border);background:#fff;padding:0 12px;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;font-family:inherit;color:#3d4c63;}
+    .nam-step+.quy-btn{border-left:none;}
     .quy-btn b{font-size:13.5px;}
     .quy-btn.on{background:var(--primary);color:#fff;}
     .quy-btn:hover:not(.on){background:#f1f5fb;}
@@ -305,16 +310,9 @@
         <div class="section-card-head" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
           <div class="section-card-title"><svg class="lic-emoji" width="1.05em" height="1.05em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex-shrink:0" aria-hidden="true"><path d="M3 3v16a2 2 0 0 0 2 2h16"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/></svg> Báo cáo kiểm tra an toàn</div>
           <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
-            <label style="font-size:13px;font-weight:600;color:var(--text-light);">Năm:</label>
-            <select id="bcNam" class="inp" style="width:auto;padding:6px 30px 6px 12px;" onchange="renderBaoCao()">
-              <option value="2026">2026</option>
-              <option value="2027">2027</option>
-              <option value="2028">2028</option>
-              <option value="2029">2029</option>
-              <option value="2030">2030</option>
-            </select>
+            <input type="hidden" id="bcNam" value="2026">
             <input type="hidden" id="bcThang12" value="q1">
-            <div class="quy-bar" id="bcQuyBar" role="group" aria-label="Chọn quý"></div>
+            <div class="quy-bar" id="bcQuyBar" role="group" aria-label="Chọn năm và quý"></div>
           </div>
         </div>
 
@@ -1618,24 +1616,38 @@ function initBaoCaoFilters(){
   var now=new Date();
   var curYear=now.getFullYear();
   // Set năm mặc định
-  var namSel=document.getElementById("bcNam");
-  namSel.value=Math.min(Math.max(curYear,2026),2030);
+  document.getElementById("bcNam").value=String(Math.min(Math.max(curYear,NAM_DAU),namCuoi()));
   // Set quý mặc định cho bảng cấp 1&2
   var curQuy=Math.ceil((now.getMonth()+1)/3);
   document.getElementById("bcThang12").value="q"+curQuy;
 }
 
-/* Thanh 4 quý (thay droplist) — giá trị nằm ở ô ẩn #bcThang12 ("q1".."q4") */
+/* Thanh chọn năm + quý: [‹ 2026 ›] Quý I | Quý II | Quý III | Quý IV
+   Giá trị nằm ở 2 ô ẩn #bcNam (năm) và #bcThang12 ("q1".."q4").
+   Năm lùi được tới NAM_DAU (năm bắt đầu có dữ liệu), tiến tới năm hiện tại. */
+var NAM_DAU=2026;
+function namCuoi(){ return Math.max(NAM_DAU,new Date().getFullYear()); }
 function drawQuyBar(){
   var bar=document.getElementById("bcQuyBar"); if(!bar) return;
+  var nam=parseInt(document.getElementById("bcNam").value,10)||NAM_DAU;
   var cur=document.getElementById("bcThang12").value, R=["I","II","III","IV"];
-  bar.innerHTML=[1,2,3,4].map(function(q){
-    var on=cur==="q"+q;
-    return '<button type="button" class="quy-btn'+(on?' on':'')+'" aria-pressed="'+on+'" onclick="chonQuy('+q+')">'+
-      '<b>Quý '+R[q-1]+'</b></button>';
-  }).join("");
+  bar.innerHTML='<div class="nam-step">'+
+      '<button type="button" onclick="doiNam(-1)" aria-label="Năm trước"'+(nam<=NAM_DAU?' disabled':'')+'>‹</button>'+
+      '<span aria-live="polite">'+nam+'</span>'+
+      '<button type="button" onclick="doiNam(1)" aria-label="Năm sau"'+(nam>=namCuoi()?' disabled':'')+'>›</button>'+
+    '</div>'+
+    [1,2,3,4].map(function(q){
+      var on=cur==="q"+q;
+      return '<button type="button" class="quy-btn'+(on?' on':'')+'" aria-pressed="'+on+'" onclick="chonQuy('+q+')">'+
+        '<b>Quý '+R[q-1]+'</b></button>';
+    }).join("");
 }
 function chonQuy(q){ document.getElementById("bcThang12").value="q"+q; renderBaoCao(); }
+function doiNam(d){
+  var el=document.getElementById("bcNam");
+  var nam=Math.min(namCuoi(),Math.max(NAM_DAU,(parseInt(el.value,10)||NAM_DAU)+d));
+  el.value=String(nam); renderBaoCao();
+}
 
 /* Người đang xem là user được giao đơn vị → làm nổi đơn vị của họ, làm mờ đơn vị khác */
 function lopDongDonVi(dv){
@@ -1996,11 +2008,7 @@ function renderNopBanner(){
 /* Bấm chip tháng ở thông báo → mở tab Báo cáo đúng quý, cuộn tới bảng theo dõi */
 function xemTheoDoi(ym){
   var p=String(ym).split("-"), y=p[0], m=parseInt(p[1],10);
-  var namSel=document.getElementById("bcNam");
-  if(!Array.prototype.some.call(namSel.options,function(o){return o.value===y;})){
-    var o=document.createElement("option"); o.value=y; o.textContent=y; namSel.appendChild(o);
-  }
-  namSel.value=y;
+  document.getElementById("bcNam").value=y;
   document.getElementById("bcThang12").value="q"+quyCuaThang(m);
   switchTab("baocao");
   setTimeout(function(){var s=document.getElementById("nopSection"); if(s) s.scrollIntoView({behavior:"smooth",block:"start"});},60);
