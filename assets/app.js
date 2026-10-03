@@ -1028,8 +1028,15 @@
           var targetPages = (item.pages && item.pages.length) ? item.pages : ["ke-hoach"];
           targetPages.forEach(function(slug){
             if(!allLinks[slug]) allLinks[slug]=[];
+            // Cùng quy tắc với ke-hoach.html: tình trạng tự tính theo ngày
             var st = item.status||"Chưa bắt đầu";
-            if(st!=="Đã hoàn thành" && item.end && new Date(item.end)<today) st="Trễ hạn";
+            if(st!=="Đã hoàn thành"){
+              var _pd=function(v){ if(!v) return null; var p=String(v).split("T")[0].split("-"); return p.length===3?new Date(+p[0],+p[1]-1,+p[2]):null; };
+              var _e=_pd(item.end), _s=_pd(item.start);
+              if(_e && _e<today) st="Trễ hạn";
+              else if(_s) st = _s<=today ? "Đang thực hiện" : "Chưa bắt đầu";
+              else if(st!=="Đang thực hiện") st="Chưa bắt đầu";
+            }
             allLinks[slug].push({ id:item.id, type:"oncetime", name:item.name,
               start:item.start, end:item.end, status:st,
               completionDate:item.completionDate||"", completionReport:item.completionReport||"",
