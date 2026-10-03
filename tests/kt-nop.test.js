@@ -23,12 +23,12 @@ T('hết hạn tháng 12 = 00:00 ngày 2/1 năm sau', K.mocHetHan('2026-12').get
 
 G('Trạng thái ô chưa nộp (hạn = ngày 1 tháng sau)');
 T('tháng 9, đang 30/9', K.trangThaiO('2026-09', null, ngay(2026, 9, 30, 17)), 'trongky');
-T('tháng 9, đang 1/10 (ngày hạn)', K.trangThaiO('2026-09', null, ngay(2026, 10, 1, 23)), 'denhan');
+T('tháng 9, đang 1/10 → đã báo chưa nhập (không còn "hạn hôm nay")', K.trangThaiO('2026-09', null, ngay(2026, 10, 1, 0)), 'quahan');
 T('tháng 9, đang 2/10', K.trangThaiO('2026-09', null, ngay(2026, 10, 2, 0)), 'quahan');
 T('tháng 11, đang 2/10', K.trangThaiO('2026-11', null, ngay(2026, 10, 2)), 'chuadenky');
 T('tháng 3 (trước mốc theo dõi 04/2026)', K.trangThaiO('2026-03', null, ngay(2026, 10, 2)), 'ngoai');
 T('mốc theo dõi đổi được', K.trangThaiO('2026-03', null, ngay(2026, 10, 2), { tuThang: '2026-01' }), 'quahan');
-T('hạn đổi sang ngày 10', K.trangThaiO('2026-09', null, ngay(2026, 10, 5), { hanNgay: 10 }), 'denhan');
+T('hạn ngày 10: nộp 5/10 vẫn đúng hạn', K.trangThaiO('2026-09', { createdAt: ngay(2026, 10, 5).toISOString() }, ngay(2026, 10, 6), { hanNgay: 10 }), 'danop');
 
 G('Trạng thái ô đã nộp');
 T('nộp 30/9 cho tháng 9', K.trangThaiO('2026-09', { createdAt: ngay(2026, 9, 30).toISOString() }, ngay(2026, 10, 5)), 'danop');
@@ -62,7 +62,7 @@ T('Cảng biển', mo('Cảng biển'), 'T4/2026, T5/2026');
 T('Xưởng sửa chữa', mo('Xưởng sửa chữa'), 'T8/2026, T9/2026');
 T('Đội xe VCHK (thiếu riêng cấp 2 tháng 5)', mo('Đội xe VCHK'), 'T5/2026 (cấp 2), T7/2026, T8/2026, T9/2026');
 const ngay1 = K.danhSachThieu(recs, DV, ngay(2026, 10, 1, 9));
-T('ngày 1/10: tháng 9 chỉ là "đến hạn"', ngay1.filter(x => x.thang === '2026-09').every(x => x.trangThai === 'denhan'), true);
+T('ngày 1/10: tháng 9 đã vào danh sách chưa nhập (4 đơn vị × 2 cấp)', ngay1.filter(x => x.thang === '2026-09').length, 8);
 T('ngày 30/9: chưa tính tháng 9', K.danhSachThieu(recs, DV, ngay(2026, 9, 30)).some(x => x.thang === '2026-09'), false);
 
 G('So khớp tên đơn vị');

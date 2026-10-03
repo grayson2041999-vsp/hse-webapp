@@ -11,8 +11,10 @@
  *  QUY TẮC (đã thống nhất 02/10/2026):
  *    • Mỗi đơn vị, mỗi tháng phải có 1 bản ghi cấp 1 và 1 bản ghi cấp 2
  *      (nhập "0 lần" vẫn tính là đã nộp).
- *    • Hạn nộp số liệu tháng M là ngày HAN_NGAY của tháng M+1 (hiện = ngày 1).
- *      Qua hết ngày đó mà chưa có bản ghi → QUÁ HẠN.
+ *    • Hạn nộp số liệu tháng M là ngày HAN_NGAY của tháng M+1 (hiện = ngày 1):
+ *      nộp trước hết ngày đó = đúng hạn, sau đó = nộp sau hạn.
+ *    • Hết tháng M mà chưa có bản ghi → báo "chưa nhập" ngay từ ngày 1 tháng sau
+ *      (03/10/2026: bỏ trạng thái riêng "hạn hôm nay").
  *    • Chỉ theo dõi từ tháng TU_THANG (tháng đầu tiên có dữ liệu trên hệ thống).
  *    • Đơn vị được theo dõi = danh mục đơn vị đang gán cho trang
  *      "kiem-tra-cac-cap" (Quản trị → Danh mục đơn vị).
@@ -81,8 +83,7 @@
    * Trạng thái một ô (đơn vị × tháng × cấp):
    *   'danop'     đã nhập, đúng hạn
    *   'noptre'    đã nhập, nhưng sau hạn
-   *   'quahan'    chưa nhập, đã quá hạn
-   *   'denhan'    chưa nhập, hôm nay là ngày hạn chót
+   *   'quahan'    tháng đã qua, chưa nhập
    *   'trongky'   tháng hiện tại, chưa nhập (chưa đến hạn)
    *   'chuadenky' tháng tương lai
    *   'ngoai'     trước mốc bắt đầu theo dõi, không có dữ liệu
@@ -98,12 +99,12 @@
     var cur = ymCua(homNay);
     if (ym > cur) return "chuadenky";
     if (ym === cur) return "trongky";
-    return homNay >= het ? "quahan" : "denhan";
+    return "quahan";
   }
 
   /**
    * Danh sách các ô CHƯA NỘP đã đến/quá hạn, từ mốc theo dõi đến tháng trước.
-   * → [{donVi, thang, cap, trangThai:'quahan'|'denhan'}]
+   * → [{donVi, thang, cap, trangThai:'quahan'}]
    */
   function danhSachThieu(records, donViList, homNay, cfg, norm) {
     cfg = _cfg(cfg); norm = norm || _normMacDinh;
@@ -115,7 +116,7 @@
         cfg.caps.forEach(function (cap) {
           if (idx[norm(dv) + "|" + ym + "|" + cap]) return;
           var tt = trangThaiO(ym, null, homNay, cfg);
-          if (tt === "quahan" || tt === "denhan") out.push({ donVi: dv, thang: ym, cap: cap, trangThai: tt });
+          if (tt === "quahan") out.push({ donVi: dv, thang: ym, cap: cap, trangThai: tt });
         });
       }
     });

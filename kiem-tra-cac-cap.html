@@ -234,8 +234,6 @@
     .nop-banner .nb-note{margin-top:6px;font-size:12px;opacity:.85;}
     .nb-chip{display:inline-block;padding:1px 8px;margin:1px 2px;border-radius:12px;background:#fff;border:1px solid #f1b0a8;color:#a12a1c;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;}
     .nb-chip:hover{background:#c0392b;color:#fff;border-color:#c0392b;}
-    .nb-chip.nb-denhan{border-color:#f3cf7a;color:#8a5a00;}
-    .nb-chip.nb-denhan:hover{background:#e68900;color:#fff;border-color:#e68900;}
     .nop-tbl{width:100%;border-collapse:collapse;font-size:12.5px;}
     .nop-tbl th{background:#dde6f3;color:var(--primary);padding:7px 8px;border:1px solid #c0cbe0;text-align:center;white-space:nowrap;}
     .nop-tbl th.nop-dv{text-align:left;min-width:160px;}
@@ -247,24 +245,22 @@
     .nop-danop{background:#eafaf1;color:#1a7a3c;}
     .nop-noptre{background:#fff4e0;color:#a35f00;}
     .nop-quahan{background:#fdedec;color:#c0392b;}
-    .nop-denhan{background:#fff7d6;color:#8a5a00;}
     .nop-trongky{background:#eef4fb;color:#4a6a92;font-weight:500;}
     .nop-chuadenky,.nop-ngoai{color:#a0aec0;font-weight:500;}
     .nop-click{cursor:pointer;}
     .nop-click:hover{outline:2px solid var(--primary-light);}
     /* Thanh chọn quý (thay droplist) */
     .quy-bar{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));border:1px solid var(--border);border-radius:10px;overflow:hidden;background:#fff;min-width:min(100%,420px);}
-    .quy-btn{border:none;border-left:1px solid var(--border);background:#fff;padding:5px 10px;min-height:44px;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;font-family:inherit;color:#3d4c63;}
+    .quy-btn{border:none;border-left:1px solid var(--border);background:#fff;padding:5px 10px;min-height:40px;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;font-family:inherit;color:#3d4c63;}
     .quy-btn:first-child{border-left:none;}
-    .quy-btn b{font-size:13.5px;}.quy-btn small{font-size:11px;opacity:.75;}
+    .quy-btn b{font-size:13.5px;}
     .quy-btn.on{background:var(--primary);color:#fff;}
     .quy-btn:hover:not(.on){background:#f1f5fb;}
     /* Đơn vị của người đang xem nổi bật, đơn vị khác mờ đi */
     .nop-tbl tr.nop-other td,#bcTable12Body tr.nop-other td{opacity:.42;filter:grayscale(.6);}
     .nop-tbl tr.nop-mine td{background:#f2f6fd;}
     .nop-tbl tr.nop-mine td.nop-dv,#bcTable12Body tr.nop-mine td:first-child{font-weight:700;color:var(--primary);box-shadow:inset 4px 0 0 var(--primary);}
-    .nop-tag{display:inline-block;margin-left:6px;padding:1px 7px;border-radius:10px;background:var(--primary);color:#fff;font-size:10.5px;font-weight:700;vertical-align:1px;white-space:nowrap;}
-    .nop-mine .nop-quahan.nop-click,.nop-mine .nop-denhan.nop-click{background:#c0392b;color:#fff;}
+    .nop-mine .nop-quahan.nop-click{background:#c0392b;color:#fff;}
     .nop-mine .nop-trongky.nop-click{background:var(--primary);color:#fff;}
     /* Nhập từ ô của bảng theo dõi: chỉ hiện đúng 1 tháng, ẩn các bước chọn */
     .nf-only{display:none;}
@@ -272,8 +268,6 @@
     #tab-nhap.focus-mode .nf-hide{display:none!important;}
     #tab-nhap.focus-mode .qm-section:not(.nf-on){display:none;}
     .nf-title{font-size:16px;font-weight:700;color:var(--primary);margin-bottom:12px;}
-    .nop-legend{display:flex;flex-wrap:wrap;gap:10px 16px;margin-top:8px;font-size:11.5px;color:var(--text-light);}
-    .nop-legend .nop-o{min-width:0;padding:1px 7px;}
   </style>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
   <link rel="stylesheet" href="assets/flatpickr.min.css">
@@ -364,14 +358,6 @@
               <tbody id="nopBody"><tr><td colspan="7" style="padding:20px;color:var(--text-light);">Đang tải...</td></tr></tbody>
               <tfoot id="nopFoot"></tfoot>
             </table>
-          </div>
-          <div class="nop-legend">
-            <span><span class="nop-o nop-danop">✓</span> Đã nộp đúng hạn</span>
-            <span><span class="nop-o nop-noptre">✓</span> Nộp sau hạn</span>
-            <span><span class="nop-o nop-quahan">Chưa nhập</span> Quá hạn</span>
-            <span><span class="nop-o nop-denhan">Hạn hôm nay</span></span>
-            <span><span class="nop-o nop-trongky">Trong kỳ</span> Tháng hiện tại</span>
-            <span><span class="nop-o nop-chuadenky">—</span> Chưa đến kỳ / ngoài phạm vi theo dõi</span>
           </div>
         </div>
 
@@ -1646,7 +1632,7 @@ function drawQuyBar(){
   bar.innerHTML=[1,2,3,4].map(function(q){
     var on=cur==="q"+q;
     return '<button type="button" class="quy-btn'+(on?' on':'')+'" aria-pressed="'+on+'" onclick="chonQuy('+q+')">'+
-      '<b>Quý '+R[q-1]+'</b><small>T'+(3*q-2)+' – T'+(3*q)+'</small></button>';
+      '<b>Quý '+R[q-1]+'</b></button>';
   }).join("");
 }
 function chonQuy(q){ document.getElementById("bcThang12").value="q"+q; renderBaoCao(); }
@@ -1726,7 +1712,7 @@ function renderBaoCao(){
     }
     var _lop=lopDongDonVi(dv);
     rows12+='<tr'+(_lop?' class="'+_lop+'"':'')+'>'+
-      '<td style="padding:7px 10px;border:1px solid #e2e8f0;font-weight:500;">'+esc(dv)+(_lop==="nop-mine"?'<span class="nop-tag">Đơn vị của bạn</span>':'')+'</td>'+
+      '<td style="padding:7px 10px;border:1px solid #e2e8f0;font-weight:500;">'+esc(dv)+'</td>'+
       cum(c1,'#f0f7ff')+cum(c2,'#f0fdf4')+
     '</tr>';
   });
@@ -1950,10 +1936,10 @@ function renderTheoDoiNop(nam,q){
           o='<span class="nop-o nop-'+tt+(clickSua?' nop-click':'')+'" title="'+esc(tip+(clickSua?" — bấm để xem / sửa":""))+'"'+
             (clickSua?' data-dv="'+esc(dv)+'" data-cap="'+cap+'" data-ym="'+ym+'" onclick="moNhapTu(this)"':'')+'>✓<small>'+(_ktNgay(rec.createdAt)||"&nbsp;")+'</small></span>';
         } else {
-          var nhan={quahan:"Chưa nhập",denhan:"Hạn hôm nay",trongky:"Trong kỳ",chuadenky:"—",ngoai:"—"}[tt];
-          var tip2={quahan:"Quá hạn nộp (hạn ngày 1 tháng sau)",denhan:"Hôm nay là hạn chót",trongky:"Tháng đang diễn ra",
+          var nhan={quahan:"Chưa nhập",trongky:"Trong kỳ",chuadenky:"—",ngoai:"—"}[tt];
+          var tip2={quahan:"Chưa nhập số liệu tháng này",trongky:"Tháng đang diễn ra",
                     chuadenky:"Chưa đến kỳ",ngoai:"Trước mốc bắt đầu theo dõi"}[tt];
-          var click=(tt==="quahan"||tt==="denhan"||tt==="trongky")&&canInputCap(u,cap)&&canInputUnit(u,dv);   // ô của đơn vị mình
+          var click=(tt==="quahan"||tt==="trongky")&&canInputCap(u,cap)&&canInputUnit(u,dv);   // ô của đơn vị mình
           o='<span class="nop-o nop-'+tt+(click?' nop-click':'')+'" title="'+esc(tip2+(click?" — bấm để nhập":""))+'"'+
             (click?' data-dv="'+esc(dv)+'" data-cap="'+cap+'" data-ym="'+ym+'" onclick="moNhapTu(this)"':'')+'>'+nhan+'</span>';
         }
@@ -1961,7 +1947,7 @@ function renderTheoDoiNop(nam,q){
       }).join("");
     }).join("");
     var lop=lopDongDonVi(dv);
-    return '<tr'+(lop?' class="'+lop+'"':'')+'><td class="nop-dv">'+esc(dv)+(lop==="nop-mine"?'<span class="nop-tag">Đơn vị của bạn</span>':'')+'</td>'+tds+'</tr>';
+    return '<tr'+(lop?' class="'+lop+'"':'')+'><td class="nop-dv">'+esc(dv)+'</td>'+tds+'</tr>';
   });
   body.innerHTML=rows.join("");
   foot.innerHTML='<tr><td class="nop-dv">Số đơn vị đã nộp</td>'+months.map(function(ym){
@@ -1994,18 +1980,14 @@ function renderNopBanner(){
     el.style.display="block"; return;
   }
   var nhom=K.nhomTheoDonVi(thieu);
-  var denHan=false;
-  nhom.forEach(function(d){ d.thang.forEach(function(t){ if(t.trangThai==="denhan") denHan=true; }); });
   var html='<div class="nb-title"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>'+
     'Chưa nhập số liệu kiểm tra cấp 1, cấp 2'+(admin?' — '+nhom.length+' đơn vị':'')+'</div>';
   nhom.forEach(function(d){
     html+='<div class="nb-row"><b>'+esc(d.donVi)+'</b>: '+d.thang.map(function(t){
-      return '<button type="button" class="nb-chip'+(t.trangThai==="denhan"?" nb-denhan":"")+'" onclick="xemTheoDoi(\''+t.ym+'\')" title="'+
-        (t.trangThai==="denhan"?"Hôm nay là hạn chót":"Quá hạn")+' — bấm để xem bảng theo dõi">'+esc(K.moTaThang(t))+'</button>';
+      return '<button type="button" class="nb-chip" onclick="xemTheoDoi(\''+t.ym+'\')" title="Bấm để xem bảng theo dõi">'+esc(K.moTaThang(t))+'</button>';
     }).join(" ")+'</div>';
   });
-  html+='<div class="nb-note">Tháng không ghi chú cấp là thiếu cả cấp 1 và cấp 2.'+
-    (denHan?' <b>Hôm nay là hạn chót nộp số liệu '+K.nhanThang(thangTruoc)+'.</b>':'')+'</div>';
+  html+='<div class="nb-note">Tháng không ghi chú cấp là thiếu cả cấp 1 và cấp 2.</div>';
   el.className="nop-banner nb-red";
   el.innerHTML=html;
   el.style.display="block";
