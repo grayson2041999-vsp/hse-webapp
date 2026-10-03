@@ -323,10 +323,22 @@
           </div>
         </div>
 
+        <!-- Bảng theo dõi nộp số liệu cấp 1 & 2 theo tháng — renderTheoDoiNop() -->
+        <div style="margin-top:18px;" id="nopSection">
+          <div class="sec-div" style="margin-bottom:10px;font-weight:700;color:var(--primary);" id="nopTitle">Tình hình nộp số liệu cấp 1 &amp; 2</div>
+          <div class="table-wrap" style="overflow-x:auto;">
+            <table class="nop-tbl">
+              <thead id="nopHead"></thead>
+              <tbody id="nopBody"><tr><td colspan="7" style="padding:20px;color:var(--text-light);">Đang tải...</td></tr></tbody>
+              <tfoot id="nopFoot"></tfoot>
+            </table>
+          </div>
+        </div>
+
         <!-- Bảng 1: Cấp 1 & 2 -->
-        <div style="margin-top:18px;">
+        <div style="margin-top:28px;">
           <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:10px;">
-            <div class="sec-div" style="margin-bottom:0;font-weight:700;color:var(--primary);"><svg class="lic-emoji" width="1.05em" height="1.05em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex-shrink:0" aria-hidden="true"><rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M12 11h4"/><path d="M12 16h4"/><path d="M8 11h.01"/><path d="M8 16h.01"/></svg> Kiểm tra cấp 1 &amp; cấp 2 — theo đơn vị</div>
+            <div class="sec-div" style="margin-bottom:0;font-weight:700;color:var(--primary);"><svg class="lic-emoji" width="1.05em" height="1.05em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex-shrink:0" aria-hidden="true"><rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M12 11h4"/><path d="M12 16h4"/><path d="M8 11h.01"/><path d="M8 16h.01"/></svg> Kiểm tra cấp 1 &amp; cấp 2</div>
           </div>
           <div class="table-wrap" style="overflow-x:auto;">
             <table style="width:100%;border-collapse:collapse;font-size:13px;">
@@ -350,18 +362,6 @@
               <tbody id="bcTable12Body">
                 <tr><td colspan="9" style="text-align:center;padding:20px;color:var(--text-light);">Đang tải...</td></tr>
               </tbody>
-            </table>
-          </div>
-        </div>
-
-        <!-- Bảng theo dõi nộp số liệu cấp 1 & 2 theo tháng — renderTheoDoiNop() -->
-        <div style="margin-top:28px;" id="nopSection">
-          <div class="sec-div" style="margin-bottom:10px;font-weight:700;color:var(--primary);" id="nopTitle">Tình hình nộp số liệu cấp 1 &amp; 2</div>
-          <div class="table-wrap" style="overflow-x:auto;">
-            <table class="nop-tbl">
-              <thead id="nopHead"></thead>
-              <tbody id="nopBody"><tr><td colspan="7" style="padding:20px;color:var(--text-light);">Đang tải...</td></tr></tbody>
-              <tfoot id="nopFoot"></tfoot>
             </table>
           </div>
         </div>
@@ -1912,7 +1912,7 @@ function renderTheoDoiNop(nam,q){
   var months=QUY_MONTHS[q].map(function(m){return nam+"-"+(m<10?"0":"")+m;});
   var caps=K.CAU_HINH.caps;
   var dvs=donViList();
-  title.textContent="Tình hình nộp số liệu cấp 1 & 2 — Quý "+q+"/"+nam;
+  title.textContent="Tình hình nộp số liệu cấp 1 & 2";
 
   head.innerHTML='<tr><th rowspan="2" class="nop-dv">Đơn vị</th>'+
     months.map(function(ym){return '<th colspan="'+caps.length+'">Tháng '+K.nhanThang(ym).slice(1)+'</th>';}).join("")+'</tr>'+
