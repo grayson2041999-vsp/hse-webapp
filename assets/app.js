@@ -1077,13 +1077,21 @@
         return Object.assign({}, r, { thang: t });
       });
       var norm = function(v){ return HSE_UNITS.norm(HSE_UNITS.label(v || "")); };
-      var thieu = K.danhSachThieu(rows, HSE_UNITS.list("kiem-tra-cac-cap"), new Date(), null, norm);
+      /* Chia theo đơn vị: Admin thấy mọi đơn vị; user chỉ thấy đơn vị được giao
+         ở trang Kiểm tra các cấp (ktUnits); chưa được giao → không hiện. */
+      var me = currentUser(), admin = isAdmin(me);
+      var dvs = HSE_UNITS.list("kiem-tra-cac-cap");
+      if(!admin){
+        var mine = (me && me.role==="user" && me.active!==false && asArr(me.perms).indexOf("kiem-tra-cac-cap")>=0) ? asArr(me.ktUnits) : [];
+        dvs = dvs.filter(function(n){ return mine.some(function(x){ return unitEq(x, n); }); });
+      }
+      if(!dvs.length){ box.innerHTML = ""; return; }
+      var thieu = K.danhSachThieu(rows, dvs, new Date(), null, norm);
       if(!thieu.length){ box.innerHTML = ""; return; }
-      var nhom = K.nhomTheoDonVi(thieu), soThang = 0;
-      nhom.forEach(function(d){ soThang += d.thang.length; });
+      var nhom = K.nhomTheoDonVi(thieu);
       box.innerHTML =
         '<div style="background:#fdedec;border:1px solid #f5c6cb;color:#7b1d14;border-radius:10px;padding:12px 16px;margin:0 0 18px;font-size:13px;line-height:1.55">'+
-          '<div style="font-weight:700;margin-bottom:4px">Kiểm tra cấp 1, cấp 2: '+nhom.length+' đơn vị chưa nộp số liệu ('+soThang+' tháng quá hạn)</div>'+
+          '<div style="font-weight:700;margin-bottom:4px">Kiểm tra cấp 1, cấp 2: '+(admin ? nhom.length+' đơn vị chưa nộp số liệu' : 'đơn vị của bạn chưa nộp số liệu')+'</div>'+
           nhom.map(function(d){
             return '<div><b>'+esc(d.donVi)+'</b>: '+d.thang.map(function(t){ return esc(K.moTaThang(t)); }).join(", ")+'</div>';
           }).join("")+

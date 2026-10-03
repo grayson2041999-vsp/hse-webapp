@@ -234,7 +234,6 @@
     .nop-banner .nb-note{margin-top:6px;font-size:12px;opacity:.85;}
     .nb-chip{display:inline-block;padding:1px 8px;margin:1px 2px;border-radius:12px;background:#fff;border:1px solid #f1b0a8;color:#a12a1c;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;}
     .nb-chip:hover{background:#c0392b;color:#fff;border-color:#c0392b;}
-    .nb-mine{display:inline-block;padding:0 7px;border-radius:10px;background:#c0392b;color:#fff;font-size:11px;font-weight:700;vertical-align:1px;}
     .nb-chip.nb-denhan{border-color:#f3cf7a;color:#8a5a00;}
     .nb-chip.nb-denhan:hover{background:#e68900;color:#fff;border-color:#e68900;}
     .nop-tbl{width:100%;border-collapse:collapse;font-size:12.5px;}
@@ -1933,7 +1932,10 @@ function renderTheoDoiNop(nam,q){
 function renderNopBanner(){
   var K=window.HSE_KT_NOP, el=document.getElementById("nopBanner");
   if(!K||!el) return;
-  var dvs=donViList();
+  /* Chia theo đơn vị: Admin thấy mọi đơn vị; user chỉ thấy đơn vị mình được giao;
+     khách / user chưa được giao đơn vị → không hiện thông báo. */
+  var me=currentUser(), admin=isAdmin(me);
+  var dvs=admin?donViList():(me?myDonViList(me):[]);
   if(!dvs.length){el.style.display="none";return;}
   var homNay=new Date();
   var thieu=K.danhSachThieu(load(LS_KEY12,[]),dvs,homNay,null,_ktNopNorm);
@@ -1941,19 +1943,17 @@ function renderNopBanner(){
   if(!thieu.length){
     if(thangTruoc<K.CAU_HINH.tuThang){el.style.display="none";return;}
     el.className="nop-banner nb-ok";
-    el.innerHTML="✓ Tất cả đơn vị đã nộp đủ số liệu kiểm tra cấp 1, cấp 2 đến hết "+K.nhanThang(thangTruoc)+".";
+    el.innerHTML="✓ "+(admin?"Tất cả đơn vị":(dvs.length>1?"Các đơn vị của bạn":"Đơn vị của bạn"))+
+      " đã nộp đủ số liệu kiểm tra cấp 1, cấp 2 đến hết "+K.nhanThang(thangTruoc)+".";
     el.style.display="block"; return;
   }
   var nhom=K.nhomTheoDonVi(thieu);
-  var soThang=0, denHan=false;
-  nhom.forEach(function(d){ soThang+=d.thang.length; d.thang.forEach(function(t){ if(t.trangThai==="denhan") denHan=true; }); });
+  var denHan=false;
+  nhom.forEach(function(d){ d.thang.forEach(function(t){ if(t.trangThai==="denhan") denHan=true; }); });
   var html='<div class="nb-title"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>'+
-    'Chưa nhập số liệu kiểm tra cấp 1, cấp 2 — '+nhom.length+' đơn vị, '+soThang+' tháng</div>';
-  var _me=currentUser();
-  var _cuaToi=function(dv){ return !!_me && !isAdmin(_me) && canInputUnit(_me,dv); };
-  nhom.sort(function(a,b){ return (_cuaToi(b.donVi)?1:0)-(_cuaToi(a.donVi)?1:0); });
+    'Chưa nhập số liệu kiểm tra cấp 1, cấp 2'+(admin?' — '+nhom.length+' đơn vị':'')+'</div>';
   nhom.forEach(function(d){
-    html+='<div class="nb-row"><b>'+esc(d.donVi)+'</b>'+(_cuaToi(d.donVi)?' <span class="nb-mine">đơn vị của bạn</span>':'')+': '+d.thang.map(function(t){
+    html+='<div class="nb-row"><b>'+esc(d.donVi)+'</b>: '+d.thang.map(function(t){
       return '<button type="button" class="nb-chip'+(t.trangThai==="denhan"?" nb-denhan":"")+'" onclick="xemTheoDoi(\''+t.ym+'\')" title="'+
         (t.trangThai==="denhan"?"Hôm nay là hạn chót":"Quá hạn")+' — bấm để xem bảng theo dõi">'+esc(K.moTaThang(t))+'</button>';
     }).join(" ")+'</div>';
