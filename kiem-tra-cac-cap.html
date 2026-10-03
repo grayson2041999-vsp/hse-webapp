@@ -252,6 +252,26 @@
     .nop-chuadenky,.nop-ngoai{color:#a0aec0;font-weight:500;}
     .nop-click{cursor:pointer;}
     .nop-click:hover{outline:2px solid var(--primary-light);}
+    /* Thanh chọn quý (thay droplist) */
+    .quy-bar{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));border:1px solid var(--border);border-radius:10px;overflow:hidden;background:#fff;min-width:min(100%,420px);}
+    .quy-btn{border:none;border-left:1px solid var(--border);background:#fff;padding:5px 10px;min-height:44px;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;font-family:inherit;color:#3d4c63;}
+    .quy-btn:first-child{border-left:none;}
+    .quy-btn b{font-size:13.5px;}.quy-btn small{font-size:11px;opacity:.75;}
+    .quy-btn.on{background:var(--primary);color:#fff;}
+    .quy-btn:hover:not(.on){background:#f1f5fb;}
+    /* Đơn vị của người đang xem nổi bật, đơn vị khác mờ đi */
+    .nop-tbl tr.nop-other td,#bcTable12Body tr.nop-other td{opacity:.42;filter:grayscale(.6);}
+    .nop-tbl tr.nop-mine td{background:#f2f6fd;}
+    .nop-tbl tr.nop-mine td.nop-dv,#bcTable12Body tr.nop-mine td:first-child{font-weight:700;color:var(--primary);box-shadow:inset 4px 0 0 var(--primary);}
+    .nop-tag{display:inline-block;margin-left:6px;padding:1px 7px;border-radius:10px;background:var(--primary);color:#fff;font-size:10.5px;font-weight:700;vertical-align:1px;white-space:nowrap;}
+    .nop-mine .nop-quahan.nop-click,.nop-mine .nop-denhan.nop-click{background:#c0392b;color:#fff;}
+    .nop-mine .nop-trongky.nop-click{background:var(--primary);color:#fff;}
+    /* Nhập từ ô của bảng theo dõi: chỉ hiện đúng 1 tháng, ẩn các bước chọn */
+    .nf-only{display:none;}
+    #tab-nhap.focus-mode .nf-only{display:block;}
+    #tab-nhap.focus-mode .nf-hide{display:none!important;}
+    #tab-nhap.focus-mode .qm-section:not(.nf-on){display:none;}
+    .nf-title{font-size:16px;font-weight:700;color:var(--primary);margin-bottom:12px;}
     .nop-legend{display:flex;flex-wrap:wrap;gap:10px 16px;margin-top:8px;font-size:11.5px;color:var(--text-light);}
     .nop-legend .nop-o{min-width:0;padding:1px 7px;}
   </style>
@@ -290,7 +310,7 @@
       <div class="section-card">
         <div class="section-card-head" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
           <div class="section-card-title"><svg class="lic-emoji" width="1.05em" height="1.05em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex-shrink:0" aria-hidden="true"><path d="M3 3v16a2 2 0 0 0 2 2h16"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/></svg> Báo cáo kiểm tra an toàn</div>
-          <div style="display:flex;gap:8px;align-items:center;">
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
             <label style="font-size:13px;font-weight:600;color:var(--text-light);">Năm:</label>
             <select id="bcNam" class="inp" style="width:auto;padding:6px 30px 6px 12px;" onchange="renderBaoCao()">
               <option value="2026">2026</option>
@@ -299,6 +319,8 @@
               <option value="2029">2029</option>
               <option value="2030">2030</option>
             </select>
+            <input type="hidden" id="bcThang12" value="q1">
+            <div class="quy-bar" id="bcQuyBar" role="group" aria-label="Chọn quý"></div>
           </div>
         </div>
 
@@ -306,12 +328,6 @@
         <div style="margin-top:18px;">
           <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:10px;">
             <div class="sec-div" style="margin-bottom:0;font-weight:700;color:var(--primary);"><svg class="lic-emoji" width="1.05em" height="1.05em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex-shrink:0" aria-hidden="true"><rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M12 11h4"/><path d="M12 16h4"/><path d="M8 11h.01"/><path d="M8 16h.01"/></svg> Kiểm tra cấp 1 &amp; cấp 2 — theo đơn vị</div>
-            <select id="bcThang12" class="inp" style="width:auto;padding:5px 30px 5px 12px;font-size:13px;" onchange="renderBaoCao()">
-              <option value="q1">Quý I</option>
-              <option value="q2">Quý II</option>
-              <option value="q3">Quý III</option>
-              <option value="q4">Quý IV</option>
-            </select>
           </div>
           <div class="table-wrap" style="overflow-x:auto;">
             <table style="width:100%;border-collapse:collapse;font-size:13px;">
@@ -341,8 +357,7 @@
 
         <!-- Bảng theo dõi nộp số liệu cấp 1 & 2 theo tháng — renderTheoDoiNop() -->
         <div style="margin-top:28px;" id="nopSection">
-          <div class="sec-div" style="margin-bottom:6px;font-weight:700;color:var(--primary);" id="nopTitle">Tình hình nộp số liệu cấp 1 &amp; 2</div>
-          <div style="font-size:12px;color:var(--text-light);margin-bottom:10px;">Hạn nộp: <b>ngày 1 tháng sau</b>. Nhập "0 lần kiểm tra" vẫn tính là đã nộp. Ô "Chưa nhập" bấm vào để mở form nhập (nếu có quyền).</div>
+          <div class="sec-div" style="margin-bottom:10px;font-weight:700;color:var(--primary);" id="nopTitle">Tình hình nộp số liệu cấp 1 &amp; 2</div>
           <div class="table-wrap" style="overflow-x:auto;">
             <table class="nop-tbl">
               <thead id="nopHead"></thead>
@@ -410,13 +425,14 @@
     <div class="tab-pane" id="tab-nhap">
       <button class="kt-back" onclick="switchTab('baocao')"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg> Báo cáo</button>
       <div class="section-card">
-        <div class="section-card-head">
+        <div id="nhapFocusHead" class="nf-only"></div>
+        <div class="section-card-head nf-hide">
           <div class="section-card-title"><svg class="lic-emoji" width="1.05em" height="1.05em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex-shrink:0" aria-hidden="true"><path d="M5 12h14"/><path d="M12 5v14"/></svg> Nhập kiểm tra mới</div>
         </div>
 
         <!-- Chọn cấp -->
-        <div class="sec-div" style="margin-top:0;">Chọn loại kiểm tra</div>
-        <div class="cap-selector" id="capSelector"></div>
+        <div class="sec-div nf-hide" style="margin-top:0;">Chọn loại kiểm tra</div>
+        <div class="cap-selector nf-hide" id="capSelector"></div>
         <div id="noPermMsg" class="warn-box" style="display:none;"><svg class="lic-emoji" width="1.05em" height="1.05em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex-shrink:0" aria-hidden="true"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg> Bạn không có quyền nhập loại kiểm tra này.</div>
 
         <!-- FORM CẤP 1/2 (workflow 2 bước) -->
@@ -443,11 +459,11 @@
 
           <!-- BƯỚC 2: NHẬP THEO QUÝ (chỉ của đơn vị đã chọn) -->
           <div id="c12Step2" style="display:none;">
-            <div class="sec-div" style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;">
+            <div class="sec-div nf-hide" style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;">
               <span>Bước 2 · Nhập kiểm tra — <span id="c12DonViLabel" style="color:var(--primary);font-weight:700;"></span></span>
               <button class="btn btn-outline btn-sm" onclick="backStep1()">← Đổi đơn vị</button>
             </div>
-            <div class="form-row" style="grid-template-columns:1fr 1fr;">
+            <div class="form-row nf-hide" style="grid-template-columns:1fr 1fr;">
               <div class="form-group">
                 <label>Quý <span class="req">*</span></label>
                 <select class="inp" id="c12QuySel" onchange="renderQuarterBlocks()"></select>
@@ -457,7 +473,7 @@
                 <select class="inp" id="c12NamSel" onchange="renderQuarterBlocks()"></select>
               </div>
             </div>
-            <div style="margin:2px 0 6px;color:#64748b;font-size:12.5px;font-style:italic;">
+            <div class="nf-hide" style="margin:2px 0 6px;color:#64748b;font-size:12.5px;font-style:italic;">
               Chọn quý sẽ hiện 3 bảng nhập cho 3 tháng trong quý (chỉ của đơn vị đã chọn). Mỗi tháng lưu riêng.
             </div>
             <div id="c12QuarterWrap"></div>
@@ -1003,6 +1019,7 @@ function canModify(u,rec){
   if(rec.type==="cap1"||rec.type==="cap2") return canInputUnit(u,rec.donVi);
   return rec.createdBy===u.username;
 }
+function hienNutNhapMoi(u){ return isAdmin(u)&&canAnyInput(u); }
 function canAnyInput(u){
   return ["cap1","cap2","cap3","cap4","khac"].some(function(c){return canInputCap(u,c);});
 }
@@ -1026,7 +1043,7 @@ function buildTopbar(){
   var desc=document.getElementById("pageDesc");
   if(!u) desc.textContent='Bạn đang xem ở chế độ khách.';
   else if(hasPermNoUnit(u)) desc.textContent='Bạn chưa được giao đơn vị nào — hiện chỉ xem được. Liên hệ Admin để được giao đơn vị nhập kiểm tra cấp 1, cấp 2.';
-  else if(canAnyInput(u)&&!isAdmin(u)&&ktUnitsOf(u).length) desc.textContent='Bạn được nhập kiểm tra cấp 1, cấp 2 cho: '+myDonViList(u).join(", ")+'.';
+  else if(canAnyInput(u)&&!isAdmin(u)&&ktUnitsOf(u).length) desc.textContent='Bạn phụ trách: '+myDonViList(u).join(", ")+'. Bấm vào ô của đơn vị mình ở bảng "Tình hình nộp số liệu" để nhập hoặc sửa.';
   else if(canAnyInput(u)) desc.textContent='Bạn có quyền thao tác trên trang này.';
   else desc.textContent='Bạn chỉ có quyền xem trang này.';
 }
@@ -1035,6 +1052,7 @@ function buildTopbar(){
    TABS
 ═══════════════════════════════════════════════════ */
 function switchTab(tab){
+  if(tab!=="nhap") tatFocusNhap();
   ["nhap","danhsach","baocao"].forEach(function(t){
     document.getElementById("tab-"+t).classList.toggle("active", t===tab);
   });
@@ -1070,6 +1088,7 @@ function buildCapSelector(){
 }
 
 function selectCap(cap, forceShow){
+  tatFocusNhap();
   currentCap=cap;
   document.querySelectorAll(".cap-btn").forEach(function(b){b.classList.toggle("active",b.dataset.cap===cap);});
   document.getElementById("noPermMsg").style.display="none";
@@ -1461,8 +1480,11 @@ function saveMonth(btn){
   }
   function xong(){
     block.dataset.editId=item.id;   // lần lưu sau sẽ cập nhật thay vì tạo mới
+    var tuO=document.getElementById("tab-nhap").classList.contains("focus-mode");
     renderList(); renderBaoCao();
     toast("✅ Đã lưu "+CAP_LABELS[currentCap]+" tháng "+thang+" — "+donVi);
+    // Nhập từ ô của bảng theo dõi → lưu xong quay lại bảng
+    if(tuO){ switchTab("baocao"); setTimeout(function(){var s=document.getElementById("nopSection"); if(s) s.scrollIntoView({behavior:"smooth",block:"start"});},60); }
   }
   if(typeof DB==="undefined"){ ghiLocal(); xong(); return; }
 
@@ -1617,7 +1639,27 @@ function initBaoCaoFilters(){
   document.getElementById("bcThang12").value="q"+curQuy;
 }
 
+/* Thanh 4 quý (thay droplist) — giá trị nằm ở ô ẩn #bcThang12 ("q1".."q4") */
+function drawQuyBar(){
+  var bar=document.getElementById("bcQuyBar"); if(!bar) return;
+  var cur=document.getElementById("bcThang12").value, R=["I","II","III","IV"];
+  bar.innerHTML=[1,2,3,4].map(function(q){
+    var on=cur==="q"+q;
+    return '<button type="button" class="quy-btn'+(on?' on':'')+'" aria-pressed="'+on+'" onclick="chonQuy('+q+')">'+
+      '<b>Quý '+R[q-1]+'</b><small>T'+(3*q-2)+' – T'+(3*q)+'</small></button>';
+  }).join("");
+}
+function chonQuy(q){ document.getElementById("bcThang12").value="q"+q; renderBaoCao(); }
+
+/* Người đang xem là user được giao đơn vị → làm nổi đơn vị của họ, làm mờ đơn vị khác */
+function lopDongDonVi(dv){
+  var me=currentUser();
+  if(!me||isAdmin(me)||!myDonViList(me).length) return "";
+  return canInputUnit(me,dv)?"nop-mine":"nop-other";
+}
+
 function renderBaoCao(){
+  drawQuyBar();
   var nam=parseInt(document.getElementById("bcNam").value)||2026;
   var thang12Val=document.getElementById("bcThang12").value; // "q1".."q4" hoặc "1".."12"
 
@@ -1682,8 +1724,9 @@ function renderBaoCao(){
         td('<span style="color:#16a34a;font-weight:600;">'+c.da+'</span>',bg)+
         td('<span style="color:#d97706;font-weight:600;">'+c.dang+'</span>',bg);
     }
-    rows12+='<tr>'+
-      '<td style="padding:7px 10px;border:1px solid #e2e8f0;font-weight:500;">'+esc(dv)+'</td>'+
+    var _lop=lopDongDonVi(dv);
+    rows12+='<tr'+(_lop?' class="'+_lop+'"':'')+'>'+
+      '<td style="padding:7px 10px;border:1px solid #e2e8f0;font-weight:500;">'+esc(dv)+(_lop==="nop-mine"?'<span class="nop-tag">Đơn vị của bạn</span>':'')+'</td>'+
       cum(c1,'#f0f7ff')+cum(c2,'#f0fdf4')+
     '</tr>';
   });
@@ -1903,19 +1946,22 @@ function renderTheoDoiNop(nam,q){
           var ai=rec.createdBy?getFullname(rec.createdBy):"";
           var tip=(tt==="noptre"?"Nộp sau hạn — ":"Đã nộp — ")+"ngày "+_ktNgay(rec.createdAt,true)+(ai?" · "+ai:"")+
                   " · "+(parseInt(rec.soLanKiemTra)||0)+" lần KT";
-          o='<span class="nop-o nop-'+tt+'" title="'+esc(tip)+'">✓<small>'+(_ktNgay(rec.createdAt)||"&nbsp;")+'</small></span>';
+          var clickSua=canInputCap(u,cap)&&canInputUnit(u,dv);
+          o='<span class="nop-o nop-'+tt+(clickSua?' nop-click':'')+'" title="'+esc(tip+(clickSua?" — bấm để xem / sửa":""))+'"'+
+            (clickSua?' data-dv="'+esc(dv)+'" data-cap="'+cap+'" data-ym="'+ym+'" onclick="moNhapTu(this)"':'')+'>✓<small>'+(_ktNgay(rec.createdAt)||"&nbsp;")+'</small></span>';
         } else {
           var nhan={quahan:"Chưa nhập",denhan:"Hạn hôm nay",trongky:"Trong kỳ",chuadenky:"—",ngoai:"—"}[tt];
           var tip2={quahan:"Quá hạn nộp (hạn ngày 1 tháng sau)",denhan:"Hôm nay là hạn chót",trongky:"Tháng đang diễn ra",
                     chuadenky:"Chưa đến kỳ",ngoai:"Trước mốc bắt đầu theo dõi"}[tt];
-          var click=(tt==="quahan"||tt==="denhan"||tt==="trongky")&&canInputCap(u,cap)&&canInputUnit(u,dv);
+          var click=(tt==="quahan"||tt==="denhan"||tt==="trongky")&&canInputCap(u,cap)&&canInputUnit(u,dv);   // ô của đơn vị mình
           o='<span class="nop-o nop-'+tt+(click?' nop-click':'')+'" title="'+esc(tip2+(click?" — bấm để nhập":""))+'"'+
             (click?' data-dv="'+esc(dv)+'" data-cap="'+cap+'" data-ym="'+ym+'" onclick="moNhapTu(this)"':'')+'>'+nhan+'</span>';
         }
         return '<td>'+o+'</td>';
       }).join("");
     }).join("");
-    return '<tr><td class="nop-dv">'+esc(dv)+'</td>'+tds+'</tr>';
+    var lop=lopDongDonVi(dv);
+    return '<tr'+(lop?' class="'+lop+'"':'')+'><td class="nop-dv">'+esc(dv)+(lop==="nop-mine"?'<span class="nop-tag">Đơn vị của bạn</span>':'')+'</td>'+tds+'</tr>';
   });
   body.innerHTML=rows.join("");
   foot.innerHTML='<tr><td class="nop-dv">Số đơn vị đã nộp</td>'+months.map(function(ym){
@@ -1989,11 +2035,20 @@ function moNhapTu(el){
   document.getElementById("c12NamSel").value=y;
   document.getElementById("c12QuySel").value=quyCuaThang(m);
   goStep2();
-  setTimeout(function(){
-    var sec=document.querySelector('#c12QuarterWrap .qm-section[data-ym="'+ym+'"]');
-    if(sec){ sec.scrollIntoView({behavior:"smooth",block:"center"}); sec.style.boxShadow="0 0 0 3px #f5c6cb"; }
-  },60);
+  batFocusNhap(cap,dv,ym);
 }
+/* Chế độ nhập 1 tháng: ẩn chọn cấp / đơn vị / quý, chỉ hiện khối của tháng được bấm */
+function batFocusNhap(cap,dv,ym){
+  var tab=document.getElementById("tab-nhap"); if(!tab) return;
+  var p=String(ym).split("-");
+  tab.classList.add("focus-mode");
+  document.getElementById("nhapFocusHead").innerHTML='<div class="nf-title">'+esc(CAP_LABELS[cap]||cap)+' · '+esc(dv)+' · Tháng '+(+p[1])+'/'+p[0]+'</div>';
+  Array.prototype.forEach.call(document.querySelectorAll("#c12QuarterWrap .qm-section"),function(sec){
+    sec.classList.toggle("nf-on",sec.dataset.ym===ym);
+  });
+  window.scrollTo(0,0);
+}
+function tatFocusNhap(){ var tab=document.getElementById("tab-nhap"); if(tab) tab.classList.remove("focus-mode"); }
 
 function renderList(){
   var u=currentUser();
@@ -2327,6 +2382,7 @@ function editRecord(id,sheet){
       document.getElementById("c12QuySel").value=quyCuaThang(m);
     }
     renderQuarterBlocks(r);
+    batFocusNhap(r.type,currentDonVi,r.thang);
   } else {
     editId34=id;
     document.getElementById("c34Ngay").value=r.ngayKT||"";
@@ -2421,7 +2477,7 @@ function refreshRoleDependentUI(){
   var u=currentUser();
   buildTopbar();
   var tb=document.getElementById("tabBtnNhap");
-  if(tb) tb.style.display=canAnyInput(u)?"":"none";
+  if(tb) tb.style.display=hienNutNhapMoi(u)?"":"none";
   buildCapSelector();
   buildDonViSelect();
   // Chỉ đánh giá lại quyền của cấp đang chọn khi tab "Nhập mới" đang mở,
@@ -2458,7 +2514,7 @@ function init(){
   buildTopbar();
 
   // Hiển thị tab Nhập mới chỉ khi có quyền
-  document.getElementById("tabBtnNhap").style.display=canAnyInput(u)?"":"none";
+  document.getElementById("tabBtnNhap").style.display=hienNutNhapMoi(u)?"":"none";
 
   buildCapSelector();
   buildThangNamSelects();
