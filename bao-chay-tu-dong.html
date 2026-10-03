@@ -197,6 +197,74 @@
       font-variant-numeric:tabular-nums;white-space:nowrap;margin-top:1px;}
     .bd-cnt{color:var(--text);}   /* số lỗi để đen, phần trăm vẫn xanh */
     .bd-none{color:var(--text-light);font-size:12px;padding:8px 0;}
+
+    /* ══ THANH TRẠNG THÁI THÁNG (đầu trang) ══════════════════════
+       Gom chọn tháng + tình trạng tháng + thao tác Admin vào MỘT chỗ,
+       để người dùng nhìn là biết đang xem tháng nào, bao nhiêu lỗi,
+       đã khoá sổ chưa — rồi làm việc ngay với bảng nhật ký bên dưới. */
+    .mbar{display:flex;align-items:center;gap:14px;flex-wrap:wrap;background:#fff;border:1px solid var(--border);
+      border-radius:10px;box-shadow:0 1px 3px rgba(16,24,40,.08);padding:10px 14px;margin-bottom:16px;}
+    .mbar-nav{display:flex;align-items:center;gap:6px;}
+    .mbar-nav select.inp{width:auto;min-width:104px;padding:5px 28px 5px 10px;font-size:13px;font-weight:600;color:var(--primary);}
+    .mbar-nav select#filterLogYear{min-width:84px;}
+    .mbar-arrow{width:32px;height:32px;border-radius:8px;border:1.5px solid var(--border);background:#fff;color:var(--primary);
+      font-size:18px;line-height:1;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;transition:.15s;}
+    .mbar-arrow:hover{background:#dceaf7;border-color:var(--primary-light);}
+    .mbar-stats{display:flex;align-items:center;gap:10px;flex-wrap:wrap;flex:1;min-width:0;font-size:13px;color:var(--text-light);}
+    .mbar-stats b{color:var(--text);font-variant-numeric:tabular-nums;}
+    .mbar-stats .sep{color:#c3cede;}
+    .mbar-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+    .st-pill{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:20px;font-size:11.5px;font-weight:700;white-space:nowrap;}
+    .st-pill.locked{background:#fdedec;color:var(--danger);border:1px solid #f5c6cb;}
+    .st-pill.open{background:#fef5e4;color:#8a5a00;border:1px solid #f6dcaa;}
+
+    /* Khối thống kê thu gọn được (nhớ lựa chọn theo từng máy) */
+    details.stat-card{padding:0;}
+    details.stat-card>summary{list-style:none;cursor:pointer;padding:14px 20px;display:flex;align-items:center;gap:8px;
+      font-size:14.5px;font-weight:700;color:var(--primary);user-select:none;}
+    details.stat-card>summary::-webkit-details-marker{display:none;}
+    details.stat-card>summary .chev{transition:transform .15s;display:inline-block;}
+    details.stat-card[open]>summary .chev{transform:rotate(90deg);}
+    details.stat-card>summary .hint{font-size:11.5px;font-weight:500;color:var(--text-light);margin-left:auto;}
+    details.stat-card>#bctdDash{padding:0 20px 4px;}
+    .bd-col{cursor:pointer;}
+    .bd-col.sel .bd-na{border:1.5px solid var(--primary);}
+    .bd-col.sel .bd-v.na{color:var(--primary);}
+
+    /* Chip gợi ý biện pháp trong dòng nhập: to hơn cho dễ bấm */
+    .inline-edit-row .chip{font-size:11.5px;padding:3px 9px;}
+    .inline-edit-row .c-idx .badge{padding:2px 5px;font-size:10px;white-space:nowrap;}
+
+    /* ══ ĐIỆN THOẠI ══════════════════════════════════════════════
+       Bảng 7 cột cố định bề rộng bị bóp đến mức chữ xếp dọc từng ký tự.
+       Dưới 768px: mỗi bản ghi thành một "thẻ", mỗi ô là một dòng có nhãn. */
+    @media(max-width:768px){
+      .topbar{padding:0 12px;}
+      .topbar .pn-left>div{display:none;}           /* tên đơn vị 2 dòng đè lên nút */
+      .page-title{font-size:17px;}
+      .mbar{padding:10px;gap:10px;}
+      .mbar-actions{width:100%;}
+      .section-card{padding:14px;}
+      .err-table,.err-table tbody,.err-table tr,.err-table td{display:block;width:auto;}
+      .err-table colgroup,.err-table thead{display:none;}
+      .err-table th,.err-table td{border-right:none;}
+      .err-table td{border-bottom:none;padding:3px 12px;max-width:none!important;}
+      .err-table tr:not(.sys-row):not(.add-row){border-bottom:1px solid #e2e8f2;padding:8px 0;}
+      .err-table td.c-idx{display:none;}
+      .err-table td[data-label]::before{content:attr(data-label) ": ";font-weight:600;color:var(--text-light);font-size:11.5px;}
+      .err-table td.c-act{padding-top:6px;}
+      .err-table tr.inline-edit-row td{padding:4px 12px;}
+      .err-table tr.inline-edit-row td.c-idx{display:block;}
+      .err-table tr.inline-edit-row .btn{justify-content:center;}
+      .err-table tr.sys-row td>div{flex-wrap:wrap;row-gap:2px;}
+      .err-table tr.sys-row .badge,.err-table tr.sys-row td>div>span:last-child{white-space:nowrap;}
+      .mbar-stats{flex-basis:100%;order:3;}
+      .mbar-actions{order:4;}
+      /* Khối tài khoản: ẩn chữ, giữ icon + chip vai trò cho vừa một hàng */
+      .topbar .pn-right{gap:6px;}
+      .topbar .pn-user>span:not(.pn-chip),.topbar .pn-logout>span{display:none;}
+      .topbar .pn-user,.topbar .pn-logout{padding:5px 8px;}
+    }
   </style>
   <link rel="stylesheet" href="assets/flatpickr.min.css">
   <script src="assets/flatpickr.min.js"></script>
@@ -221,6 +289,37 @@
     <!-- TAB 1: HỆ THỐNG BCTD -->
     <div id="tab-bctd">
 
+      <!-- THANH TRẠNG THÁI THÁNG: chọn tháng + tình trạng + thao tác Admin -->
+      <div class="mbar" id="monthBar">
+        <div class="mbar-nav">
+          <button type="button" class="mbar-arrow" onclick="shiftMonth(-1)" title="Tháng trước" aria-label="Tháng trước">&#8249;</button>
+          <select class="inp" id="filterLogMonth" aria-label="Tháng" onchange="onMonthChange()"></select>
+          <select class="inp" id="filterLogYear" aria-label="Năm" onchange="onMonthChange()"></select>
+          <button type="button" class="mbar-arrow" onclick="shiftMonth(1)" title="Tháng sau" aria-label="Tháng sau">&#8250;</button>
+        </div>
+        <div class="mbar-stats" id="monthStats"></div>
+        <div class="mbar-actions">
+          <button class="btn btn-outline btn-sm" id="btnReport" onclick="openReportModal()" style="display:none"><svg class="lic-emoji" width="1.05em" height="1.05em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex-shrink:0" aria-hidden="true"><path d="M6 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.704.706l3.588 3.588A2.4 2.4 0 0 1 20 8v12a2 2 0 0 1-2 2z"/><path d="M14 2v5a1 1 0 0 0 1 1h5"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/></svg> Tạo báo cáo</button>
+          <button class="btn btn-sm" id="btnLockMonth" onclick="toggleLockMonth()" style="display:none"></button>
+        </div>
+      </div>
+
+      <!-- USER + VIEWER: NHẬP/XEM BÁO LỖI (đặt ngay dưới thanh tháng) -->
+      <div id="errorLogSection">
+        <div class="section-card">
+          <div class="section-card-head">
+            <div class="section-card-title"><svg class="lic-emoji" width="1.05em" height="1.05em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex-shrink:0" aria-hidden="true"><rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M12 11h4"/><path d="M12 16h4"/><path d="M8 11h.01"/><path d="M8 16h.01"/></svg> Nhật ký báo lỗi hệ thống BCTĐ</div>
+          </div>
+          <div id="errorLogContainer"></div>
+        </div>
+      </div>
+
+      <!-- THỐNG KÊ NĂM: thu gọn được -->
+      <details class="section-card stat-card" id="statCard" open>
+        <summary><span class="chev">&#9656;</span><span>Thống kê năm <span id="statYear"></span></span><span class="hint">Bấm vào cột tháng để xem tháng đó</span></summary>
+        <div id="bctdDash"></div>
+      </details>
+
       <!-- ADMIN: QUẢN LÝ THIẾT BỊ -->
       <div id="adminDeviceSection" style="display:none">
         <div class="section-card">
@@ -244,32 +343,6 @@
         </div>
       </div>
 
-      <!-- USER + VIEWER: NHẬP/XEM BÁO LỖI -->
-      <div id="errorLogSection">
-        <div class="section-card">
-          <div class="section-card-head">
-            <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
-              <div class="section-card-title"><svg class="lic-emoji" width="1.05em" height="1.05em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex-shrink:0" aria-hidden="true"><rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M12 11h4"/><path d="M12 16h4"/><path d="M8 11h.01"/><path d="M8 16h.01"/></svg> Nhật ký báo lỗi hệ thống BCTĐ</div>
-              <span id="lockBadge" class="lock-badge" style="display:none"><svg class="lic-emoji" width="1.05em" height="1.05em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex-shrink:0" aria-hidden="true"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg> Tháng đã khoá</span>
-            </div>
-            <div style="display:flex;gap:8px;align-items:center;">
-              <button class="btn btn-outline btn-sm" id="btnReport" onclick="openReportModal()" style="display:none"><svg class="lic-emoji" width="1.05em" height="1.05em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex-shrink:0" aria-hidden="true"><path d="M6 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.704.706l3.588 3.588A2.4 2.4 0 0 1 20 8v12a2 2 0 0 1-2 2z"/><path d="M14 2v5a1 1 0 0 0 1 1h5"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/></svg> Tạo báo cáo</button>
-              <button class="btn btn-sm" id="btnLockMonth" onclick="toggleLockMonth()" style="display:none"></button>
-            </div>
-            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
-              <div class="month-filter" style="margin-bottom:0;padding:6px 12px;box-shadow:none;border:1.5px solid var(--border);border-radius:8px;">
-                <label>Tháng:</label>
-                <select class="inp" id="filterLogMonth" style="width:80px;padding:4px 8px;font-size:12.5px;" onchange="renderErrorLog();updateLockUI()">
-                </select>
-                <select class="inp" id="filterLogYear" style="width:90px;padding:4px 8px;font-size:12.5px;" onchange="renderErrorLog();updateLockUI()">
-                </select>
-              </div>
-            </div>
-          </div>
-          <div id="bctdDash"></div>
-          <div id="errorLogContainer"></div>
-        </div>
-      </div>
     </div>
 
   </main>
@@ -476,8 +549,8 @@ function saveDevices(data){ save(K_DEVICES, data); }
 function saveErrors(data){ save(K_ERRORS, data); }
 
 function _dbToast(ok, msg){
-  if(ok) showToast("☁️ "+msg+" đã lên Sheets","info");
-  else   showToast("⚠️ Lưu local OK, chưa sync Sheets: "+msg,"warning");
+  if(ok) showToast("☁️ "+msg+" đã lưu lên máy chủ","info");
+  else   showToast("⚠️ Đã lưu trên máy này nhưng chưa đồng bộ lên máy chủ: "+msg,"warning");
 }
 
 function safePullDevices(){
@@ -634,13 +707,13 @@ function _errRowHtml(x,i,editable,locked){
   var _cn=_cu?String(_cu.username||"").trim().toLowerCase():"";
   var mine=!!(_cb && (_cb===_cf || _cb===_cn));
   var whoCell=mine
-    ?'<td style="font-size:12.5px;font-weight:700;color:var(--primary)">'+esc(x.createdBy)+'</td>'
-    :'<td style="font-size:12px;color:var(--text-light)">'+esc(x.createdBy||"—")+'</td>';
-  var tds='<td style="color:var(--text-light);font-size:12px">'+(i+1)+'</td>'+
-    '<td style="font-size:12.5px">'+childLabel+'</td>'+
+    ?'<td data-label="Người nhập" style="font-size:12.5px;font-weight:700;color:var(--primary)">'+esc(x.createdBy)+'</td>'
+    :'<td data-label="Người nhập" style="font-size:12px;color:var(--text-light)">'+esc(x.createdBy||"—")+'</td>';
+  var tds='<td class="c-idx" style="color:var(--text-light);font-size:12px">'+(i+1)+'</td>'+
+    '<td style="font-size:12.5px;font-weight:600">'+childLabel+'</td>'+
     '<td><span class="badge '+(x.errType==="Khác"?"badge-orange":"badge-red")+'">'+esc(errLabel)+'</span></td>'+
-    '<td style="white-space:nowrap">'+fmtDate(x.detectDate)+'</td>'+
-    '<td style="max-width:320px;font-size:12.5px">'+esc(x.measure||"—")+'</td>'+
+    '<td data-label="Ngày phát hiện" style="white-space:nowrap">'+fmtDate(x.detectDate)+'</td>'+
+    '<td data-label="Biện pháp" style="max-width:320px;font-size:12.5px">'+esc(x.measure||"—")+'</td>'+
     whoCell;
   // Khi tháng bị khoá: bỏ hẳn cột thao tác (đã có badge "Tháng đã khoá" ở trên)
   if(!locked){
@@ -648,7 +721,7 @@ function _errRowHtml(x,i,editable,locked){
       ?'<button class="btn btn-edit btn-sm" onclick="startInlineEdit(\''+x.id+'\')"><svg class="lic-emoji" width="1.05em" height="1.05em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex-shrink:0" aria-hidden="true"><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"/><path d="m15 5 4 4"/></svg></button> '+
        '<button class="btn btn-danger btn-sm" onclick="deleteError(\''+x.id+'\')"><svg class="lic-emoji" width="1.05em" height="1.05em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex-shrink:0" aria-hidden="true"><path d="M10 11v6"/><path d="M14 11v6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>'
       :(editable?'<span style="font-size:11px;color:var(--text-light)" title="Bạn không thể sửa bản ghi của người khác">—</span>':'');
-    tds+='<td style="white-space:nowrap">'+btns+'</td>';
+    tds+='<td class="c-act" style="white-space:nowrap">'+btns+'</td>';
   }
   return '<tr>'+tds+'</tr>';
 }
@@ -671,6 +744,7 @@ function renderBctdDash(){
   if(!selY||!selM) return;
   var fy=parseInt(selY.value,10), fm=parseInt(selM.value,10);
   var devices=getDevices();
+  var sy=document.getElementById("statYear"); if(sy) sy.textContent=fy||"";
   if(!devices.length||!fy){ host.innerHTML=""; return; }
 
   var errs=getErrors().filter(function(x){ return parseInt(x.year,10)===fy; });
@@ -685,13 +759,13 @@ function renderBctdDash(){
   var cols=thang.map(function(t){
     if(!t.khoa){
       // Chưa chốt sổ. Nếu đã lỡ nhập bản ghi thì ghi nhỏ "~n" để không giấu thông tin.
-      return '<div class="bd-col" title="Tháng '+t.m+'/'+fy+' — chưa khoá sổ'+
+      return '<div class="bd-col'+(t.m===fm?' sel':'')+'" onclick="goMonth('+t.m+','+fy+')" title="Tháng '+t.m+'/'+fy+' — chưa khoá sổ'+
              (t.n?', đã nhập '+t.n+' bản ghi (tạm tính)':'')+'">'+
                '<div class="bd-v na">'+(t.n?'~'+t.n:'–')+'</div>'+
                '<div class="bd-na"></div><div class="bd-m">'+t.m+'</div></div>';
     }
     var pc=maxN?Math.max(6,Math.round(t.n/maxN*100)):6;   // % chiều cao khung
-    return '<div class="bd-col'+(t.m===fm?' sel':'')+'" title="Tháng '+t.m+'/'+fy+' — '+t.n+' lỗi">'+
+    return '<div class="bd-col'+(t.m===fm?' sel':'')+'" onclick="goMonth('+t.m+','+fy+')" title="Tháng '+t.m+'/'+fy+' — '+t.n+' lỗi">'+
              '<div class="bd-stack" style="height:'+pc+'%">'+
                '<div class="bd-v">'+t.n+'</div>'+
                '<div class="bd-bar'+(t.n?'':' zero')+'"></div>'+
@@ -769,12 +843,14 @@ function renderErrorLog(){
   if(!container) return;
   var devices=getDevices();
   if(!devices.length){
+    renderMonthStats(fm,fy,[],[],locked);
     container.innerHTML='<div style="padding:22px;text-align:center;color:var(--text-light);font-size:13px">Chưa có hệ thống nào được tạo. Vui lòng liên hệ Admin để thêm hệ thống trước.</div>';
     return;
   }
   var errs=getErrors().filter(function(x){
     return (!fm||String(x.month)===fm) && (!fy||String(x.year)===fy);
   });
+  renderMonthStats(fm,fy,errs,devices,locked);
   var cols=locked?6:7; // tháng khoá thì bỏ cột thao tác
   var colgroup=locked
     ?'<colgroup><col style="width:44px"><col style="width:19%"><col style="width:21%"><col style="width:110px"><col style="width:32%"><col style="width:14%"></colgroup>'
@@ -813,7 +889,8 @@ function renderErrorLog(){
     }
     return out;
   }).join("");
-  container.innerHTML='<div class="table-wrap" style="margin-bottom:0"><table class="err-table">'+colgroup+thead+'<tbody>'+body+'</tbody></table></div>';
+  container.innerHTML='<div class="table-wrap" style="margin-bottom:0"><table class="err-table">'+colgroup+thead+'<tbody>'+body+'</tbody></table></div>'+
+    _suggestDatalists();
   // Kích hoạt date-picker cho dòng inline vừa render
   if((_inlineAddSystem||_inlineEditId)&&window.HSEDate){ HSEDate.attachAll(container); }
   // Focus ô nhập đầu tiên khi thêm mới
@@ -837,21 +914,21 @@ function inlineRowHtml(rec, idx){
   // Cột Người nhập: dòng thêm mới để trống (tự gán theo tài khoản khi lưu); dòng sửa hiện người tạo gốc
   var whoCell=rec?esc(rec.createdBy||"—"):'';
   return '<tr class="inline-edit-row" style="background:#eef6ff" onkeydown="ieKeydown(event)">'+
-    '<td style="color:var(--text-light);font-size:12px;vertical-align:top;padding-top:8px">'+idxCell+'</td>'+
+    '<td class="c-idx" style="color:var(--text-light);font-size:12px;vertical-align:top;padding-top:8px">'+idxCell+'</td>'+
     '<td style="vertical-align:top"><div style="display:flex;flex-direction:column;gap:4px">'+
-       '<input class="inp" id="ie_child" '+st+' placeholder="Thiết bị (VD: SD123)" value="'+childVal+'">'+
-       '<input class="inp" id="ie_loc" '+st+' placeholder="Vị trí (VD: kho A1)" value="'+locVal+'"></div></td>'+
+       '<input class="inp" id="ie_child" list="dl_child" autocomplete="off" onchange="ieAutoLocation()" '+st+' placeholder="Thiết bị (VD: SD123)" value="'+childVal+'">'+
+       '<input class="inp" id="ie_loc" list="dl_loc" autocomplete="off" '+st+' placeholder="Vị trí (VD: kho A1)" value="'+locVal+'"></div></td>'+
     '<td style="vertical-align:top"><div style="display:flex;flex-direction:column;gap:4px">'+
        '<select class="inp" id="ie_errtype" '+st+' onchange="toggleInlineErrType()">'+
          '<option value="Lỗi thiết bị"'+(!isKhac?' selected':'')+'>Lỗi thiết bị</option>'+
          '<option value="Khác"'+(isKhac?' selected':'')+'>Khác</option></select>'+
        '<input class="inp" id="ie_errcustom" placeholder="Mô tả lỗi khác" value="'+errCustomVal+'" style="font-size:12px;padding:4px 6px;width:100%;margin:0;display:'+(isKhac?'block':'none')+'"></div></td>'+
-    '<td style="vertical-align:top"><input class="inp" type="date" id="ie_date" '+st+' value="'+dateVal+'"></td>'+
+    '<td data-label="Ngày phát hiện" style="vertical-align:top"><input class="inp" type="date" id="ie_date" '+st+' value="'+dateVal+'"></td>'+
     '<td style="vertical-align:top;min-width:170px"><div style="display:flex;flex-direction:column;gap:4px">'+
-       '<div class="chip-group" style="margin:0;display:flex;flex-wrap:wrap;gap:3px">'+
-         '<span class="chip" style="font-size:10px;padding:2px 6px" onclick="appendBienPhapInline(\'Kiểm tra hiện trường\')">Kiểm tra hiện trường</span>'+
-         '<span class="chip" style="font-size:10px;padding:2px 6px" onclick="appendBienPhapInline(\'Khởi động lại hệ thống\')">Khởi động lại</span>'+
-         '<span class="chip" style="font-size:10px;padding:2px 6px" onclick="appendBienPhapInline(\'Phối hợp với Đội BVVT tiếp tục giám sát hệ thống\')">Phối hợp BVVT</span></div>'+
+       '<div class="chip-group" style="margin:0;display:flex;flex-wrap:wrap;gap:4px">'+
+         '<span class="chip" onclick="appendBienPhapInline(\'Kiểm tra hiện trường\')">Kiểm tra hiện trường</span>'+
+         '<span class="chip" onclick="appendBienPhapInline(\'Khởi động lại hệ thống\')">Khởi động lại</span>'+
+         '<span class="chip" onclick="appendBienPhapInline(\'Phối hợp với Đội BVVT tiếp tục giám sát hệ thống\')">Phối hợp BVVT</span></div>'+
        '<textarea class="inp" id="ie_measure" rows="2" style="font-size:12px;padding:4px 6px;width:100%;margin:0" placeholder="Biện pháp khắc phục...">'+measureVal+'</textarea></div></td>'+
     '<td style="font-size:12px;color:var(--text-light);vertical-align:top;padding-top:8px">'+whoCell+'</td>'+
     '<td style="white-space:nowrap;vertical-align:top"><div style="display:flex;flex-direction:column;gap:4px">'+
@@ -859,6 +936,99 @@ function inlineRowHtml(rec, idx){
        '<button class="btn btn-outline btn-sm" onclick="cancelInline()">Hủy</button></div></td>'+
   '</tr>';
 }
+
+/* ══════════════ GỢI Ý THIẾT BỊ / VỊ TRÍ KHI NHẬP ══════════════
+   Lấy từ các bản ghi CŨ của CÙNG hệ thống, xếp theo số lần dùng.
+   Gộp các cách viết chỉ khác hoa/thường/khoảng trắng ("kho H1" vs
+   "Kho H1") và giữ cách viết được dùng nhiều nhất → dữ liệu đồng nhất. */
+function _normKey(v){ return String(v||"").replace(/\s+/g," ").trim().toLowerCase(); }
+function _rankValues(list){
+  var g={};
+  list.forEach(function(v){
+    var k=_normKey(v); if(!k) return;
+    var t=String(v).replace(/\s+/g," ").trim();
+    if(!g[k]) g[k]={n:0,forms:{}};
+    g[k].n++; g[k].forms[t]=(g[k].forms[t]||0)+1;
+  });
+  return Object.keys(g).map(function(k){
+    var f=g[k].forms, best=Object.keys(f).sort(function(a,b){return f[b]-f[a];})[0];
+    return {v:best,n:g[k].n};
+  }).sort(function(a,b){ return b.n-a.n || a.v.localeCompare(b.v,"vi"); }).map(function(x){return x.v;});
+}
+function _inlineDeviceId(){
+  if(_inlineAddSystem) return _inlineAddSystem;
+  if(_inlineEditId){ var r=getErrors().find(function(x){return x.id===_inlineEditId;}); return r?r.deviceId:null; }
+  return null;
+}
+function _suggestDatalists(){
+  var did=_inlineDeviceId();
+  if(!did) return "";
+  var mine=getErrors().filter(function(x){ return String(x.deviceId)===String(did); });
+  var opt=function(v){ return '<option value="'+esc(v)+'"></option>'; };
+  return '<datalist id="dl_child">'+_rankValues(mine.map(function(x){return x.childDevice;})).map(opt).join("")+'</datalist>'+
+         '<datalist id="dl_loc">'+_rankValues(mine.map(function(x){return x.devLocation;})).map(opt).join("")+'</datalist>';
+}
+/* Chọn một thiết bị đã từng báo lỗi → tự điền vị trí quen dùng (nếu ô vị trí đang trống) */
+function ieAutoLocation(){
+  var c=document.getElementById("ie_child"), l=document.getElementById("ie_loc");
+  if(!c||!l||l.value.trim()) return;
+  var did=_inlineDeviceId(), k=_normKey(c.value); if(!did||!k) return;
+  var locs=getErrors().filter(function(x){ return String(x.deviceId)===String(did) && _normKey(x.childDevice)===k; })
+                      .map(function(x){ return x.devLocation; });
+  var best=_rankValues(locs)[0];
+  if(best) l.value=best;
+}
+
+/* ══════════════ THANH TRẠNG THÁI THÁNG ══════════════ */
+function renderMonthStats(fm,fy,errs,devices,locked){
+  var host=document.getElementById("monthStats");
+  if(!host) return;
+  if(!fm||!fy){ host.innerHTML=""; return; }
+  var coLoi={};
+  errs.forEach(function(x){ coLoi[x.deviceId]=1; });
+  var nHT=devices.filter(function(d){ return coLoi[d.id]; }).length;
+  var lockIco='<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>';
+  host.innerHTML=
+    '<span><b>'+errs.length+'</b> lỗi</span><span class="sep">·</span>'+
+    '<span><b>'+nHT+'/'+devices.length+'</b> hệ thống có lỗi</span>'+
+    (locked
+      ?'<span class="st-pill locked" title="Đã chốt sổ: không thêm/sửa/xoá được">'+lockIco+' Đã khoá sổ</span>'
+      :'<span class="st-pill open" title="Tháng chưa chốt sổ: số liệu còn có thể thay đổi">Chưa khoá sổ</span>');
+}
+
+/* ══════════════ CHUYỂN THÁNG ══════════════ */
+function _ensureYearOption(y){
+  var sel=document.getElementById("filterLogYear");
+  if(!sel) return;
+  var has=[].some.call(sel.options,function(o){return String(o.value)===String(y);});
+  if(has) return;
+  var ys=[].map.call(sel.options,function(o){return parseInt(o.value,10);}).concat([y]).sort(function(a,b){return b-a;});
+  sel.innerHTML=ys.map(function(v){return '<option value="'+v+'">'+v+'</option>';}).join("");
+}
+function goMonth(m,y){
+  _ensureYearOption(y);
+  document.getElementById("filterLogMonth").value=String(m);
+  document.getElementById("filterLogYear").value=String(y);
+  onMonthChange();
+}
+function shiftMonth(d){
+  var m=parseInt(document.getElementById("filterLogMonth").value,10)||(new Date().getMonth()+1);
+  var y=parseInt(document.getElementById("filterLogYear").value,10)||new Date().getFullYear();
+  m+=d; if(m<1){m=12;y--;} if(m>12){m=1;y++;}
+  goMonth(m,y);
+}
+/* Đổi tháng thì đóng dòng đang nhập/sửa — tránh lưu nhầm bản ghi sang tháng mới */
+function onMonthChange(){
+  _inlineAddSystem=null; _inlineEditId=null;
+  renderErrorLog(); updateLockUI();
+}
+
+/* Nhớ trạng thái mở/thu gọn khối Thống kê (theo từng máy) */
+(function(){
+  var d=document.getElementById("statCard"); if(!d) return;
+  try{ if(localStorage.getItem("hse_bctd_stat_open")==="0") d.removeAttribute("open"); }catch(e){}
+  d.addEventListener("toggle",function(){ try{ localStorage.setItem("hse_bctd_stat_open",d.open?"1":"0"); }catch(e){} });
+})();
 
 function toggleInlineErrType(){
   var v=document.getElementById("ie_errtype").value;
@@ -1156,13 +1326,18 @@ function populateReportSelects(){
   var now=new Date();
   var selM=document.getElementById("rMonth");
   var selY=document.getElementById("rYear");
+  // Mặc định theo tháng đang xem ở thanh trạng thái (không phải tháng hiện tại)
+  var curM=parseInt(document.getElementById("filterLogMonth").value,10)||(now.getMonth()+1);
+  var curY=parseInt(document.getElementById("filterLogYear").value,10)||now.getFullYear();
   selM.innerHTML=[1,2,3,4,5,6,7,8,9,10,11,12].map(function(m){
-    return'<option value="'+m+'"'+(m===(now.getMonth()+1)?' selected':'')+'>Tháng '+m+'</option>';
+    return'<option value="'+m+'"'+(m===curM?' selected':'')+'>Tháng '+m+'</option>';
   }).join("");
-  var years=[];
-  for(var y=now.getFullYear()-2;y<=now.getFullYear();y++) years.push(y);
+  // Năm: mọi năm có dữ liệu + năm hiện tại + năm đang xem
+  var years=[now.getFullYear(),curY];
+  getErrors().forEach(function(e){ var y=parseInt(e.year,10); if(y) years.push(y); });
+  years=years.filter(function(y,i){return years.indexOf(y)===i;}).sort(function(a,b){return b-a;});
   selY.innerHTML=years.map(function(y){
-    return'<option value="'+y+'"'+(y===now.getFullYear()?' selected':'')+'>'+y+'</option>';
+    return'<option value="'+y+'"'+(y===curY?' selected':'')+'>'+y+'</option>';
   }).join("");
 }
 
