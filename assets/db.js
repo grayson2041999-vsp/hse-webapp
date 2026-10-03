@@ -75,6 +75,8 @@ var DB = (function () {
     pccc_devices:       "HTBCTD_ThietBi",
     pccc_errors:        "HTBCTD_Loi",
     pccc_locked_months: "HTBCTD_ThangDaKhoa",
+    // Xác nhận "không có lỗi" theo hệ thống/tháng — supabase/htbctd_xac_nhan.sql
+    pccc_confirms:      "HTBCTD_XacNhan",
     // Kho key-value, hiện chỉ phục vụ tab Tra cứu ATVSLĐ.
     // Khoá chính là cột "key" (xem PK ở trên) — tra theo tên logic nên không đổi.
     app_settings:       "TraCuuATVSLD",

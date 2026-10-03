@@ -217,6 +217,16 @@
     .st-pill{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:20px;font-size:11.5px;font-weight:700;white-space:nowrap;}
     .st-pill.locked{background:#fdedec;color:var(--danger);border:1px solid #f5c6cb;}
     .st-pill.open{background:#fef5e4;color:#8a5a00;border:1px solid #f6dcaa;}
+    .st-pill.ok{background:#eafaf1;color:var(--success);border:1px solid #bfe5cd;}
+    /* Xác nhận "không có lỗi" theo từng hệ thống */
+    .ok-tag{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:700;color:var(--success);
+      background:#eafaf1;border:1px solid #bfe5cd;border-radius:20px;padding:1px 10px;white-space:nowrap;}
+    .ok-by{font-size:11px;color:var(--text-light);font-weight:500;white-space:nowrap;}
+    .pend-tag{font-size:11px;font-weight:600;color:#8a5a00;background:#fef5e4;border:1px solid #f6dcaa;border-radius:20px;padding:1px 9px;white-space:nowrap;}
+    .btn-ok{background:#eafaf1;color:var(--success);border:1.5px solid #9fd6b3;}
+    .btn-ok:hover{background:#d4f2e0;}
+    .link-btn{background:none;border:none;color:var(--text-light);font-size:11px;text-decoration:underline;cursor:pointer;padding:0 2px;}
+    .link-btn:hover{color:var(--danger);}
 
     /* Khối thống kê thu gọn được (nhớ lựa chọn theo từng máy) */
     details.stat-card{padding:0;}
@@ -398,6 +408,7 @@
       </div>
 
       <div class="section-divider">Dữ liệu thiết bị báo lỗi (tự động từ nhật ký)</div>
+      <div id="reportPending"></div>
       <div class="report-preview" id="reportPreview"></div>
 
       <div class="section-divider">Thông tin bổ sung (Admin nhập)</div>
@@ -456,6 +467,11 @@ var K_DEVICES = "hse_pccc_devices";
 var K_ERRORS  = "hse_pccc_errors";
 var K_LOCKED        = "hse_pccc_locked_months";
 var K_LOCKED_SHEET  = "pccc_locked_months";
+/* Xác nhận "không có lỗi" của từng hệ thống trong từng tháng.
+   Bảng Supabase: HTBCTD_XacNhan (supabase/htbctd_xac_nhan.sql).
+   id cố định theo hệ thống + tháng → bấm 2 lần cũng không tạo trùng. */
+var K_CONFIRMS      = "hse_pccc_confirms";
+var K_CONFIRMS_SHEET= "pccc_confirms";
 
 function load(k,d){try{var v=localStorage.getItem(k);return v?JSON.parse(v):d;}catch(e){return d;}}
 function save(k,v){localStorage.setItem(k,JSON.stringify(v));}
@@ -574,6 +590,72 @@ function safePullErrors(){
     }
   }).catch(function(){});
 }
+function safePullConfirms(){
+  if(!DB||!DB.isReady()) return;
+  DB.getAll(K_CONFIRMS_SHEET).then(function(r){
+    if(r!==null&&r!==undefined){ save(K_CONFIRMS, r||[]); renderErrorLog(); }
+  }).catch(function(e){ console.warn("[BCTĐ] Chưa đọc được bảng xác nhận:", e&&e.message); });
+}
+
+/* ================================================================
+   XÁC NHẬN "KHÔNG CÓ LỖI" THEO HỆ THỐNG
+   "0 lỗi" trên bảng có thể là thật sự không lỗi, hoặc là chưa ai nhập.
+   Xác nhận giúp phân biệt hai trường hợp đó trước khi khoá sổ.
+   ================================================================ */
+function getConfirms(){ return load(K_CONFIRMS,[]); }
+function confirmId(devId,m,y){ return "ok-"+devId+"-"+m+"-"+y; }
+function findConfirm(devId,m,y){
+  var id=confirmId(devId,m,y);
+  return getConfirms().find(function(c){
+    return c.id===id || (String(c.deviceId)===String(devId)&&String(c.month)===String(m)&&String(c.year)===String(y));
+  })||null;
+}
+/* Hệ thống chưa có báo lỗi và cũng chưa được xác nhận trong tháng m/y */
+function pendingDevices(m,y){
+  var errs=getErrors().filter(function(x){ return String(x.month)===String(m)&&String(x.year)===String(y); });
+  return getDevices().filter(function(d){
+    return !errs.some(function(x){ return String(x.deviceId)===String(d.id); }) && !findConfirm(d.id,m,y);
+  });
+}
+function _curMonthYear(){
+  return { m:parseInt(document.getElementById("filterLogMonth").value,10),
+           y:parseInt(document.getElementById("filterLogYear").value,10) };
+}
+function confirmNoError(devId){
+  var u=currentUser();
+  if(!canEdit(u)){ showToast("⚠️ Bạn không có quyền thao tác","warning"); return; }
+  var t=_curMonthYear();
+  if(!t.m||!t.y) return;
+  if(isMonthLocked(t.m,t.y)){ showToast("🔒 Tháng "+t.m+"/"+t.y+" đã bị khoá.","danger"); return; }
+  var dev=getDevices().find(function(d){return d.id===devId;});
+  var hasErr=getErrors().some(function(x){ return String(x.deviceId)===String(devId)&&String(x.month)===String(t.m)&&String(x.year)===String(t.y); });
+  if(hasErr){ showToast("⚠️ Hệ thống này đã có báo lỗi trong tháng, không thể xác nhận không có lỗi.","warning"); return; }
+  if(!confirm("Xác nhận hệ thống\n"+(dev?dev.name+" — "+dev.location:"")+"\nKHÔNG có lỗi trong Tháng "+t.m+"/"+t.y+"?")) return;
+  var item={ id:confirmId(devId,t.m,t.y), deviceId:devId, month:t.m, year:t.y,
+             createdBy:u?(u.fullname||u.username):"", createdAt:new Date().toISOString() };
+  var arr=getConfirms().filter(function(c){ return c.id!==item.id; });
+  arr.push(item); save(K_CONFIRMS,arr);
+  if(typeof DB!=="undefined"&&DB.isReady()){
+    DB.insert(K_CONFIRMS_SHEET,item).then(function(){ _dbToast(true,"Xác nhận"); })
+      .catch(function(e){ _dbToast(false,e&&e.message||""); });
+  }
+  renderErrorLog();
+  showToast("✅ Đã xác nhận không có lỗi","success");
+}
+function unconfirmNoError(devId,silent){
+  var t=_curMonthYear();
+  var c=findConfirm(devId,t.m,t.y);
+  if(!c) return;
+  if(!silent){
+    if(isMonthLocked(t.m,t.y)){ showToast("🔒 Tháng "+t.m+"/"+t.y+" đã bị khoá.","danger"); return; }
+    if(!isOwner(c)){ showToast("⚠️ Chỉ người đã xác nhận hoặc Admin mới huỷ được.","warning"); return; }
+    if(!confirm("Huỷ xác nhận 'không có lỗi' của hệ thống này?")) return;
+  }
+  save(K_CONFIRMS,getConfirms().filter(function(x){ return x.id!==c.id; }));
+  if(typeof DB!=="undefined"&&DB.isReady()){ DB.delete(K_CONFIRMS_SHEET,c.id).catch(function(){}); }
+  if(!silent){ renderErrorLog(); showToast("Đã huỷ xác nhận","info"); }
+}
+
 function safePullLockedMonths(){
   if(!DB||!DB.isReady()) return;
   DB.getAll(K_LOCKED_SHEET).then(function(r){
@@ -633,7 +715,12 @@ function toggleLockMonth(){
     }
     showToast("🔓 Đã mở khoá Tháng "+fm+"/"+fy,"success");
   } else {
-    if(!confirm("Khoá Tháng "+fm+"/"+fy+"? User sẽ không thể thêm/sửa/xóa bản ghi tháng này.")) return;
+    var pend=pendingDevices(fm,fy);
+    var warn=pend.length
+      ?"⚠️ Còn "+pend.length+" hệ thống CHƯA có báo lỗi và CHƯA được xác nhận 'không có lỗi':\n"+
+        pend.map(function(d){ return "  • "+d.name+" — "+d.location; }).join("\n")+"\n\n"
+      :"";
+    if(!confirm(warn+"Khoá Tháng "+fm+"/"+fy+"? User sẽ không thể thêm/sửa/xóa bản ghi tháng này.")) return;
     var lockId="lock-"+fm+"-"+fy;
     var lockItem={id:lockId, month:fm, year:fy, lockedAt:new Date().toISOString(), lockedBy:u?(u.fullname||u.username):"Admin"};
     var arr=getLockedMonths();
@@ -871,9 +958,17 @@ function renderErrorLog(){
     var addingThis=editable&&!locked&&_inlineAddSystem===dev.id;
     // Badge đếm số lỗi của hệ thống trong tháng đang chọn
     var cnt=rows.length;
-    var countBadge=cnt>0
-      ?'<span class="badge badge-red" style="font-size:11px">'+cnt+' lỗi</span>'
-      :'<span style="font-size:11px;color:var(--text-light);background:#eef1f6;border-radius:10px;padding:1px 9px;font-weight:600">0 lỗi</span>';
+    var conf=cnt?null:findConfirm(dev.id,fm,fy);
+    var countBadge;
+    if(cnt>0) countBadge='<span class="badge badge-red" style="font-size:11px">'+cnt+' lỗi</span>';
+    else if(conf){
+      var canUndo=editable&&!locked&&isOwner(conf);
+      countBadge='<span class="ok-tag" title="Đã xác nhận không có lỗi trong tháng">&#10003; Không có lỗi</span>'+
+        '<span class="ok-by">'+esc(conf.createdBy||"")+(conf.createdAt?" · "+fmtDate(conf.createdAt):"")+'</span>'+
+        (canUndo?'<button class="link-btn" onclick="unconfirmNoError(\''+dev.id+'\')" title="Huỷ xác nhận">Huỷ</button>':'');
+    }
+    else countBadge='<span style="font-size:11px;color:var(--text-light);background:#eef1f6;border-radius:10px;padding:1px 9px;font-weight:600">0 lỗi</span>'+
+        '<span class="pend-tag" title="Chưa có báo lỗi và chưa ai xác nhận hệ thống này không có lỗi">Chưa xác nhận</span>';
     var out='<tr class="sys-row"><td colspan="'+cols+'" style="background:#eef4fb;border-left:4px solid var(--primary);padding:6px 12px">'+
       '<div style="display:flex;align-items:center;gap:8px">'+bell+
         '<span style="font-weight:700;color:var(--primary);font-size:13px">'+esc(dev.name)+'</span>'+
@@ -885,7 +980,9 @@ function renderErrorLog(){
     // Nút "+ Nhập báo lỗi" canh giữa ở cuối nhóm hệ thống
     else if(editable&&!locked){
       out+='<tr class="add-row"><td colspan="'+cols+'" style="text-align:center;padding:8px 6px;background:#fafcff">'+
-        '<button class="btn btn-outline btn-sm" style="font-weight:600" onclick="startInlineAdd(\''+dev.id+'\')">'+plusIcon+'Nhập báo lỗi</button></td></tr>';
+        '<button class="btn btn-outline btn-sm" style="font-weight:600" onclick="startInlineAdd(\''+dev.id+'\')">'+plusIcon+'Nhập báo lỗi</button>'+
+        (!cnt&&!conf?' <button class="btn btn-ok btn-sm" style="font-weight:600;margin-left:6px" onclick="confirmNoError(\''+dev.id+'\')" title="Xác nhận hệ thống không có lỗi trong tháng này">&#10003; Xác nhận không có lỗi</button>':'')+
+        '</td></tr>';
     }
     return out;
   }).join("");
@@ -991,6 +1088,13 @@ function renderMonthStats(fm,fy,errs,devices,locked){
   host.innerHTML=
     '<span><b>'+errs.length+'</b> lỗi</span><span class="sep">·</span>'+
     '<span><b>'+nHT+'/'+devices.length+'</b> hệ thống có lỗi</span>'+
+    (function(){
+      if(!devices.length) return "";
+      var p=pendingDevices(fm,fy).length;
+      return p
+        ?'<span class="st-pill open" title="Hệ thống chưa có báo lỗi và chưa được xác nhận không có lỗi">Còn '+p+' hệ thống chưa xác nhận</span>'
+        :'<span class="st-pill ok" title="Mọi hệ thống đều đã có báo lỗi hoặc đã xác nhận không có lỗi">&#10003; Đủ '+devices.length+'/'+devices.length+' hệ thống</span>';
+    })()+
     (locked
       ?'<span class="st-pill locked" title="Đã chốt sổ: không thêm/sửa/xoá được">'+lockIco+' Đã khoá sổ</span>'
       :'<span class="st-pill open" title="Tháng chưa chốt sổ: số liệu còn có thể thay đổi">Chưa khoá sổ</span>');
@@ -1132,6 +1236,14 @@ function saveInline(id){
     if(idx>=0)data[idx]=item; else data.push(item);
   } else { data.push(item); }
   saveErrors(data);
+  // Hệ thống đã xác nhận "không có lỗi" mà nay có báo lỗi → xác nhận không còn đúng, gỡ bỏ
+  if(isNew && findConfirm(deviceId,month,year)){
+    var _t=_curMonthYear();
+    if(String(_t.m)===String(month)&&String(_t.y)===String(year)){
+      unconfirmNoError(deviceId,true);
+      setTimeout(function(){ showToast("ℹ️ Đã bỏ xác nhận 'không có lỗi' của hệ thống này vì vừa có báo lỗi","info"); },3000);
+    }
+  }
   // Sheets/Supabase: insert với bản ghi mới, update (fallback insert) với bản ghi cũ
   if(typeof DB!=="undefined"&&DB.isReady()){
     var _op=isNew
@@ -1347,6 +1459,15 @@ function previewReportData(){
   var errors=getErrors().filter(function(e){return parseInt(e.month,10)===m&&parseInt(e.year,10)===y;});
   var devices=getDevices();
   var prev=document.getElementById("reportPreview");
+  var pendBox=document.getElementById("reportPending");
+  if(pendBox){
+    var pend=pendingDevices(m,y);
+    pendBox.innerHTML=pend.length
+      ?'<div class="warn-box" style="margin-bottom:10px">Còn <b>'+pend.length+'</b> hệ thống chưa có báo lỗi và chưa được xác nhận "không có lỗi". '+
+        'Báo cáo sẽ ghi các hệ thống này là "Không ghi nhận hư hỏng/báo lỗi":<br>'+
+        pend.map(function(d){ return '• '+esc(d.name)+' — '+esc(d.location); }).join('<br>')+'</div>'
+      :'';
+  }
   if(!errors.length){
     prev.innerHTML='<div style="color:var(--text-light);font-style:italic;text-align:center;padding:10px">Không có bản ghi báo lỗi trong Tháng '+m+'/'+y+'</div>';
     return;
@@ -1763,6 +1884,7 @@ setTimeout(function(){
   safePullDevices();
   safePullErrors();
   safePullLockedMonths();
+  safePullConfirms();
 },1500);
 </script>
   <script src="assets/lucide-icons.js"></script>

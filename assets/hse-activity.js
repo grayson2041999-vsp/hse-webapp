@@ -32,6 +32,7 @@
     ke_hoach_lap_lai: { label:"Kế hoạch HSE",        icon:"📋", noun:"kế hoạch định kỳ" },
     pccc_devices:     { label:"PCCC & CNCH",         icon:"🧯", noun:"thiết bị PCCC" },
     pccc_errors:      { label:"PCCC & CNCH",         icon:"🧯", noun:"báo lỗi HTBCTĐ" },
+    pccc_confirms:    { label:"PCCC & CNCH",         icon:"🧯", noun:"xác nhận không có lỗi HTBCTĐ" },
     hl_nhansu:        { label:"Huấn luyện – Đào tạo", icon:"🎓", noun:"hồ sơ đào tạo" },
     sop:              { label:"SOP / Quy trình",     icon:"📑", noun:"quy trình SOP" }
   };
@@ -171,6 +172,7 @@
   var REF_PAGE = {
     ke_hoach_mot_lan: "ke-hoach.html", ke_hoach_lap_lai: "ke-hoach.html",
     pccc_devices: "bao-chay-tu-dong.html", pccc_errors: "bao-chay-tu-dong.html",
+    pccc_confirms: "bao-chay-tu-dong.html",
     hl_nhansu: "index.html#huan-luyen-dao-tao", sop: "index.html#sop",
     phieu_requests: "cap-phat-bhld.html", cap_phat_tien_trinh: "cap-phat-bhld.html",
     nhanvien: "cap-phat-bhld.html"

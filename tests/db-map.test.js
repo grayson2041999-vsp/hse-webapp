@@ -157,7 +157,8 @@ const dot8 = {
   hl_settings:        'HuanLuyen-DaoTao_CaiDat',
   pccc_devices:       'HTBCTD_ThietBi',
   pccc_errors:        'HTBCTD_Loi',
-  pccc_locked_months: 'HTBCTD_ThangDaKhoa'
+  pccc_locked_months: 'HTBCTD_ThangDaKhoa',
+  pccc_confirms:      'HTBCTD_XacNhan'
 };
 for (const [cu, moi] of Object.entries(dot8)) {
   calls=[]; await DB.getAll(cu);
