@@ -1958,7 +1958,7 @@ function renderNopBanner(){
         (t.trangThai==="denhan"?"Hôm nay là hạn chót":"Quá hạn")+' — bấm để xem bảng theo dõi">'+esc(K.moTaThang(t))+'</button>';
     }).join(" ")+'</div>';
   });
-  html+='<div class="nb-note">Hạn nộp: ngày 1 tháng sau. Tháng không ghi chú cấp là thiếu cả cấp 1 và cấp 2.'+
+  html+='<div class="nb-note">Tháng không ghi chú cấp là thiếu cả cấp 1 và cấp 2.'+
     (denHan?' <b>Hôm nay là hạn chót nộp số liệu '+K.nhanThang(thangTruoc)+'.</b>':'')+'</div>';
   el.className="nop-banner nb-red";
   el.innerHTML=html;

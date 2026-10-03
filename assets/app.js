@@ -1095,7 +1095,7 @@
           nhom.map(function(d){
             return '<div><b>'+esc(d.donVi)+'</b>: '+d.thang.map(function(t){ return esc(K.moTaThang(t)); }).join(", ")+'</div>';
           }).join("")+
-          '<div style="margin-top:6px;font-size:12px">Hạn nộp: ngày 1 tháng sau. '+
+          '<div style="margin-top:6px;font-size:12px">'+
           '<a href="kiem-tra-cac-cap.html" style="color:#a12a1c;font-weight:700">Mở trang Kiểm tra các cấp →</a></div>'+
         '</div>';
     }).catch(function(e){ console.warn("[Dashboard] Theo dõi nộp số liệu cấp 1/2:", e && e.message || e); });
