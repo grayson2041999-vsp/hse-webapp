@@ -1193,14 +1193,17 @@
       ".adm2-gt{font-size:12px;font-weight:700;padding:0 0 2px;display:flex;justify-content:space-between;align-items:center}",
       ".adm2-gt a{font-weight:600;font-size:12px}",
       ".adm2-sw{width:100%;min-height:44px;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:0 4px;background:none;border:none;cursor:pointer;text-align:left;font-size:13.5px;color:var(--text);font-family:inherit;border-radius:6px}",
-      ".adm2-sw:hover{background:#f6f8fc}",
+      ".adm2-sw:hover{background:#f6f8fc}.adm2-sw>span{font-weight:700}",
+      ".adm2-usum{display:flex;align-items:center;justify-content:space-between;gap:8px;width:calc(100% - 8px);margin:-4px 4px 8px;min-height:30px;padding:0 10px;border-radius:6px;cursor:pointer;font-size:12.5px;text-align:left;font-family:inherit;background:#f4f7fc;border:1px solid #dde5f1;color:#3d4c63}",
+      ".adm2-usum span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}",
+      ".adm2-usum b{flex:none;font-size:12px;font-weight:400;transition:transform .15s}.adm2-usum[aria-expanded=true] b{transform:rotate(180deg)}",
+      ".adm2-usum.none{background:#fff4ec;border-color:#f3c9a6;color:#9a3412;font-weight:600}",
+      ".adm2-ubox{margin:0 4px 10px;border:1px solid var(--border);border-radius:8px;background:#fbfcfe;padding:6px 10px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 10px}",
+      ".adm2-ubox label{display:flex;align-items:center;gap:8px;min-height:34px;font-size:13px;color:var(--text);cursor:pointer}",
+      ".adm2-ubox input{width:16px;height:16px;margin:0;accent-color:var(--brand);flex:none}.adm2-ubox small{color:var(--text-muted)}",
       ".adm2-sw i{flex:none;width:40px;height:22px;border-radius:11px;background:#c3cddd;position:relative;transition:background .15s}",
       ".adm2-sw i:after{content:'';position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:8px;background:#fff;transition:left .15s}",
       ".adm2-sw[aria-pressed=true] i{background:var(--brand)}.adm2-sw[aria-pressed=true] i:after{left:21px}",
-      ".adm2-units{background:#f6f8fc;border-radius:8px;padding:8px 10px 12px;margin:0 0 6px;display:flex;flex-direction:column;gap:8px;font-size:12px;color:#3d4c63}",
-      ".adm2-uchips{display:flex;flex-wrap:wrap;gap:6px}",
-      ".adm2-uc{min-height:36px;padding:0 12px;border-radius:18px;border:1px solid var(--border);background:#fff;color:#3d4c63;font-size:12.5px;font-weight:600;cursor:pointer;font-family:inherit}",
-      ".adm2-uc[aria-pressed=true]{background:#e8eefb;color:var(--brand);border:1.5px solid var(--brand)}",
       ".adm2-note{margin:0;padding:12px;background:#f4f7fc;border-radius:8px;color:#3d4c63;font-size:13px}",
       ".adm2-approve{background:#fff8e1;border:1px solid #f0d58a;border-radius:8px;padding:12px;display:flex;flex-direction:column;gap:8px;font-size:13px;color:#6b4e00}",
       ".adm2-dirty{font-size:12.5px;color:#9a6700;font-weight:600}.adm2-saved{font-size:12.5px;color:#17663a;font-weight:600}",
@@ -1366,11 +1369,11 @@
       if(!force && String(id)===String(st.selId) && !st.isNew) return;
       if(!force && !confirmLeave()) return;
       var u=findUserById(id);
-      st.isNew=false; st.selId=id; st.draft=u?cloneUser(u):null; st.dirty=false; st.saved=false;
+      st.isNew=false; st.selId=id; st.draft=u?cloneUser(u):null; st.dirty=false; st.saved=false; st.uOpen={};
       drawList(); drawDrawer();
     }
     function openNew(){
-      st.isNew=true; st.selId=null; st.dirty=false; st.saved=false;
+      st.isNew=true; st.selId=null; st.dirty=false; st.saved=false; st.uOpen={};
       st.draft={ username:"", fullname:"", danhSo:"", role:"user", perms:[], capPhatUnits:[], ktUnits:[], active:true, _pw:"", _pw2:"" };
       drawList(); drawDrawer();
       var f=drawer.querySelector('[data-k="username"]'); if(f) f.focus();
@@ -1417,15 +1420,21 @@
             var on=d.perms.indexOf(m.slug)>=0, sc=unitScopeOf(m.slug);
             h+='<button type="button" class="adm2-sw" aria-pressed="'+on+'" data-perm="'+esc(m.slug)+'"><span>'+esc(m.title)+'</span><i aria-hidden="true"></i></button>';
             if(on && sc){
+              /* Dòng tóm tắt đơn vị (bấm để mở/đóng) + khung ô tích, mặc định thu gọn */
               var units=scopeUnitList(sc), cur=asArr(d[sc.field]);
               var extra=cur.filter(function(v){ return !units.some(function(n){ return unitEq(v,n); }); });
-              h+='<div class="adm2-units"><span>'+esc(sc.hint)+'</span><div class="adm2-uchips">'+
-                units.concat(extra).map(function(n){
-                  var has=hasUnit(cur,n), old=extra.indexOf(n)>=0;
-                  return '<button type="button" class="adm2-uc" aria-pressed="'+has+'" data-scope="'+sc.field+'" data-unit="'+esc(n)+'">'+
-                    (has?'✓ ':'')+esc(n)+(old?' (không còn trong danh mục)':'')+'</button>';
-                }).join("")+'</div>'+
-                (cur.length?'':'<span class="adm2-warn">Chưa chọn đơn vị nào — người này chỉ xem được, chưa nhập được.</span>')+'</div>';
+              var open=!!(st.uOpen && st.uOpen[m.slug]);
+              h+='<button type="button" class="adm2-usum'+(cur.length?'':' none')+'" data-uopen="'+esc(m.slug)+'" aria-expanded="'+open+'" title="'+esc(sc.hint)+'">'+
+                '<span>'+(cur.length ? 'Đơn vị: '+esc(cur.join(", ")) : 'Chưa chọn đơn vị — bấm để chọn')+'</span>'+
+                '<b aria-hidden="true">▾</b></button>';
+              if(open){
+                h+='<div class="adm2-ubox" role="group" aria-label="'+esc(sc.hint)+'">'+
+                  units.concat(extra).map(function(n){
+                    var has=hasUnit(cur,n), old=extra.indexOf(n)>=0;
+                    return '<label><input type="checkbox" data-scope="'+sc.field+'" data-unit="'+esc(n)+'"'+(has?' checked':'')+'>'+
+                      esc(n)+(old?' <small>(không còn trong danh mục)</small>':'')+'</label>';
+                  }).join("")+'</div>';
+              }
             }
           });
           h+='</div>';
@@ -1461,16 +1470,29 @@
       Array.prototype.forEach.call(drawer.querySelectorAll("[data-perm]"), function(b){
         b.addEventListener("click", function(){
           var slug=b.getAttribute("data-perm"), i=d.perms.indexOf(slug);
-          if(i>=0){ d.perms.splice(i,1); var sc=unitScopeOf(slug); if(sc) d[sc.field]=[]; }
-          else d.perms.push(slug);
+          var sc=unitScopeOf(slug);
+          if(i>=0){ d.perms.splice(i,1); if(sc) d[sc.field]=[]; }
+          else { d.perms.push(slug); if(sc){ st.uOpen=st.uOpen||{}; st.uOpen[slug]=true; } }  // vừa bật → mở sẵn khung chọn đơn vị
           markDirty(); drawDrawer();
         });
       });
-      Array.prototype.forEach.call(drawer.querySelectorAll("[data-unit]"), function(b){
+      Array.prototype.forEach.call(drawer.querySelectorAll("[data-uopen]"), function(b){
         b.addEventListener("click", function(){
+          var k=b.getAttribute("data-uopen"); st.uOpen=st.uOpen||{}; st.uOpen[k]=!st.uOpen[k]; drawDrawer();
+        });
+      });
+      Array.prototype.forEach.call(drawer.querySelectorAll("input[data-unit]"), function(b){
+        b.addEventListener("change", function(){
           var f=b.getAttribute("data-scope"), n=b.getAttribute("data-unit");
           var a=asArr(d[f]);
           if(hasUnit(a,n)) a=a.filter(function(v){ return !unitEq(v,n); }); else a.push(n);
+          // Giữ đúng thứ tự của danh mục đơn vị (đơn vị không còn trong danh mục để cuối)
+          var sc=UNIT_SCOPED.filter(function(x){ return x.field===f; })[0];
+          if(sc){
+            var order=scopeUnitList(sc);
+            var idx=function(v){ for(var i=0;i<order.length;i++) if(unitEq(order[i],v)) return i; return order.length; };
+            a.sort(function(x,y){ return idx(x)-idx(y); });
+          }
           d[f]=a; markDirty(); drawDrawer();
         });
       });
