@@ -989,7 +989,7 @@ function renderErrorLog(){
   container.innerHTML='<div class="table-wrap" style="margin-bottom:0"><table class="err-table">'+colgroup+thead+'<tbody>'+body+'</tbody></table></div>'+
     _suggestDatalists();
   // Kích hoạt date-picker cho dòng inline vừa render
-  if((_inlineAddSystem||_inlineEditId)&&window.HSEDate){ HSEDate.attachAll(container); }
+  if((_inlineAddSystem||_inlineEditId)&&window.HSEDate){ HSEDate.attachAll(container); _setupInlineDate(); }
   // Focus ô nhập đầu tiên khi thêm mới
   if(_inlineAddSystem){ var f=document.getElementById("ie_child"); if(f) setTimeout(function(){f.focus();},60); }
 }
@@ -1134,6 +1134,32 @@ function onMonthChange(){
   d.addEventListener("toggle",function(){ try{ localStorage.setItem("hse_bctd_stat_open",d.open?"1":"0"); }catch(e){} });
 })();
 
+/* ══════════════ LỊCH "NGÀY PHÁT HIỆN" THEO THÁNG ĐANG XEM ══════════════
+   - Lịch mở ở tháng đang xem (VD đang xem T9 thì mở T9 dù hôm nay là T10).
+     Không điền sẵn ngày: để người nhập buộc phải chọn ngày thật.
+   - Không cấm ngày của tháng trước: có lỗi phát hiện từ trước rồi kéo dài.
+   - Cấm ngày SAU tháng đang xem và ngày trong tương lai (chắc chắn sai).
+   - Sửa bản ghi cũ: lịch mở ở đúng ngày đã lưu (flatpickr tự làm).       */
+function _inlineMaxDate(){
+  var t=_curMonthYear();
+  if(!t.m||!t.y) return null;
+  var cuoiThang=new Date(t.y,t.m,0);              // ngày cuối tháng đang xem
+  var homNay=new Date(); homNay.setHours(0,0,0,0);
+  return cuoiThang<homNay?cuoiThang:homNay;
+}
+function _setupInlineDate(){
+  var el=document.getElementById("ie_date");
+  var fp=el&&el._flatpickr;
+  var t=_curMonthYear();
+  if(!fp||!t.m||!t.y) return;
+  var maxD=_inlineMaxDate();
+  if(maxD) fp.set("maxDate",maxD);
+  if(!fp.selectedDates.length){
+    var dauThang=new Date(t.y,t.m-1,1);
+    fp.jumpToDate(maxD&&dauThang>maxD?maxD:dauThang);
+  }
+}
+
 function toggleInlineErrType(){
   var v=document.getElementById("ie_errtype").value;
   var el=document.getElementById("ie_errcustom");
@@ -1215,6 +1241,10 @@ function saveInline(id){
   if(!devLocation){showToast("⚠️ Vui lòng nhập vị trí thiết bị","warning");return;}
   if(errType==="Khác"&&!errCustom){showToast("⚠️ Vui lòng nhập mô tả lỗi","warning");return;}
   if(!detectDate){showToast("⚠️ Vui lòng chọn ngày phát hiện","warning");return;}
+  var _maxD=_inlineMaxDate(), _pd=String(detectDate).split("-");
+  if(_maxD&&_pd.length===3&&new Date(+_pd[0],+_pd[1]-1,+_pd[2])>_maxD){
+    showToast("⚠️ Ngày phát hiện không được sau Tháng "+month+"/"+year+" hoặc sau hôm nay","warning");return;
+  }
   if(!measure){showToast("⚠️ Vui lòng nhập biện pháp khắc phục","warning");return;}
 
   var item={
