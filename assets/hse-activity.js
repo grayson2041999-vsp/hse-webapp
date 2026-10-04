@@ -30,9 +30,9 @@
   var MODULES = {
     ke_hoach_mot_lan: { label:"Kế hoạch HSE",        icon:"📋", noun:"kế hoạch" },
     ke_hoach_lap_lai: { label:"Kế hoạch HSE",        icon:"📋", noun:"kế hoạch định kỳ" },
-    pccc_devices:     { label:"PCCC & CNCH",         icon:"🧯", noun:"thiết bị PCCC" },
-    pccc_errors:      { label:"PCCC & CNCH",         icon:"🧯", noun:"báo lỗi HTBCTĐ" },
-    pccc_confirms:    { label:"PCCC & CNCH",         icon:"🧯", noun:"xác nhận không có lỗi HTBCTĐ" },
+    pccc_devices:     { label:"Báo cáo HTBCTĐ",      icon:"🧯", noun:"thiết bị PCCC" },
+    pccc_errors:      { label:"Báo cáo HTBCTĐ",      icon:"🧯", noun:"báo lỗi" },
+    pccc_confirms:    { label:"Báo cáo HTBCTĐ",      icon:"🧯", noun:"xác nhận không có lỗi" },
     hl_nhansu:        { label:"Huấn luyện – Đào tạo", icon:"🎓", noun:"hồ sơ đào tạo" },
     sop:              { label:"SOP / Quy trình",     icon:"📑", noun:"quy trình SOP" }
   };
@@ -194,7 +194,20 @@
   }
   function avatarColor(role) { return role === "admin" ? C.accent : role === "viewer" ? C.light : C.success; }
 
+  /* Log cũ đã lưu nhãn "PCCC & CNCH" + mô tả "... HTBCTĐ" trong DB →
+     đổi lúc hiển thị (không sửa dữ liệu gốc). */
+  var LEGACY_MODULE = { "PCCC & CNCH": "Báo cáo HTBCTĐ" };
+  function _normalize(r) {
+    var nm = LEGACY_MODULE[r.module];
+    if (!nm) return r;
+    var o = {}; for (var k in r) o[k] = r[k];
+    o.module = nm;
+    if (o.detail) o.detail = String(o.detail).replace(/\s*HTBCTĐ\s*$/, "");
+    return o;
+  }
+
   function itemHTML(r) {
+    r = _normalize(r);
     var color = ACT_COLOR[r.action] || C.primaryLight;
     var av = r.avatar_url
       ? '<img src="' + esc(r.avatar_url) + '" style="width:38px;height:38px;border-radius:50%;object-fit:cover;flex:0 0 38px;border:2px solid #fff;box-shadow:0 1px 3px rgba(0,0,0,.15);">'
