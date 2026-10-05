@@ -315,14 +315,9 @@
       return '<option value="' + y + '"' + (_period === y ? " selected" : "") + '>Năm ' + y + '</option>';
     }).join("");
 
-    var desc = _canEdit
-      ? "Bấm <b>Cập nhật kết quả quý</b> hoặc bấm vào tiêu đề một quý trên bảng để nhập / sửa."
-      : (_user ? "Bạn chỉ có quyền xem trang này. Kết quả do Admin cập nhật."
-               : "Bạn đang xem ở chế độ khách. Kết quả do Admin cập nhật.");
-
     var h = '';
     h += '<div class="page-title" style="display:flex;align-items:center;gap:9px">' + ic("trophy", 22) + 'Tập thể xuất sắc ATSKMT</div>';
-    h += '<div class="page-desc">Thống kê các đơn vị được công nhận là tập thể xuất sắc về An toàn – Sức khoẻ – Môi trường theo quý. ' + desc + '</div>';
+    h += '<div class="page-desc">Thống kê các đơn vị được công nhận là tập thể xuất sắc về An toàn – Sức khoẻ – Môi trường theo quý.</div>';
 
     h += '<div class="ttxs-toolbar">' +
       '<select id="ttxs-period" class="inp">' +
