@@ -71,7 +71,8 @@
     { slug: "huan-luyen-dao-tao", title: "Huấn luyện - Đào tạo", note: "Đơn vị của từng nhân sự",   applied: true  },
     { slug: "cap-phat-bhld",      title: "Cấp phát BHLĐ",        note: "Đơn vị cấp phát & phân quyền", applied: true  },
     { slug: "binh-ap-luc",        title: "Bình áp lực",          note: "Tab trong Quản lý thiết bị", applied: true  },
-    { slug: "thiet-bi-nang",      title: "Thiết bị nâng",        note: "Tab trong Quản lý thiết bị", applied: true  }
+    { slug: "thiet-bi-nang",      title: "Thiết bị nâng",        note: "Tab trong Quản lý thiết bị", applied: true  },
+    { slug: "tap-the-xuat-sac",   title: "Tập thể xuất sắc",     note: "Đơn vị được xét công nhận theo quý", applied: true  }
   ];
 
   /* ─────────────────────────────────────────────
@@ -90,6 +91,7 @@
     { sheet: "hl_nhansu",        col: "unit",         type: "text",  via: "db",   label: "Huấn luyện - Đào tạo — Nhân sự" },
     { sheet: "users",            col: "capPhatUnits", type: "array", via: "db",   label: "Phân quyền đơn vị cấp phát" },
     { sheet: "users",            col: "ktUnits",      type: "array", via: "db",   label: "Phân quyền đơn vị Kiểm tra các cấp" },
+    { sheet: "tap_the_xuat_sac", col: "donVi",        type: "array", via: "db",   label: "Tập thể xuất sắc ATSKMT" },
     /* ── Đọc qua bhld-sync.js — trang Cấp phát BHLĐ có bảng ánh xạ RIÊNG,
          KHÔNG nằm trong db.js. Phải hỏi BHLD.tbl() để lấy đúng tên bảng. ── */
     { sheet: "nhanvien",            col: "boPhan", type: "text", via: "bhld", label: "Cấp phát BHLĐ — Nhân viên" },
@@ -137,11 +139,11 @@
     { ma:"p_thuong_mai_dv",   ten:"Phòng Thương mại - Dịch vụ",      nhom:"phong_ban", sort:50,  he_thong:false, pages:["huan-luyen-dao-tao"] },
     { ma:"ban_thuc_hien_hd",  ten:"Ban Thực hiện hợp đồng",          nhom:"phong_ban", sort:60,  he_thong:false, pages:["huan-luyen-dao-tao"] },
     { ma:"ban_dieu_do_sx",    ten:"Ban Điều độ sản xuất",            nhom:"phong_ban", sort:70,  he_thong:false, pages:["huan-luyen-dao-tao"] },
-    { ma:"cang_bien",         ten:"Cảng biển",                       nhom:"don_vi_sx", sort:80,  he_thong:false, icon:"anchor",   pages:["ke-hoach","kiem-tra-cac-cap","huan-luyen-dao-tao","cap-phat-bhld","binh-ap-luc"] },
-    { ma:"can_cu_kho_gn",     ten:"Căn cứ Kho - Giao nhận",          nhom:"don_vi_sx", sort:90,  he_thong:false, icon:"package",  pages:["ke-hoach","kiem-tra-cac-cap","huan-luyen-dao-tao","cap-phat-bhld"] },
-    { ma:"xuong_sua_chua",    ten:"Xưởng sửa chữa",                  nhom:"don_vi_sx", sort:100, he_thong:false, icon:"wrench",   pages:["ke-hoach","kiem-tra-cac-cap","huan-luyen-dao-tao","cap-phat-bhld","binh-ap-luc"] },
-    { ma:"doi_xe_vthh",       ten:"Đội xe VTHH&PTTBCD",              nhom:"don_vi_sx", sort:110, he_thong:false, icon:"truck",    pages:["ke-hoach","kiem-tra-cac-cap","huan-luyen-dao-tao","cap-phat-bhld"] },
-    { ma:"doi_xe_vchk",       ten:"Đội xe VCHK",                     nhom:"don_vi_sx", sort:120, he_thong:false, icon:"car",      pages:["ke-hoach","kiem-tra-cac-cap","huan-luyen-dao-tao","cap-phat-bhld"] },
+    { ma:"cang_bien",         ten:"Cảng biển",                       nhom:"don_vi_sx", sort:80,  he_thong:false, icon:"anchor",   pages:["ke-hoach","kiem-tra-cac-cap","huan-luyen-dao-tao","cap-phat-bhld","binh-ap-luc","tap-the-xuat-sac"] },
+    { ma:"can_cu_kho_gn",     ten:"Căn cứ Kho - Giao nhận",          nhom:"don_vi_sx", sort:90,  he_thong:false, icon:"package",  pages:["ke-hoach","kiem-tra-cac-cap","huan-luyen-dao-tao","cap-phat-bhld","tap-the-xuat-sac"] },
+    { ma:"xuong_sua_chua",    ten:"Xưởng sửa chữa",                  nhom:"don_vi_sx", sort:100, he_thong:false, icon:"wrench",   pages:["ke-hoach","kiem-tra-cac-cap","huan-luyen-dao-tao","cap-phat-bhld","binh-ap-luc","tap-the-xuat-sac"] },
+    { ma:"doi_xe_vthh",       ten:"Đội xe VTHH&PTTBCD",              nhom:"don_vi_sx", sort:110, he_thong:false, icon:"truck",    pages:["ke-hoach","kiem-tra-cac-cap","huan-luyen-dao-tao","cap-phat-bhld","tap-the-xuat-sac"] },
+    { ma:"doi_xe_vchk",       ten:"Đội xe VCHK",                     nhom:"don_vi_sx", sort:120, he_thong:false, icon:"car",      pages:["ke-hoach","kiem-tra-cac-cap","huan-luyen-dao-tao","cap-phat-bhld","tap-the-xuat-sac"] },
     { ma:"cong_doan",         ten:"Công đoàn",                       nhom:"doan_the",  sort:130, he_thong:false, pages:["ke-hoach","huan-luyen-dao-tao"] },
     { ma:"bo_may_dieu_hanh",  ten:"Bộ máy điều hành",                nhom:"he_thong",  sort:200, he_thong:true,  icon:"landmark", pages:["cap-phat-bhld"] },
     { ma:"test",              ten:"Test",                            nhom:"he_thong",  sort:210, he_thong:true,  icon:"flask",    pages:["cap-phat-bhld"] },

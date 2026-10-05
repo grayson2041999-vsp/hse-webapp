@@ -25,6 +25,8 @@
     { slug:"moi-truong",         title:"Xử lý chất thải",             icon:"🌿", licon:"recycle",          group:"theo-doi", sub:["Thống kê khối lượng rác thải xử lý"] },
     { slug:"quan-ly-nha-thau",   title:"Quản lý nhà thầu",            icon:"👷", licon:"hard-hat",         group:"theo-doi", sub:["Thông tin các nhà thầu đang làm việc","Thuê kho, bãi, văn phòng làm việc"] },
     { slug:"ke-hoach",           title:"Kế hoạch",                    icon:"🗓️", licon:"calendar-days",    group:"theo-doi", sub:["Lập kế hoạch (chọn các mục liên quan)","Báo cáo kế hoạch cụ thể"] },
+    // Chỉ Admin nhập kết quả (adminEditOnly) — module assets/tap-the-xuat-sac.js
+    { slug:"tap-the-xuat-sac",   title:"Tập thể xuất sắc ATSKMT",     icon:"🏆", licon:"trophy",           group:"theo-doi", sub:["Thống kê đơn vị được công nhận theo quý"], adminEditOnly:true },
     { slug:"cap-phat-bhld",      title:"Cấp phát BHLĐ",               icon:"🦺", licon:"shield-check",     group:"ung-dung", sub:["Quản lý cấp phát","Danh mục BHLĐ","Định mức cấp phát","Phiếu yêu cầu","Tồn kho","Nhu cầu mua sắm"] },
     { slug:"huan-luyen-dao-tao", title:"Huấn luyện - Đào tạo",        icon:"🎓", licon:"graduation-cap",   group:"ung-dung", sub:["Thống kê các loại đào tạo, huấn luyện","Kiểm tra kiến thức an toàn","Đào tạo nội bộ"] },
     { slug:"bao-chay-tu-dong",   title:"Báo cáo hệ thống báo cháy tự động", icon:"🔔", licon:"bell",       group:"ung-dung", sub:["Danh sách thiết bị báo cháy","Ghi nhận lỗi & khắc phục"] },
@@ -227,6 +229,7 @@
   var ICON_PATHS = {
     "layout-dashboard":'<rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/>',
     "triangle-alert":'<path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/>',
+    "trophy":'<path d="M10 14.66v1.626a2 2 0 0 1-.976 1.696A5 5 0 0 0 7 21.978"/><path d="M14 14.66v1.626a2 2 0 0 0 .976 1.696A5 5 0 0 1 17 21.978"/><path d="M18 9h1.5a1 1 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M6 9a6 6 0 0 0 12 0V3a1 1 0 0 0-1-1H7a1 1 0 0 0-1 1z"/><path d="M6 9H4.5a1 1 0 0 1 0-5H6"/>',
     "flame":'<path d="M12 3q1 4 4 6.5t3 5.5a1 1 0 0 1-14 0 5 5 0 0 1 1-3 1 1 0 0 0 5 0c0-2-1.5-3-1.5-5q0-2 2.5-4"/>',
     "file-text":'<path d="M6 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.704.706l3.588 3.588A2.4 2.4 0 0 1 20 8v12a2 2 0 0 1-2 2z"/><path d="M14 2v5a1 1 0 0 0 1 1h5"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/>',
     "list-checks":'<path d="M13 5h8"/><path d="M13 12h8"/><path d="M13 19h8"/><path d="m3 17 2 2 4-4"/><path d="m3 7 2 2 4-4"/>',
@@ -734,6 +737,16 @@
       var ntContainer = renderShell(slug, el("div"));
       if(typeof window.renderQuanLyNhaThau === "function"){
         window.renderQuanLyNhaThau(ntContainer, u, canEdit(u, slug) || isAdmin(u));
+      }
+      return;
+    }
+
+    // Trang Tập thể xuất sắc ATSKMT: module riêng, chỉ Admin nhập
+    if(slug === "tap-the-xuat-sac"){
+      if(!canView(u, slug)){ renderShell(slug, deniedNode()); return; }
+      var ttxsContainer = renderShell(slug, el("div"));
+      if(typeof window.renderTapTheXuatSac === "function"){
+        window.renderTapTheXuatSac(ttxsContainer, u, isAdmin(u));
       }
       return;
     }

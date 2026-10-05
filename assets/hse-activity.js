@@ -35,6 +35,7 @@
     pccc_confirms:    { label:"Báo cáo HTBCTĐ",      icon:"🧯", noun:"xác nhận không có lỗi" },
     hl_nhansu:        { label:"Huấn luyện – Đào tạo", icon:"🎓", noun:"hồ sơ đào tạo" },
     sop:              { label:"SOP / Quy trình",     icon:"📑", noun:"quy trình SOP" }
+    // tap_the_xuat_sac: KHÔNG tự ghi — trang tự gọi HSE_ACT.log() với mô tả rõ quý/đơn vị
   };
   // Nhãn màu cho từng loại hành động
   var ACT_COLOR = { create:C.success, update:C.primaryLight, delete:C.accent,
@@ -174,6 +175,7 @@
     pccc_devices: "bao-chay-tu-dong.html", pccc_errors: "bao-chay-tu-dong.html",
     pccc_confirms: "bao-chay-tu-dong.html",
     hl_nhansu: "index.html#huan-luyen-dao-tao", sop: "index.html#sop",
+    tap_the_xuat_sac: "index.html#tap-the-xuat-sac",
     phieu_requests: "cap-phat-bhld.html", cap_phat_tien_trinh: "cap-phat-bhld.html",
     nhanvien: "cap-phat-bhld.html"
   };

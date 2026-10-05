@@ -82,7 +82,10 @@ var DB = (function () {
     app_settings:       "TraCuuATVSLD",
     // Danh mục Phòng/Ban/Đơn vị dùng chung — khoá chính là "ma" (xem PK ở trên).
     // Nguồn: supabase/don_vi.sql · truy cập qua assets/don-vi.js (HSE_UNITS).
-    don_vi:             "DonVi"
+    don_vi:             "DonVi",
+    // Tập thể xuất sắc ATSKMT theo quý — id = "<năm>-<quý>".
+    // Nguồn: tap_the_xuat_sac.sql · module assets/tap-the-xuat-sac.js
+    tap_the_xuat_sac:   "TapTheXuatSac"
     // ⚠️ 15 bảng của trang Cấp phát BHLĐ (nhanvien, danh_muc, phieu_requests...)
     //    KHÔNG nằm ở đây. Trang đó không dùng db.js — nó có bảng ánh xạ riêng
     //    trong assets/bhld-sync.js. Đừng sao chép qua lại, sẽ lệch nhau.
