@@ -983,7 +983,7 @@
      RENDER: TRANG TỔNG QUAN (dashboard có thẻ điều hướng)
      ========================================================= */
   /* =========================================================
-     TRANG CHỦ — DẢI GIỚI THIỆU + 4 SỐ LIỆU CHÍNH
+     TRANG CHỦ — DẢI GIỚI THIỆU + 3 SỐ LIỆU CHÍNH
      Số liệu đọc từ đúng các bảng mà trang nghiệp vụ đang dùng:
        tnsc_su_kien / tnsc_gio_cong (Tai nạn - Sự cố), ke_hoach_mot_lan (Kế hoạch).
      Quy tắc tính giống hệt tai-nan-su-co.html và ke-hoach.html.
@@ -1016,7 +1016,6 @@
         '</div>'+
       '</div>'+
       '<div class="hero-kpis">'+
-        kpi("kpi-safe-days",  "tai-nan-su-co.html", "shield-check",   "Ngày làm việc an toàn")+
         kpi("kpi-safe-hours", "tai-nan-su-co.html", "clock",          "Giờ công lao động an toàn")+
         kpi("kpi-incidents",  "tai-nan-su-co.html", "triangle-alert", "Tai nạn · Sự cố năm "+y)+
         kpi("kpi-plan",       "ke-hoach.html",      "calendar-days",  "Kế hoạch đang thực hiện")+
@@ -1036,39 +1035,39 @@
     var d = p[0].length===4 ? new Date(+p[0],+p[1]-1,+p[2]) : new Date(+p[2],+p[1]-1,+p[0]);
     return isNaN(d) ? null : d;
   }
-  function _fmtD(d){ return ("0"+d.getDate()).slice(-2)+"/"+("0"+(d.getMonth()+1)).slice(-2)+"/"+d.getFullYear(); }
-  function _n(v){ var x = parseFloat(String(v==null?"":v).replace(/[^\d.\-]/g,"")); return isNaN(x)?0:x; }
 
   function fillHeroKpis(){
-    if(!document.getElementById("kpi-safe-days")) return;   // không ở trang chủ
+    if(!document.getElementById("kpi-safe-hours")) return;  // không ở trang chủ
     var today = new Date(); today.setHours(0,0,0,0);
     var incs  = load(K_TNSC_INC, []) || [];
     var hours = load(K_TNSC_HOUR, []) || [];
 
-    // 1) Ngày an toàn + 2) Giờ công an toàn — mốc là TNLĐ gần nhất
+    // 1) Giờ công lao động an toàn — GIỐNG HỆT renderHours()/anchorStart() của tai-nan-su-co.html:
+    //    mốc = tháng SAU tháng xảy ra TNLĐ gần nhất; cộng gio_cong (parseFloat) từ mốc đến tháng hiện tại.
+    var MONTHS_VN = ["Tháng 1","Tháng 2","Tháng 3","Tháng 4","Tháng 5","Tháng 6",
+                     "Tháng 7","Tháng 8","Tháng 9","Tháng 10","Tháng 11","Tháng 12"];
+    var num = function(v){ var n=parseFloat(v); return isNaN(n)?0:n; };
     var acc = incs.filter(function(r){ return r && r.loai==="tai_nan_lao_dong" && r.thoiGian; })
                   .sort(function(a,b){ return String(b.thoiGian).localeCompare(String(a.thoiGian)); })[0];
-    if(acc && _ymd(acc.thoiGian)){
-      var dAcc = _ymd(acc.thoiGian);
-      var days = Math.max(0, Math.round((today - dAcc)/86400000));
-      _setKpi("kpi-safe-days", days.toLocaleString("vi-VN")+'<small> ngày</small>',
-              "Kể từ TNLĐ gần nhất " + _fmtD(dAcc), "green");
-      // Cùng quy tắc trang Tai nạn - Sự cố: cộng từ tháng SAU tháng xảy ra TNLĐ đến tháng hiện tại
-      var y = dAcc.getFullYear(), m = dAcc.getMonth()+2; if(m>12){ m=1; y++; }
-      var ey = today.getFullYear(), em = today.getMonth()+1, total = 0, missing = 0, g = 0;
-      while((y<ey || (y===ey && m<=em)) && g++<600){
-        var rec = hours.find(function(h){ return String(h.nam)===String(y) && String(h.thang)===String(m); });
-        if(rec && rec.gio_cong!=="" && rec.gio_cong!=null) total += _n(rec.gio_cong); else missing++;
-        m++; if(m>12){ m=1; y++; }
-      }
-      _setKpi("kpi-safe-hours", Math.round(total).toLocaleString("vi-VN")+'<small> giờ</small>',
-              missing ? ("Còn "+missing+" tháng chưa nhập số liệu") : "Đã cập nhật đến tháng này", "blue");
+    var ay = acc ? parseInt(String(acc.thoiGian).slice(0,4),10) : NaN;
+    var am = acc ? parseInt(String(acc.thoiGian).slice(5,7),10) : NaN;
+    if(!acc || isNaN(ay) || isNaN(am)){
+      _setKpi("kpi-safe-hours", '0<small> giờ</small>',
+              "Chưa ghi nhận tai nạn lao động — chưa xác định mốc tính giờ công an toàn.", "amber");
     } else {
-      _setKpi("kpi-safe-days", "—", "Chưa ghi nhận tai nạn lao động", "green");
-      _setKpi("kpi-safe-hours", "—", "Chưa có mốc tính giờ công", "blue");
+      am += 1; if(am>12){ am=1; ay+=1; }                      // tháng kế tiếp
+      var sy = ay, sm = am;
+      var ey = today.getFullYear(), em = today.getMonth()+1, total = 0, guard = 0;
+      while((ay<ey || (ay===ey && am<=em)) && guard++<600){
+        var rec = hours.find(function(h){ return String(h.nam)===String(ay) && String(h.thang)===String(am); });
+        if(rec && rec.gio_cong!=="" && rec.gio_cong!=null) total += num(rec.gio_cong);
+        am++; if(am>12){ am=1; ay++; }
+      }
+      _setKpi("kpi-safe-hours", total.toLocaleString("vi-VN")+'<small> giờ</small>',
+              "Tính từ "+MONTHS_VN[sm-1]+"/"+sy, "green");
     }
 
-    // 3) Tai nạn / sự cố trong năm
+    // 2) Tai nạn / sự cố trong năm
     var yr = String(today.getFullYear());
     var inYear = incs.filter(function(r){ return r && String(r.thoiGian||"").slice(0,4)===yr; });
     var nTN = inYear.filter(function(r){ return r.loai==="tai_nan_lao_dong"; }).length;
@@ -1076,7 +1075,7 @@
     _setKpi("kpi-incidents", String(nTN+nSC), nTN+" tai nạn lao động · "+nSC+" sự cố kỹ thuật",
             nTN ? "red" : (nSC ? "amber" : "green"));
 
-    // 4) Kế hoạch: đang thực hiện + trễ hạn (tình trạng tự tính theo ngày như trang Kế hoạch)
+    // 3) Kế hoạch: đang thực hiện + trễ hạn (tình trạng tự tính theo ngày như trang Kế hoạch)
     var once = load("hse_ke_hoach_mot_lan", []) || [];
     var dang = 0, tre = 0;
     once.forEach(function(it){
@@ -1121,7 +1120,7 @@
       greeting = '<a href="#" id="dashLoginLink" style="color:var(--brand);font-weight:600">Đăng nhập</a> để thao tác và nhập liệu.';
     }
 
-    // Dải giới thiệu: logo đầy đủ + tên hệ thống + 4 số liệu chính
+    // Dải giới thiệu: logo đầy đủ + tên hệ thống + 3 số liệu chính
     wrap.appendChild(buildHero(greeting));
 
     // Cảnh báo đơn vị chưa nộp số liệu kiểm tra cấp 1/2 (điền ngầm sau khi tải dữ liệu)
