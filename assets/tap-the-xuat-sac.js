@@ -346,19 +346,21 @@
       h += '<div class="ttxs-note">' + ic("alert", 15) + ' Chưa có đơn vị nào được bật cho trang này. Vào <a href="index.html#quan-tri-he-thong">Quản trị hệ thống → Danh mục đơn vị</a> và tick cột <b>Tập thể xuất sắc</b> cho các đơn vị cần xét.</div>';
     }
 
-    // KPI
-    var topNames = st.top.map(function (k) {
-      for (var i = 0; i < units.length; i++) if (units[i].key === k) return units[i].ten;
-      return k;
+    // Thống kê: chỉ giữ "Đơn vị đạt nhiều lần nhất" (theo giai đoạn đang lọc; hoà thì liệt kê đủ)
+    var topUnits = st.top.map(function (k) {
+      for (var i = 0; i < units.length; i++) if (units[i].key === k) return units[i];
+      return { key: k, ten: k, color: "#475569" };
     });
-    h += '<div class="ttxs-kpis">' +
-      kpi("Số quý đã xét", st.xet, (st.xet + st.tnld) ? "/ " + (st.xet + st.tnld) + " quý có kết quả" : "") +
-      kpi("Quý không xét do TNLĐ", st.tnld, "", "red") +
-      kpi("Tổng lượt công nhận", st.luot, "") +
-      '<div class="card stat amber"><div class="lbl">Nhiều lần nhất</div><div class="ttxs-top">' +
-        (topNames.length ? esc(topNames.join(", ")) + ' <span class="muted">(' + st.max + ' lần)</span>' : '<span class="muted">—</span>') +
-      '</div></div>' +
-    '</div>';
+    var periodLbl = _period === "all" ? "Tất cả các năm" : _period === "3y" ? "3 năm gần nhất" : "Năm " + _period;
+    h += '<div class="card ttxs-top">' +
+      '<div class="ic">' + ic("trophy", 22) + '</div>' +
+      '<div class="bd"><div class="lbl">Đơn vị đạt nhiều lần nhất <span>· ' + esc(periodLbl) + '</span></div>' +
+        (topUnits.length
+          ? '<div class="nm">' + topUnits.map(function (u) {
+              return '<span class="ttxs-chip" style="background:' + u.color + '">' + esc(u.ten) + '</span>';
+            }).join("") + '<b class="n">' + st.max + ' lần</b></div>'
+          : '<div class="nm muted">Chưa có đơn vị nào được công nhận trong giai đoạn này.</div>') +
+      '</div></div>';
 
     // Heatmap + khối bên
     h += '<div class="ttxs-split">';
@@ -371,11 +373,6 @@
     var sc = _c.querySelector(".ttxs-scroll");
     if (sc) sc.scrollLeft = sc.scrollWidth;
     bind();
-  }
-
-  function kpi(lbl, val, meta, cls) {
-    return '<div class="card stat' + (cls ? " " + cls : "") + '"><div class="lbl">' + esc(lbl) + '</div>' +
-      '<div class="val">' + val + '</div>' + (meta ? '<div class="meta">' + esc(meta) + '</div>' : '') + '</div>';
   }
 
   function heatmap(qs, map, units, st) {
@@ -762,10 +759,14 @@
       ".ttxs-note{display:block;line-height:1.6;background:#fff8e6;border:1px solid #f3dfa6;color:#7a5a00;border-radius:8px;padding:9px 12px;font-size:13px;margin-bottom:12px}",
       ".ttxs-note a{font-weight:600}",
       ".ttxs-note svg{margin-right:4px}",
-      ".ttxs-kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:14px}",
-      ".ttxs-kpis .stat{padding:14px 16px}",
-      ".ttxs-kpis .val{font-size:26px}",
-      ".ttxs-top{font-size:15px;font-weight:700;color:var(--text);line-height:1.35}",
+      ".ttxs-top{display:flex;align-items:center;gap:14px;padding:14px 18px;margin-bottom:14px;border-left:4px solid #d9a400}",
+      ".ttxs-top .ic{width:44px;height:44px;border-radius:12px;background:#fff6d6;color:#a17800;display:flex;align-items:center;justify-content:center;flex-shrink:0}",
+      ".ttxs-top .bd{min-width:0}",
+      ".ttxs-top .lbl{font-size:12px;color:var(--text-muted);font-weight:600;text-transform:uppercase;letter-spacing:.3px;margin-bottom:5px}",
+      ".ttxs-top .lbl span{text-transform:none;letter-spacing:0;font-weight:500}",
+      ".ttxs-top .nm{display:flex;align-items:center;flex-wrap:wrap;gap:2px}",
+      ".ttxs-top .nm .ttxs-chip{font-size:13px;padding:4px 12px}",
+      ".ttxs-top .n{font-size:15px;color:var(--text);margin-left:6px}",
       ".ttxs-split{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:14px;align-items:start}",
       ".ttxs-card{padding:16px}",
       ".ttxs-h{font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.3px;color:var(--brand);margin-bottom:10px}",
@@ -827,7 +828,7 @@
       ".ttxs-cnt.full{color:#8a6500}",
       ".ttxs-hint{font-size:12px;color:var(--text-muted);margin-top:6px}",
       ".ttxs-meta{flex:1;font-size:11.5px;color:var(--text-muted);align-self:center}",
-      "@media (max-width:980px){.ttxs-split{grid-template-columns:minmax(0,1fr)}.ttxs-kpis{grid-template-columns:1fr 1fr}}",
+      "@media (max-width:980px){.ttxs-split{grid-template-columns:minmax(0,1fr)}}",
       "@media (max-width:520px){.ttxs-units{grid-template-columns:1fr}.ttxs-heat td.u,.ttxs-heat th.u{min-width:120px;max-width:140px}}"
     ].join("\n");
     return s;
