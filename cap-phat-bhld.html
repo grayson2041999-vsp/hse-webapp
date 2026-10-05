@@ -5,6 +5,8 @@
   <meta name="description" content="Liên doanh Việt - Nga Vietsovpetro · Xí nghiệp Dịch vụ Cảng và CƯVTTB">
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Cấp phát BHLĐ · Quản lý HSE</title>
+  <link rel="icon" type="image/png" href="assets/vsp-favicon.png">
+  <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <script type="module" src="assets/supabase-config.js"></script>
   <script src="assets/bhld-sync.js?v=20260904"></script>
@@ -25,6 +27,9 @@
     body { font-family: 'Segoe UI', Arial, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
     .header { background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%); color: white; padding: 0 24px; height: 58px; display: flex; align-items: center; justify-content: space-between; position: fixed; top: 0; left: 0; right: 0; z-index: 100; box-shadow: 0 2px 8px rgba(0,0,0,0.25); border-bottom: 3px solid var(--accent); }
     .header-left { display: flex; align-items: center; gap: 12px; }
+    .pn-logo { height: 42px; padding: 4px 7px; border-radius: 8px; background: #fff; display: inline-flex; align-items: center; flex-shrink: 0; box-shadow: 0 1px 3px rgba(0,0,0,.18); transition: .15s; }
+    .pn-logo:hover { box-shadow: 0 0 0 3px rgba(255,255,255,.35); }
+    .pn-logo img { height: 100%; width: auto; display: block; }
     .header-title { font-size: 15px; font-weight: 700; }
     .header-sub { font-size: 11px; opacity: 0.8; }
     .header-date { font-size: 12px; opacity: 0.9; }
@@ -193,6 +198,7 @@
 <header class="header">
   <div class="header-left">
     <button class="btn-hamburger" onclick="toggleSidebar()">☰</button>
+    <a href="index.html" class="pn-logo" title="Trang chủ"><img src="assets/vsp-logo-mark.png" alt="Vietsovpetro"></a>
     <a href="index.html" title="Quay về trang chủ Portal HSE"
        style="display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,0.15);border:1.5px solid rgba(255,255,255,0.35);color:white;text-decoration:none;padding:5px 13px;border-radius:7px;font-size:12.5px;font-weight:600;transition:all 0.2s;white-space:nowrap;"
        onmouseover="this.style.background='rgba(255,255,255,0.28)'" onmouseout="this.style.background='rgba(255,255,255,0.15)'">

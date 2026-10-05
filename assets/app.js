@@ -39,7 +39,8 @@
   var ORG_SHORT = "XN Dịch vụ Cảng & Cung ứng VTTB";
   var ORG = "Xí nghiệp Dịch vụ Cảng và Cung ứng vật tư thiết bị";
   var ORG_PARENT = "Liên doanh Việt - Nga Vietsovpetro";
-  var LOGO_PATH = "assets/logo.svg";
+  var LOGO_PATH = "assets/vsp-logo-mark.png";      // logo gọn (cờ + chữ) cho thanh tiêu đề
+  var LOGO_FULL = "assets/vsp-logo-full.png";      // logo đầy đủ kèm slogan "Giữ lửa cho Tương lai"
   var K_USERS = "hse_users";
   var K_SESS  = "hse_session";
   // Callback để vẽ lại bảng Quản trị sau khi đồng bộ users từ Sheets xong
@@ -432,15 +433,10 @@
     bg.innerHTML =
       '<div class="login-popup">'+
         '<div class="login-popup-h">'+
-          '<div style="display:flex;align-items:center;gap:10px">'+
-            '<div class="login-popup-logo"><img src="assets/logo.svg" alt="VSP" style="width:100%;height:100%;object-fit:contain"></div>'+
-            '<div>'+
-              '<div style="font-weight:700;font-size:14px;color:var(--brand)">'+APP_NAME+'</div>'+
-              '<div style="font-size:10.5px;color:var(--text-muted);line-height:1.3">'+ORG+'</div>'+
-              '<div style="font-size:10.5px;color:var(--text-muted);line-height:1.3">'+ORG_PARENT+'</div>'+
-            '</div>'+
-          '</div>'+
-          '<button class="x" id="hse-lm-close">×</button>'+
+          '<button class="x" id="hse-lm-close" aria-label="Đóng">×</button>'+
+          '<img class="login-popup-logo" src="'+LOGO_FULL+'" alt="Vietsovpetro — Giữ lửa cho Tương lai">'+
+          '<div class="login-popup-app">'+APP_NAME+'</div>'+
+          '<div class="login-popup-org">'+ORG+'<br>'+ORG_PARENT+'</div>'+
         '</div>'+
         '<div class="login-popup-b">'+
           '<div class="login-err" id="hse-lm-err"></div>'+
@@ -626,11 +622,12 @@
     if(activeSlug==="tong-quan"){
       leftHtml=
         '<a href="index.html" class="tb-brand">'+
-          '<span class="tb-logo"><img src="assets/logo.svg" alt="Vietsovpetro"></span>'+
+          '<span class="tb-logo"><img src="'+LOGO_PATH+'" alt="Vietsovpetro"></span>'+
           '<span class="tb-brand-t"><b>'+esc(APP_NAME)+'</b><i>'+esc(ORG_SHORT)+'</i></span>'+
         '</a>';
     } else {
       leftHtml=
+        '<a href="index.html" class="tb-logo" title="Trang chủ"><img src="'+LOGO_PATH+'" alt="Vietsovpetro"></a>'+
         '<a href="index.html" class="tb-back">'+lic("arrow-left",16)+'<span>Trang chủ</span></a>'+
         '<span class="tb-sep"></span>'+
         '<div class="tb-org" style="display:flex;flex-direction:column;justify-content:center;line-height:1.3;">'+

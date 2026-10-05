@@ -29,7 +29,7 @@
   --shadow:       0 1px 3px rgba(16,24,40,.08), 0 1px 2px rgba(16,24,40,.06);
   --shadow-lg:    0 10px 30px rgba(16,24,40,.12);
   --sidebar-w:    270px;
-  --header-h:     64px;
+  --header-h:     66px;
   --font:         "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
 }
 
@@ -176,9 +176,12 @@ select:focus,.inp:focus{border-color:var(--brand-light)}
 .login-modal-bg{position:fixed;inset:0;background:rgba(15,23,42,.45);display:none;align-items:flex-start;justify-content:flex-end;z-index:100;padding:70px 20px 0}
 .login-modal-bg.open{display:flex}
 .login-popup{background:var(--surface);border-radius:14px;width:100%;max-width:360px;box-shadow:var(--shadow-lg);overflow:hidden}
-.login-popup-h{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
-.login-popup-logo{width:40px;height:40px;border-radius:8px;background:#fff;border:1px solid var(--border);display:flex;align-items:center;justify-content:center;flex-shrink:0;overflow:hidden;padding:2px}
-.login-popup-logo img{width:100%;height:100%;object-fit:contain}
+.login-popup-h{position:relative;padding:22px 20px 16px;border-bottom:1px solid var(--border);text-align:center}
+.login-popup-h .x{position:absolute;top:8px;right:10px;background:none;border:none;font-size:22px;color:var(--text-muted);line-height:1;padding:4px 6px;border-radius:6px}
+.login-popup-h .x:hover{background:var(--bg);color:var(--text)}
+.login-popup-logo{display:block;height:92px;width:auto;max-width:100%;margin:0 auto 12px}
+.login-popup-app{font-weight:700;font-size:15px;color:var(--brand)}
+.login-popup-org{font-size:11px;color:var(--text-muted);line-height:1.4;margin-top:2px}
 .login-popup-b{padding:20px}
 .login-popup .login-err{margin-bottom:12px}
 .login-popup .login-hint{margin-top:14px;font-size:11.5px;color:var(--text-muted)}
@@ -189,10 +192,12 @@ select:focus,.inp:focus{border-color:var(--brand-light)}
 /* ---------- TOPBAR (điều hướng không sidebar) ---------- */
 .lic{flex-shrink:0;vertical-align:middle}
 .tb-brand{display:flex;align-items:center;gap:11px;text-decoration:none;color:#fff}
-.tb-logo{width:38px;height:38px;border-radius:8px;background:#fff;display:flex;align-items:center;justify-content:center;flex-shrink:0;overflow:hidden;padding:3px}
-.tb-logo img{width:100%;height:100%;object-fit:contain}
+.tb-logo{height:46px;padding:4px 7px;border-radius:8px;background:#fff;display:inline-flex;align-items:center;justify-content:center;
+  flex-shrink:0;box-shadow:0 1px 3px rgba(0,0,0,.18);text-decoration:none;transition:.15s}
+a.tb-logo:hover{box-shadow:0 0 0 3px rgba(255,255,255,.35)}
+.tb-logo img{height:100%;width:auto;display:block}
 .tb-brand-t{display:flex;flex-direction:column;line-height:1.25;min-width:0}
-.tb-brand-t b{font-size:14px;font-weight:700}
+.tb-brand-t b{font-size:14px;font-weight:700;white-space:nowrap}
 .tb-brand-t i{font-size:11px;font-style:normal;opacity:.8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .tb-back{display:inline-flex;align-items:center;gap:6px;color:#fff;text-decoration:none;font-size:12.5px;font-weight:600;
   background:rgba(255,255,255,.15);border:1.5px solid rgba(255,255,255,.3);padding:6px 12px;border-radius:7px;transition:.15s}
@@ -236,6 +241,7 @@ select:focus,.inp:focus{border-color:var(--brand-light)}
   .topbar{padding:0 14px;gap:10px}
   .tb-brand-t i{display:none}
   .tb-back span{display:none}
+  .tb-logo{height:40px;padding:3px 6px}
   .perm-grid{grid-template-columns:1fr}
 }
 @media(max-width:560px){

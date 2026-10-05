@@ -59,7 +59,13 @@
     '.pn-right{display:flex;align-items:center;gap:8px}'+
     '.pn-gear{position:relative;display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;'+
       'border-radius:7px;color:#fff;background:rgba(255,255,255,.15);border:1.5px solid rgba(255,255,255,.3);text-decoration:none;transition:.15s}'+
-    '.pn-gear:hover{background:rgba(255,255,255,.28)}';
+    '.pn-gear:hover{background:rgba(255,255,255,.28)}'+
+    /* Logo Vietsovpetro (bản gọn: cờ + chữ) — đồng bộ với thanh tiêu đề trang chủ */
+    '.pn-logo{height:42px;padding:4px 7px;border-radius:8px;background:#fff;display:inline-flex;align-items:center;'+
+      'flex-shrink:0;box-shadow:0 1px 3px rgba(0,0,0,.18);transition:.15s}'+
+    '.pn-logo:hover{box-shadow:0 0 0 3px rgba(255,255,255,.35)}'+
+    '.pn-logo img{height:100%;width:auto;display:block}'+
+    '@media(max-width:920px){.pn-logo{height:38px;padding:3px 6px}}';
   var st = document.createElement("style");
   st.textContent = css;
   document.head.appendChild(st);
@@ -166,6 +172,17 @@
       } else {
         bar.insertBefore(a, bar.firstChild);
       }
+    }
+
+    /* 1b) Logo Vietsovpetro ở đầu thanh tiêu đề (bấm để về trang chủ) */
+    if(bar && !bar.querySelector(".pn-logo")){
+      var lg = document.createElement("a");
+      lg.href = "index.html";
+      lg.className = "pn-logo";
+      lg.title = "Trang chủ";
+      lg.innerHTML = '<img src="assets/vsp-logo-mark.png" alt="Vietsovpetro">';
+      var host = bar.querySelector(".pn-left") || bar.querySelector(".header-left") || bar;
+      host.insertBefore(lg, host.firstChild);
     }
 
     /* 2) Đổi tiêu đề module: icon Lucide + tên chuẩn */
