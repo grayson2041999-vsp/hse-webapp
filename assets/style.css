@@ -249,8 +249,8 @@ a.tb-logo:hover{box-shadow:0 0 0 3px rgba(255,255,255,.35)}
 .hero-text{min-width:0}
 .hero-kicker{font-size:11px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:var(--vsp-green,#11964E);margin-bottom:4px}
 .hero-title{font-size:24px;line-height:1.2;font-weight:800;color:var(--brand-dark);margin:0 0 6px;letter-spacing:-.3px}
-.hero-org{font-size:12.5px;color:var(--text-muted);line-height:1.5}
-.hero-org b{color:var(--text);font-weight:600}
+.hero-org{font-size:13px;color:var(--text-muted);line-height:1.55}
+.hero-org b{display:block;font-size:17px;line-height:1.3;color:var(--brand-dark);font-weight:700;margin-bottom:2px}
 .hero-greet{margin-top:8px;font-size:13px;color:var(--text)}
 .hero-greet a{font-weight:600}
 .hero-kpis{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));border-top:1px solid var(--line,#E8EDF3);background:#FAFCFE}

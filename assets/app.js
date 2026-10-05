@@ -1010,8 +1010,7 @@
         '<img class="hero-logo" src="'+LOGO_FULL+'" alt="Vietsovpetro — Giữ lửa cho Tương lai">'+
         '<div class="hero-text">'+
           '<div class="hero-kicker">An toàn · Sức khoẻ · Môi trường</div>'+
-          '<h1 class="hero-title">Hệ thống Quản lý HSE</h1>'+
-          '<div class="hero-org"><b>'+esc(ORG)+'</b><br>'+esc(ORG_PARENT)+'</div>'+
+          '<div class="hero-org"><b>'+esc(ORG)+'</b>'+esc(ORG_PARENT)+'</div>'+
           '<div class="hero-greet">'+greeting+'</div>'+
         '</div>'+
       '</div>'+
