@@ -9,18 +9,18 @@
   <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
   <style>
     :root {
-      --primary:       #003087;
-      --primary-light: #0060B6;
-      --primary-dark:  #002065;
-      --accent:        #C8102E;
-      --success:       #1a7a3c;
-      --warning:       #e68900;
-      --danger:        #c0392b;
-      --bg:            #EDF1F8;
+      --primary:       #0F62AC;
+      --primary-light: #2F7FC8;
+      --primary-dark:  #0A3F73;
+      --accent:        #ED3237;
+      --success:       #0B7A3E;
+      --warning:       #B7791F;
+      --danger:        #D32F2F;
+      --bg:            #F2F5F9;
       --card:          #ffffff;
       --text:          #1a2535;
-      --text-light:    #6b7c93;
-      --border:        #cdd6e8;
+      --text-light:    #5F6E82;
+      --border:        #D5DDE8;
     }
     *{box-sizing:border-box;margin:0;padding:0;}
     body{font-family:'Segoe UI',Arial,sans-serif;background:var(--bg);color:var(--text);font-size:13.5px;}
@@ -30,7 +30,7 @@
     .main{flex:1;min-width:0;margin-left:0;padding:76px 32px 40px;}
 
     /* ── TOPBAR ── */
-    .topbar{background:linear-gradient(135deg,#003087 0%,#0060B6 100%);border-bottom:3px solid var(--accent);color:#fff;height:58px;display:flex;align-items:center;justify-content:space-between;padding:0 24px;position:fixed;top:0;left:230px;right:0;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,0.25);}
+    .topbar{background:#0A3F73;border-bottom:3px solid var(--accent);color:#fff;height:58px;display:flex;align-items:center;justify-content:space-between;padding:0 24px;position:fixed;top:0;left:230px;right:0;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,0.25);}
     .topbar-right{display:flex;align-items:center;gap:10px;}
     .user-badge{background:rgba(255,255,255,0.15);border:1.5px solid rgba(255,255,255,0.3);border-radius:7px;padding:5px 12px;font-size:12px;color:#fff;display:flex;align-items:center;gap:6px;}
     .btn-login{background:rgba(255,255,255,0.15);border:1.5px solid rgba(255,255,255,0.35);color:#fff;padding:5px 14px;border-radius:7px;font-size:12.5px;font-weight:600;cursor:pointer;}
@@ -74,11 +74,11 @@
     .btn-success:hover{background:#155c2e;}
     .btn-danger{background:#fdedec;color:var(--danger);border:1px solid #f5c6cb;}
     .btn-danger:hover{background:#f5c6cb;}
-    .btn-edit{background:#dceaf7;color:var(--primary);border:1px solid #b8d4ef;}
-    .btn-edit:hover{background:#b8d4ef;}
+    .btn-edit{background:#E3EEF9;color:var(--primary);border:1px solid #C5DCF1;}
+    .btn-edit:hover{background:#C5DCF1;}
     .btn-sm{padding:4px 10px;font-size:12px;}
     .btn-outline{background:#fff;border:1.5px solid var(--primary-light);color:var(--primary-light);}
-    .btn-outline:hover{background:#dceaf7;}
+    .btn-outline:hover{background:#E3EEF9;}
 
     /* ── SECTION CARD ── */
     .section-card{background:#fff;border-radius:10px;box-shadow:0 2px 8px rgba(0,0,0,0.07);padding:20px;margin-bottom:20px;}
@@ -88,7 +88,7 @@
     /* ── TABLE ── */
     .table-wrap{background:#fff;border-radius:10px;box-shadow:0 2px 8px rgba(0,0,0,0.07);overflow-x:auto;margin-bottom:20px;}
     .table-wrap table{width:100%;border-collapse:collapse;}
-    th{background:#dde6f3;color:var(--primary);font-size:12.5px;font-weight:700;padding:10px 12px;text-align:left;white-space:nowrap;}
+    th{background:#E6EEF7;color:var(--primary);font-size:12.5px;font-weight:700;padding:10px 12px;text-align:left;white-space:nowrap;}
     td{padding:9px 12px;border-bottom:1px solid #f0f3fa;font-size:13px;vertical-align:top;}
     tr:last-child td{border-bottom:none;}
     tr:hover td{background:#eef3fb;}
@@ -115,14 +115,14 @@
     /* ── BADGES ── */
     .badge{display:inline-block;padding:3px 9px;border-radius:20px;font-size:11.5px;font-weight:600;}
     .badge-red{background:#fdedec;color:var(--danger);}
-    .badge-orange{background:#fef5e4;color:var(--warning);}
-    .badge-blue{background:#dceaf7;color:var(--primary);}
+    .badge-orange{background:#FFF4D6;color:var(--warning);}
+    .badge-blue{background:#E3EEF9;color:var(--primary);}
     .badge-gray{background:#f2f3f4;color:var(--text-light);}
-    .badge-green{background:#eafaf1;color:var(--success);}
+    .badge-green{background:#E6F5EC;color:var(--success);}
 
     /* ── INFO / WARN BOXES ── */
-    .info-box{background:#dceaf7;border-left:4px solid var(--primary);padding:10px 14px;border-radius:0 8px 8px 0;font-size:12.5px;color:var(--primary);margin-bottom:16px;}
-    .warn-box{background:#fef5e4;border-left:4px solid var(--warning);padding:10px 14px;border-radius:0 8px 8px 0;font-size:12.5px;color:#7a4a00;margin-bottom:14px;}
+    .info-box{background:#E3EEF9;border-left:4px solid var(--primary);padding:10px 14px;border-radius:0 8px 8px 0;font-size:12.5px;color:var(--primary);margin-bottom:16px;}
+    .warn-box{background:#FFF4D6;border-left:4px solid var(--warning);padding:10px 14px;border-radius:0 8px 8px 0;font-size:12.5px;color:#7a4a00;margin-bottom:14px;}
 
     /* ── CAP SELECTOR ── */
     .cap-selector{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px;}
@@ -138,13 +138,13 @@
     .ms-trigger .ms-ph{color:var(--text-light);font-size:12px;}
     .ms-trigger .ms-count{background:var(--primary);color:#fff;border-radius:20px;padding:1px 8px;font-size:11.5px;font-weight:700;}
     .ms-tags{display:flex;flex-wrap:wrap;gap:3px;margin-top:4px;}
-    .ms-tag{background:#dceaf7;color:var(--primary);border-radius:4px;padding:2px 7px;font-size:11.5px;display:inline-flex;align-items:center;gap:3px;}
+    .ms-tag{background:#E3EEF9;color:var(--primary);border-radius:4px;padding:2px 7px;font-size:11.5px;display:inline-flex;align-items:center;gap:3px;}
     .ms-rm{cursor:pointer;font-weight:700;color:var(--accent);line-height:1;}
     /* Modal phân loại vi phạm */
     #msModal{display:none;position:fixed;inset:0;z-index:500;background:rgba(0,0,0,0.45);align-items:center;justify-content:center;}
     #msModal.open{display:flex;}
     #msModalBox{background:#fff;border-radius:12px;width:460px;max-width:94vw;box-shadow:0 8px 32px rgba(0,0,0,0.22);}
-    #msModalHead{padding:14px 20px;background:linear-gradient(135deg,#003087,#0060B6);border-radius:12px 12px 0 0;display:flex;align-items:center;justify-content:space-between;}
+    #msModalHead{padding:14px 20px;background:#0A3F73;border-radius:12px 12px 0 0;display:flex;align-items:center;justify-content:space-between;}
     #msModalHead h3{font-size:14px;font-weight:700;color:#fff;}
     .ms-modal-close{background:rgba(255,255,255,0.15);border:none;color:#fff;width:28px;height:28px;border-radius:50%;cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center;}
     .ms-modal-close:hover{background:rgba(255,255,255,0.3);}
@@ -159,7 +159,7 @@
 
     /* ── ADD/DEL ROW ── */
     .add-row-btn{display:inline-flex;align-items:center;gap:5px;padding:5px 12px;background:#eef3fb;color:var(--primary);border:1.5px dashed var(--primary);border-radius:6px;font-size:12.5px;font-weight:600;cursor:pointer;margin-top:8px;}
-    .add-row-btn:hover{background:#dde6f3;}
+    .add-row-btn:hover{background:#E6EEF7;}
 
     /* ── WIZARD (cấp 3/4/khác) ── */
     .wiz-steps{display:flex;align-items:center;margin:4px 0 22px;}
@@ -167,7 +167,7 @@
     .wiz-step-dot{width:30px;height:30px;border-radius:50%;background:#e2e8f0;color:var(--text-light);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13.5px;flex-shrink:0;border:2px solid #e2e8f0;transition:all .2s;}
     .wiz-step-lbl{font-size:12.5px;font-weight:600;color:var(--text-light);white-space:nowrap;transition:color .2s;}
     .wiz-step-line{flex:1;height:2px;background:#e2e8f0;margin:0 12px;min-width:24px;transition:background .2s;}
-    .wiz-step.active .wiz-step-dot{background:var(--primary);border-color:var(--primary);color:#fff;box-shadow:0 0 0 4px rgba(0,48,135,.12);}
+    .wiz-step.active .wiz-step-dot{background:var(--primary);border-color:var(--primary);color:#fff;box-shadow:0 0 0 4px rgba(15,98,172,.12);}
     .wiz-step.active .wiz-step-lbl{color:var(--primary);}
     .wiz-step.done .wiz-step-dot{background:var(--success);border-color:var(--success);color:#fff;}
     .wiz-step.done .wiz-step-lbl{color:var(--success);}
@@ -197,7 +197,7 @@
     .modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:200;align-items:center;justify-content:center;}
     .modal-bg.open{display:flex;}
     .modal{background:#fff;border-radius:12px;max-width:96vw;max-height:90vh;display:flex;flex-direction:column;box-shadow:0 8px 32px rgba(0,0,0,0.22);}
-    .modal-head{padding:15px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;background:linear-gradient(135deg,#003087,#0060B6);border-radius:12px 12px 0 0;}
+    .modal-head{padding:15px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;background:#0A3F73;border-radius:12px 12px 0 0;}
     .modal-head h3{font-size:14.5px;font-weight:700;color:#fff;}
     .modal-close{background:rgba(255,255,255,0.15);border:none;color:#fff;width:28px;height:28px;border-radius:50%;cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center;}
     .modal-close:hover{background:rgba(255,255,255,0.3);}
@@ -229,23 +229,23 @@
     /* ── Theo dõi nộp số liệu cấp 1/2 (assets/kt-nop.js) ── */
     .nop-banner{border-radius:10px;padding:12px 16px;margin:4px 0 16px;font-size:13px;line-height:1.55;}
     .nop-banner.nb-red{background:#fdedec;border:1px solid #f5c6cb;color:#7b1d14;}
-    .nop-banner.nb-ok{background:#eafaf1;border:1px solid #bfe5cc;color:#1a5c32;padding:8px 14px;}
+    .nop-banner.nb-ok{background:#E6F5EC;border:1px solid #bfe5cc;color:#1a5c32;padding:8px 14px;}
     .nop-banner .nb-title{font-weight:700;font-size:13.5px;margin-bottom:6px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
     .nop-banner .nb-row{margin:2px 0;}
     .nop-banner .nb-note{margin-top:6px;font-size:12px;opacity:.85;}
     .nb-chip{display:inline-block;padding:1px 8px;margin:1px 2px;border-radius:12px;background:#fff;border:1px solid #f1b0a8;color:#a12a1c;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;}
-    .nb-chip:hover{background:#c0392b;color:#fff;border-color:#c0392b;}
+    .nb-chip:hover{background:#D32F2F;color:#fff;border-color:#D32F2F;}
     .nop-tbl{width:100%;border-collapse:collapse;font-size:12.5px;}
-    .nop-tbl th{background:#dde6f3;color:var(--primary);padding:7px 8px;border:1px solid #c0cbe0;text-align:center;white-space:nowrap;}
+    .nop-tbl th{background:#E6EEF7;color:var(--primary);padding:7px 8px;border:1px solid #c0cbe0;text-align:center;white-space:nowrap;}
     .nop-tbl th.nop-dv{text-align:left;min-width:160px;}
     .nop-tbl td{border:1px solid #e2e8f0;padding:6px 6px;text-align:center;white-space:nowrap;vertical-align:middle;}
     .nop-tbl td.nop-dv{text-align:left;font-weight:500;}
     .nop-tbl tfoot td{background:#f8fafc;font-weight:600;color:var(--text-light);font-size:12px;}
     .nop-o{display:inline-block;min-width:78px;padding:3px 6px;border-radius:6px;font-weight:600;font-size:12px;}
     .nop-o small{display:block;font-weight:500;font-size:10.5px;opacity:.85;}
-    .nop-danop{background:#eafaf1;color:#1a7a3c;}
+    .nop-danop{background:#E6F5EC;color:#0B7A3E;}
     .nop-noptre{background:#fff4e0;color:#a35f00;}
-    .nop-quahan{background:#fdedec;color:#c0392b;}
+    .nop-quahan{background:#fdedec;color:#D32F2F;}
     .nop-trongky{background:#eef4fb;color:#4a6a92;font-weight:500;}
     .nop-chuadenky,.nop-ngoai{color:#a0aec0;font-weight:500;}
     .nop-click{cursor:pointer;}
@@ -266,7 +266,7 @@
     .nop-tbl tr.nop-other td,#bcTable12Body tr.nop-other td{opacity:.42;filter:grayscale(.6);}
     .nop-tbl tr.nop-mine td{background:#f2f6fd;}
     .nop-tbl tr.nop-mine td.nop-dv,#bcTable12Body tr.nop-mine td:first-child{font-weight:700;color:var(--primary);box-shadow:inset 4px 0 0 var(--primary);}
-    .nop-mine .nop-quahan.nop-click{background:#c0392b;color:#fff;}
+    .nop-mine .nop-quahan.nop-click{background:#D32F2F;color:#fff;}
     .nop-mine .nop-trongky.nop-click{background:var(--primary);color:#fff;}
     /* Nhập từ ô của bảng theo dõi: chỉ hiện đúng 1 tháng, ẩn các bước chọn */
     .nf-only{display:none;}
@@ -281,6 +281,8 @@
   <script src="assets/flatpickr.min.js"></script>
   <script src="assets/flatpickr-vn.js"></script>
   <script src="assets/hse-date.js"></script>
+  <!-- Bộ giao diện chung: nạp CUỐI để thống nhất màu, nút, bảng, hộp thoại, nhãn trạng thái -->
+  <link rel="stylesheet" href="assets/hse-theme.css?v=20261005">
 </head>
 <body>
 <div class="layout">
@@ -855,11 +857,11 @@ function makeMonthSection(m,y,ym,reached,rec){
   sec.style.cssText="border:1px solid #d5deed;border-radius:10px;padding:14px 16px;margin-bottom:16px;background:#fafcff;";
   var head='<div class="qm-head" style="font-weight:700;color:var(--primary);font-size:14px;margin-bottom:'+(reached?"12px":"6px")+';display:flex;align-items:center;gap:10px;">Tháng '+m+"/"+y;
   if(!reached){
-    head+='<span style="font-weight:500;font-size:11.5px;background:#f1f5f9;color:#64748b;border:1px solid #e2e8f0;padding:2px 8px;border-radius:20px;">Chưa đến kỳ nhập</span></div>';
+    head+='<span class="st-badge st-mute">Chưa đến kỳ nhập</span></div>';
     sec.innerHTML=head+'<div style="color:#64748b;font-style:italic;font-size:13px;">Chưa đến kỳ nhập của tháng này. Bạn có thể nhập khi đã bước sang tháng '+m+"/"+y+'.</div>';
     return sec;
   }
-  if(rec) head+='<span style="font-weight:500;font-size:11.5px;background:#fff7ed;color:#c2410c;border:1px solid #fed7aa;padding:2px 8px;border-radius:20px;">Đã có dữ liệu — đang sửa</span>';
+  if(rec) head+='<span class="st-badge st-warn">Đã có dữ liệu — đang sửa</span>';
   head+='</div>';
   sec.innerHTML=head+'<div class="qm-blocks"></div>';
   sec.querySelector(".qm-blocks").appendChild(makeMonthBlock(ym,rec));
@@ -929,7 +931,7 @@ function fmtDT(s){
 function toast(msg, ok){
   var el=document.getElementById("toast");
   el.textContent=msg;
-  el.style.background=ok===false?"#c0392b":"#1a7a3c";
+  el.style.background=ok===false?"#D32F2F":"#0B7A3E";
   el.style.display="block";
   setTimeout(function(){el.style.display="none";},3000);
 }
@@ -1012,7 +1014,7 @@ function buildTopbar(){
   var u=currentUser();
   var right=document.getElementById("topbarRight");
   if(u){
-    var rc=u.role==="admin"?"#C8102E":u.role==="viewer"?"#6b7c93":"#1a7a3c";
+    var rc=u.role==="admin"?"#ED3237":u.role==="viewer"?"#5F6E82":"#0B7A3E";
     right.innerHTML='<div class="user-badge"><span><svg class="lic-emoji" width="1.05em" height="1.05em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex-shrink:0" aria-hidden="true"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span><span>'+esc(u.fullname||u.name||u.username)+'</span>'+
       '<span style="background:'+rc+';color:#fff;padding:1px 7px;border-radius:10px;font-size:11px;font-weight:700;margin-left:4px">'+
       (u.role==="admin"?"Admin":u.role==="viewer"?"Viewer":"User")+'</span></div>'+
@@ -1815,7 +1817,7 @@ function renderBaoCao(){
     return "rgb("+Math.round(c1[0]+(c2[0]-c1[0])*t)+","+Math.round(c1[1]+(c2[1]-c1[1])*t)+","+Math.round(c1[2]+(c2[2]-c1[2])*t)+")";
   }
   var GRAY_LIGHT=[154,167,184], GRAY_DARK=[90,107,128];   // xám nhạt → xám đậm
-  var BLUE_LIGHT=[122,176,224], BLUE_DARK=[0,48,135];      // xanh nhạt → navy đậm (#003087)
+  var BLUE_LIGHT=[122,176,224], BLUE_DARK=[0,48,135];      // xanh nhạt → navy đậm (#0F62AC)
   var _below=values.filter(function(v){return v<median;});
   var _above=values.filter(function(v){return v>=median;});
   var bMin=_below.length?Math.min.apply(null,_below):0, bMax=_below.length?Math.max.apply(null,_below):1;
@@ -1963,7 +1965,7 @@ function renderTheoDoiNop(nam,q){
       var key=ym+"|"+cap, tt=cot[key];
       if(tt==="chuadenky"||(tt==="ngoai"&&!dem[key])) return '<td>—</td>';
       var n=dem[key]||0, full=n===dvs.length;
-      return '<td style="color:'+(full?'#1a7a3c':'#c0392b')+';">'+n+'/'+dvs.length+'</td>';
+      return '<td style="color:'+(full?'#0B7A3E':'#D32F2F')+';">'+n+'/'+dvs.length+'</td>';
     }).join("");
   }).join("")+'</tr>';
 }
@@ -2034,7 +2036,7 @@ function batFocusNhap(cap,dv,ym){
     if(on){ var b=sec.querySelector(".qm-block"); dangSua=!!(b&&b.dataset.editId); }
   });
   document.getElementById("nhapFocusHead").innerHTML='<div class="nf-title">'+esc(CAP_LABELS[cap]||cap)+' · '+esc(dv)+' · Tháng '+(+p[1])+'/'+p[0]+
-    (dangSua?' <span style="font-size:12px;font-weight:600;color:#c2410c;background:#fff7ed;border:1px solid #fed7aa;padding:2px 8px;border-radius:20px;vertical-align:2px;">Đã có dữ liệu — đang sửa</span>':'')+'</div>';
+    (dangSua?' <span class="st-badge st-warn">Đã có dữ liệu — đang sửa</span>':'')+'</div>';
   window.scrollTo(0,0);
 }
 function tatFocusNhap(){ var tab=document.getElementById("tab-nhap"); if(tab) tab.classList.remove("focus-mode"); }
@@ -2090,7 +2092,7 @@ function renderList(){
   var cont=document.getElementById("listContainer");
   if(!all.length){cont.innerHTML='<div class="empty-state">Không có phiếu kiểm tra nào phù hợp bộ lọc.</div>';return;}
 
-  var MAU={cap1:"#1a56a0",cap2:"#2e7d32",cap3:"#003087",cap4:"#b45309",khac:"#6b21a8"};
+  var MAU={cap1:"#1a56a0",cap2:"#2e7d32",cap3:"#0F62AC",cap4:"#b45309",khac:"#6b21a8"};
   var html='<div class="table-wrap ds-wrap"><table class="ds-tbl"><thead><tr>'+
     '<th>Thời gian</th><th>Loại</th><th>Đơn vị / Nơi kiểm tra</th><th class="num">Số lần KT</th><th class="num">Vi phạm</th><th>Người nhập</th>'+
     '</tr></thead><tbody>';

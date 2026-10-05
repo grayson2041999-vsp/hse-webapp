@@ -21,8 +21,8 @@
   if (global.HSE_ACT) return; // tránh nạp trùng
 
   /* ─── Bảng màu portal ─── */
-  var C = { primary:"#003087", primaryLight:"#0060B6", accent:"#C8102E",
-            success:"#1a7a3c", text:"#1a2535", light:"#6b7c93", border:"#cdd6e8" };
+  var C = { primary:"#0F62AC", primaryLight:"#2F7FC8", accent:"#ED3237",
+            success:"#0B7A3E", text:"#1a2535", light:"#5F6E82", border:"#D5DDE8" };
 
   var MAX_ITEMS = 20;
 
@@ -419,7 +419,7 @@
       bell.setAttribute("aria-label", "Hoạt động gần đây");
       bell.innerHTML = "🔔";
       bell.style.cssText = "position:fixed;right:18px;bottom:18px;width:46px;height:46px;border-radius:50%;border:none;" +
-        "background:" + C.primary + ";color:#fff;font-size:19px;cursor:pointer;z-index:40;box-shadow:0 6px 18px rgba(0,32,101,.28);";
+        "background:" + C.primary + ";color:#fff;font-size:19px;cursor:pointer;z-index:40;box-shadow:0 6px 18px rgba(10,63,115,.28);";
       bell.addEventListener("click", function () { _open = !_open; applyMode(); });
       document.body.appendChild(bell);
     }
@@ -437,7 +437,7 @@
     if (narrow()) {
       unreserve();
       host.style.zIndex = "40";
-      host.style.boxShadow = "-6px 0 22px rgba(0,32,101,.20)";
+      host.style.boxShadow = "-6px 0 22px rgba(10,63,115,.20)";
       host.style.display = _open ? "flex" : "none";
       ensureBell();
       if (cl) cl.style.display = "";
@@ -445,7 +445,7 @@
       _open = false;
       removeBell();
       host.style.zIndex = "15";
-      host.style.boxShadow = "-2px 0 10px rgba(0,32,101,.05)";
+      host.style.boxShadow = "-2px 0 10px rgba(10,63,115,.05)";
       host.style.display = "flex";
       reserve();
       if (cl) cl.style.display = "none";

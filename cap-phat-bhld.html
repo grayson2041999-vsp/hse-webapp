@@ -19,10 +19,10 @@
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
-      --primary: #003087; --primary-light: #0060B6; --accent: #C8102E;
-      --success: #1a7a3c; --warning: #e68900; --danger: #c0392b;
-      --bg: #EDF1F8; --card: #ffffff; --text: #1a2535; --text-light: #6b7c93;
-      --border: #cdd6e8; --sidebar-w: 200px;
+      --primary: #0F62AC; --primary-light: #2F7FC8; --accent: #ED3237;
+      --success: #0B7A3E; --warning: #B7791F; --danger: #D32F2F;
+      --bg: #F2F5F9; --card: #ffffff; --text: #1a2535; --text-light: #5F6E82;
+      --border: #D5DDE8; --sidebar-w: 200px;
     }
     body { font-family: 'Segoe UI', Arial, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
     .header { background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%); color: white; padding: 0 24px; height: 58px; display: flex; align-items: center; justify-content: space-between; position: fixed; top: 0; left: 0; right: 0; z-index: 100; box-shadow: 0 2px 8px rgba(0,0,0,0.25); border-bottom: 3px solid var(--accent); }
@@ -53,7 +53,7 @@
     .nv-act-btn { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; font-weight: 600; padding: 5px 13px; border-radius: 7px; cursor: pointer; border: 1px solid var(--border); background: #fff; transition: all .15s; }
     .nv-act-btn svg { width: 15px; height: 15px; }
     .nv-act-edit { color: var(--primary); border-color: #b0cde8; }
-    .nv-act-edit:hover { background: #dceaf7; }
+    .nv-act-edit:hover { background: #E3EEF9; }
     .nv-act-del { color: var(--danger); border-color: #eab7b2; margin-left: 8px; }
     .nv-act-del:hover { background: #fdecea; }
     /* Nút icon dùng chung cho Sửa / Xoá (bảng nhân sự, tiêu đề nhóm, wizard) */
@@ -64,17 +64,17 @@
     .ib-sm svg { width: 12px; height: 12px; }
     .ib-sm + .ib-sm { margin-left: 4px; }
     .ib-edit { color: var(--primary); border-color: #b0cde8; }
-    .ib-edit:hover { background: #dceaf7; }
+    .ib-edit:hover { background: #E3EEF9; }
     .ib-del { color: var(--danger); border-color: #eab7b2; }
     .ib-del:hover { background: #fdecea; }
     .ib:focus-visible { outline: 2px solid var(--primary-light); outline-offset: 1px; }
     .cpns-grp .ib { background: #fff; }
-    .cpns-grp .ib-edit:hover { background: #dceaf7; }
+    .cpns-grp .ib-edit:hover { background: #E3EEF9; }
     .cpns-grp .ib-del:hover { background: #fdecea; }
     .grp-act { float: right; }
     /* Bước 2 wizard: điều chỉnh hàng loạt theo cột */
     .cpw-adj{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;padding:0;border-radius:6px;border:1px solid #b0cde8;background:#fff;color:var(--primary);cursor:pointer;margin-left:6px;vertical-align:middle}
-    .cpw-adj:hover,.cpw-adj.on{background:#dceaf7}
+    .cpw-adj:hover,.cpw-adj.on{background:#E3EEF9}
     .cpw-adj.mod{background:#fff3cd;border-color:var(--warning);color:#8a5300}
     #cpw-bulk-pop{position:fixed;z-index:1000;width:290px;background:#fff;border:1px solid var(--border);border-radius:10px;box-shadow:0 10px 30px rgba(0,30,80,.18);padding:14px;display:none;font-size:13px}
     #cpw-bulk-pop .t{font-size:13.5px;font-weight:700;color:var(--primary);margin-bottom:10px;display:flex;justify-content:space-between;align-items:center}
@@ -121,19 +121,19 @@
       .cpns-grp:hover .grp-act, .cpns-grp .grp-act:focus-within { opacity: 1; }
     }
     table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
-    th { background: #dde6f3; padding: 10px 12px; text-align: left; font-weight: 600; color: var(--primary); font-size: 12px; text-transform: uppercase; letter-spacing: 0.4px; border-bottom: 2px solid var(--border); }
+    th { background: #E6EEF7; padding: 10px 12px; text-align: left; font-weight: 600; color: var(--primary); font-size: 12px; text-transform: uppercase; letter-spacing: 0.4px; border-bottom: 2px solid var(--border); }
     td { padding: 10px 12px; border-bottom: 1px solid var(--border); vertical-align: middle; }
     tr:hover td { background: #eef3fb; }
     tr:last-child td { border-bottom: none; }
     .badge { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; }
-    .badge-green { background: #eafaf1; color: var(--success); } .badge-orange { background: #fef5e4; color: var(--warning); }
-    .badge-red { background: #fdedec; color: var(--danger); } .badge-blue { background: #dceaf7; color: var(--primary); }
+    .badge-green { background: #E6F5EC; color: var(--success); } .badge-orange { background: #FFF4D6; color: var(--warning); }
+    .badge-red { background: #fdedec; color: var(--danger); } .badge-blue { background: #E3EEF9; color: var(--primary); }
     .badge-gray { background: #f2f3f4; color: var(--text-light); }
     .btn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; border-radius: 7px; border: none; cursor: pointer; font-size: 13px; font-weight: 600; transition: all 0.2s; }
     .btn-primary { background: var(--primary-light); color: white; } .btn-primary:hover { background: var(--primary); }
     .btn-success { background: var(--success); color: white; }
     .btn-danger { background: var(--danger); color: white; } .btn-danger:hover { background: #a93226; }
-    .btn-outline { background: white; color: var(--primary); border: 1.5px solid var(--primary-light); } .btn-outline:hover { background: #dceaf7; }
+    .btn-outline { background: white; color: var(--primary); border: 1.5px solid var(--primary-light); } .btn-outline:hover { background: #E3EEF9; }
     .btn-sm { padding: 5px 10px; font-size: 12px; }
     /* ===== Nút xuất file — màu thương hiệu Office =====
        Excel #217346 (xanh lá), Word #2B579A (xanh dương).
@@ -160,12 +160,12 @@
     .search-input { flex: 1; min-width: 200px; padding: 9px 14px 9px 36px; border: 1.5px solid var(--border); border-radius: 7px; font-size: 13.5px; outline: none; background: white url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='%237f8c8d' viewBox='0 0 16 16' width='14' height='14'%3E%3Cpath d='M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.099zm-5.242 1.156a5.5 5.5 0 1 1 0-11 5.5 5.5 0 0 1 0 11z'/%3E%3C/svg%3E") no-repeat 12px center; }
     .nv-unit-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; max-width: 1100px; margin: 0 auto 28px; }
     .nv-unit-card { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 26px 20px; cursor: pointer; transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease; text-align: center; min-height: 120px; font-family: inherit; width: 100%; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
-    .nv-unit-card:hover { border-color: var(--primary); transform: translateY(-3px); box-shadow: 0 8px 20px rgba(0,48,135,0.14); }
+    .nv-unit-card:hover { border-color: var(--primary); transform: translateY(-3px); box-shadow: 0 8px 20px rgba(15,98,172,0.14); }
     .nv-unit-card:disabled:hover { transform: none; box-shadow: 0 2px 8px rgba(0,0,0,0.06); border-color: var(--border); }
     .nv-unit-icon { display: inline-flex; color: var(--primary); margin-bottom: 2px; }
     .nv-unit-icon svg { width: 30px; height: 30px; }
     .nv-unit-name { font-size: 14px; font-weight: 700; color: var(--primary); line-height: 1.35; }
-    .nv-unit-count { font-size: 12px; font-weight: 600; color: var(--primary); background: #dceaf7; border-radius: 20px; padding: 3px 12px; }
+    .nv-unit-count { font-size: 12px; font-weight: 600; color: var(--primary); background: #E3EEF9; border-radius: 20px; padding: 3px 12px; }
     /* Tổng nhân viên toàn hệ thống + trạng thái đồng bộ */
     .nv-total { display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 8px 14px; max-width: 1100px; margin: 0 auto 14px; font-size: 13.5px; color: var(--text); }
     .nv-total b { color: var(--primary); font-size: 15px; }
@@ -192,6 +192,8 @@
       .header-date { display: none; }
     }
   </style>
+  <!-- Bộ giao diện chung: nạp CUỐI để thống nhất màu, nút, bảng, hộp thoại, nhãn trạng thái -->
+  <link rel="stylesheet" href="assets/hse-theme.css?v=20261005">
 </head>
 <body>
 <!-- HEADER -->
@@ -216,11 +218,11 @@
       <button id="notif-bell-btn" onclick="toggleNotifPanel(event)" title="Thông báo"
         style="position:relative;display:inline-flex;align-items:center;justify-content:center;background:rgba(255,255,255,0.15);border:1.5px solid rgba(255,255,255,0.35);width:36px;height:36px;border-radius:9px;cursor:pointer;line-height:1;">
         <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#ff4d4f" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.268 21a2 2 0 0 0 3.464 0"/><path d="M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326"/></svg>
-        <span id="notif-badge" style="display:none;position:absolute;top:-6px;right:-6px;background:var(--accent,#C8102E);color:#fff;font-size:10px;font-weight:700;min-width:18px;height:18px;line-height:18px;border-radius:9px;padding:0 4px;">0</span>
+        <span id="notif-badge" style="display:none;position:absolute;top:-6px;right:-6px;background:var(--accent,#ED3237);color:#fff;font-size:10px;font-weight:700;min-width:18px;height:18px;line-height:18px;border-radius:9px;padding:0 4px;">0</span>
       </button>
       <div id="notif-panel" style="display:none;position:absolute;right:0;top:46px;width:360px;max-height:460px;overflow-y:auto;background:#fff;border:1px solid var(--border,#dfe3eb);border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,0.18);z-index:1200;">
         <div style="display:flex;align-items:center;justify-content:space-between;padding:13px 15px;border-bottom:1px solid var(--border,#eef0f4);position:sticky;top:0;background:#fff;border-radius:12px 12px 0 0;z-index:1;">
-          <span style="display:inline-flex;align-items:center;gap:7px;font-size:14.5px;font-weight:700;color:var(--primary,#003087);"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.268 21a2 2 0 0 0 3.464 0"/><path d="M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326"/></svg>Thông báo</span>
+          <span style="display:inline-flex;align-items:center;gap:7px;font-size:14.5px;font-weight:700;color:var(--primary,#0F62AC);"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.268 21a2 2 0 0 0 3.464 0"/><path d="M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326"/></svg>Thông báo</span>
           <button onclick="markAllNotifRead()" style="background:none;border:none;color:var(--primary-light,#4a90d9);font-size:12px;font-weight:600;cursor:pointer;padding:4px 6px;border-radius:6px;">Đánh dấu tất cả đã đọc</button>
         </div>
         <div id="notif-list"></div>
@@ -270,15 +272,15 @@
     .cp-sec-title{font-size:12.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--text-light);margin:8px 0 12px}
     .cp-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:16px;margin-bottom:26px}
     .cp-tile{cursor:pointer;border:1.5px solid var(--border);border-radius:14px;padding:20px 18px;background:#fff;transition:.15s;display:flex;flex-direction:column;gap:10px;text-align:left}
-    .cp-tile:hover{border-color:var(--primary);box-shadow:0 6px 18px rgba(0,48,135,.12);transform:translateY(-2px)}
-    .cp-ic{width:46px;height:46px;border-radius:12px;display:flex;align-items:center;justify-content:center;background:#EDF1F8;color:var(--primary);flex-shrink:0}
+    .cp-tile:hover{border-color:var(--primary);box-shadow:0 6px 18px rgba(15,98,172,.12);transform:translateY(-2px)}
+    .cp-ic{width:46px;height:46px;border-radius:12px;display:flex;align-items:center;justify-content:center;background:#F2F5F9;color:var(--primary);flex-shrink:0}
     .cp-tile.cp-task .cp-ic{background:var(--primary);color:#fff}
     .cp-tile h4{margin:0;font-size:15px;font-weight:700;color:var(--primary)}
     .cp-tile p{margin:0;font-size:12.5px;color:var(--text-light);line-height:1.45}
     #cp-approve-tile{position:relative}
     #cp-approve-badge{position:absolute;top:14px;right:14px;min-width:24px;height:24px;padding:0 8px;border-radius:12px;
-      background:var(--accent,#C8102E);color:#fff;font-size:12.5px;font-weight:700;line-height:24px;text-align:center;
-      box-shadow:0 2px 6px rgba(200,16,46,.3)}
+      background:var(--accent,#ED3237);color:#fff;font-size:12.5px;font-weight:700;line-height:24px;text-align:center;
+      box-shadow:0 2px 6px rgba(237,50,55,.3)}
     /* ===== DASHBOARD TỔNG QUAN ===== */
     .dash{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:16px 18px;margin-bottom:22px}
     .dash-head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:14px}
@@ -318,12 +320,12 @@
     .dash-o{display:block;border-radius:7px;padding:6px 4px;text-align:center;font-size:11.5px;font-weight:600;
       border:1px solid transparent;line-height:1.3;overflow-wrap:break-word}
     a.dash-o{text-decoration:none;cursor:pointer}
-    a.dash-o:hover{filter:brightness(.96);box-shadow:0 0 0 2px rgba(0,48,135,.18)}
+    a.dash-o:hover{filter:brightness(.96);box-shadow:0 0 0 2px rgba(15,98,172,.18)}
     .d-xong{background:#e8f5ec;color:#146c33;border-color:#bfe0cb}
     .d-daduyet{background:#fdf3e0;color:#8a5300;border-color:#e8c98a}  /* việc dở dang, cần chú ý */
     .d-choduyet{background:#f1ecfb;color:#5b3fa8;border-color:#d8cdf0}
     .d-danglam{background:#e7f0fb;color:#004a8f;border-color:#c2d8f0}  /* đang tiến triển bình thường */
-    .d-chua{background:#f3f5f9;color:#6b7c93;border-color:#dfe6ef}
+    .d-chua{background:#f3f5f9;color:#5F6E82;border-color:#dfe6ef}
     .d-ngoai{background:repeating-linear-gradient(135deg,#fafbfc,#fafbfc 4px,#f1f3f7 4px,#f1f3f7 8px);
       color:#aab4c4;border-color:#eceff4}
     .dash-chu{display:flex;gap:14px;flex-wrap:wrap;margin-top:10px;font-size:11.5px;color:var(--text-light)}
@@ -566,7 +568,7 @@
     <div class="page-title" style="margin:0;"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0" aria-hidden="true"><path d="M21.3 15.3a2.4 2.4 0 0 1 0 3.4l-2.6 2.6a2.4 2.4 0 0 1-3.4 0L2.7 8.7a2.4 2.4 0 0 1 0-3.4l2.6-2.6a2.4 2.4 0 0 1 3.4 0Z"/><path d="m14.5 12.5 2-2"/><path d="m11.5 9.5 2-2"/><path d="m8.5 6.5 2-2"/><path d="m17.5 15.5 2-2"/></svg>Định mức cấp phát</div>
     <button class="btn btn-doc" onclick="exportDinhMucWord()"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;flex-shrink:0" aria-hidden="true"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v5h5"/><path d="M16 13H8"/><path d="M16 17H8"/><path d="M10 9H8"/></svg>Xuất Word</button>
   </div>
-  <div style="display:inline-flex;align-items:center;gap:8px;background:#EDF1F8;border-left:4px solid var(--primary);border-radius:6px;padding:9px 16px;margin-bottom:16px;font-size:13px;color:var(--text-light);">
+  <div style="display:inline-flex;align-items:center;gap:8px;background:#F2F5F9;border-left:4px solid var(--primary);border-radius:6px;padding:9px 16px;margin-bottom:16px;font-size:13px;color:var(--text-light);">
     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0" aria-hidden="true"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v5h5"/><path d="M16 13H8"/><path d="M16 17H8"/><path d="M10 9H8"/></svg> Căn cứ tài liệu <strong style="color:var(--primary);">VSP-000-ATMT-411</strong>, phiên bản <strong style="color:var(--primary);">03</strong>
   </div>
   <div class="card">
@@ -960,7 +962,7 @@
       <span class="modal-title" id="modal-dm-title">Thêm trang bị chi tiết</span>
       <button class="modal-close" onclick="closeModal('modal-dm')">×</button>
     </div>
-    <div style="background:#EDF1F8;border-radius:7px;padding:8px 14px;margin-bottom:14px;font-size:13px;">
+    <div style="background:#F2F5F9;border-radius:7px;padding:8px 14px;margin-bottom:14px;font-size:13px;">
       Nhóm: <strong id="dm-nhom-label" style="color:var(--primary);">—</strong>
     </div>
     <div class="form-grid">
@@ -1012,7 +1014,7 @@
       <span class="modal-title" id="modal-dinhmuc-title">Thêm định mức</span>
       <button class="modal-close" onclick="closeModal('modal-dinhmuc')">×</button>
     </div>
-    <div style="background:#EDF1F8;border-radius:7px;padding:8px 14px;margin-bottom:14px;font-size:13px;">
+    <div style="background:#F2F5F9;border-radius:7px;padding:8px 14px;margin-bottom:14px;font-size:13px;">
       Chức danh: <strong id="dm2-cd-label" style="color:var(--primary);">—</strong>
     </div>
     <div class="form-grid">
@@ -1477,14 +1479,14 @@ function _updateNotifBadge(){
 // Kiểu hiển thị chuyên nghiệp cho từng loại thông báo: {icon, bg, fg, label}
 function _notifStyle(t){
   var M={
-    nv_approve:['check','#eafaf1','#1a7a3c','Đã duyệt'],
-    phieu_approve:['check','#eafaf1','#1a7a3c','Đã duyệt'],
-    change_approve:['check','#eafaf1','#1a7a3c','Đã duyệt'],
-    nv_reject:['x','#fdecea','#c0392b','Bị trả lại'],
-    phieu_reject:['x','#fdecea','#c0392b','Bị trả lại'],
-    change_reject:['x','#fdecea','#c0392b','Bị trả lại']
+    nv_approve:['check','#E6F5EC','#0B7A3E','Đã duyệt'],
+    phieu_approve:['check','#E6F5EC','#0B7A3E','Đã duyệt'],
+    change_approve:['check','#E6F5EC','#0B7A3E','Đã duyệt'],
+    nv_reject:['x','#fdecea','#D32F2F','Bị trả lại'],
+    phieu_reject:['x','#fdecea','#D32F2F','Bị trả lại'],
+    change_reject:['x','#fdecea','#D32F2F','Bị trả lại']
   };
-  var s=M[t]||['clip','#e8f0fb','#003087',''];
+  var s=M[t]||['clip','#e8f0fb','#0F62AC',''];
   return {icon:s[0],bg:s[1],fg:s[2],label:s[3]};
 }
 // Thời gian tương đối kiểu Facebook (mốc "Hôm qua" tính theo ngày lịch)
@@ -1528,7 +1530,7 @@ function renderNotifPanel(){
         ${hasSnap?`<button onclick="event.stopPropagation();restoreNvFromNotif('${n.id}')" class="btn btn-outline btn-sm" style="margin-top:8px;">↩️ Tạo lại nhân viên này</button>`:''}
         <div style="font-size:11px;color:var(--text-light,#999);margin-top:6px;">${dt}</div>
       </div>
-      ${unread?'<span style="width:8px;height:8px;border-radius:50%;background:var(--accent,#C8102E);flex-shrink:0;margin-top:6px;"></span>':''}
+      ${unread?'<span style="width:8px;height:8px;border-radius:50%;background:var(--accent,#ED3237);flex-shrink:0;margin-top:6px;"></span>':''}
     </div>`;
   }).join('');
 }
@@ -1593,7 +1595,7 @@ function renderHeaderUser(){
       <a class="pn-login" href="${href}" title="Đăng nhập để thao tác và nhập liệu"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0" aria-hidden="true"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg><span>Đăng nhập</span></a>`;
     return;
   }
-  const roleColor=u.role==='admin'?'#C8102E':u.role==='viewer'?'#6b7c93':'#1a7a3c';
+  const roleColor=u.role==='admin'?'#ED3237':u.role==='viewer'?'#5F6E82':'#0B7A3E';
   const roleLabel=u.role==='admin'?'ADMIN':u.role==='viewer'?'VIEWER':'USER';
   // Cùng khuôn .pn-user/.pn-chip với các trang khác, icon Lucide thay emoji 👤
   el.innerHTML=`<span class="pn-user"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0" aria-hidden="true"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg><span>${_escH(u.fullname||u.username)}</span><span class="pn-chip" style="background:${roleColor};">${roleLabel}</span></span>`;
@@ -2261,7 +2263,7 @@ function _cpnsValidate(raw,oldNv){
 function _cpnsToastLoi(v){
   showToast((v&&v.msgs&&v.msgs.length)?v.msgs.join(' · '):'Vui lòng kiểm tra các ô được tô đỏ.','error');
 }
-function _cpnsMarkErrors(tr,errs){ if(!tr)return; tr.querySelectorAll('[data-f]').forEach(function(el){ el.style.borderColor=(errs.indexOf(el.getAttribute('data-f'))>=0)?'#c0392b':''; }); }
+function _cpnsMarkErrors(tr,errs){ if(!tr)return; tr.querySelectorAll('[data-f]').forEach(function(el){ el.style.borderColor=(errs.indexOf(el.getAttribute('data-f'))>=0)?'#D32F2F':''; }); }
 // HTML một hàng nhập (dùng cho cả 'edit' và 'draft'); data.thang* ở dạng MM/YYYY
 function _cpnsInputRow(kind,key,data,unitLabel){
   var saveFn=kind==='edit'?("cpnsSaveEdit('"+key+"')"):("cpnsSaveDraft('"+key+"')");
@@ -2392,7 +2394,7 @@ function _cpnsLiveRow(n,stt,draggable,grpSelHtml){
   var _pc=(typeof _nvPendingChange==='function')?_nvPendingChange(n.id):null;
   var canEd=(typeof canEditUnit==='function'&&canEditUnit(n.boPhan));
   var act=_pc
-    ? '<span style="display:inline-flex;align-items:center;gap:4px;background:#fff3cd;color:#856404;font-size:11px;font-weight:700;border-radius:20px;padding:3px 10px;white-space:nowrap;">⏳ Chờ duyệt</span>'
+    ? '<span class="st-badge st-warn">⏳ Chờ duyệt</span>'
     : ( canEd
       ? (grpSelHtml||'')+'<button class="ib ib-edit" title="Sửa" onclick="cpNsEdit(\''+n.id+'\')">'+_ic('edit',13)+'</button><button class="ib ib-del" title="Xoá" onclick="cpNsDelete(\''+n.id+'\')">'+_ic('del',13)+'</button>'
       : '<span style="color:var(--text-light);">—</span>' );
@@ -2612,7 +2614,7 @@ function cpRenderNhanSu(){
           '<button class="btn btn-success btn-sm" style="padding:4px 8px;" title="Duyệt" onclick="approveChange(\''+id+'\')">'+_ic('check',13)+'</button>'+
           '<button class="btn btn-danger btn-sm" style="padding:4px 8px;" title="Trả lại" onclick="rejectChange(\''+id+'\')">'+_ic('x',13)+'</button>'+
         '</div>'
-      : '<span style="display:inline-flex;align-items:center;gap:4px;background:#fff3cd;color:#856404;font-size:11px;font-weight:700;border-radius:20px;padding:3px 10px;white-space:nowrap;">⏳ Đang chờ duyệt</span>';
+      : '<span class="st-badge st-warn">⏳ Đang chờ duyệt</span>';
     var overlay='<span style="background:rgba(255,193,7,.94);color:#5a4300;font-weight:800;font-size:10.5px;letter-spacing:.6px;border-radius:4px;padding:2px 9px;box-shadow:0 1px 4px rgba(0,0,0,.22);white-space:nowrap;">⏳ ĐANG CHỜ DUYỆT</span>';
     return '<tr style="opacity:.6;background:#f7f8fb;" title="Nhân sự đang chờ Admin phê duyệt">'+
       '<td class="cpns-s1" style="text-align:center;">⏳</td>'+
@@ -2640,7 +2642,7 @@ function cpRenderNhanSu(){
   }catch(e){}
   var rejBody=rejList.map(function(o){
     var n=o.nv, id=o.pc.id, reason=o.pc.rejectReason||'';
-    var badge='<span style="display:inline-flex;align-items:center;gap:4px;background:#fdecea;color:#c0392b;font-size:11px;font-weight:700;border-radius:20px;padding:3px 10px;white-space:nowrap;"'+(reason?(' title="Lý do: '+_escH(reason)+'"'):'')+'>❌ Đã bị trả lại</span>';
+    var badge='<span class="st-badge st-bad"'+(reason?(' title="Lý do: '+_escH(reason)+'"'):'')+'>❌ Đã bị trả lại</span>';
     var okBtn=' <button class="btn btn-outline btn-sm" style="padding:4px 12px;" title="Đã hiểu, bỏ khỏi bảng" onclick="cpnsDismissRejected(\''+id+'\')">OK</button>';
     return '<tr style="background:#fdf0ef;color:#7d3a34;" title="'+(reason?('Lý do trả lại: '+_escH(reason)):'Yêu cầu thêm đã bị trả lại')+'">'+
       '<td class="cpns-s1" style="text-align:center;">❌</td>'+
@@ -2776,7 +2778,7 @@ function _cpnvViewRow(n,stt,pending){
     '<td style="text-align:center;">'+_escH(n.coGiay||'')+'</td>';
   if(pending){
     return '<tr style="opacity:.6;background:#f7f8fb;"><td style="text-align:center;">'+stt+'</td>'+cells+
-      '<td style="text-align:center;"><span style="display:inline-flex;align-items:center;gap:4px;background:#fff3cd;color:#856404;font-size:11px;font-weight:700;border-radius:20px;padding:3px 10px;white-space:nowrap;">⏳ Chờ duyệt</span></td></tr>';
+      '<td style="text-align:center;"><span class="st-badge st-warn">⏳ Chờ duyệt</span></td></tr>';
   }
   var act='<button class="ib ib-edit" title="Sửa" onclick="cpnvEditRow(\''+n.id+'\')">'+_ic('edit',13)+'</button><button class="ib ib-del" title="Xoá" onclick="cpnvDelRow(\''+n.id+'\')">'+_ic('del',13)+'</button>';
   return '<tr><td style="text-align:center;color:var(--text-light);">'+stt+'</td>'+cells+'<td style="text-align:center;white-space:nowrap;">'+act+'</td></tr>';
@@ -2874,7 +2876,7 @@ function cpnvRender(){
   } else {
     var _nvDemoNote=approved.some(function(p){return /\(demo\)/i.test(p.reviewedBy||'');})
       ?'<div style="margin-bottom:10px;display:inline-flex;align-items:center;gap:5px;background:#f3e8ff;color:#7c3aed;border:1px dashed #c4a3f0;border-radius:6px;padding:2px 9px;font-size:11.5px;font-weight:600;">🧪 Có phiếu được phê duyệt giả lập (demo) — chỉ dùng để kiểm tra luồng làm việc đơn vị Test</div>':'';
-    var _nvAttachNote='<div style="display:flex;align-items:flex-start;gap:9px;background:#fff8e1;border:1px solid #f2d98a;border-left:4px solid #e6a700;border-radius:8px;padding:11px 14px;margin-bottom:12px;font-size:13px;color:#7a5c00;line-height:1.5;">'+_ic('clip',17)+'<div>Khi trình ký eOffice, cần đính kèm <b>giấy giới thiệu nhân sự</b> hoặc <b>quyết định nhận nhân sự vào làm việc</b>.</div></div>';
+    var _nvAttachNote='<div style="display:flex;align-items:flex-start;gap:9px;background:#fff8e1;border:1px solid #f2d98a;border-left:4px solid #B7791F;border-radius:8px;padding:11px 14px;margin-bottom:12px;font-size:13px;color:#7a5c00;line-height:1.5;">'+_ic('clip',17)+'<div>Khi trình ký eOffice, cần đính kèm <b>giấy giới thiệu nhân sự</b> hoặc <b>quyết định nhận nhân sự vào làm việc</b>.</div></div>';
     b2=_nvDemoNote+_nvAttachNote+'<div class="table-wrap"><table><thead><tr><th style="width:40px;text-align:center;">STT</th><th>Nhân viên</th><th>Chức danh</th><th>Đơn vị</th><th>Duyệt lúc</th><th style="text-align:center;">Xuất phiếu</th><th style="text-align:center;">Hoàn thành</th></tr></thead><tbody>'+
       approved.map(function(p,i){return '<tr><td style="text-align:center;">'+(i+1)+'</td><td><strong>'+_escH(p.nvTen||'')+'</strong> <span style="color:var(--text-light);font-size:11px;">'+_escH(p.nvDanhSo||'')+'</span></td><td style="font-size:12.5px;">'+_escH(p.chucDanh||'')+'</td><td style="font-size:12.5px;">'+_escH(p.donVi||'')+'</td><td style="font-size:12px;color:var(--text-light);">'+(p.reviewedAt?new Date(p.reviewedAt).toLocaleDateString('vi-VN'):'')+'</td><td style="text-align:center;"><button class="btn btn-doc btn-sm" onclick="exportPhieuById(\''+p.id+'\',\'word\')">'+_ic('file',13)+' Word</button></td><td style="text-align:center;"><button class="btn btn-success btn-sm" onclick="cpnvComplete(\''+p.id+'\')">'+_ic('check',13)+' Đã hoàn thành</button></td></tr>';}).join('')+
       '</tbody></table></div>';
@@ -3004,8 +3006,8 @@ function renderUnitPicker(){
   {
     const orphans=daNhanVien.filter(n=>!n.boPhan||!n.boPhan.trim());
     if(orphans.length>0) html+=`<button class="nv-unit-card" onclick="selectOrphanUnit()" style="border-color:#e74c3c;background:#fff5f5;">
-      <span class="nv-unit-name" style="color:#c0392b;">Chưa phân đơn vị</span>
-      <span class="nv-unit-count" style="background:#fce4e6;color:#c0392b;">${orphans.length} nhân viên</span>
+      <span class="nv-unit-name" style="color:#D32F2F;">Chưa phân đơn vị</span>
+      <span class="nv-unit-count" style="background:#fce4e6;color:#D32F2F;">${orphans.length} nhân viên</span>
     </button>`;
   }
   container.innerHTML=html;
@@ -3068,7 +3070,7 @@ function _nvRow(n,idx,showDrag,showNhomCol,donViFilter){
   }
   const _warns=_nvWarnings(n);
   const _wf={}; _warns.forEach(w=>_wf[w.field]=w);
-  const _wc=(field,inner)=>{const w=_wf[field];return`<td style="text-align:center;${w?'background:#fdecea;':''}">${inner}${w?' <span style="color:#c0392b;">⚠️</span>':''}</td>`;};
+  const _wc=(field,inner)=>{const w=_wf[field];return`<td style="text-align:center;${w?'background:#fdecea;':''}">${inner}${w?' <span style="color:#D32F2F;">⚠️</span>':''}</td>`;};
   const _warnBtn=_warns.length?`<button class="btn btn-sm" onclick="openNVWarning('${n.id}')" title="${_warns.length} cảnh báo tháng cấp" style="background:#fff3cd;border:1px solid #e0a800;color:#8a6d00;padding:1px 7px;margin-left:6px;border-radius:6px;font-size:11.5px;font-weight:700;cursor:pointer;">⚠️ ${_warns.length}</button>`:'';
   return`<tr data-id="${n.id}" ${dragAttrs}${canEdit?` class="nv-clickable" onclick="nvRowClick(event,'${n.id}')"`:''}>
     ${sttCell}
@@ -3114,7 +3116,7 @@ function renderTableNV(){
       const members=filtered.filter(n=>n.nhomId===g.id);
       // Khi đang search: bỏ qua nhóm trống; khi không search: vẫn hiển thị nhóm trống
       if(members.length===0){
-        if(!q)html+=`<tr style="background:#f7fafd;"><td colspan="12" style="padding:8px 14px;font-weight:600;color:var(--primary);font-size:13px;border-bottom:1.5px solid #cdd6e8;"><span style="display:inline-flex;align-items:center;justify-content:center;background:var(--primary);color:#fff;font-size:10px;border-radius:50%;width:18px;height:18px;margin-right:6px;">${g.id}</span>📁 ${g.ten} <span style="font-weight:400;font-size:11.5px;color:var(--text-light);">(0 người)</span></td></tr>`;
+        if(!q)html+=`<tr style="background:#f7fafd;"><td colspan="12" style="padding:8px 14px;font-weight:600;color:var(--primary);font-size:13px;border-bottom:1.5px solid #D5DDE8;"><span style="display:inline-flex;align-items:center;justify-content:center;background:var(--primary);color:#fff;font-size:10px;border-radius:50%;width:18px;height:18px;margin-right:6px;">${g.id}</span>📁 ${g.ten} <span style="font-weight:400;font-size:11.5px;color:var(--text-light);">(0 người)</span></td></tr>`;
         return;
       }
       html+=`<tr style="background:#eaf2fb;"><td colspan="12" style="padding:9px 14px;font-weight:700;color:var(--primary);font-size:13.5px;border-bottom:2px solid var(--primary-light);"><span style="display:inline-flex;align-items:center;justify-content:center;background:var(--primary);color:#fff;font-size:11px;border-radius:50%;width:20px;height:20px;margin-right:6px;">${g.id}</span>📁 ${g.ten} <span style="font-weight:400;font-size:12px;color:var(--text-light);margin-left:6px;">(${members.length} người)</span></td></tr>`;
@@ -3139,7 +3141,7 @@ function renderTableNV(){
       unitEmps.forEach((n,idx)=>{html+=_nvRow(n,idx,true,false,'');});
     });
     const noUnit=filtered.filter(n=>!n.boPhan||!n.boPhan.trim());
-    if(noUnit.length>0){html+=`<tr class="unit-group-header"><td colspan="12" style="background:#c0392b !important;">⚠️ Chưa phân đơn vị (${noUnit.length} người)</td></tr>`;noUnit.forEach((n,idx)=>{html+=_nvRow(n,idx,false,false,'');});}
+    if(noUnit.length>0){html+=`<tr class="unit-group-header"><td colspan="12" style="background:#D32F2F !important;">⚠️ Chưa phân đơn vị (${noUnit.length} người)</td></tr>`;noUnit.forEach((n,idx)=>{html+=_nvRow(n,idx,false,false,'');});}
     tbody.innerHTML=html;_initNVDragListeners();return;
   }
   tbody.innerHTML=filtered.map((n,idx)=>_nvRow(n,idx,false,!!bp,bp)).join('');
@@ -3520,7 +3522,7 @@ function exportNV_PDF(){
   }
   else{_sapThanhVien(nvList).forEach(n=>{bodyHTML+=nvRow(n,stt++);});}
   const win=window.open('','_blank');
-  win.document.write(`<!DOCTYPE html><html lang="vi"><head><meta charset="UTF-8"><title>Danh sách NV – ${_escH(title)}</title><style>@page{size:A4 landscape;margin:15mm 10mm;}body{font-family:Arial,sans-serif;font-size:10px;}h1{font-size:13px;color:#003087;text-align:center;}table{width:100%;border-collapse:collapse;}th{background:#003087;color:#fff;padding:5px;text-align:center;font-size:9px;border:1px solid #0048a8;}td{padding:3px 5px;border:1px solid #d5dff0;font-size:9.5px;}tr:nth-child(even)td{background:#f4f8ff;}</style></head><body><h1>DANH SÁCH NHÂN VIÊN – ${_escH(title)}</h1><p style="text-align:center;font-size:9px;color:#666;margin-bottom:10px;">Xuất ngày: ${new Date().toLocaleDateString('vi-VN')} | Tổng: ${nvList.length} người</p><table><thead><tr><th>STT</th><th>Danh số</th><th>Họ và Tên</th><th>Chức danh</th><th>Cỡ QA</th><th>Cỡ Giày</th><th>T.cấp QA</th><th>T.cấp Giày</th><th>T.cấp Mũ BH</th><th>T.cấp Kính BH</th><th>T.cấp Áo mưa</th><th>T.cấp QA thợ hàn</th></tr></thead><tbody>${bodyHTML}</tbody></table>
+  win.document.write(`<!DOCTYPE html><html lang="vi"><head><meta charset="UTF-8"><title>Danh sách NV – ${_escH(title)}</title><style>@page{size:A4 landscape;margin:15mm 10mm;}body{font-family:Arial,sans-serif;font-size:10px;}h1{font-size:13px;color:#0F62AC;text-align:center;}table{width:100%;border-collapse:collapse;}th{background:#0F62AC;color:#fff;padding:5px;text-align:center;font-size:9px;border:1px solid #0048a8;}td{padding:3px 5px;border:1px solid #d5dff0;font-size:9.5px;}tr:nth-child(even)td{background:#f4f8ff;}</style></head><body><h1>DANH SÁCH NHÂN VIÊN – ${_escH(title)}</h1><p style="text-align:center;font-size:9px;color:#666;margin-bottom:10px;">Xuất ngày: ${new Date().toLocaleDateString('vi-VN')} | Tổng: ${nvList.length} người</p><table><thead><tr><th>STT</th><th>Danh số</th><th>Họ và Tên</th><th>Chức danh</th><th>Cỡ QA</th><th>Cỡ Giày</th><th>T.cấp QA</th><th>T.cấp Giày</th><th>T.cấp Mũ BH</th><th>T.cấp Kính BH</th><th>T.cấp Áo mưa</th><th>T.cấp QA thợ hàn</th></tr></thead><tbody>${bodyHTML}</tbody></table>
   <script src="assets/lucide-icons.js"><\/script>
   <script src="assets/portal-nav.js?v=20260904"><\/script></body></html>`);
   win.document.close();setTimeout(()=>win.print(),500);closeExportNV();
@@ -3603,7 +3605,7 @@ function renderDanhMuc(){
         <button class="btn btn-danger btn-sm" style="margin-left:4px;" onclick="deleteDM('${d.id}')">${_ic('del',14)}</button>`:`<span style="color:var(--text-light);">${_ic('eye',15)}</span>`}</td>
     </tr>`).join('');
     return`<div class="nhomtb-accordion" style="border:1.5px solid var(--border);border-radius:10px;margin-bottom:10px;overflow:hidden;">
-      <div class="nhomtb-header" onclick="toggleNhomTB('${nhom.id}')" style="display:flex;align-items:center;gap:10px;padding:13px 16px;background:${isOpen?'#EDF1F8':'#fff'};cursor:pointer;user-select:none;transition:background 0.15s;">
+      <div class="nhomtb-header" onclick="toggleNhomTB('${nhom.id}')" style="display:flex;align-items:center;gap:10px;padding:13px 16px;background:${isOpen?'#F2F5F9':'#fff'};cursor:pointer;user-select:none;transition:background 0.15s;">
         <span style="color:var(--text-light);transition:transform 0.2s;display:inline-flex;transform:${isOpen?'rotate(90deg)':'rotate(0deg)'};">${_ic('right',14)}</span>
         <strong style="flex:1;font-size:14px;">${_escH(nhom.ten)}</strong>
         ${loaiBadge}
@@ -3768,7 +3770,7 @@ function renderDinhMuc(){
       </tr>`;
     }).join('');
     return`<div class="nhomtb-accordion" style="border:1.5px solid var(--border);border-radius:10px;margin-bottom:10px;overflow:hidden;">
-      <div class="nhomtb-header" onclick="toggleCD('${cd.id}')" style="display:flex;align-items:center;gap:10px;padding:13px 16px;background:${isOpen?'#EDF1F8':'#fff'};cursor:pointer;user-select:none;transition:background 0.15s;">
+      <div class="nhomtb-header" onclick="toggleCD('${cd.id}')" style="display:flex;align-items:center;gap:10px;padding:13px 16px;background:${isOpen?'#F2F5F9':'#fff'};cursor:pointer;user-select:none;transition:background 0.15s;">
         <span style="color:var(--text-light);transition:transform 0.2s;display:inline-flex;transform:${isOpen?'rotate(90deg)':'rotate(0deg)'};">${_ic('right',14)}</span>
         <strong style="flex:1;font-size:14px;">${_escH(cd.ten)}</strong>
         <span style="font-size:12px;color:var(--text-light);background:#f0f4fa;padding:2px 10px;border-radius:12px;">${items.length} trang bị</span>
@@ -4031,7 +4033,7 @@ function openNVWarning(id){
   const dauQuy=getQuarterMonths(_getQuyStartRef())[0];
   const canEdit=canEditUnit(nv.boPhan);
   let html=`<div style="font-size:13px;color:var(--text-light);margin-bottom:12px;">Nhân viên <b>${_escH(nv.ten)}</b> (${_escH(nv.chucDanh)}) — mốc quý đang xét: <b>${_fThangTxt(dauQuy)}</b></div>`;
-  if(!warns.length){ html+='<div style="padding:14px;text-align:center;color:#1a7a3c;font-weight:600;">✓ Không còn cảnh báo nào.</div>'; }
+  if(!warns.length){ html+='<div style="padding:14px;text-align:center;color:#0B7A3E;font-weight:600;">✓ Không còn cảnh báo nào.</div>'; }
   warns.forEach(w=>{
     let reason='';
     if(w.type==='missing') reason=`Chức danh có định mức cấp <b>${w.label}</b> (chu kỳ ${w.chuKy} tháng) nhưng chưa ghi nhận tháng cấp gần nhất.`;
@@ -4039,7 +4041,7 @@ function openNVWarning(id){
     else if(w.type==='future') reason=`Tháng cấp ghi nhận <b>${_fThangTxt(w.rec)}</b> nằm sau quý cấp phát muộn nhất đang có phiếu (đến <b>${_fThangTxt(_bienTrenThangCap())}</b>), và cũng không khớp mốc cấp lần đầu của nhân viên mới. Nhiều khả năng do thiếu <b>tháng vào làm</b> hoặc mốc bị cộng dư một chu kỳ.`;
     else reason=`Giá trị tháng cấp "<b>${_escH(w.rec||'')}</b>" không đúng định dạng YYYY-MM.`;
     html+=`<div style="border:1px solid #f0d0cc;background:#fdecea;border-radius:8px;padding:10px 12px;margin-bottom:10px;">
-      <div style="font-weight:700;color:#c0392b;font-size:13.5px;margin-bottom:4px;">${w.label} — ${_WARN_TXT[w.type]||''}</div>
+      <div style="font-weight:700;color:#D32F2F;font-size:13.5px;margin-bottom:4px;">${w.label} — ${_WARN_TXT[w.type]||''}</div>
       <div style="font-size:12.5px;color:#444;line-height:1.55;">${reason}</div>`;
     if(w.suggest){
       html+=`<div style="margin-top:9px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
@@ -4296,7 +4298,7 @@ function _renderQuyStatusBar(quyStr,donVi){
   const bar=document.getElementById('quy-status-bar');if(!bar)return;
   const pending=BHLD.lsGet('phieu_requests').find(p=>p.type==='quy'&&p.quyStr===quyStr&&p.donVi===donVi&&p.status==='pending');
   const approved=BHLD.lsGet('phieu_requests').find(p=>p.type==='quy'&&p.quyStr===quyStr&&p.donVi===donVi&&p.status==='approved');
-  if(approved){bar.style.display='block';bar.style.background='#eafaf1';bar.style.color='var(--success)';bar.style.border='1px solid #a9dfbf';bar.textContent=`✅ Phiếu ${quyStr} – ${donVi} đã được phê duyệt bởi ${approved.reviewedBy||'Admin'} vào ${approved.reviewedAt?new Date(approved.reviewedAt).toLocaleDateString('vi-VN'):''}`;
+  if(approved){bar.style.display='block';bar.style.background='#E6F5EC';bar.style.color='var(--success)';bar.style.border='1px solid #a9dfbf';bar.textContent=`✅ Phiếu ${quyStr} – ${donVi} đã được phê duyệt bởi ${approved.reviewedBy||'Admin'} vào ${approved.reviewedAt?new Date(approved.reviewedAt).toLocaleDateString('vi-VN'):''}`;
   } else if(pending){bar.style.display='block';bar.style.background='#fef9e7';bar.style.color='var(--warning)';bar.style.border='1px solid #f9e79f';bar.textContent=`⏳ Phiếu ${quyStr} – ${donVi} đã gửi, đang chờ Admin phê duyệt...`;
   } else {bar.style.display='none';}
 }
@@ -4660,7 +4662,7 @@ function _buildNvDiff(oldNv,proposed){
   const rows=Object.keys(changed).map(f=>`<tr>
     <td style="padding:3px 8px;font-size:12px;border:1px solid var(--border,#eee);">${NV_FIELD_LABELS[f]}</td>
     <td style="padding:3px 8px;font-size:12px;border:1px solid var(--border,#eee);color:#b03030;text-decoration:line-through;">${_escH(_fmtNvVal(f,changed[f].old))}</td>
-    <td style="padding:3px 8px;font-size:12px;border:1px solid var(--border,#eee);color:#1a7a3c;font-weight:600;">${_escH(_fmtNvVal(f,changed[f].new))}</td>
+    <td style="padding:3px 8px;font-size:12px;border:1px solid var(--border,#eee);color:#0B7A3E;font-weight:600;">${_escH(_fmtNvVal(f,changed[f].new))}</td>
   </tr>`).join('');
   const html=rows?`<table style="border-collapse:collapse;width:100%;margin-top:6px;"><thead><tr style="background:#f5f7fb;">
     <th style="padding:3px 8px;font-size:11px;text-align:left;border:1px solid var(--border,#eee);">Trường</th>
@@ -5429,7 +5431,7 @@ function renderTonKhoBang(){
   const tableRows=daNhomTB.map(nhom=>{
     const items=_dmSorted(nhom.id);
     if(!items.length)return'';
-    const groupHeader=`<tr data-tk-hdr="${nhom.id}" style="background:#EDF1F8;">
+    const groupHeader=`<tr data-tk-hdr="${nhom.id}" style="background:#F2F5F9;">
       <td colspan="6" style="font-weight:700;font-size:13px;color:var(--primary);padding:8px 12px;">${_ic('pkg',14)} ${_escH(nhom.ten)}</td>
     </tr>`;
     const itemRows=items.map(dm=>{
@@ -5438,7 +5440,7 @@ function renderTonKhoBang(){
       // Cùng ngưỡng với badge bên dưới và với 3 thẻ thống kê ở đầu bảng
       const tt=qty<=0?'het':qty<=5?'saphet':'con';
       const _dot=(p)=>`<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:3px" aria-hidden="true">${p}</svg>`;
-      const badge=qty<=0?`<span style="background:#f8d7da;color:#721c24;padding:2px 8px;border-radius:12px;font-size:11px;">${_dot('<path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/>')}Hết</span>`:qty<=5?`<span style="background:#fff3cd;color:#856404;padding:2px 8px;border-radius:12px;font-size:11px;">${_dot('<circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/>')}Sắp hết</span>`:`<span style="background:#d4edda;color:#155724;padding:2px 8px;border-radius:12px;font-size:11px;">${_dot('<path d="M21.801 10A10 10 0 1 1 17 3.335"/><path d="m9 11 3 3L22 4"/>')}Còn</span>`;
+      const badge=qty<=0?`<span class="st-badge st-bad">${_dot('<path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/>')}Hết</span>`:qty<=5?`<span class="st-badge st-warn">${_dot('<circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/>')}Sắp hết</span>`:`<span class="st-badge st-ok">${_dot('<path d="M21.801 10A10 10 0 1 1 17 3.335"/><path d="m9 11 3 3L22 4"/>')}Còn</span>`;
       return`<tr data-ten="${_escH(dm.ten.toLowerCase()).replace(/"/g,'&quot;')}" data-tt="${tt}" data-grp="${nhom.id}">
         <td style="text-align:center;color:var(--text-light);">${stt}</td>
         <td style="font-size:12px;color:var(--text-light);">${dm.ma||'—'}</td>
@@ -5452,7 +5454,7 @@ function renderTonKhoBang(){
   }).join('');
   el.innerHTML=`<div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:16px;">
     <div style="background:#fff;border:1px solid var(--border);border-radius:8px;padding:10px 18px;min-width:130px;"><div style="font-size:11px;color:var(--text-light);">Tổng tồn kho</div><div style="font-size:22px;font-weight:700;color:var(--primary);">${total}</div></div>
-    <div style="background:#fff;border:1px solid var(--border);border-radius:8px;padding:10px 18px;min-width:130px;"><div style="font-size:11px;color:var(--text-light);">Hết hàng</div><div style="font-size:22px;font-weight:700;color:#c0392b;">${hetHang}</div></div>
+    <div style="background:#fff;border:1px solid var(--border);border-radius:8px;padding:10px 18px;min-width:130px;"><div style="font-size:11px;color:var(--text-light);">Hết hàng</div><div style="font-size:22px;font-weight:700;color:#D32F2F;">${hetHang}</div></div>
     <div style="background:#fff;border:1px solid var(--border);border-radius:8px;padding:10px 18px;min-width:130px;"><div style="font-size:11px;color:var(--text-light);">Sắp hết (≤5)</div><div style="font-size:22px;font-weight:700;color:#e67e22;">${sapHet}</div></div>
   </div>
   <div style="overflow-x:auto;"><table id="tk-hientai-table"><thead><tr>
@@ -5479,7 +5481,7 @@ function _tkLocBtnHtml(){
   const dangLoc=!!_tkLocTT;
   const mau=dangLoc?'var(--primary)':'var(--text-light)';
   return`<button type="button" id="tk-tt-btn" onclick="_tkToggleLocMenu(event)" title="${dangLoc?'Đang lọc: '+_TK_TT.find(x=>x.v===_tkLocTT).nhan:'Lọc theo trạng thái'}"
-    style="border:none;background:${dangLoc?'#dceaf7':'transparent'};cursor:pointer;padding:2px 4px;border-radius:5px;color:${mau};vertical-align:-3px;line-height:1;margin-left:2px;">
+    style="border:none;background:${dangLoc?'#E3EEF9':'transparent'};cursor:pointer;padding:2px 4px;border-radius:5px;color:${mau};vertical-align:-3px;line-height:1;margin-left:2px;">
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
   </button>`;
 }
@@ -5679,7 +5681,7 @@ function hoanTacGiaoDich(loai,keyEncoded){
     const sl=parseFloat(it.soLuong)||0;
     const len=_lsChieu(it)==='nhap';
     const after=len?(daTonKho[it.tbId]||0)-sl:(daTonKho[it.tbId]||0)+sl;
-    const color=after<0?'color:#c0392b;font-weight:700':'';
+    const color=after<0?'color:#D32F2F;font-weight:700':'';
     return`<tr><td>${_escH(it.tenTrangBi||it.tenTB||'—')}</td><td style="text-align:center;">${len?'−'+sl:'+'+sl}</td><td style="text-align:center;${color}">${after}</td></tr>`;
   }).join('');
   // Hiển thị modal xác nhận
@@ -5799,7 +5801,7 @@ function renderFormKho(type){
   const itemRows=daNhomTB.map(nhom=>{
     const items=_dmSorted(nhom.id);
     if(!items.length)return'';
-    const header=`<tr data-kho-hdr="${nhom.id}" style="background:#EDF1F8;"><td colspan="${colSpan}" style="font-weight:700;font-size:12px;color:var(--primary);padding:6px 10px;">${_ic('pkg',13)} ${_escH(nhom.ten)}</td></tr>`;
+    const header=`<tr data-kho-hdr="${nhom.id}" style="background:#F2F5F9;"><td colspan="${colSpan}" style="font-weight:700;font-size:12px;color:var(--primary);padding:6px 10px;">${_ic('pkg',13)} ${_escH(nhom.ten)}</td></tr>`;
     const rows=items.map(dm=>{
       const cur=daTonKho[dm.id]||0;
       const tonCell=(type==='xuat'||isDC)?`<td style="text-align:center;color:${cur===0?'var(--danger)':'inherit'};font-weight:600;">${cur}</td>`:'';
@@ -6468,7 +6470,7 @@ function cpwSave(patch){
   var sb=_cpwSB();if(!sb)return Promise.resolve();
   return sb.from(BHLD.tbl('cap_phat_tien_trinh')).upsert(Object.assign({},_cpwState),{onConflict:'id'}).then(function(){}).catch(function(e){showToast('⚠️ Lưu tiến trình lỗi: '+(e&&e.message||e),'error');});
 }
-var _CPW_BADGE={dang_lam:['#dceaf7','#003087','Đang thực hiện','hour'],cho_duyet:['#fef5e4','#9a6700','Chờ Admin duyệt','hour'],dat:['#eafaf1','#1a7a3c','Đã xong','check'],khoa:['#f2f3f4','#888','Đang khoá','lock'],chua:['#f2f3f4','#666','Chưa làm','clip'],tra_ve:['#fdedec','#c0392b','Bị trả về','x'],san_sang:['#dceaf7','#003087','Sẵn sàng','right'],xong:['#eafaf1','#1a7a3c','Hoàn tất','check']};
+var _CPW_BADGE={dang_lam:['#E3EEF9','#0F62AC','Đang thực hiện','hour'],cho_duyet:['#FFF4D6','#9a6700','Chờ Admin duyệt','hour'],dat:['#E6F5EC','#0B7A3E','Đã xong','check'],khoa:['#f2f3f4','#888','Đang khoá','lock'],chua:['#f2f3f4','#666','Chưa làm','clip'],tra_ve:['#fdedec','#D32F2F','Bị trả về','x'],san_sang:['#E3EEF9','#0F62AC','Sẵn sàng','right'],xong:['#E6F5EC','#0B7A3E','Hoàn tất','check']};
 function _cpwBadge(s){var b=_CPW_BADGE[s]||_CPW_BADGE.chua;return '<span style="display:inline-flex;align-items:center;gap:4px;background:'+b[0]+';color:'+b[1]+';font-size:12px;font-weight:700;border-radius:20px;padding:3px 12px;">'+_ic(b[3],13)+b[2]+'</span>';}
 function _cpwStepCard(n,title,icon,status,body){
   var locked=status==='khoa';
@@ -6662,7 +6664,7 @@ function _cpwViewRowExisting(n,stt){
   if(pc){
     return '<tr style="opacity:.55;background:#f7f8fb;" title="Đang chờ Admin phê duyệt">'+
       '<td style="text-align:center;color:var(--text-light);">'+stt+'</td>'+
-      _cpwDataCells(n,' <span style="background:#fff3cd;color:#856404;font-size:10px;font-weight:700;border-radius:20px;padding:1px 8px;white-space:nowrap;">⏳ Chờ phê duyệt</span>')+
+      _cpwDataCells(n,' <span class="st-badge st-warn">⏳ Chờ phê duyệt</span>')+
       '<td style="text-align:center;"><span style="font-size:12px;">⏳</span></td></tr>';
   }
   var staged=_cpwStagedEdits[n.id];
@@ -6673,7 +6675,7 @@ function _cpwViewRowExisting(n,stt){
       '<button class="ib ib-del" title="Hoàn tác" onclick="cpwLstRevertEdit(\''+n.id+'\')">'+_ic('undo',13)+'</button></div>';
     return '<tr style="background:#fff8e1;">'+
       '<td style="text-align:center;color:var(--text-light);">'+stt+'</td>'+
-      _cpwDataCells(staged.proposed,' <span style="background:#ffe08a;color:#7a5c00;font-size:10px;font-weight:700;border-radius:20px;padding:1px 8px;white-space:nowrap;">✎ Đã sửa (chưa gửi)</span>')+
+      _cpwDataCells(staged.proposed,' <span class="st-badge st-warn">✎ Đã sửa (chưa gửi)</span>')+
       '<td style="text-align:center;white-space:nowrap;">'+act+'</td></tr>';
   }
   var act2=(!readonly&&canEd)
@@ -6685,9 +6687,9 @@ function _cpwStagedAddRow(a,stt){
   var act='<div style="display:inline-flex;gap:4px;">'+
     '<button class="ib ib-edit" title="Sửa" onclick="cpwLstEditStagedAdd(\''+a.tempId+'\')">'+_ic('edit',13)+'</button>'+
     '<button class="ib ib-del" title="Xoá" onclick="cpwLstRemoveStagedAdd(\''+a.tempId+'\')">'+_ic('del',13)+'</button></div>';
-  return '<tr style="background:#eafaf1;">'+
+  return '<tr style="background:#E6F5EC;">'+
     '<td style="text-align:center;color:var(--success);font-weight:700;">＋</td>'+
-    _cpwDataCells(a.data,' <span style="background:#bfead0;color:#1a7a3c;font-size:10px;font-weight:700;border-radius:20px;padding:1px 8px;white-space:nowrap;">Mới (chưa gửi)</span>')+
+    _cpwDataCells(a.data,' <span class="st-badge st-ok">Mới (chưa gửi)</span>')+
     '<td style="text-align:center;white-space:nowrap;">'+act+'</td></tr>';
 }
 function _cpwPendingAddRows(dv){
@@ -6697,7 +6699,7 @@ function _cpwPendingAddRows(dv){
       var n=((typeof _pcPayload==='function'?_pcPayload(c):{}).proposed)||{}; if(!n.boPhan)n.boPhan=c.donVi; if(!n.ten)n.ten=c.nvTen;
       out+='<tr style="opacity:.55;background:#f7f8fb;" title="Nhân sự mới đang chờ Admin phê duyệt">'+
         '<td style="text-align:center;">⏳</td>'+
-        _cpwDataCells(n,' <span style="background:#fff3cd;color:#856404;font-size:10px;font-weight:700;border-radius:20px;padding:1px 8px;white-space:nowrap;">⏳ Chờ phê duyệt</span>')+
+        _cpwDataCells(n,' <span class="st-badge st-warn">⏳ Chờ phê duyệt</span>')+
         '<td style="text-align:center;"><span style="font-size:12px;">⏳</span></td></tr>';
     });
   }catch(e){}

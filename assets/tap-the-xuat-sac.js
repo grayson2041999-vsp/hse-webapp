@@ -42,7 +42,7 @@
   var MAX_DON_VI = 2;
   var START_YEAR = 2022;                   // năm đầu tiên có số liệu
   var ROMAN = ["", "I", "II", "III", "IV"];
-  var PALETTE = ["#0060B6", "#7a4fbf", "#12866b", "#d9730d", "#C8102E", "#0e7490", "#a16207", "#be185d", "#4d7c0f", "#475569"];
+  var PALETTE = ["#2F7FC8", "#7a4fbf", "#12866b", "#d9730d", "#ED3237", "#0e7490", "#a16207", "#be185d", "#4d7c0f", "#475569"];
 
   /* =========================================================
      LÕI TÍNH TOÁN (thuần, không đụng DOM — có unit test)
@@ -697,7 +697,7 @@
   function toastErr(msg) {
     var t = document.createElement("div");
     t.textContent = msg;
-    t.style.cssText = "position:fixed;bottom:20px;right:20px;background:#c0392b;color:#fff;padding:10px 16px;border-radius:8px;font-size:13px;z-index:9999;max-width:380px;box-shadow:0 4px 16px rgba(0,0,0,.2)";
+    t.style.cssText = "position:fixed;bottom:20px;right:20px;background:#D32F2F;color:#fff;padding:10px 16px;border-radius:8px;font-size:13px;z-index:9999;max-width:380px;box-shadow:0 4px 16px rgba(0,0,0,.2)";
     document.body.appendChild(t);
     setTimeout(function () { if (t.parentNode) t.parentNode.removeChild(t); }, 6000);
   }
@@ -749,7 +749,7 @@
       ".ttxs-toolbar .spacer{flex:1}",
       ".ttxs-sync{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--text-muted)}",
       ".ttxs-sync i{width:8px;height:8px;border-radius:50%;background:#c0c8d6}",
-      ".ttxs-sync.ok i{background:#1e9e57}.ttxs-sync.err i{background:var(--accent)}.ttxs-sync.err{color:var(--accent)}",
+      ".ttxs-sync.ok i{background:#11964E}.ttxs-sync.err i{background:var(--accent)}.ttxs-sync.err{color:var(--accent)}",
       ".ttxs-sync.busy i{background:var(--warning)}",
       ".ttxs-note{display:block;line-height:1.6;background:#fff8e6;border:1px solid #f3dfa6;color:#7a5a00;border-radius:8px;padding:9px 12px;font-size:13px;margin-bottom:12px}",
       ".ttxs-note a{font-weight:600}",
@@ -809,7 +809,7 @@
       ".ttxs-seg button:last-child{border-right:none}",
       ".ttxs-seg button.on{background:var(--brand);color:#fff}",
       ".ttxs-seg button.on.tnld{background:var(--accent)}",
-      ".ttxs-seg button.on.cho{background:#6b7c93}",
+      ".ttxs-seg button.on.cho{background:#5F6E82}",
       ".ttxs-units{display:grid;grid-template-columns:1fr 1fr;gap:6px}",
       ".ttxs-units.one{grid-template-columns:1fr}",
       ".ttxs-ck{display:flex;align-items:center;gap:8px;border:1px solid var(--border);border-radius:8px;padding:8px 10px;font-size:13px;cursor:pointer;font-weight:500 !important;margin:0 !important}",

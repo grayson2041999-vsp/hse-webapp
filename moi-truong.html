@@ -9,24 +9,24 @@
   <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
   <style>
     :root {
-      --primary:       #003087;
-      --primary-light: #0060B6;
-      --primary-dark:  #002065;
-      --accent:        #C8102E;
-      --success:       #1a7a3c;
-      --warning:       #e68900;
-      --danger:        #c0392b;
-      --bg:            #EDF1F8;
+      --primary:       #0F62AC;
+      --primary-light: #2F7FC8;
+      --primary-dark:  #0A3F73;
+      --accent:        #ED3237;
+      --success:       #0B7A3E;
+      --warning:       #B7791F;
+      --danger:        #D32F2F;
+      --bg:            #F2F5F9;
       --card:          #ffffff;
       --text:          #1a2535;
-      --text-light:    #6b7c93;
-      --border:        #cdd6e8;
+      --text-light:    #5F6E82;
+      --border:        #D5DDE8;
     }
     *{box-sizing:border-box;margin:0;padding:0;}
     body{font-family:'Segoe UI',Arial,sans-serif;background:var(--bg);color:var(--text);font-size:13.5px;}
     .layout{display:flex;min-height:100vh;}
     .main{margin-left:230px;padding:76px 28px 40px;}
-    .topbar{background:linear-gradient(135deg,#003087 0%,#0060B6 100%);border-bottom:3px solid var(--accent);color:#fff;height:58px;display:flex;align-items:center;justify-content:space-between;padding:0 24px;position:fixed;top:0;left:230px;right:0;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,0.25);}
+    .topbar{background:#0A3F73;border-bottom:3px solid var(--accent);color:#fff;height:58px;display:flex;align-items:center;justify-content:space-between;padding:0 24px;position:fixed;top:0;left:230px;right:0;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,0.25);}
     .topbar-right{display:flex;align-items:center;gap:10px;}
     .user-badge{background:rgba(255,255,255,0.15);border:1.5px solid rgba(255,255,255,0.3);border-radius:7px;padding:5px 12px;font-size:12px;color:#fff;display:flex;align-items:center;gap:6px;}
     .btn-login{background:rgba(255,255,255,0.15);border:1.5px solid rgba(255,255,255,0.35);color:#fff;padding:5px 14px;border-radius:7px;font-size:12.5px;font-weight:600;cursor:pointer;}
@@ -34,13 +34,13 @@
     .btn{display:inline-flex;align-items:center;gap:6px;padding:7px 16px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;border:none;transition:all .15s;}
     .btn-primary{background:var(--primary-light);color:#fff;}
     .btn-primary:hover{background:var(--primary);}
-    .btn-edit{background:#dceaf7;color:var(--primary);border:1px solid #b8d4ef;}
-    .btn-edit:hover{background:#b8d4ef;}
+    .btn-edit{background:#E3EEF9;color:var(--primary);border:1px solid #C5DCF1;}
+    .btn-edit:hover{background:#C5DCF1;}
     .btn-danger{background:#fbe3e3;color:var(--danger);border:1px solid #f0c0c0;}
     .btn-danger:hover{background:#f5cccc;}
     .btn-sm{padding:4px 11px;font-size:12px;}
     .btn-outline{background:#fff;border:1.5px solid var(--primary-light);color:var(--primary-light);}
-    .btn-outline:hover{background:#dceaf7;}
+    .btn-outline:hover{background:#E3EEF9;}
     .page-title{font-size:20px;font-weight:700;color:var(--primary);margin-bottom:4px;}
     .page-desc{font-size:12.5px;color:var(--text-light);margin-bottom:20px;}
     .toolbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;gap:8px;flex-wrap:wrap;}
@@ -60,22 +60,22 @@
     /* Table */
     .table-wrap{background:#fff;border-radius:10px;box-shadow:0 2px 8px rgba(0,0,0,0.07);overflow:auto;margin-bottom:24px;}
     table{width:100%;border-collapse:collapse;min-width:1150px;}
-    th{background:#dde6f3;color:var(--primary);font-size:12px;font-weight:700;padding:9px 10px;text-align:center;white-space:nowrap;border:1px solid #c8d5ea;}
+    th{background:#E6EEF7;color:var(--primary);font-size:12px;font-weight:700;padding:9px 10px;text-align:center;white-space:nowrap;border:1px solid #c8d5ea;}
     th.left{text-align:left;padding-left:14px;}
     td{padding:8px 10px;border-bottom:1px solid #f0f3fa;border-right:1px solid #f3f5fa;font-size:12.5px;vertical-align:middle;text-align:right;white-space:nowrap;}
     td.month-col{text-align:left;font-weight:600;color:var(--primary);padding-left:14px;min-width:90px;}
     td.action-col{text-align:center;width:140px;}
     tr:last-child td{border-bottom:none;}
     tr:hover td{background:#eef3fb;}
-    tr.total-row td{background:#dde6f3;font-weight:700;color:var(--primary);border-top:2px solid #b8c8e4;}
-    tr.total-row:hover td{background:#cdd6e8;}
+    tr.total-row td{background:#E6EEF7;font-weight:700;color:var(--primary);border-top:2px solid #b8c8e4;}
+    tr.total-row:hover td{background:#D5DDE8;}
     .no-data{color:#bcc6d8;font-size:12px;}
     .group-header th{background:var(--primary);color:#fff;border-color:rgba(255,255,255,0.15);}
     /* Inline edit */
     tr.editing td{background:#fff8e6;}
     tr.editing:hover td{background:#fff8e6;}
     .inline-input{width:100%;min-width:58px;max-width:88px;border:1.5px solid var(--primary-light);border-radius:5px;padding:4px 5px;font-size:12px;text-align:right;outline:none;background:#fff;}
-    .inline-input:focus{border-color:var(--accent);box-shadow:0 0 0 2px rgba(200,16,46,0.12);}
+    .inline-input:focus{border-color:var(--accent);box-shadow:0 0 0 2px rgba(237,50,55,0.12);}
     td.editing-cell{padding:4px 5px;}
     .inline-actions{display:flex;gap:4px;justify-content:center;}
     .inline-actions .btn{padding:4px 8px;font-size:11px;}
@@ -105,11 +105,13 @@
     .sync-dot.syncing{background:var(--warning);animation:pulse .9s infinite;}
     @keyframes pulse{0%,100%{opacity:1;}50%{opacity:.35;}}
     .badge{display:inline-block;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600;}
-    .badge-blue{background:#dceaf7;color:#003087;}
+    .badge-blue{background:#E3EEF9;color:#0F62AC;}
     .draft-note{font-size:11.5px;color:#a35c00;background:#fff4e0;border:1px solid #f0d5a8;border-radius:20px;padding:3px 11px;}
     .draft-note b{color:#8a4d00;}
     .viewer-notice{font-size:12px;color:rgba(255,255,255,0.7);padding:5px 12px;border:1.5px solid rgba(255,255,255,0.35);border-radius:7px;}
   </style>
+  <!-- Bộ giao diện chung: nạp CUỐI để thống nhất màu, nút, bảng, hộp thoại, nhãn trạng thái -->
+  <link rel="stylesheet" href="assets/hse-theme.css?v=20261005">
 </head>
 <body>
 <script type="module" src="assets/supabase-config.js"></script>

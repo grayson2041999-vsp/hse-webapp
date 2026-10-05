@@ -21,9 +21,9 @@
     var end = HSEDate.parse(ketThuc);   /* đọc được mọi định dạng (ISO, DD-MM-YYYY, DD/MM/YYYY...) */
     if (!end) return null;
     var diff = Math.round((end - today) / 86400000);
-    if (diff < 0)   return { cls: "nt-het-han",  label: "Hết hạn",    color: "#c0392b", bg: "#fdedec" };
-    if (diff <= 30) return { cls: "nt-sap-han",  label: "Sắp hết hạn",color: "#e68900", bg: "#fef5e4" };
-    return              { cls: "nt-con-han",  label: "Còn hiệu lực",color: "#1a7a3c", bg: "#eafaf1" };
+    if (diff < 0)   return { cls: "nt-het-han",  label: "Hết hạn",    color: "#D32F2F", bg: "#fdedec" };
+    if (diff <= 30) return { cls: "nt-sap-han",  label: "Sắp hết hạn",color: "#B7791F", bg: "#FFF4D6" };
+    return              { cls: "nt-con-han",  label: "Còn hiệu lực",color: "#0B7A3E", bg: "#E6F5EC" };
   }
 
   /* Chuẩn hóa ngày về ISO YYYY-MM-DD (định dạng lưu trữ chuẩn) */
@@ -80,7 +80,7 @@
   function _toastErr(msg) {
     var t = document.createElement("div");
     t.textContent = "" + msg;
-    t.style.cssText = "position:fixed;bottom:20px;right:20px;background:#c0392b;color:#fff;" +
+    t.style.cssText = "position:fixed;bottom:20px;right:20px;background:#D32F2F;color:#fff;" +
       "padding:10px 16px;border-radius:8px;font-size:13px;z-index:9999;" +
       "box-shadow:0 4px 12px rgba(0,0,0,0.2);max-width:320px;";
     document.body.appendChild(t);
@@ -164,7 +164,7 @@
 
     if (rows.length === 0) {
       wrap.innerHTML =
-        '<div style="text-align:center;padding:60px 20px;color:#6b7c93;">' +
+        '<div style="text-align:center;padding:60px 20px;color:#5F6E82;">' +
           '<div style="font-size:48px;margin-bottom:12px;"><svg class="lic-emoji" width="1.05em" height="1.05em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex-shrink:0" aria-hidden="true"><path d="M10 10V5a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v5"/><path d="M14 6a6 6 0 0 1 6 6v3"/><path d="M4 15v-3a6 6 0 0 1 6-6"/><rect x="2" y="15" width="20" height="4" rx="1"/></svg></div>' +
           '<p style="font-size:15px;">Chưa có nhà thầu nào. ' +
           (_canEdit ? 'Nhấn <b>＋ Thêm nhà thầu</b> để bắt đầu.' : '') + '</p>' +
@@ -194,7 +194,7 @@
       var st = _hdStatus(r.hd_bat_dau, r.hd_ket_thuc);
       var badge = st
         ? '<span class="nt-badge" style="background:'+st.bg+';color:'+st.color+'">'+st.label+'</span>'
-        : '<span class="nt-badge" style="background:#f2f3f4;color:#6b7c93;">Chưa có</span>';
+        : '<span class="nt-badge" style="background:#f2f3f4;color:#5F6E82;">Chưa có</span>';
 
       /* Accordion: tóm tắt thời hạn HĐ */
       var hdSummary = "";
@@ -222,14 +222,14 @@
 
       var tr = document.createElement("tr");
       tr.innerHTML =
-        '<td style="color:#6b7c93;font-size:12px;">'+(i+1)+'</td>' +
-        '<td><b style="color:#003087;">'+esc(r.ten_nha_thau)+'</b></td>' +
+        '<td style="color:#5F6E82;font-size:12px;">'+(i+1)+'</td>' +
+        '<td><b style="color:#0F62AC;">'+esc(r.ten_nha_thau)+'</b></td>' +
         '<td>'+esc(r.khu_vuc)+'</td>' +
         '<td style="max-width:200px;white-space:pre-wrap;font-size:12.5px;">'+esc(r.hang_muc)+'</td>' +
         '<td>' +
           '<div style="font-size:13px;font-weight:600;">'+esc(r.lh_ho_ten)+'</div>' +
-          (r.lh_chuc_danh ? '<div style="font-size:11.5px;color:#6b7c93;">'+esc(r.lh_chuc_danh)+'</div>' : '') +
-          (r.lh_sdt ? '<div style="font-size:12px;color:#0060B6;"><svg class="lic-emoji" width="1.05em" height="1.05em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex-shrink:0" aria-hidden="true"><path d="M13.832 16.568a1 1 0 0 0 1.213-.303l.355-.465A2 2 0 0 1 17 15h3a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2A18 18 0 0 1 2 4a2 2 0 0 1 2-2h3a2 2 0 0 1 2 2v3a2 2 0 0 1-.8 1.6l-.468.351a1 1 0 0 0-.292 1.233 14 14 0 0 0 6.392 6.384"/></svg> '+esc(r.lh_sdt)+'</div>' : '') +
+          (r.lh_chuc_danh ? '<div style="font-size:11.5px;color:#5F6E82;">'+esc(r.lh_chuc_danh)+'</div>' : '') +
+          (r.lh_sdt ? '<div style="font-size:12px;color:#2F7FC8;"><svg class="lic-emoji" width="1.05em" height="1.05em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex-shrink:0" aria-hidden="true"><path d="M13.832 16.568a1 1 0 0 0 1.213-.303l.355-.465A2 2 0 0 1 17 15h3a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2A18 18 0 0 1 2 4a2 2 0 0 1 2-2h3a2 2 0 0 1 2 2v3a2 2 0 0 1-.8 1.6l-.468.351a1 1 0 0 0-.292 1.233 14 14 0 0 0 6.392 6.384"/></svg> '+esc(r.lh_sdt)+'</div>' : '') +
         '</td>' +
         '<td>'+badge+'</td>' +
         '<td>'+hdCell+'</td>' +
@@ -260,7 +260,7 @@
 
     card.innerHTML =
       '<div class="nt-form-header">' +
-        '<span style="font-size:15px;font-weight:700;color:#003087;">'+title+'</span>' +
+        '<span style="font-size:15px;font-weight:700;color:#0F62AC;">'+title+'</span>' +
         '<button class="nt-btn nt-btn-ghost" id="nt-cancel-btn"><svg class="lic-emoji" width="1.05em" height="1.05em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex-shrink:0" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg> Hủy</button>' +
       '</div>' +
 
@@ -330,7 +330,7 @@
         '<button class="nt-btn nt-btn-outline" id="nt-cancel-btn2">Hủy</button>' +
         '<button class="nt-btn nt-btn-primary" id="nt-save-btn"><svg class="lic-emoji" width="1.05em" height="1.05em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex-shrink:0" aria-hidden="true"><path d="M15.2 3a2 2 0 0 1 1.4.6l3.8 3.8a2 2 0 0 1 .6 1.4V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/><path d="M17 21v-7a1 1 0 0 0-1-1H8a1 1 0 0 0-1 1v7"/><path d="M7 3v4a1 1 0 0 0 1 1h7"/></svg> Lưu</button>' +
       '</div>' +
-      '<div id="nt-form-err" style="color:#c0392b;font-size:13px;margin-top:6px;display:none;"></div>';
+      '<div id="nt-form-err" style="color:#D32F2F;font-size:13px;margin-top:6px;display:none;"></div>';
 
     wrap.appendChild(card);
 
@@ -424,9 +424,9 @@
 
       /* Buttons */
       ".nt-btn{padding:8px 16px;border-radius:7px;font-size:13px;font-weight:600;cursor:pointer;border:none;transition:all 0.15s;}",
-      ".nt-btn-primary{background:#0060B6;color:#fff;} .nt-btn-primary:hover{background:#003087;}",
-      ".nt-btn-outline{background:#fff;color:#003087;border:1.5px solid #cdd6e8;} .nt-btn-outline:hover{background:#eef3fb;}",
-      ".nt-btn-ghost{background:transparent;color:#6b7c93;border:1px solid #cdd6e8;padding:5px 10px;font-size:12px;}",
+      ".nt-btn-primary{background:#2F7FC8;color:#fff;} .nt-btn-primary:hover{background:#0F62AC;}",
+      ".nt-btn-outline{background:#fff;color:#0F62AC;border:1.5px solid #D5DDE8;} .nt-btn-outline:hover{background:#eef3fb;}",
+      ".nt-btn-ghost{background:transparent;color:#5F6E82;border:1px solid #D5DDE8;padding:5px 10px;font-size:12px;}",
       ".nt-btn-ghost:hover{background:#f4f7fc;}",
       ".nt-btn-icon{background:transparent;border:none;cursor:pointer;font-size:15px;padding:3px 5px;border-radius:5px;transition:background 0.1s;}",
       ".nt-btn-icon:hover{background:#eef3fb;}",
@@ -435,7 +435,7 @@
       /* Table */
       ".nt-table-wrap{overflow-x:hidden;border-radius:10px;box-shadow:0 2px 8px rgba(0,0,0,0.07);}",
       ".nt-table{width:100%;table-layout:fixed;border-collapse:collapse;font-size:12.5px;background:#fff;}",
-      ".nt-table th{background:#dde6f3;color:#003087;font-weight:700;padding:8px 10px;text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}",
+      ".nt-table th{background:#E6EEF7;color:#0F62AC;font-weight:700;padding:8px 10px;text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}",
       ".nt-table td{padding:8px 10px;border-bottom:1px solid #eef1f7;vertical-align:top;overflow:hidden;white-space:normal;word-break:break-word;overflow-wrap:anywhere;}",
       ".nt-table tbody tr:hover td{background:#f4f8fd;}",
       ".nt-table th, .nt-table td{border-right:1px solid #e6ebf5;}",
@@ -446,7 +446,7 @@
 
       /* Accordion (bảng) */
       ".nt-acc-toggle{cursor:pointer;display:flex;align-items:center;gap:4px;user-select:none;}",
-      ".nt-acc-toggle:hover .nt-acc-label{color:#003087;}",
+      ".nt-acc-toggle:hover .nt-acc-label{color:#0F62AC;}",
       ".nt-acc-label{font-size:12px;color:#555;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}",
       ".nt-acc-arrow{font-size:11px;color:#888;transition:transform 0.2s;}",
       ".nt-acc-detail{display:none;margin-top:6px;padding:8px 10px;background:#f4f8fd;border-radius:7px;font-size:12px;line-height:1.7;}",
@@ -454,21 +454,21 @@
       ".nt-acc-row{margin-bottom:2px;}",
 
       /* Form card */
-      ".nt-form-card{background:#fff;border:1.5px solid #cdd6e8;border-radius:10px;padding:20px 24px;margin-bottom:20px;box-shadow:0 2px 8px rgba(0,0,0,0.07);}",
+      ".nt-form-card{background:#fff;border:1.5px solid #D5DDE8;border-radius:10px;padding:20px 24px;margin-bottom:20px;box-shadow:0 2px 8px rgba(0,0,0,0.07);}",
       ".nt-form-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;border-bottom:1px solid #eef1f7;padding-bottom:12px;}",
       ".nt-form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px 18px;margin-bottom:16px;}",
       ".nt-col-2{grid-column:1/-1;}",
       ".nt-form-group{display:flex;flex-direction:column;gap:5px;}",
       ".nt-label{font-size:12.5px;font-weight:600;color:#1a2535;}",
-      ".nt-req{color:#c0392b;}",
-      ".nt-input{padding:8px 11px;border:1.5px solid #cdd6e8;border-radius:7px;font-size:13px;font-family:inherit;transition:border 0.15s;resize:vertical;}",
-      ".nt-input:focus{outline:none;border-color:#0060B6;}",
-      ".nt-form-section-title{font-size:13px;font-weight:700;color:#003087;margin:4px 0 10px;padding:6px 10px;background:#dde6f3;border-radius:6px;}",
+      ".nt-req{color:#D32F2F;}",
+      ".nt-input{padding:8px 11px;border:1.5px solid #D5DDE8;border-radius:7px;font-size:13px;font-family:inherit;transition:border 0.15s;resize:vertical;}",
+      ".nt-input:focus{outline:none;border-color:#2F7FC8;}",
+      ".nt-form-section-title{font-size:13px;font-weight:700;color:#0F62AC;margin:4px 0 10px;padding:6px 10px;background:#E6EEF7;border-radius:6px;}",
 
       /* Form accordion */
-      ".nt-form-acc-toggle{display:flex;justify-content:space-between;align-items:center;padding:9px 14px;background:#f4f7fc;border:1.5px solid #cdd6e8;border-radius:7px;cursor:pointer;margin-bottom:0;user-select:none;font-size:13px;font-weight:600;color:#003087;}",
+      ".nt-form-acc-toggle{display:flex;justify-content:space-between;align-items:center;padding:9px 14px;background:#f4f7fc;border:1.5px solid #D5DDE8;border-radius:7px;cursor:pointer;margin-bottom:0;user-select:none;font-size:13px;font-weight:600;color:#0F62AC;}",
       ".nt-form-acc-toggle:hover{background:#eef3fb;}",
-      ".nt-form-acc-body{border:1.5px solid #cdd6e8;border-top:none;border-radius:0 0 7px 7px;padding:14px 14px 4px;margin-bottom:16px;background:#fafbfd;}",
+      ".nt-form-acc-body{border:1.5px solid #D5DDE8;border-top:none;border-radius:0 0 7px 7px;padding:14px 14px 4px;margin-bottom:16px;background:#fafbfd;}",
 
       /* Form footer */
       ".nt-form-footer{display:flex;justify-content:flex-end;gap:10px;margin-top:8px;border-top:1px solid #eef1f7;padding-top:14px;}",

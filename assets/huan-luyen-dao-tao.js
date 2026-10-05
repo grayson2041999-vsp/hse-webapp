@@ -426,7 +426,7 @@
         var pg = pageByKey(c.loai_huan_luyen);
         var months = getMonths(c.loai_huan_luyen);
         var st = _calcStatus(c.lastDate, months, getWarnDays(c.loai_huan_luyen));
-        var nextColor = st === "expired" ? "var(--danger)" : st === "warn" ? "#e68900" : "#1a7a3c";
+        var nextColor = st === "expired" ? "var(--danger)" : st === "warn" ? "#B7791F" : "#0B7A3E";
         return '<tr>' +
           '<td style="font-weight:600;">' + _esc(pg ? pg.label : c.loai_huan_luyen) + '</td>' +
           '<td>' + (c.subType ? '<span class="hl-badge ' + (c.subType === "T-BOSIET" ? "hl-blue" : "hl-gray") + '">' + _esc(c.subType) + '</span>' : '–') + '</td>' +
@@ -496,18 +496,18 @@
       ".hl-stat{background:var(--surface);border-radius:9px;padding:13px 16px;",
       "box-shadow:0 1px 3px rgba(16,24,40,.07);}",
       ".hl-stat.blue{border-left:4px solid var(--brand);}",
-      ".hl-stat.green{border-left:4px solid #1a7a3c;}",
-      ".hl-stat.orange{border-left:4px solid #e68900;}",
+      ".hl-stat.green{border-left:4px solid #0B7A3E;}",
+      ".hl-stat.orange{border-left:4px solid #B7791F;}",
       ".hl-stat.red{border-left:4px solid var(--danger);}",
       ".hl-val{font-size:26px;font-weight:800;color:var(--text);}",
       ".hl-lbl{font-size:11.5px;color:var(--text-muted);margin-top:1px;}",
       ".hl-warn-input{width:50px;padding:1px 4px;border:1px solid #f0c987;border-radius:5px;",
-      "font-size:12px;font-weight:800;text-align:center;color:#e68900;background:#fff;vertical-align:middle;}",
-      ".hl-warn-input:focus{outline:none;border-color:#e68900;box-shadow:0 0 0 2px rgba(230,137,0,.15);}",
+      "font-size:12px;font-weight:800;text-align:center;color:#B7791F;background:#fff;vertical-align:middle;}",
+      ".hl-warn-input:focus{outline:none;border-color:#B7791F;box-shadow:0 0 0 2px rgba(183,121,31,.15);}",
       ".hl-warn-save{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;",
-      "margin-left:4px;border:1px solid #f0c987;border-radius:5px;background:#fff;color:#e68900;",
+      "margin-left:4px;border:1px solid #f0c987;border-radius:5px;background:#fff;color:#B7791F;",
       "cursor:pointer;vertical-align:middle;padding:0;}",
-      ".hl-warn-save:hover{background:#e68900;color:#fff;border-color:#e68900;}",
+      ".hl-warn-save:hover{background:#B7791F;color:#fff;border-color:#B7791F;}",
       /* Nút Xuất Excel – xanh lá Excel, in đậm */
       ".hl-btn-excel{background:#217346;color:#fff;font-weight:700;border:1px solid #217346;}",
       ".hl-btn-excel:hover{background:#1a5c38;border-color:#1a5c38;color:#fff;}",
@@ -524,8 +524,8 @@
       "border-radius:50%;border:1.5px solid var(--border);font-size:12px;background:#fff;}",
       ".hl-bstep.cur{color:var(--brand);}",
       ".hl-bstep.cur .hl-bnum{border-color:var(--brand);color:var(--brand);}",
-      ".hl-bstep.done{color:#1a7a3c;}",
-      ".hl-bstep.done .hl-bnum{background:#1a7a3c;border-color:#1a7a3c;color:#fff;}",
+      ".hl-bstep.done{color:#0B7A3E;}",
+      ".hl-bstep.done .hl-bnum{background:#0B7A3E;border-color:#0B7A3E;color:#fff;}",
       ".hl-bsep{width:24px;height:2px;background:var(--border);}",
       ".hl-batch-b{padding:16px 18px;}",
       ".hl-batch-f{padding:12px 18px;border-top:1px solid var(--border);display:flex;gap:10px;justify-content:flex-end;}",
@@ -539,15 +539,15 @@
       /* Table */
       ".hl-tw{overflow-x:auto;}",
       ".hl-tw table{width:100%;border-collapse:collapse;font-size:13px;}",
-      ".hl-tw thead th{background:#dde6f3;color:var(--brand);font-weight:700;",
+      ".hl-tw thead th{background:#E6EEF7;color:var(--brand);font-weight:700;",
       "padding:10px 12px;text-align:center;white-space:nowrap;border-bottom:2px solid #b8cde4;}",
       ".hl-tw tbody td{padding:7px 10px;border-bottom:1px solid #eef1f7;vertical-align:middle;text-align:center;}",
       /* Riêng cột Họ và tên căn trái */
       ".hl-tw th.hl-col-name, .hl-tw td.hl-col-name{text-align:left;}",
       /* Ô trùng danh số / họ tên */
       ".hl-tw td.hl-dup{background:#fdecec !important;}",
-      ".hl-dup-ic{color:#c0392b;}",
-      ".hl-dupwarn{background:#fdedec;color:#c0392b;padding:8px 18px;font-size:12.5px;",
+      ".hl-dup-ic{color:#D32F2F;}",
+      ".hl-dupwarn{background:#fdedec;color:#D32F2F;padding:8px 18px;font-size:12.5px;",
       "font-weight:600;border-bottom:1px solid #f5c6cb;}",
       ".hl-tw tbody tr:hover td{background:#eef3fb;}",
       ".hl-tw tbody tr:last-child td{border-bottom:none;}",
@@ -582,10 +582,10 @@
       ".hl-tw tbody tr.hl-drop-after td{box-shadow:inset 0 -2px 0 0 var(--brand);}",
       /* Badges */
       ".hl-badge{display:inline-block;padding:2px 9px;border-radius:20px;font-size:11.5px;font-weight:600;}",
-      ".hl-ok{background:#eafaf1;color:#1a7a3c;}",
-      ".hl-warn{background:#fef5e4;color:#e68900;}",
-      ".hl-exp{background:#fdedec;color:#c0392b;}",
-      ".hl-blue{background:#dceaf7;color:var(--brand);}",
+      ".hl-ok{background:#E6F5EC;color:#0B7A3E;}",
+      ".hl-warn{background:#FFF4D6;color:#B7791F;}",
+      ".hl-exp{background:#fdedec;color:#D32F2F;}",
+      ".hl-blue{background:#E3EEF9;color:var(--brand);}",
       ".hl-gray{background:#f2f3f4;color:var(--text-muted);}",
       /* Form grid */
       ".hl-fg{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px;margin-bottom:14px;}",
@@ -1088,7 +1088,7 @@
       : filtered.map(function (p, i) {
       var status    = _calcStatus(p.lastDate, months, warnDays);
       var nextLabel = _calcNext(p.lastDate, months);
-      var nextColor = status === "expired" ? "var(--danger)" : status === "warn" ? "#e68900" : "#1a7a3c";
+      var nextColor = status === "expired" ? "var(--danger)" : status === "warn" ? "#B7791F" : "#0B7A3E";
       var id = _esc(p.id);
 
       var editing = _canEdit && !_batchMode && (p.id === _editRowId);

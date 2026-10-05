@@ -1,0 +1,204 @@
+/* =========================================================
+   HSE-THEME.CSS — BỘ GIAO DIỆN CHUNG cho toàn bộ webapp Quản lý HSE
+   ---------------------------------------------------------
+   Nạp CUỐI CÙNG trong <head> của MỌI trang (sau <style> riêng của trang),
+   nên các quy tắc ở đây thắng quy tắc cùng tên trong từng trang.
+
+   Muốn đổi màu / kiểu nút / bảng / hộp thoại cho cả web → sửa TẠI ĐÂY.
+   Trang nghiệp vụ chỉ nên giữ CSS bố cục riêng của nó (cột, lưới, biểu đồ…).
+
+   Bảng màu lấy từ logo Vietsovpetro:
+     Xanh sóng biển #0F62AC · Đỏ cờ #ED3237 · Vàng sao #FFC20E ·
+     Xanh lá slogan "Giữ lửa cho Tương lai" #11964E
+   ========================================================= */
+
+:root{
+  /* --- Màu thương hiệu --- */
+  --vsp-blue:        #0F62AC;
+  --vsp-blue-dark:   #0A3F73;
+  --vsp-blue-deep:   #072C52;
+  --vsp-blue-light:  #2F7FC8;
+  --vsp-blue-50:     #EEF4FB;
+  --vsp-blue-100:    #E3EEF9;
+  --vsp-blue-200:    #C5DCF1;
+  --vsp-red:         #ED3237;
+  --vsp-red-dark:    #C8232A;
+  --vsp-green:       #11964E;
+  --vsp-yellow:      #FFC20E;
+
+  /* --- Màu trạng thái (chữ / nền / viền) --- */
+  --ok:        #0B7A3E;  --ok-bg:     #E6F5EC;  --ok-bd:     #BFE3CC;
+  --warn:      #8A5A00;  --warn-bg:   #FFF4D6;  --warn-bd:   #F5DC97;
+  --bad:       #B42318;  --bad-bg:    #FDECEC;  --bad-bd:    #F5C2C2;
+  --info:      #0A3F73;  --info-bg:   #E3EEF9;  --info-bd:   #C5DCF1;
+  --mute:      #4A5568;  --mute-bg:   #EEF1F5;  --mute-bd:   #D9DFE7;
+
+  /* --- Nền, chữ, viền --- */
+  --bg:         #F2F5F9;
+  --surface:    #FFFFFF;
+  --card:       #FFFFFF;
+  --text:       #1A2433;
+  --text-muted: #5F6E82;
+  --text-light: #5F6E82;
+  --border:     #D5DDE8;
+  --line:       #E8EDF3;
+
+  /* --- Hai bộ tên biến đang dùng song song trong code cũ ---
+     index.html/app.js dùng --brand*, các trang riêng dùng --primary*.
+     Trỏ cả hai về cùng một bảng màu. */
+  --brand:        var(--vsp-blue);
+  --brand-dark:   var(--vsp-blue-dark);
+  --brand-light:  var(--vsp-blue-light);
+  --primary:      var(--vsp-blue);
+  --primary-dark: var(--vsp-blue-dark);
+  --primary-light:var(--vsp-blue-light);
+  --accent:       var(--vsp-red);
+  --accent-dark:  var(--vsp-red-dark);
+  --success:      var(--ok);
+  --warning:      #B7791F;
+  --danger:       #D32F2F;
+  --sidebar-bg:   var(--vsp-blue-dark);
+  --sidebar-active: var(--vsp-red);
+
+  /* --- Hình khối --- */
+  --radius:     10px;
+  --radius-sm:  8px;
+  --shadow:     0 1px 2px rgba(16,24,40,.06), 0 1px 3px rgba(16,24,40,.06);
+  --shadow-lg:  0 12px 32px rgba(10,63,115,.14);
+  --header-h:   58px;
+  --font:       "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --ring:       0 0 0 3px rgba(15,98,172,.18);
+}
+
+/* ---------- Nền & chữ ---------- */
+body{font-family:var(--font);background:var(--bg);color:var(--text)}
+a{color:var(--brand)}
+::selection{background:var(--vsp-blue-200)}
+:focus-visible{outline:2px solid var(--vsp-blue-light);outline-offset:2px}
+
+/* ---------- THANH TIÊU ĐỀ (mọi trang) ----------
+   Một màu xanh đậm phẳng + viền đỏ cờ 3px ở dưới. Cao 58px ở mọi trang. */
+.topbar, header.header{
+  background:var(--vsp-blue-dark) !important;
+  border-bottom:3px solid var(--vsp-red) !important;
+  height:var(--header-h);
+  box-shadow:0 2px 10px rgba(7,44,82,.28);
+  color:#fff;
+}
+.topbar .page-title, .topbar .topbar-title, .topbar .header-title,
+header.header .header-title{color:#fff}
+
+/* ---------- TIÊU ĐỀ TRANG ---------- */
+.page-title{color:var(--brand-dark);font-weight:700;letter-spacing:-.1px}
+.page-title svg{color:var(--brand)}
+.page-desc{color:var(--text-muted)}
+
+/* ---------- NÚT ---------- */
+.btn{border-radius:var(--radius-sm);font-weight:600;transition:background .15s,border-color .15s,color .15s,box-shadow .15s}
+.btn:focus-visible{box-shadow:var(--ring);outline:none}
+.btn:disabled,.btn[disabled]{opacity:.55;cursor:not-allowed}
+.btn-primary{background:var(--brand);color:#fff;border:1px solid var(--brand)}
+.btn-primary:hover{background:var(--brand-dark);border-color:var(--brand-dark);color:#fff}
+.btn-outline,.btn-ghost{background:#fff;color:var(--brand);border:1px solid var(--vsp-blue-200)}
+.btn-outline:hover,.btn-ghost:hover{background:var(--vsp-blue-50);border-color:var(--brand)}
+.btn-edit{background:var(--vsp-blue-100);color:var(--brand-dark);border:1px solid var(--vsp-blue-200)}
+.btn-edit:hover{background:var(--vsp-blue-200)}
+.btn-danger{background:var(--bad-bg);color:var(--bad);border:1px solid var(--bad-bd)}
+.btn-danger:hover{background:var(--danger);color:#fff;border-color:var(--danger);filter:none}
+.btn-accent{background:var(--vsp-red);color:#fff}
+.btn-accent:hover{background:var(--vsp-red-dark)}
+.btn-success{background:var(--vsp-green);color:#fff;border:1px solid var(--vsp-green)}
+.btn-success:hover{background:var(--ok);border-color:var(--ok)}
+
+/* ---------- THẺ / KHỐI ---------- */
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow)}
+.table-wrap{background:var(--surface);border-radius:var(--radius)}
+
+/* Thẻ số liệu: trang chủ (.stat) và các trang riêng (.stat-card) */
+.stat, .stat-card{background:var(--surface);border:1px solid var(--line);border-left:4px solid var(--brand);
+  border-radius:var(--radius);box-shadow:var(--shadow)}
+.stat.green, .stat-card.green{border-left-color:var(--vsp-green)}
+.stat.amber, .stat-card.orange{border-left-color:var(--vsp-yellow)}
+.stat.red, .stat-card.red{border-left-color:var(--vsp-red)}
+.stat-value{color:var(--brand-dark)}
+.stat-label,.stat .lbl{color:var(--text-muted)}
+
+/* ---------- BẢNG ---------- */
+th{background:#EEF3F9;color:var(--brand-dark);font-weight:700;border-bottom:1px solid var(--border)}
+td{border-bottom-color:var(--line)}
+tbody tr:hover > td{background:#F7FAFD}
+
+/* ---------- Ô NHẬP ---------- */
+.inp, .form-input, .field input,
+.modal input[type="text"], .modal input[type="number"], .modal input[type="email"],
+.modal input[type="password"], .modal input[type="date"], .modal select, .modal textarea{
+  border:1px solid var(--border);border-radius:var(--radius-sm);background:#fff;
+  transition:border-color .15s,box-shadow .15s}
+.inp:focus, .form-input:focus, .field input:focus, select:focus, textarea:focus,
+.modal input:focus{border-color:var(--brand);box-shadow:var(--ring);outline:none}
+.form-label, .field label{color:var(--text)}
+
+/* ---------- HỘP THOẠI ---------- */
+.modal-overlay, .modal-bg, .login-modal-bg{background:rgba(7,24,44,.5)}
+.modal{border-radius:12px;box-shadow:0 18px 48px rgba(7,44,82,.25)}
+.modal-head{background:var(--vsp-blue-dark) !important;border-bottom:3px solid var(--vsp-red) !important}
+.modal-title{color:var(--brand-dark)}
+.modal-head .modal-title, .modal-head h3{color:#fff}
+.modal-footer{border-top-color:var(--line)}
+
+/* =========================================================
+   NHÃN TRẠNG THÁI — MỘT kiểu cho cả web
+   Dùng: <span class="badge badge-green">Đạt</span>
+     xanh lá  = Đạt / Hoàn thành / Còn hạn / Hoạt động
+     vàng     = Đang thực hiện / Chờ duyệt / Sắp hết hạn
+     đỏ       = Chưa đạt / Quá hạn / Trễ hạn / Bị trả lại
+     xanh dương = thông tin, nhãn phân loại
+     xám      = Chưa bắt đầu / Đã khoá / Không áp dụng
+   Các tên lớp cũ của từng module (hl-*, adm2-pill…) được gom về đây.
+   ========================================================= */
+/* Có tiền tố :root để thắng cả CSS mà các module tự chèn lúc chạy (hl-*, adm2-*) */
+:root .badge, :root .hl-badge, :root .nt-badge, :root .adm2-pill,
+:root .st-pill, :root .st-badge, :root .st{
+  display:inline-flex;align-items:center;gap:4px;
+  padding:2px 9px;border-radius:999px;border:1px solid transparent;
+  font-size:11.5px;font-weight:600;line-height:1.5;white-space:nowrap;vertical-align:middle}
+
+/* Đạt / Hoàn thành / Còn hạn */
+:root .badge-green, :root .hl-ok, :root .adm2-pill.s-active,
+:root .st-pill.ok, :root .st-hoanthanh, :root .st-ok{
+  background:var(--ok-bg);color:var(--ok);border-color:var(--ok-bd)}
+/* Đang thực hiện / Chờ duyệt / Sắp hết hạn */
+:root .badge-orange, :root .hl-warn, :root .adm2-pill.s-pending,
+:root .st-pill.open, :root .st-dangthuchien, :root .st-warn{
+  background:var(--warn-bg);color:var(--warn);border-color:var(--warn-bd)}
+/* Chưa đạt / Quá hạn / Trễ hạn / Đã khoá sổ */
+:root .badge-red, :root .hl-exp, :root .badge-admin,
+:root .st-pill.locked, :root .st-trehan, :root .st-bad{
+  background:var(--bad-bg);color:var(--bad);border-color:var(--bad-bd)}
+/* Thông tin / phân loại */
+:root .badge-blue, :root .hl-blue, :root .badge-user, :root .st-info{
+  background:var(--info-bg);color:var(--info);border-color:var(--info-bd)}
+/* Chưa bắt đầu / Không áp dụng */
+:root .badge-gray, :root .hl-gray, :root .adm2-pill.s-locked, :root .badge-viewer,
+:root .st-chuabatdau, :root .st-mute{
+  background:var(--mute-bg);color:var(--mute);border-color:var(--mute-bd)}
+:root .badge-purple{background:#F3ECFD;color:#5B21B6;border-color:#E1D3FA}
+
+/* Chấm tròn đầu nhãn trạng thái (nhãn phân loại xanh dương thì không có chấm) */
+:root .badge-green::before, :root .badge-orange::before, :root .badge-red::before, :root .badge-gray::before,
+:root .hl-ok::before, :root .hl-warn::before, :root .hl-exp::before, :root .hl-gray::before,
+:root .adm2-pill::before,
+:root .st-hoanthanh::before, :root .st-dangthuchien::before, :root .st-trehan::before, :root .st-chuabatdau::before,
+:root .st-ok::before, :root .st-warn::before, :root .st-bad::before, :root .st-mute::before{
+  content:"";width:6px;height:6px;border-radius:50%;background:currentColor;flex-shrink:0}
+
+/* Nhãn đã có icon (⏳ → đồng hồ cát, ✓…) thì bỏ chấm tròn cho khỏi trùng */
+:root :is(.badge,.hl-badge,.nt-badge,.adm2-pill,.st-pill,.st-badge,.st):has(svg)::before{display:none}
+
+/* Chấm đồng bộ */
+.sync-dot.ok{background:var(--vsp-green)}
+.sync-dot.err{background:var(--danger)}
+.sync-dot.syncing{background:var(--vsp-yellow)}
+
+/* Icon Lucide thay emoji: giữ thẳng hàng với chữ */
+.lic-emoji{color:inherit}

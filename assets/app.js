@@ -110,7 +110,7 @@
     var uEl=document.getElementById("hse-lm-u");
     var erEl=document.getElementById("hse-lm-err");
     var un=(uEl && uEl.value || "").trim();
-    function msg(t, ok){ if(!erEl) return; erEl.textContent=t; erEl.style.color=ok?"#1a7a3c":""; erEl.style.display="block"; }
+    function msg(t, ok){ if(!erEl) return; erEl.textContent=t; erEl.style.color=ok?"#0B7A3E":""; erEl.style.display="block"; }
     if(!un){ msg("Nhập email/username của bạn vào ô trên rồi bấm 'Quên mật khẩu?'."); if(uEl) uEl.focus(); return; }
     _sbReady().then(function(sb){
       return sb.auth.resetPasswordForEmail(emailOf(un), { redirectTo: location.origin + location.pathname });
@@ -128,7 +128,7 @@
       '<div class="modal-h"><h3>Đặt mật khẩu mới</h3></div>'+
       '<div class="modal-b">'+
         '<div class="login-err" id="rec-err"></div>'+
-        '<div id="rec-ok" style="display:none;background:#eafaf1;color:#1a7a3c;border:1px solid #a9dfbf;border-radius:8px;padding:10px 14px;font-size:13px;margin-bottom:12px;"></div>'+
+        '<div id="rec-ok" style="display:none;background:#E6F5EC;color:#0B7A3E;border:1px solid #a9dfbf;border-radius:8px;padding:10px 14px;font-size:13px;margin-bottom:12px;"></div>'+
         '<div class="field"><label>Mật khẩu mới</label><input class="inp" id="rec-new" type="password" style="width:100%" placeholder="Tối thiểu 6 ký tự"></div>'+
         '<div class="field"><label>Xác nhận mật khẩu mới</label><input class="inp" id="rec-new2" type="password" style="width:100%"></div>'+
       '</div>'+
@@ -202,9 +202,9 @@
           box.style.cssText = "position:fixed;z-index:99999;right:18px;bottom:18px;display:flex;flex-direction:column;gap:8px;max-width:340px;";
           document.body.appendChild(box);
         }
-        var colors = { success:"#1a7f37", error:"#d1242f", warning:"#9a6700", info:"#0060B6" };
+        var colors = { success:"#1a7f37", error:"#d1242f", warning:"#9a6700", info:"#2F7FC8" };
         var t = document.createElement("div");
-        t.style.cssText = "background:"+(colors[type]||"#003087")+";color:#fff;padding:10px 14px;border-radius:8px;font-size:13px;line-height:1.4;box-shadow:0 4px 14px rgba(0,0,0,.18);opacity:0;transform:translateY(8px);transition:all .2s;";
+        t.style.cssText = "background:"+(colors[type]||"#0F62AC")+";color:#fff;padding:10px 14px;border-radius:8px;font-size:13px;line-height:1.4;box-shadow:0 4px 14px rgba(0,0,0,.18);opacity:0;transform:translateY(8px);transition:all .2s;";
         t.textContent = msg;
         box.appendChild(t);
         requestAnimationFrame(function(){ t.style.opacity="1"; t.style.transform="translateY(0)"; });
@@ -537,7 +537,7 @@
           '</div>';
       }).catch(function(e){
         if(regBtn){regBtn.disabled=false;regBtn.textContent="Gửi đăng ký";}
-        alert("❌ Đăng ký thất bại, vui lòng thử lại.\n(" + (e && e.message || "Lỗi kết nối") + ")");
+        alert("Đăng ký thất bại, vui lòng thử lại.\n(" + (e && e.message || "Lỗi kết nối") + ")");
       });
     });
   }
@@ -570,7 +570,7 @@
     var userBoxHtml;
     if(u){
       var initials=(u.fullname||u.username).trim().split(/\s+/).map(function(w){return w[0];}).slice(-2).join("").toUpperCase();
-      var roleColor = u.role==="admin" ? "#C8102E" : u.role==="viewer" ? "#6b7c93" : "#1a7a3c";
+      var roleColor = u.role==="admin" ? "#ED3237" : u.role==="viewer" ? "#5F6E82" : "#0B7A3E";
       userBoxHtml=
         '<div class="user-box" style="position:relative;display:flex;align-items:center;gap:8px;">'+
           '<button id="btn-profile"'+
@@ -873,7 +873,7 @@
       var html =
         '<div class="card" style="max-width:640px;padding:26px 24px;text-align:center">'+
           '<div style="width:64px;height:64px;margin:0 auto 14px;border-radius:16px;display:flex;align-items:center;justify-content:center;'+
-            'background:rgba(200,16,46,.08);color:var(--accent,#C8102E)">'+lic("book-open",34)+'</div>'+
+            'background:rgba(237,50,55,.08);color:var(--accent,#ED3237)">'+lic("book-open",34)+'</div>'+
           '<h3 style="margin:0 0 6px;font-size:17px;color:var(--text)">Kho tài liệu ATVSLĐ (NotebookLM)</h3>'+
           '<p style="margin:0 auto 20px;max-width:440px;color:var(--text-muted);font-size:13.5px;line-height:1.55">'+
             'Đặt câu hỏi và tra cứu nhanh các quy định, quy trình, tài liệu về An toàn - Vệ sinh lao động của Xí nghiệp.</p>'+
@@ -914,20 +914,20 @@
           var val = ($("#atvsld-link", body).value || "").trim();
           if(val && !isValidLink(val)){
             msgEl.textContent = "Liên kết phải bắt đầu bằng http:// hoặc https://";
-            msgEl.style.color = "var(--accent,#C8102E)"; return;
+            msgEl.style.color = "var(--accent,#ED3237)"; return;
           }
           saveBtn.disabled = true;
           msgEl.style.color = "var(--text-muted)"; msgEl.textContent = "Đang lưu...";
           DB.insert("app_settings", { key: ATVSLD_KEY, value: val, updated_at: new Date().toISOString() })
             .then(function(){
               currentLink = val;
-              msgEl.style.color = "#1a7a3c"; msgEl.textContent = "✅ Đã lưu.";
+              msgEl.style.color = "#0B7A3E"; msgEl.textContent = "✅ Đã lưu.";
               saveBtn.disabled = false;
               draw();
             })
             .catch(function(e){
               saveBtn.disabled = false;
-              msgEl.style.color = "var(--accent,#C8102E)";
+              msgEl.style.color = "var(--accent,#ED3237)";
               msgEl.textContent = "Lưu thất bại: " + (e && e.message || e);
             });
         });
@@ -982,6 +982,132 @@
   /* =========================================================
      RENDER: TRANG TỔNG QUAN (dashboard có thẻ điều hướng)
      ========================================================= */
+  /* =========================================================
+     TRANG CHỦ — DẢI GIỚI THIỆU + 4 SỐ LIỆU CHÍNH
+     Số liệu đọc từ đúng các bảng mà trang nghiệp vụ đang dùng:
+       tnsc_su_kien / tnsc_gio_cong (Tai nạn - Sự cố), ke_hoach_mot_lan (Kế hoạch).
+     Quy tắc tính giống hệt tai-nan-su-co.html và ke-hoach.html.
+     ========================================================= */
+  var K_TNSC_INC  = "hse_tnsc_su_kien";
+  var K_TNSC_HOUR = "hse_tnsc_gio_cong";
+  if(!ICON_PATHS["clock"]) ICON_PATHS["clock"] = '<circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/>';
+  if(!ICON_PATHS["chevron-right"]) ICON_PATHS["chevron-right"] = '<path d="m9 18 6-6-6-6"/>';
+
+  function buildHero(greeting){
+    function kpi(id, href, icon, label){
+      return '<a class="kpi" id="'+id+'" href="'+href+'">'+
+               '<span class="kpi-ic">'+lic(icon,20)+'</span>'+
+               '<span class="kpi-body">'+
+                 '<span class="kpi-lbl">'+label+'</span>'+
+                 '<span class="kpi-val">—</span>'+
+                 '<span class="kpi-sub">Đang tải…</span>'+
+               '</span>'+
+             '</a>';
+    }
+    var y = new Date().getFullYear();
+    return el("section","hero",
+      '<div class="hero-brand">'+
+        '<img class="hero-logo" src="'+LOGO_FULL+'" alt="Vietsovpetro — Giữ lửa cho Tương lai">'+
+        '<div class="hero-text">'+
+          '<div class="hero-kicker">An toàn · Sức khoẻ · Môi trường</div>'+
+          '<h1 class="hero-title">Hệ thống Quản lý HSE</h1>'+
+          '<div class="hero-org"><b>'+esc(ORG)+'</b><br>'+esc(ORG_PARENT)+'</div>'+
+          '<div class="hero-greet">'+greeting+'</div>'+
+        '</div>'+
+      '</div>'+
+      '<div class="hero-kpis">'+
+        kpi("kpi-safe-days",  "tai-nan-su-co.html", "shield-check",   "Ngày làm việc an toàn")+
+        kpi("kpi-safe-hours", "tai-nan-su-co.html", "clock",          "Giờ công lao động an toàn")+
+        kpi("kpi-incidents",  "tai-nan-su-co.html", "triangle-alert", "Tai nạn · Sự cố năm "+y)+
+        kpi("kpi-plan",       "ke-hoach.html",      "calendar-days",  "Kế hoạch đang thực hiện")+
+      '</div>');
+  }
+
+  function _setKpi(id, val, sub, tone){
+    var a = document.getElementById(id); if(!a) return;
+    a.className = "kpi" + (tone ? " kpi-"+tone : "");
+    a.querySelector(".kpi-val").innerHTML = val;
+    a.querySelector(".kpi-sub").textContent = sub;
+  }
+  function _ymd(v){
+    if(!v) return null;
+    var p = String(v).split("T")[0].split(/[-\/]/);
+    if(p.length!==3) return null;
+    var d = p[0].length===4 ? new Date(+p[0],+p[1]-1,+p[2]) : new Date(+p[2],+p[1]-1,+p[0]);
+    return isNaN(d) ? null : d;
+  }
+  function _fmtD(d){ return ("0"+d.getDate()).slice(-2)+"/"+("0"+(d.getMonth()+1)).slice(-2)+"/"+d.getFullYear(); }
+  function _n(v){ var x = parseFloat(String(v==null?"":v).replace(/[^\d.\-]/g,"")); return isNaN(x)?0:x; }
+
+  function fillHeroKpis(){
+    if(!document.getElementById("kpi-safe-days")) return;   // không ở trang chủ
+    var today = new Date(); today.setHours(0,0,0,0);
+    var incs  = load(K_TNSC_INC, []) || [];
+    var hours = load(K_TNSC_HOUR, []) || [];
+
+    // 1) Ngày an toàn + 2) Giờ công an toàn — mốc là TNLĐ gần nhất
+    var acc = incs.filter(function(r){ return r && r.loai==="tai_nan_lao_dong" && r.thoiGian; })
+                  .sort(function(a,b){ return String(b.thoiGian).localeCompare(String(a.thoiGian)); })[0];
+    if(acc && _ymd(acc.thoiGian)){
+      var dAcc = _ymd(acc.thoiGian);
+      var days = Math.max(0, Math.round((today - dAcc)/86400000));
+      _setKpi("kpi-safe-days", days.toLocaleString("vi-VN")+'<small> ngày</small>',
+              "Kể từ TNLĐ gần nhất " + _fmtD(dAcc), "green");
+      // Cùng quy tắc trang Tai nạn - Sự cố: cộng từ tháng SAU tháng xảy ra TNLĐ đến tháng hiện tại
+      var y = dAcc.getFullYear(), m = dAcc.getMonth()+2; if(m>12){ m=1; y++; }
+      var ey = today.getFullYear(), em = today.getMonth()+1, total = 0, missing = 0, g = 0;
+      while((y<ey || (y===ey && m<=em)) && g++<600){
+        var rec = hours.find(function(h){ return String(h.nam)===String(y) && String(h.thang)===String(m); });
+        if(rec && rec.gio_cong!=="" && rec.gio_cong!=null) total += _n(rec.gio_cong); else missing++;
+        m++; if(m>12){ m=1; y++; }
+      }
+      _setKpi("kpi-safe-hours", Math.round(total).toLocaleString("vi-VN")+'<small> giờ</small>',
+              missing ? ("Còn "+missing+" tháng chưa nhập số liệu") : "Đã cập nhật đến tháng này", "blue");
+    } else {
+      _setKpi("kpi-safe-days", "—", "Chưa ghi nhận tai nạn lao động", "green");
+      _setKpi("kpi-safe-hours", "—", "Chưa có mốc tính giờ công", "blue");
+    }
+
+    // 3) Tai nạn / sự cố trong năm
+    var yr = String(today.getFullYear());
+    var inYear = incs.filter(function(r){ return r && String(r.thoiGian||"").slice(0,4)===yr; });
+    var nTN = inYear.filter(function(r){ return r.loai==="tai_nan_lao_dong"; }).length;
+    var nSC = inYear.filter(function(r){ return r.loai==="su_co_ky_thuat"; }).length;
+    _setKpi("kpi-incidents", String(nTN+nSC), nTN+" tai nạn lao động · "+nSC+" sự cố kỹ thuật",
+            nTN ? "red" : (nSC ? "amber" : "green"));
+
+    // 4) Kế hoạch: đang thực hiện + trễ hạn (tình trạng tự tính theo ngày như trang Kế hoạch)
+    var once = load("hse_ke_hoach_mot_lan", []) || [];
+    var dang = 0, tre = 0;
+    once.forEach(function(it){
+      if(!it || it.status==="Đã hoàn thành") return;
+      var e = _ymd(it.end), st = _ymd(it.start);
+      if(e && e < today) tre++;
+      else if(st && st <= today) dang++;
+      else if(!st && it.status==="Đang thực hiện") dang++;
+    });
+    _setKpi("kpi-plan", String(dang), tre ? (tre+" công việc trễ hạn") : "Không có công việc trễ hạn",
+            tre ? "red" : "amber");
+  }
+
+  function pullHeroKpis(){
+    if(typeof DB === "undefined" || !DB.isReady()) return;
+    Promise.all([
+      DB.getAll("tnsc_su_kien").then(function(r){
+        if(!r || !r.length) return;
+        // Chuẩn hoá giống normIncList() của tai-nan-su-co.html (OTM / nạn nhân lưu dạng chuỗi JSON)
+        r.forEach(function(x){
+          ["otms","nanNhan"].forEach(function(k){
+            if(typeof x[k]==="string"){ try{ x[k]=JSON.parse(x[k]); }catch(e){ x[k]=[]; } }
+            if(!Array.isArray(x[k])) x[k]=[];
+          });
+        });
+        save(K_TNSC_INC, r);
+      }).catch(function(){}),
+      DB.getAll("tnsc_gio_cong").then(function(r){ if(r && r.length) save(K_TNSC_HOUR, r); }).catch(function(){})
+    ]).then(fillHeroKpis);
+  }
+
   function renderDashboard(){
     seedUsers();
     var u = currentUser();
@@ -995,10 +1121,8 @@
       greeting = '<a href="#" id="dashLoginLink" style="color:var(--brand);font-weight:600">Đăng nhập</a> để thao tác và nhập liệu.';
     }
 
-    wrap.appendChild(el("div","",
-      '<div class="page-title" style="display:flex;align-items:center;gap:9px">'+lic("layout-dashboard",22)+'Tổng quan</div>'+
-      '<div class="page-desc" style="margin-bottom:4px">'+greeting+'</div>'+
-      '<div style="font-size:12px;color:var(--text-muted);margin-bottom:20px">'+ORG+' · '+ORG_PARENT+'</div>'));
+    // Dải giới thiệu: logo đầy đủ + tên hệ thống + 4 số liệu chính
+    wrap.appendChild(buildHero(greeting));
 
     // Cảnh báo đơn vị chưa nộp số liệu kiểm tra cấp 1/2 (điền ngầm sau khi tải dữ liệu)
     var ktNop = el("div"); ktNop.id = "dash-kt-nop"; wrap.appendChild(ktNop);
@@ -1011,6 +1135,8 @@
     var dl = document.getElementById("dashLoginLink");
     if(dl){ dl.addEventListener("click", function(e){ e.preventDefault(); openLoginModal(); }); }
     renderKtNopDashboard();
+    fillHeroKpis();          // vẽ ngay từ dữ liệu đã lưu trên máy
+    pullHeroKpis();          // rồi tải mới từ máy chủ, vẽ lại khi xong
 
     // Fetch ngầm — cập nhật lại phần kế hoạch khi có data mới
     if(typeof DB !== "undefined" && DB.isReady()){
@@ -1064,6 +1190,7 @@
           });
         });
         save("hse_ke_hoach_links", allLinks);
+        fillHeroKpis();
         // Chỉ cập nhật phần kế hoạch, không render lại toàn trang
         var existing = document.getElementById("dash-kh-section");
         if(existing){
@@ -2052,7 +2179,7 @@
         '<div class="modal-h"><h3><svg class="lic-emoji" width="1.05em" height="1.05em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex-shrink:0" aria-hidden="true"><path d="m15.5 7.5 2.3 2.3a1 1 0 0 0 1.4 0l2.1-2.1a1 1 0 0 0 0-1.4L19 4"/><path d="m21 2-9.6 9.6"/><circle cx="7.5" cy="15.5" r="5.5"/></svg> Đổi mật khẩu</h3><button class="x" id="dmk-close">×</button></div>'+
         '<div class="modal-b">'+
           '<div class="login-err" id="dmk-err"></div>'+
-          '<div id="dmk-ok" style="display:none;background:#eafaf1;color:#1a7a3c;border:1px solid #a9dfbf;border-radius:8px;padding:10px 14px;font-size:13px;margin-bottom:12px;"></div>'+
+          '<div id="dmk-ok" style="display:none;background:#E6F5EC;color:#0B7A3E;border:1px solid #a9dfbf;border-radius:8px;padding:10px 14px;font-size:13px;margin-bottom:12px;"></div>'+
           '<div class="field"><label>Mật khẩu hiện tại</label><input class="inp" id="dmk-cur" type="password" style="width:100%" placeholder="Nhập mật khẩu hiện tại"></div>'+
           '<div class="field"><label>Mật khẩu mới</label><input class="inp" id="dmk-new" type="password" style="width:100%" placeholder="Tối thiểu 6 ký tự"></div>'+
           '<div class="field"><label>Xác nhận mật khẩu mới</label><input class="inp" id="dmk-new2" type="password" style="width:100%" placeholder="Nhập lại mật khẩu mới"></div>'+
@@ -2122,8 +2249,8 @@
       '<div class="modal" style="max-width:440px;">'+
         '<div class="modal-h"><h3><svg class="lic-emoji" width="1.05em" height="1.05em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex-shrink:0" aria-hidden="true"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> Hồ sơ cá nhân</h3><button class="x" id="pf-close">×</button></div>'+
         '<div class="modal-b">'+
-          '<div id="pf-ok" style="display:none;background:#eafaf1;color:#1a7a3c;border:1px solid #a9dfbf;border-radius:8px;padding:10px 14px;font-size:13px;margin-bottom:12px;"></div>'+
-          '<div id="pf-err" style="display:none;background:#fdedec;color:#c0392b;border:1px solid #f1948a;border-radius:8px;padding:10px 14px;font-size:13px;margin-bottom:12px;"></div>'+
+          '<div id="pf-ok" style="display:none;background:#E6F5EC;color:#0B7A3E;border:1px solid #a9dfbf;border-radius:8px;padding:10px 14px;font-size:13px;margin-bottom:12px;"></div>'+
+          '<div id="pf-err" style="display:none;background:#fdedec;color:#D32F2F;border:1px solid #f1948a;border-radius:8px;padding:10px 14px;font-size:13px;margin-bottom:12px;"></div>'+
           '<div class="field"><label>Tên đăng nhập</label>'+
             '<input class="inp" id="pf-un" disabled style="width:100%;background:#f8f9fd;color:var(--text-muted)">'+
           '</div>'+
@@ -2220,9 +2347,9 @@
     function statusBadge(status){
       if(!status) return "";
       var styles = {
-        "Đã hoàn thành": "background:#eafaf1;color:#1a7a3c",
-        "Đang thực hiện": "background:#fef5e4;color:#e68900",
-        "Trễ hạn":        "background:#fdedec;color:#c0392b",
+        "Đã hoàn thành": "background:#E6F5EC;color:#0B7A3E",
+        "Đang thực hiện": "background:#FFF4D6;color:#B7791F",
+        "Trễ hạn":        "background:#fdedec;color:#D32F2F",
         "Chưa bắt đầu":   "background:#f0f3fa;color:#4a5568"
       };
       var s = styles[status] || "background:#f0f3fa;color:#4a5568";
@@ -2233,8 +2360,8 @@
     function renderRows(tasks){
       return tasks.map(function(t, i){
         var typeBadge = t.type === "oncetime"
-          ? '<span style="background:#dceaf7;color:#003087;padding:2px 8px;border-radius:12px;font-size:11px;font-weight:700">Có kỳ hạn</span>'
-          : '<span style="background:#eafaf1;color:#1a7a3c;padding:2px 8px;border-radius:12px;font-size:11px;font-weight:700">Định kỳ</span>';
+          ? '<span style="background:#E3EEF9;color:#0F62AC;padding:2px 8px;border-radius:12px;font-size:11px;font-weight:700">Có kỳ hạn</span>'
+          : '<span style="background:#E6F5EC;color:#0B7A3E;padding:2px 8px;border-radius:12px;font-size:11px;font-weight:700">Định kỳ</span>';
         var ngayTH = "";
         if(t.type === "oncetime"){
           var parts = [];
@@ -2259,8 +2386,8 @@
     }
 
     function tableWrap(rows, headerBg, headerColor){
-      headerBg    = headerBg    || "#dde6f3";
-      headerColor = headerColor || "#003087";
+      headerBg    = headerBg    || "#E6EEF7";
+      headerColor = headerColor || "#0F62AC";
       var th = function(txt){ return '<th style="background:'+headerBg+';color:'+headerColor+';padding:9px 12px;font-size:12.5px;text-align:left">'+txt+'</th>'; };
       return '<div style="background:#fff;border-radius:10px;box-shadow:0 2px 8px rgba(0,0,0,0.07);overflow:auto">'+
         '<table style="width:100%;border-collapse:collapse">'+
@@ -2284,11 +2411,11 @@
     // --- Cảnh báo trễ hạn ---
     if(overdueTasks.length){
       section.innerHTML +=
-        '<div style="background:#fdedec;border-left:4px solid #c0392b;border-radius:0 8px 8px 0;'+
-          'padding:9px 14px;margin-bottom:10px;font-size:12.5px;font-weight:700;color:#c0392b;">'+
+        '<div style="background:#fdedec;border-left:4px solid #D32F2F;border-radius:0 8px 8px 0;'+
+          'padding:9px 14px;margin-bottom:10px;font-size:12.5px;font-weight:700;color:#D32F2F;">'+
           '⚠️ ' + overdueTasks.length + ' công việc trễ hạn chưa hoàn thành'+
         '</div>';
-      section.innerHTML += tableWrap(renderRows(overdueTasks), "#fdedec", "#c0392b");
+      section.innerHTML += tableWrap(renderRows(overdueTasks), "#fdedec", "#D32F2F");
       section.innerHTML += '<div style="height:14px"></div>';
     }
 
@@ -2351,9 +2478,9 @@
     function statusBadge(status){
       if(!status) return "";
       var styles = {
-        "Đã hoàn thành": "background:#eafaf1;color:#1a7a3c",
-        "Đang thực hiện": "background:#fef5e4;color:#e68900",
-        "Trễ hạn":        "background:#fdedec;color:#c0392b",
+        "Đã hoàn thành": "background:#E6F5EC;color:#0B7A3E",
+        "Đang thực hiện": "background:#FFF4D6;color:#B7791F",
+        "Trễ hạn":        "background:#fdedec;color:#D32F2F",
         "Chưa bắt đầu":   "background:#f0f3fa;color:#4a5568"
       };
       var s = styles[status] || "background:#f0f3fa;color:#4a5568";
@@ -2386,8 +2513,8 @@
     }
 
     function tableWrap(rows, headerBg, headerColor){
-      headerBg    = headerBg    || "#dde6f3";
-      headerColor = headerColor || "#003087";
+      headerBg    = headerBg    || "#E6EEF7";
+      headerColor = headerColor || "#0F62AC";
       var th = function(txt){ return '<th style="background:'+headerBg+';color:'+headerColor+';padding:9px 12px;font-size:12.5px;text-align:left">'+txt+'</th>'; };
       return '<div style="background:#fff;border-radius:10px;box-shadow:0 2px 8px rgba(0,0,0,0.07);overflow:auto">'+
         '<table style="width:100%;border-collapse:collapse">'+
@@ -2410,11 +2537,11 @@
 
     if(overdueTasks.length){
       section.innerHTML +=
-        '<div style="background:#fdedec;border-left:4px solid #c0392b;border-radius:0 8px 8px 0;'+
-          'padding:9px 14px;margin-bottom:10px;font-size:12.5px;font-weight:700;color:#c0392b;">'+
+        '<div style="background:#fdedec;border-left:4px solid #D32F2F;border-radius:0 8px 8px 0;'+
+          'padding:9px 14px;margin-bottom:10px;font-size:12.5px;font-weight:700;color:#D32F2F;">'+
           '⚠️ ' + overdueTasks.length + ' công việc trễ hạn chưa hoàn thành'+
         '</div>';
-      section.innerHTML += tableWrap(renderRows(overdueTasks), "#fdedec", "#c0392b");
+      section.innerHTML += tableWrap(renderRows(overdueTasks), "#fdedec", "#D32F2F");
       section.innerHTML += '<div style="height:14px"></div>';
     }
 
@@ -2433,8 +2560,8 @@
         section.innerHTML += tableWrap(renderRows(oncetimeTasks));
       }
       if(recurringTasks.length){
-        section.innerHTML += '<div style="font-size:13px;font-weight:700;color:#1a7a3c;margin:14px 0 8px"><svg class="lic-emoji" width="1.05em" height="1.05em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex-shrink:0" aria-hidden="true"><path d="m17 2 4 4-4 4"/><path d="M3 11v-1a4 4 0 0 1 4-4h14"/><path d="m7 22-4-4 4-4"/><path d="M21 13v1a4 4 0 0 1-4 4H3"/></svg> Công việc định kỳ</div>';
-        section.innerHTML += tableWrap(renderRows(recurringTasks), "#eafaf1", "#1a7a3c");
+        section.innerHTML += '<div style="font-size:13px;font-weight:700;color:#0B7A3E;margin:14px 0 8px"><svg class="lic-emoji" width="1.05em" height="1.05em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-0.15em;flex-shrink:0" aria-hidden="true"><path d="m17 2 4 4-4 4"/><path d="M3 11v-1a4 4 0 0 1 4-4h14"/><path d="m7 22-4-4 4-4"/><path d="M21 13v1a4 4 0 0 1-4 4H3"/></svg> Công việc định kỳ</div>';
+        section.innerHTML += tableWrap(renderRows(recurringTasks), "#E6F5EC", "#0B7A3E");
       }
     }
 

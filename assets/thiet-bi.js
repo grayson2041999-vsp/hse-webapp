@@ -30,7 +30,7 @@ window.renderQuanLyThietBi = function(container, user, canEdit, isAdmin) {
     if (old) container.removeChild(old);
     var bar = document.createElement("div");
     bar.className = "qlhse-tab-bar";
-    bar.style.cssText = "display:flex;gap:0;border-bottom:2px solid #cdd6e8;margin-bottom:20px;";
+    bar.style.cssText = "display:flex;gap:0;border-bottom:2px solid #D5DDE8;margin-bottom:20px;";
     tabs.forEach(function(tab) {
       var btn = document.createElement("button");
       btn.innerHTML = tab.icon + "<span>" + tab.label + "</span>";
@@ -40,8 +40,8 @@ window.renderQuanLyThietBi = function(container, user, canEdit, isAdmin) {
         "padding:10px 22px;font-size:13.5px;font-weight:" + (active ? "700" : "500") + ";" +
         "border:none;cursor:pointer;" +
         "background:" + (active ? "#fff" : "#f4f7fc") + ";" +
-        "color:" + (active ? "#003087" : "#6b7c93") + ";" +
-        "border-bottom:" + (active ? "3px solid #003087" : "3px solid transparent") + ";" +
+        "color:" + (active ? "#0F62AC" : "#5F6E82") + ";" +
+        "border-bottom:" + (active ? "3px solid #0F62AC" : "3px solid transparent") + ";" +
         "margin-bottom:-2px;border-radius:8px 8px 0 0;transition:all 0.15s;";
       btn.onclick = function() { activeTab = tab.key; renderTabBar(); renderContent(); };
       bar.appendChild(btn);
@@ -55,13 +55,13 @@ window.renderQuanLyThietBi = function(container, user, canEdit, isAdmin) {
       if (typeof window.renderBinhApLuc === "function") {
         window.renderBinhApLuc(content, canEdit || isAdmin);
       } else {
-        content.innerHTML = "<p style='color:#c0392b'>Lỗi: không tải được module Bình áp lực.</p>";
+        content.innerHTML = "<p style='color:#D32F2F'>Lỗi: không tải được module Bình áp lực.</p>";
       }
     } else {
       if (typeof window.renderThietBiNang === "function") {
         window.renderThietBiNang(content, canEdit || isAdmin);
       } else {
-        content.innerHTML = "<p style='color:#c0392b'>Lỗi: không tải được module Thiết bị nâng.</p>";
+        content.innerHTML = "<p style='color:#D32F2F'>Lỗi: không tải được module Thiết bị nâng.</p>";
       }
     }
   }

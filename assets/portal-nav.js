@@ -126,7 +126,7 @@
     return null;
   }
   function roleLabel(r){ return r==="admin"?"Admin":(r==="viewer"?"Viewer":"User"); }
-  function roleColor(r){ return r==="admin"?"#C8102E":(r==="viewer"?"#6b7c93":"#1a7a3c"); }
+  function roleColor(r){ return r==="admin"?"#ED3237":(r==="viewer"?"#5F6E82":"#0B7A3E"); }
   /* Đăng xuất.
      portal-nav THAY hẳn khung phải của thanh tiêu đề, nên nút "Đăng xuất" gốc
      của từng trang bị xoá và mọi lần bấm đều rơi vào đây. Bản cũ chỉ xoá

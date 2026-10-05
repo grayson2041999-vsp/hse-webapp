@@ -10,25 +10,25 @@
   <link rel="stylesheet" href="assets/flatpickr.min.css">
   <style>
     :root {
-      --primary:       #003087;
-      --primary-light: #0060B6;
-      --primary-dark:  #002065;
-      --accent:        #C8102E;
-      --accent-dark:   #9E0D24;
-      --success:       #1a7a3c;
-      --warning:       #e68900;
-      --danger:        #c0392b;
-      --bg:            #EDF1F8;
+      --primary:       #0F62AC;
+      --primary-light: #2F7FC8;
+      --primary-dark:  #0A3F73;
+      --accent:        #ED3237;
+      --accent-dark:   #C8232A;
+      --success:       #0B7A3E;
+      --warning:       #B7791F;
+      --danger:        #D32F2F;
+      --bg:            #F2F5F9;
       --card:          #ffffff;
       --text:          #1a2535;
-      --text-light:    #6b7c93;
-      --border:        #cdd6e8;
+      --text-light:    #5F6E82;
+      --border:        #D5DDE8;
     }
     *{box-sizing:border-box;margin:0;padding:0;}
     body{font-family:'Segoe UI',Arial,sans-serif;background:var(--bg);color:var(--text);font-size:13.5px;}
     .layout{display:flex;min-height:100vh;}
     .main{margin-left:230px;padding:76px 28px 40px;}
-    .topbar{background:linear-gradient(135deg,#003087 0%,#0060B6 100%);border-bottom:3px solid var(--accent);color:#fff;height:58px;display:flex;align-items:center;justify-content:space-between;padding:0 24px;position:fixed;top:0;left:230px;right:0;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,0.25);}
+    .topbar{background:#0A3F73;border-bottom:3px solid var(--accent);color:#fff;height:58px;display:flex;align-items:center;justify-content:space-between;padding:0 24px;position:fixed;top:0;left:230px;right:0;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,0.25);}
     .topbar-right{display:flex;align-items:center;gap:10px;}
     .user-badge{background:rgba(255,255,255,0.15);border:1.5px solid rgba(255,255,255,0.3);border-radius:7px;padding:5px 12px;font-size:12px;color:#fff;display:flex;align-items:center;gap:6px;}
     .btn-login{background:rgba(255,255,255,0.15);border:1.5px solid rgba(255,255,255,0.35);color:#fff;padding:5px 14px;border-radius:7px;font-size:12.5px;font-weight:600;cursor:pointer;}
@@ -37,13 +37,13 @@
     .btn{display:inline-flex;align-items:center;gap:6px;padding:7px 16px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;border:none;transition:all .15s;}
     .btn-primary{background:var(--primary-light);color:#fff;}
     .btn-primary:hover{background:var(--primary);}
-    .btn-edit{background:#dceaf7;color:var(--primary);border:1px solid #b8d4ef;}
-    .btn-edit:hover{background:#b8d4ef;}
+    .btn-edit{background:#E3EEF9;color:var(--primary);border:1px solid #C5DCF1;}
+    .btn-edit:hover{background:#C5DCF1;}
     .btn-danger{background:#fdedec;color:var(--danger);border:1px solid #f5c6c2;}
     .btn-danger:hover{background:#f8d7d4;}
     .btn-sm{padding:4px 11px;font-size:12px;}
     .btn-outline{background:#fff;border:1.5px solid var(--primary-light);color:var(--primary-light);}
-    .btn-outline:hover{background:#dceaf7;}
+    .btn-outline:hover{background:#E3EEF9;}
     .page-title{font-size:20px;font-weight:700;color:var(--primary);margin-bottom:4px;}
     .page-desc{font-size:12.5px;color:var(--text-light);margin-bottom:20px;}
     .section-title{font-size:15px;font-weight:700;color:var(--primary);margin:26px 0 12px;display:flex;align-items:center;gap:8px;border-left:4px solid var(--accent);padding-left:10px;}
@@ -65,7 +65,7 @@
     .stat-value{font-size:34px;font-weight:700;color:var(--primary);}
     .stat-unit{font-size:13px;color:var(--text-light);margin-left:4px;}
     /* Hero card: tổng giờ công an toàn (nổi bật) */
-    .hour-hero{background:linear-gradient(135deg,#003087 0%,#0060B6 100%);color:#fff;border-radius:12px;padding:20px 24px;box-shadow:0 4px 16px rgba(0,32,101,0.28);border-left:5px solid var(--accent);display:flex;align-items:center;justify-content:space-between;gap:18px;margin-bottom:14px;flex-wrap:wrap;}
+    .hour-hero{background:#0A3F73;color:#fff;border-radius:12px;padding:20px 24px;box-shadow:0 4px 16px rgba(10,63,115,0.28);border-left:5px solid var(--accent);display:flex;align-items:center;justify-content:space-between;gap:18px;margin-bottom:14px;flex-wrap:wrap;}
     .hour-hero .hh-label{font-size:13px;opacity:.9;margin-bottom:8px;font-weight:600;letter-spacing:.3px;text-transform:uppercase;}
     .hour-hero .hh-value{font-size:40px;font-weight:800;line-height:1;}
     .hour-hero .hh-unit{font-size:16px;font-weight:600;opacity:.85;margin-left:7px;}
@@ -73,22 +73,22 @@
     .hour-hero .hh-sub b{color:#fff;}
     .btn-detail{background:rgba(255,255,255,0.16);border:1.5px solid rgba(255,255,255,0.45);color:#fff;padding:9px 18px;border-radius:9px;font-size:13.5px;font-weight:600;cursor:pointer;white-space:nowrap;transition:all .15s;}
     .btn-detail:hover{background:rgba(255,255,255,0.3);}
-    .hour-hero.warn{background:linear-gradient(135deg,#8a5a00 0%,#e68900 100%);border-left-color:#fff;}
+    .hour-hero.warn{background:linear-gradient(135deg,#8a5a00 0%,#B7791F 100%);border-left-color:#fff;}
     .anchor-note{font-size:12px;color:var(--text-light);margin-bottom:12px;background:#eef3fb;border:1px solid var(--border);border-radius:8px;padding:9px 12px;}
     .anchor-note b{color:var(--primary);}
-    .anchor-warn{background:#fef5e4;border-color:#f6d28a;color:#8a5a00;}
+    .anchor-warn{background:#FFF4D6;border-color:#f6d28a;color:#8a5a00;}
     /* Table */
     .table-wrap{background:#fff;border-radius:10px;box-shadow:0 2px 8px rgba(0,0,0,0.07);overflow:auto;margin-bottom:14px;}
     table{width:100%;border-collapse:collapse;}
-    th{background:#dde6f3;color:var(--primary);font-size:12px;font-weight:700;padding:9px 10px;text-align:center;white-space:nowrap;border:1px solid #c8d5ea;}
+    th{background:#E6EEF7;color:var(--primary);font-size:12px;font-weight:700;padding:9px 10px;text-align:center;white-space:nowrap;border:1px solid #c8d5ea;}
     th.left{text-align:left;padding-left:14px;}
     td{padding:8px 12px;border-bottom:1px solid #f0f3fa;border-right:1px solid #f3f5fa;font-size:12.5px;vertical-align:middle;text-align:right;}
     td.month-col{text-align:left;font-weight:600;color:var(--primary);padding-left:14px;min-width:110px;}
     td.action-col{text-align:center;width:90px;}
     tr:last-child td{border-bottom:none;}
     tr:hover td{background:#eef3fb;}
-    tr.total-row td{background:#dde6f3;font-weight:700;color:var(--primary);border-top:2px solid #b8c8e4;}
-    tr.total-row:hover td{background:#cdd6e8;}
+    tr.total-row td{background:#E6EEF7;font-weight:700;color:var(--primary);border-top:2px solid #b8c8e4;}
+    tr.total-row:hover td{background:#D5DDE8;}
     .no-data{color:#bcc6d8;font-size:12px;}
     /* Khung chi tiết giờ công (thu gọn, dễ nhìn) */
     #hourDetail{max-width:470px;}
@@ -122,11 +122,11 @@
     .otm-table td{text-align:left;font-size:12.5px;padding:7px 9px;}
     .otm-table td.center{text-align:center;}
     .badge{display:inline-block;padding:2px 9px;border-radius:20px;font-size:11px;font-weight:600;white-space:nowrap;}
-    .badge-blue{background:#dceaf7;color:#003087;}
-    .badge-green{background:#eafaf1;color:#1a7a3c;}
-    .badge-orange{background:#fef5e4;color:#e68900;}
-    .badge-red{background:#fdedec;color:#c0392b;}
-    .badge-gray{background:#f2f3f4;color:#6b7c93;}
+    .badge-blue{background:#E3EEF9;color:#0F62AC;}
+    .badge-green{background:#E6F5EC;color:#0B7A3E;}
+    .badge-orange{background:#FFF4D6;color:#B7791F;}
+    .badge-red{background:#fdedec;color:#D32F2F;}
+    .badge-gray{background:#f2f3f4;color:#5F6E82;}
     .empty-box{background:#fff;border:1.5px dashed var(--border);border-radius:10px;padding:34px;text-align:center;color:var(--text-light);font-style:italic;}
     /* Modal */
     .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:200;align-items:center;justify-content:center;}
@@ -156,6 +156,8 @@
     .vic-edit .form-label{font-size:11.5px;}
     .vic-no{font-size:11.5px;font-weight:700;color:var(--primary);margin-bottom:8px;}
   </style>
+  <!-- Bộ giao diện chung: nạp CUỐI để thống nhất màu, nút, bảng, hộp thoại, nhãn trạng thái -->
+  <link rel="stylesheet" href="assets/hse-theme.css?v=20261005">
 </head>
 <body>
 <script type="module" src="assets/supabase-config.js"></script>

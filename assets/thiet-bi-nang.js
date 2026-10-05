@@ -226,7 +226,7 @@
   var CHART_MAU_DONVI = ["#6fa4e3", "#f29976", "#65c9a5"];
   var CHART_MAU_KHAC  = "#c3ccd8";
   var CHART_MAU_TT = {
-    "con-han": "#1a7a3c", "sap-han": "#e68900", "qua-han": "#c0392b", "chua-co": "#94a3b8"
+    "con-han": "#0B7A3E", "sap-han": "#B7791F", "qua-han": "#D32F2F", "chua-co": "#94a3b8"
   };
 
   function _chartData() {
@@ -779,7 +779,7 @@
     nextCell.className = "col-kdtt";
     if (nextDate) {
       nextCell.innerHTML = HSEDate.fmt(nextDate) +
-        (rec.ngay_kd_tu_chinh ? ' <span title="Ngày do người dùng tự nhập, không phải ngày hệ thống tự tính" style="font-size:11px;color:#6b7c93">✎</span>' : "");
+        (rec.ngay_kd_tu_chinh ? ' <span title="Ngày do người dùng tự nhập, không phải ngày hệ thống tự tính" style="font-size:11px;color:#5F6E82">✎</span>' : "");
       if (status) {
         var badge = document.createElement("span");
         badge.className = "kd-badge " + status.cls;
@@ -985,7 +985,7 @@
         '<div class="tbn-form-row">' +
           "<label>Ngày kiểm định &amp; thử tải tiếp theo</label>" +
           '<input id="tbn-inp-ngaykdtt" class="tbn-input" type="date" value="' + HSEDate.toISO(_nextDateOf(rec) || "") + '">' +
-          '<div style="margin-top:6px;font-size:12px;color:#6b7c93;display:flex;align-items:center;gap:8px;flex-wrap:wrap">' +
+          '<div style="margin-top:6px;font-size:12px;color:#5F6E82;display:flex;align-items:center;gap:8px;flex-wrap:wrap">' +
             "<span>Hệ thống tự tính (chu kỳ " + CHU_KY_NAM + " năm): <b id=\"tbn-preview-next\">—</b></span>" +
             '<button type="button" id="tbn-btn-dungtutinh" class="tbn-btn tbn-btn-xs tbn-btn-outline">Dùng ngày này</button>' +
             '<span id="tbn-tag-tuchinh" style="color:#9a6700;display:none">✎ đang dùng ngày tự nhập</span>' +
@@ -1095,8 +1095,8 @@
     style.textContent = [
       /* Khối bảng */
       ".tbn-section{background:#fff;border-radius:10px;box-shadow:0 2px 8px rgba(0,0,0,0.07);margin-bottom:28px;overflow:hidden;}",
-      ".tbn-section-hdr{position:relative;display:flex;align-items:center;justify-content:center;gap:10px;padding:16px 250px;min-height:56px;background:linear-gradient(180deg,#e6edf8 0%,#dde6f3 100%);border-bottom:2px solid #c3d0e6;}",
-      ".tbn-section-title{display:inline-flex;align-items:center;gap:9px;justify-content:center;font-weight:800;color:#003087;font-size:19px;line-height:1.25;text-transform:uppercase;letter-spacing:.7px;text-align:center;}",
+      ".tbn-section-hdr{position:relative;display:flex;align-items:center;justify-content:center;gap:10px;padding:16px 250px;min-height:56px;background:linear-gradient(180deg,#e6edf8 0%,#E6EEF7 100%);border-bottom:2px solid #c3d0e6;}",
+      ".tbn-section-title{display:inline-flex;align-items:center;gap:9px;justify-content:center;font-weight:800;color:#0F62AC;font-size:19px;line-height:1.25;text-transform:uppercase;letter-spacing:.7px;text-align:center;}",
       ".tbn-hdr-right{position:absolute;right:18px;top:50%;transform:translateY(-50%);display:flex;align-items:center;gap:10px;}",
       ".tbn-section-count{font-size:12px;font-weight:700;color:#41577a;background:#fff;border:1px solid #d5deee;border-radius:12px;padding:3px 11px;white-space:nowrap;}",
       ".tbn-btn-xls{display:inline-flex;align-items:center;gap:6px;background:#217346;color:#fff;border:none;border-radius:7px;padding:6px 12px;font-size:12.5px;font-weight:700;font-family:inherit;text-transform:none;cursor:pointer;white-space:nowrap;transition:background .15s;}",
@@ -1106,16 +1106,16 @@
 
       /* Thanh thao tác dưới tiêu đề */
       ".tbn-bar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:10px 18px;background:#f6f8fc;border-bottom:1px solid #e6ebf5;}",
-      ".tbn-bar-select{padding:5px 9px;font-size:12.5px;font-weight:600;font-family:inherit;color:#334155;background:#fff;border:1.5px solid #cdd6e8;border-radius:7px;cursor:pointer;outline:none;max-width:240px;}",
-      ".tbn-bar-select:hover{border-color:#0060B6;}",
-      ".tbn-bar-select.is-on{border-color:#0060B6;background:#eef3fb;color:#003087;}",
-      ".tbn-chip{margin-left:auto;border:1px solid #cdd6e8;background:#fff;color:#41577a;border-radius:14px;padding:4px 11px;font-size:12px;font-weight:600;cursor:pointer;}",
-      ".tbn-chip:hover{background:#eef3fb;border-color:#0060B6;color:#003087;}",
+      ".tbn-bar-select{padding:5px 9px;font-size:12.5px;font-weight:600;font-family:inherit;color:#334155;background:#fff;border:1.5px solid #D5DDE8;border-radius:7px;cursor:pointer;outline:none;max-width:240px;}",
+      ".tbn-bar-select:hover{border-color:#2F7FC8;}",
+      ".tbn-bar-select.is-on{border-color:#2F7FC8;background:#eef3fb;color:#0F62AC;}",
+      ".tbn-chip{margin-left:auto;border:1px solid #D5DDE8;background:#fff;color:#41577a;border-radius:14px;padding:4px 11px;font-size:12px;font-weight:600;cursor:pointer;}",
+      ".tbn-chip:hover{background:#eef3fb;border-color:#2F7FC8;color:#0F62AC;}",
 
       /* Bảng */
       ".tbn-table-wrap{max-height:72vh;overflow:auto;-webkit-overflow-scrolling:touch;}",
       ".tbn-table{width:100%;min-width:1080px;table-layout:fixed;border-collapse:collapse;font-size:13px;}",
-      ".tbn-table th{position:sticky;top:0;z-index:2;background:#dde6f3;color:#003087;font-weight:700;font-size:12.5px;letter-spacing:.2px;padding:10px;text-align:center;vertical-align:middle;white-space:normal;line-height:1.35;border-bottom:2px solid #b9c8e2;box-shadow:inset 0 -2px 0 #b9c8e2;overflow:hidden;}",
+      ".tbn-table th{position:sticky;top:0;z-index:2;background:#E6EEF7;color:#0F62AC;font-weight:700;font-size:12.5px;letter-spacing:.2px;padding:10px;text-align:center;vertical-align:middle;white-space:normal;line-height:1.35;border-bottom:2px solid #b9c8e2;box-shadow:inset 0 -2px 0 #b9c8e2;overflow:hidden;}",
       /* ⚠ white-space:normal BẮT BUỘC — assets/style.css đặt th,td{white-space:nowrap}
          cho toàn webapp; gặp ô overflow:hidden thì chữ dài bị CẮT CỤT không
          dấu hiệu gì, người xem không biết mình đang đọc thiếu. */
@@ -1125,16 +1125,16 @@
       ".tbn-table tr.tbn-alt td{background:#fafbfe;}",
       ".tbn-table tbody tr:hover td{background:#eef3fb;}",
       /* Dải tiêu đề đơn vị — thay cho cột "Đơn vị quản lý" lặp lại từng hàng */
-      ".tbn-table tr.tbn-group td{background:#eef3fb!important;padding:8px 14px;text-align:left;border-top:1px solid #cdd6e8;border-bottom:1px solid #cdd6e8;}",
-      ".tbn-group-ten{font-weight:800;font-size:12.5px;color:#003087;text-transform:uppercase;letter-spacing:.5px;}",
+      ".tbn-table tr.tbn-group td{background:#eef3fb!important;padding:8px 14px;text-align:left;border-top:1px solid #D5DDE8;border-bottom:1px solid #D5DDE8;}",
+      ".tbn-group-ten{font-weight:800;font-size:12.5px;color:#0F62AC;text-transform:uppercase;letter-spacing:.5px;}",
       ".tbn-group-cu{margin-left:8px;font-size:11px;font-weight:600;color:#9a6700;}",
-      ".tbn-group-dem{margin-left:10px;font-size:11.5px;font-weight:600;color:#6b7c93;}",
+      ".tbn-group-dem{margin-left:10px;font-size:11.5px;font-weight:600;color:#5F6E82;}",
       ".tbn-table th, .tbn-table td{border-right:1px solid #e6ebf5;}",
       ".tbn-table th:last-child, .tbn-table td:last-child{border-right:none;}",
-      ".tbn-empty{text-align:center;color:#6b7c93;padding:24px!important;font-style:italic;font-weight:500;}",
+      ".tbn-empty{text-align:center;color:#5F6E82;padding:24px!important;font-style:italic;font-weight:500;}",
 
       /* Độ rộng cột — tổng 100% */
-      ".tbn-table .col-no{width:3%;color:#6b7c93;font-weight:700;}",
+      ".tbn-table .col-no{width:3%;color:#5F6E82;font-weight:700;}",
       ".tbn-table .col-drag{width:3%;cursor:grab;color:#aaa;font-size:16px;user-select:none;}",
       ".tbn-table .col-ten{width:20%;font-weight:700;color:#0f172a;}",
       ".tbn-table .col-vitri{width:11%;}",
@@ -1150,14 +1150,14 @@
       ".tbn-table th.col-ten,.tbn-table td.col-ten{text-align:left;}",
       ".tbn-table td.col-tt,.tbn-table td.col-nam,.tbn-table td.col-kd,.tbn-table td.col-kdtt{font-variant-numeric:tabular-nums;}",
       ".tbn-tt-khac{font-weight:700;color:#41577a;}",
-      ".tbn-canh-bao{color:#c0392b;font-weight:800;}",
+      ".tbn-canh-bao{color:#D32F2F;font-weight:800;}",
       ".tbn-bks{margin-top:3px;font-size:12px;font-weight:700;color:#334155;line-height:1.3;}",
       ".tbn-bks-nhan{color:#9aa7b8;font-weight:500;}",
 
       /* Dải màu cảnh báo hạn kiểm định ở đầu hàng */
       ".tbn-table tbody tr>td:first-child{border-left:3px solid transparent;}",
-      ".tbn-row-qua-han>td:first-child{border-left-color:#c0392b;}",
-      ".tbn-row-sap-han>td:first-child{border-left-color:#e68900;}",
+      ".tbn-row-qua-han>td:first-child{border-left-color:#D32F2F;}",
+      ".tbn-row-sap-han>td:first-child{border-left-color:#B7791F;}",
       ".tbn-row-qua-han>td{background:#fefafa;}",
       ".tbn-row-sap-han>td{background:#fffdf7;}",
 
@@ -1165,28 +1165,28 @@
       ".tbn-th-filter{display:flex;flex-direction:column;align-items:center;gap:4px;}",
       ".tbn-th-label{display:block;}",
       ".tbn-table th.col-ten .tbn-th-filter{align-items:stretch;}",
-      ".tbn-th-select{width:100%;max-width:100%;box-sizing:border-box;padding:3px 4px;font-size:11.5px;font-weight:600;font-family:inherit;text-transform:none;letter-spacing:0;text-align:center;color:#334155;background:#fff;border:1px solid #cdd6e8;border-radius:5px;cursor:pointer;outline:none;}",
-      ".tbn-th-select:hover{border-color:#0060B6;}",
-      ".tbn-th-select:focus{border-color:#0060B6;box-shadow:0 0 0 2px rgba(0,96,182,.15);}",
-      ".tbn-th-select.is-on{border-color:#0060B6;background:#eef3fb;color:#003087;}",
+      ".tbn-th-select{width:100%;max-width:100%;box-sizing:border-box;padding:3px 4px;font-size:11.5px;font-weight:600;font-family:inherit;text-transform:none;letter-spacing:0;text-align:center;color:#334155;background:#fff;border:1px solid #D5DDE8;border-radius:5px;cursor:pointer;outline:none;}",
+      ".tbn-th-select:hover{border-color:#2F7FC8;}",
+      ".tbn-th-select:focus{border-color:#2F7FC8;box-shadow:0 0 0 2px rgba(0,96,182,.15);}",
+      ".tbn-th-select.is-on{border-color:#2F7FC8;background:#eef3fb;color:#0F62AC;}",
 
       /* Kéo thả */
       ".tbn-row-draggable{cursor:default;}",
       ".tbn-dragging{opacity:0.4;}",
-      ".tbn-drag-over td{background:#dceaf7!important;}",
+      ".tbn-drag-over td{background:#E3EEF9!important;}",
 
       /* Nút */
       ".tbn-btn{border:none;border-radius:7px;padding:7px 14px;font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;transition:background 0.15s;}",
-      ".tbn-btn-primary{background:#0060B6;color:#fff;} .tbn-btn-primary:hover{background:#003087;}",
-      ".tbn-btn-outline{background:#fff;color:#003087;border:1.5px solid #cdd6e8;} .tbn-btn-outline:hover{background:#eef3fb;}",
-      ".tbn-btn-danger{background:#fff;color:#c0392b;border:1.5px solid #f5c6cb;} .tbn-btn-danger:hover{background:#fdedec;}",
+      ".tbn-btn-primary{background:#2F7FC8;color:#fff;} .tbn-btn-primary:hover{background:#0F62AC;}",
+      ".tbn-btn-outline{background:#fff;color:#0F62AC;border:1.5px solid #D5DDE8;} .tbn-btn-outline:hover{background:#eef3fb;}",
+      ".tbn-btn-danger{background:#fff;color:#D32F2F;border:1.5px solid #f5c6cb;} .tbn-btn-danger:hover{background:#fdedec;}",
       ".tbn-btn-sm{padding:5px 12px;font-size:12.5px;}",
       ".tbn-btn-xs{padding:3px 9px;font-size:12px;margin-left:4px;}",
 
       /* Biểu đồ tròn */
       ".tbn-charts{display:flex;gap:18px;flex-wrap:wrap;margin-bottom:20px;}",
       ".tbn-chart{flex:1 1 280px;min-width:250px;background:#fff;border-radius:10px;box-shadow:0 2px 8px rgba(0,0,0,0.07);padding:16px 18px;display:flex;flex-direction:column;align-items:center;}",
-      ".tbn-chart-title{font-weight:700;color:#003087;font-size:14px;margin-bottom:10px;text-align:center;}",
+      ".tbn-chart-title{font-weight:700;color:#0F62AC;font-size:14px;margin-bottom:10px;text-align:center;}",
       ".tbn-pie{width:180px;height:180px;flex-shrink:0;}",
       ".tbn-slice{transition:opacity .12s;cursor:default;}",
       ".tbn-chart:hover .tbn-slice{opacity:.55;}",
@@ -1195,27 +1195,27 @@
       ".tbn-lg-item{display:flex;align-items:center;gap:8px;font-size:12.5px;}",
       ".tbn-lg-dot{width:11px;height:11px;border-radius:3px;flex-shrink:0;}",
       ".tbn-lg-name{color:#334155;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}",
-      ".tbn-lg-val{color:#6b7c93;font-weight:600;white-space:nowrap;}",
+      ".tbn-lg-val{color:#5F6E82;font-weight:600;white-space:nowrap;}",
       "@media(max-width:700px){.tbn-charts{flex-direction:column;}}",
 
       /* Badge hạn kiểm định — định nghĩa lại tại đây để module tự đứng được */
       ".kd-badge{display:inline-block;border-radius:10px;padding:2px 8px;font-size:11px;font-weight:600;margin-top:3px;}",
-      ".kd-con-han{background:#eafaf1;color:#1a7a3c;}",
-      ".kd-sap-han{background:#fef5e4;color:#e68900;}",
-      ".kd-qua-han{background:#fdedec;color:#c0392b;}",
+      ".kd-con-han{background:#E6F5EC;color:#0B7A3E;}",
+      ".kd-sap-han{background:#FFF4D6;color:#B7791F;}",
+      ".kd-qua-han{background:#fdedec;color:#D32F2F;}",
 
       /* Modal */
       ".tbn-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:9000;display:flex;align-items:center;justify-content:center;}",
       ".tbn-modal{background:#fff;border-radius:12px;width:600px;max-width:96vw;max-height:90vh;display:flex;flex-direction:column;box-shadow:0 8px 32px rgba(0,0,0,0.2);}",
-      ".tbn-modal-hdr{display:flex;justify-content:space-between;align-items:center;padding:16px 20px;border-bottom:1px solid #eee;font-weight:700;font-size:15px;color:#003087;}",
-      ".tbn-modal-close{background:none;border:none;font-size:18px;cursor:pointer;color:#6b7c93;}",
+      ".tbn-modal-hdr{display:flex;justify-content:space-between;align-items:center;padding:16px 20px;border-bottom:1px solid #eee;font-weight:700;font-size:15px;color:#0F62AC;}",
+      ".tbn-modal-close{background:none;border:none;font-size:18px;cursor:pointer;color:#5F6E82;}",
       ".tbn-modal-body{padding:20px;overflow-y:auto;flex:1;}",
       ".tbn-modal-ftr{display:flex;justify-content:flex-end;gap:10px;padding:14px 20px;border-top:1px solid #eee;}",
       ".tbn-form-row{margin-bottom:14px;}",
-      ".tbn-form-row label{display:block;font-size:12.5px;font-weight:600;color:#003087;margin-bottom:5px;}",
+      ".tbn-form-row label{display:block;font-size:12.5px;font-weight:600;color:#0F62AC;margin-bottom:5px;}",
       ".tbn-form-row-2{display:grid;grid-template-columns:1fr 1fr;gap:14px;}",
-      ".tbn-input{width:100%;padding:8px 10px;border:1.5px solid #cdd6e8;border-radius:7px;font-size:13px;font-family:inherit;box-sizing:border-box;outline:none;}",
-      ".tbn-input:focus{border-color:#0060B6;box-shadow:0 0 0 3px rgba(0,96,182,0.1);}"
+      ".tbn-input{width:100%;padding:8px 10px;border:1.5px solid #D5DDE8;border-radius:7px;font-size:13px;font-family:inherit;box-sizing:border-box;outline:none;}",
+      ".tbn-input:focus{border-color:#2F7FC8;box-shadow:0 0 0 3px rgba(0,96,182,0.1);}"
     ].join("\n");
     return style;
   }
