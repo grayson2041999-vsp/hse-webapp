@@ -214,7 +214,9 @@ select:focus,.inp:focus{border-color:var(--brand-light)}
 .launch-h .bar{width:4px;height:16px;flex-shrink:0}
 .launch-h.navy{color:var(--brand)} .launch-h.navy .bar{background:var(--brand)}
 .launch-h.red{color:var(--accent)} .launch-h.red .bar{background:var(--accent)}
-.tile-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:12px}
+/* 5 cột cố định: Theo dõi & Báo cáo (9 ô) = 5 trên + 4 dưới; Ứng dụng (5 ô) = 1 hàng.
+   Hai nhóm dùng chung lưới để ô to bằng nhau. Màn hẹp (≤560px) tự xếp lại. */
+.tile-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px}
 .tile{position:relative;display:flex;flex-direction:column;align-items:center;gap:11px;text-decoration:none;
   background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px 10px 16px;
   transition:.15s;box-shadow:var(--shadow)}
