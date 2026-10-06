@@ -25,6 +25,9 @@
     *{box-sizing:border-box;margin:0;padding:0;}
     body{font-family:'Segoe UI',Arial,sans-serif;background:var(--bg);color:var(--text);font-size:13.5px;}
     .layout{display:flex;min-height:100vh;}
+    /* Cho khung nội dung co lại theo màn hình → bảng rộng cuộn ngang TRONG khung bảng,
+       không đẩy cả trang tràn ra ngoài (cần cho cột Tháng/Lưu cố định) */
+    .layout>div{min-width:0;}
     .main{margin-left:230px;padding:76px 28px 40px;}
     .topbar{background:#0A3F73;border-bottom:3px solid var(--accent);color:#fff;height:58px;display:flex;align-items:center;justify-content:space-between;padding:0 24px;position:fixed;top:0;left:230px;right:0;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,0.25);}
     .topbar-right{display:flex;align-items:center;gap:10px;}
@@ -44,7 +47,7 @@
     .page-title{font-size:20px;font-weight:700;color:var(--primary);margin-bottom:4px;}
     .page-desc{font-size:12.5px;color:var(--text-light);margin-bottom:20px;}
     .toolbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;gap:8px;flex-wrap:wrap;}
-    .toolbar-left{display:flex;align-items:center;gap:10px;}
+    .toolbar-left{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
     .year-selector{border:1.5px solid var(--border);border-radius:7px;padding:6px 12px;font-size:13px;outline:none;background:#fff;cursor:pointer;}
     .year-selector:focus{border-color:var(--primary-light);}
     /* Stat cards */
@@ -77,6 +80,42 @@
     .inline-input{width:100%;min-width:58px;max-width:88px;border:1.5px solid var(--primary-light);border-radius:5px;padding:4px 5px;font-size:12px;text-align:right;outline:none;background:#fff;}
     .inline-input:focus{border-color:var(--accent);box-shadow:0 0 0 2px rgba(237,50,55,0.12);}
     td.editing-cell{padding:4px 5px;}
+    /* Cột Tháng (trái) và cột thao tác (phải) đứng yên khi cuộn ngang bảng */
+    th.sticky-l,td.month-col{position:sticky;left:0;z-index:2;}
+    th.sticky-r,td.action-col{position:sticky;right:0;z-index:2;}
+    td.month-col,td.action-col{background:#fff;}
+    td.month-col{box-shadow:inset -1px 0 0 #d5dde8;}
+    td.action-col{box-shadow:inset 1px 0 0 #d5dde8;}
+    /* Ô nhập sai định dạng */
+    .inline-input.bad{border-color:var(--danger);background:#fdecec;}
+    .kbd-hint{font-size:11.5px;color:var(--text-light);}
+    .kbd-hint kbd{font-family:inherit;font-size:11px;background:#fff;border:1px solid var(--border);border-bottom-width:2px;border-radius:4px;padding:0 5px;color:var(--text);}
+    /* Bộ lọc quý */
+    .seg{display:inline-flex;border:1.5px solid var(--border);border-radius:7px;overflow:hidden;background:#fff;}
+    .seg button{border:none;border-right:1px solid var(--border);background:transparent;padding:6px 12px;font-size:13px;font-family:inherit;cursor:pointer;color:var(--text-light);}
+    .seg button:last-child{border-right:none;}
+    .seg button:hover:not(.on){background:#E3EEF9;color:var(--primary);}
+    .seg button.on{background:var(--primary);color:#fff;font-weight:600;}
+    /* Tháng chưa nhập / chưa đến kỳ */
+    tr.due td{background:#FFF8E1;}
+    tr.due td.month-col,tr.due td.action-col{background:#FFF8E1;}
+    .due-tag{display:inline-block;margin-left:6px;font-size:10.5px;font-weight:600;color:#8A5A00;background:#FFE9A8;border-radius:10px;padding:1px 7px;vertical-align:1px;}
+    tr.future td.month-col{color:#9aa6b8;font-weight:500;}
+    td.future-note{text-align:center;font-style:italic;font-size:11.5px;color:#9aa6b8;}
+    /* Dòng phụ trong thẻ số liệu (so sánh kỳ trước, tháng còn thiếu) */
+    .stat-sub{font-size:11px;color:var(--text-light);margin-top:4px;line-height:1.35;}
+    .stat-sub.warn{color:#8A5A00;}
+    .stat-sub.ok{color:var(--success);}
+    /* Biểu đồ rác thải theo tháng */
+    .chart-card{position:relative;background:#fff;border-radius:10px;box-shadow:0 2px 8px rgba(0,0,0,0.06);padding:14px 16px 6px;margin-bottom:20px;}
+    .chart-head{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:4px;}
+    .chart-title{font-size:13px;font-weight:700;color:var(--primary);}
+    .chart-legend{display:flex;gap:16px;font-size:12px;color:var(--text-light);}
+    .chart-legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:6px;vertical-align:-1px;}
+    .chart-tip{position:absolute;display:none;pointer-events:none;background:#1a2535;color:#fff;font-size:12px;line-height:1.5;padding:8px 11px;border-radius:7px;white-space:nowrap;z-index:5;box-shadow:0 4px 14px rgba(0,0,0,.18);}
+    .chart-tip b{font-weight:700;}
+    .chart-tip i{display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:6px;}
+    .chart-empty{padding:30px 0;text-align:center;color:var(--text-light);font-style:italic;font-size:12.5px;}
     .inline-actions{display:flex;gap:4px;justify-content:center;}
     .inline-actions .btn{padding:4px 8px;font-size:11px;}
     /* Modal */
@@ -136,21 +175,44 @@
         <div class="toolbar-left">
           <label style="font-size:13px;font-weight:600;color:var(--text);">Năm:</label>
           <select class="year-selector" id="yearSelect" onchange="renderTable()"></select>
+          <div class="seg" id="quarterSeg" role="group" aria-label="Lọc theo quý">
+            <button type="button" class="on" data-q="0" onclick="setQuarter(0)">Cả năm</button>
+            <button type="button" data-q="1" onclick="setQuarter(1)">Quý I</button>
+            <button type="button" data-q="2" onclick="setQuarter(2)">Quý II</button>
+            <button type="button" data-q="3" onclick="setQuarter(3)">Quý III</button>
+            <button type="button" data-q="4" onclick="setQuarter(4)">Quý IV</button>
+          </div>
           <div class="sync-status">
             <span class="sync-dot" id="syncDot"></span>
             <span id="syncText"></span>
           </div>
           <span id="draftNote" class="draft-note" style="display:none;"></span>
+          <span id="kbdHint" class="kbd-hint" style="display:none;"><kbd>Enter</kbd> Lưu · <kbd>Esc</kbd> Huỷ</span>
+        </div>
+        <div class="toolbar-right">
+          <button type="button" class="btn btn-outline btn-sm" id="btnExport" onclick="exportExcel(this)" title="Xuất số liệu của kỳ đang xem ra Excel"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;flex-shrink:0" aria-hidden="true"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v5h5"/><path d="M8 13h2"/><path d="M14 13h2"/><path d="M8 17h2"/><path d="M14 17h2"/></svg> Xuất Excel</button>
         </div>
       </div>
 
       <div class="stat-grid" id="statCards"></div>
 
+      <div class="chart-card" id="chartCard">
+        <div class="chart-head">
+          <div class="chart-title" id="chartTitle">Rác thải theo tháng (kg)</div>
+          <div class="chart-legend">
+            <span><i style="background:#C62F35"></i>Nguy hại (lỏng + rắn)</span>
+            <span><i style="background:#7FB3E0"></i>Không nguy hại</span>
+          </div>
+        </div>
+        <div id="chartBox"></div>
+        <div class="chart-tip" id="chartTip"></div>
+      </div>
+
       <div class="table-wrap">
         <table id="dataTable">
           <thead>
             <tr class="group-header">
-              <th rowspan="2" class="left">Tháng</th>
+              <th rowspan="2" class="left sticky-l">Tháng</th>
               <th colspan="3">Rác thải (kg)</th>
               <th rowspan="2">Thùng chứa<br>súc rửa (kg)</th>
               <th colspan="5">Vỏ thùng các loại (cái)</th>
@@ -158,7 +220,7 @@
               <th rowspan="2">Amiăng<br>(kg)</th>
               <th rowspan="2">Dầu nhớt<br>thải (m³)</th>
               <th rowspan="2">Nước thải<br>(m³)</th>
-              <th rowspan="2"></th>
+              <th rowspan="2" class="sticky-r"></th>
             </tr>
             <tr>
               <th>NH lỏng</th>
@@ -195,6 +257,16 @@ var FIELD_STEP = {rac_nh_long:"0.01",rac_nh_ran:"0.01",rac_knh:"0.01",thung_suc_
                   phuy_sat:"1",phuy_nhua:"1",can:"1",thung_nhua_1m3:"1",
                   pin_ac_quy:"0.01",amiang:"0.01",dau_nhot:"0.001",nuoc_thai:"0.001"};
 var editingKey = null; // "nam-thang" của dòng đang chỉnh sửa inline
+var INT_FIELDS = {phuy_sat:1,phuy_nhua:1,can:1,thung_nhua_1m3:1};
+var FIELD_LABEL = {rac_nh_long:"Rác NH lỏng (kg)",rac_nh_ran:"Rác NH rắn (kg)",rac_knh:"Rác không NH (kg)",
+                   thung_suc_rua:"Thùng chứa súc rửa (kg)",phuy_sat:"Phuy sắt (cái)",phuy_nhua:"Phuy nhựa (cái)",
+                   can:"Can (cái)",thung_nhua_1m3:"Thùng 1m³ (cái)",pin_ac_quy:"Pin – Ắc quy (kg)",
+                   amiang:"Amiăng (kg)",dau_nhot:"Dầu nhớt thải (m³)",nuoc_thai:"Nước thải (m³)"};
+var FIRST_YEAR = 2026;             // năm đầu tiên có trong ô chọn (bỏ 2025)
+var curQuarter = 0;                // 0 = Cả năm, 1..4 = Quý I..IV
+var Q_ROMAN = ["","I","II","III","IV"];
+var CHART_NH  = "#C62F35";         // màu cột rác nguy hại
+var CHART_KNH = "#7FB3E0";         // màu cột rác không nguy hại
 
 /* ── BẢN NHÁP DÒNG ĐANG NHẬP ──────────────────────────────
    Trước đây: gõ dở rồi chuyển sang tab khác / thu nhỏ trình duyệt là mất sạch.
@@ -220,6 +292,26 @@ function fmtNum(v,dec){
   var n=num(v);
   if(dec===undefined)dec=2;
   return n.toLocaleString('vi-VN',{minimumFractionDigits:0,maximumFractionDigits:dec});
+}
+/* Đọc số người dùng gõ theo kiểu Việt Nam.
+   - Có dấu phẩy: phẩy là thập phân, dấu chấm (nếu có) là phân cách nghìn → "1.250,5" = 1250.5
+   - Không có dấu phẩy: dấu chấm là thập phân (như trước đây) → "1.5" = 1.5
+   Ô trống = 0. Trả về NaN nếu không phải số hợp lệ. */
+function parseVN(s){
+  if(s===undefined||s===null)return 0;
+  if(typeof s==="number")return s;
+  s=String(s).replace(/\s+/g,"");
+  if(s==="")return 0;
+  if(s.indexOf(",")>=0)s=s.replace(/\./g,"").replace(",",".");
+  if(!/^\d+(\.\d+)?$|^\d*\.\d+$/.test(s))return NaN;
+  return parseFloat(s);
+}
+// Số → chuỗi để hiện trong ô nhập (thập phân bằng dấu phẩy, không phân cách nghìn)
+function toVN(v){
+  if(v===undefined||v===null||v==="")return "";
+  var n=parseVN(v);
+  if(isNaN(n))return String(v);
+  return String(Math.round(n*1000)/1000).replace(".",",");
 }
 function fmtInt(v){
   if(v===undefined||v===null||v==="")return '<span class="no-data">—</span>';
@@ -277,6 +369,8 @@ function updateDraftNote(){
     try{ selNam=String(selectedYear()); }catch(e){}
     if(selNam&&selNam!==String(p[0])){
       el.innerHTML='Đang nhập dở '+esc(thg)+'/'+esc(p[0])+' — chọn năm '+esc(p[0])+' để nhập tiếp.';
+    } else if(curQuarter&&quarterOfMonth(parseInt(p[1],10))!==curQuarter){
+      el.innerHTML='Đang nhập dở '+esc(thg)+'/'+esc(p[0])+' — chọn <b>Quý '+Q_ROMAN[quarterOfMonth(parseInt(p[1],10))]+'</b> hoặc <b>Cả năm</b> để nhập tiếp.';
     } else {
       el.innerHTML='Đang nhập dở '+esc(thg)+'/'+esc(p[0])+' — đã giữ tạm trên máy, bấm <b>Lưu</b> để ghi chính thức.';
     }
@@ -408,7 +502,8 @@ function buildYearSelect(){
   var sel=document.getElementById("yearSelect");
   if(!sel)return;
   var cur=new Date().getFullYear();
-  for(var y=2030;y>=2025;y--){
+  // Chỉ từ 2026 đến năm hiện tại; sang năm mới thì tự có thêm năm đó
+  for(var y=Math.max(cur,FIRST_YEAR);y>=FIRST_YEAR;y--){
     var opt=document.createElement("option");
     opt.value=y;opt.textContent=y;
     if(y===cur)opt.selected=true;
@@ -463,10 +558,13 @@ function renderTable(){
   MT_FIELDS.forEach(function(f){totals[f]=0;});
 
   var rows="";
-  for(var m=1;m<=12;m++){
+  var _ms=monthsOf(curQuarter);      // Cả năm: 12 tháng · Quý: 3 tháng
+  for(var _i=0;_i<_ms.length;_i++){
+    var m=_ms[_i];
     var rec=getRecord(nam,m);
     var d=rec||{};
     var hasData=!!rec;
+    var st=monthState(nam,m,hasData);
 
     MT_FIELDS.forEach(function(f){totals[f]+=num(d[f]);});
     var totalVoThung=num(d.phuy_sat)+num(d.phuy_nhua)+num(d.can)+num(d.thung_nhua_1m3);
@@ -506,6 +604,16 @@ function renderTable(){
       continue;
     }
 
+    // Tháng chưa tới: không cho nhập, chỉ ghi "Chưa đến kỳ"
+    if(st==="future"){
+      rows+='<tr class="future">'+
+        '<td class="month-col">'+MONTHS[m-1]+'</td>'+
+        '<td colspan="13" class="future-note">Chưa đến kỳ</td>'+
+        '<td class="action-col"></td>'+
+      '</tr>';
+      continue;
+    }
+
     var actionCell="";
     if(canEdit(u)){
       if(hasData){
@@ -518,8 +626,8 @@ function renderTable(){
       }
     }
 
-    rows+='<tr>'+
-      '<td class="month-col">'+MONTHS[m-1]+'</td>'+
+    rows+='<tr'+(st==="due"?' class="due"':'')+'>'+
+      '<td class="month-col">'+MONTHS[m-1]+(st==="due"?'<span class="due-tag">Chưa nhập</span>':'')+'</td>'+
       '<td>'+fmtNum(d.rac_nh_long)+'</td>'+
       '<td>'+fmtNum(d.rac_nh_ran)+'</td>'+
       '<td>'+fmtNum(d.rac_knh)+'</td>'+
@@ -540,7 +648,7 @@ function renderTable(){
   // Total row
   var tvt=totals.phuy_sat+totals.phuy_nhua+totals.can+totals.thung_nhua_1m3;
   rows+='<tr class="total-row">'+
-    '<td class="month-col">Tổng lũy kế</td>'+
+    '<td class="month-col">'+(curQuarter?('Tổng Quý '+Q_ROMAN[curQuarter]):'Tổng lũy kế')+'</td>'+
     '<td>'+totals.rac_nh_long.toLocaleString('vi-VN',{maximumFractionDigits:2})+'</td>'+
     '<td>'+totals.rac_nh_ran.toLocaleString('vi-VN',{maximumFractionDigits:2})+'</td>'+
     '<td>'+totals.rac_knh.toLocaleString('vi-VN',{maximumFractionDigits:2})+'</td>'+
@@ -554,7 +662,7 @@ function renderTable(){
     '<td>'+totals.amiang.toLocaleString('vi-VN',{maximumFractionDigits:2})+'</td>'+
     '<td>'+totals.dau_nhot.toLocaleString('vi-VN',{maximumFractionDigits:3})+'</td>'+
     '<td>'+totals.nuoc_thai.toLocaleString('vi-VN',{maximumFractionDigits:3})+'</td>'+
-    '<td></td>'+
+    '<td class="action-col"></td>'+
   '</tr>';
 
   // Ghi nhớ ô đang gõ để trả lại con trỏ sau khi vẽ lại bảng
@@ -575,21 +683,102 @@ function renderTable(){
   }
 
   renderStatCards(totals);
+  renderChart();
   updateDraftNote();
+  updateKbdHint();
 }
 
+// ── Kỳ xem: năm + quý ──
+function setQuarter(q){
+  curQuarter=q;
+  var btns=document.querySelectorAll('#quarterSeg button');
+  for(var i=0;i<btns.length;i++){
+    btns[i].classList.toggle('on',String(btns[i].getAttribute('data-q'))===String(q));
+  }
+  renderTable();
+}
+function monthsOf(q){ return q?[3*q-2,3*q-1,3*q]:[1,2,3,4,5,6,7,8,9,10,11,12]; }
+function quarterOfMonth(m){ return Math.ceil(m/3); }
+function periodLabel(nam,q){ return q?('Quý '+Q_ROMAN[q]+'/'+nam):('Năm '+nam); }
+/* Trạng thái 1 tháng so với hôm nay:
+   "future" = chưa tới tháng đó (không cho nhập) · "due" = tháng đã qua mà chưa có số liệu
+   "" = bình thường (đã có số liệu, hoặc là tháng hiện tại đang chạy) */
+function monthState(nam,m,hasData){
+  var now=new Date(), cy=now.getFullYear(), cm=now.getMonth()+1;
+  nam=parseInt(nam,10);
+  if(nam>cy||(nam===cy&&m>cm))return hasData?"":"future";
+  if(!hasData&&(nam<cy||m<cm))return "due";
+  return "";
+}
+function emptyTotals(){ var t={}; MT_FIELDS.forEach(function(f){t[f]=0;}); return t; }
+function sumPeriod(nam,q){
+  var t=emptyTotals(), n=0;
+  monthsOf(q).forEach(function(m){
+    var r=getRecord(nam,m);
+    if(r){ n++; MT_FIELDS.forEach(function(f){t[f]+=num(r[f]);}); }
+  });
+  return {t:t,n:n};
+}
+// Kỳ liền trước: Quý I so với Quý IV năm trước; Cả năm so với năm trước
+function prevPeriod(nam,q){
+  if(!q)return {nam:nam-1,q:0};
+  return q>1?{nam:nam,q:q-1}:{nam:nam-1,q:4};
+}
+
+// ── Thẻ số liệu (theo kỳ đang xem) ──
+function _statVals(t){
+  var nh=t.rac_nh_long+t.rac_nh_ran;
+  return {tong:nh+t.rac_knh, nh:nh, knh:t.rac_knh,
+          vt:t.phuy_sat+t.phuy_nhua+t.can+t.thung_nhua_1m3,
+          dau:t.dau_nhot, nuoc:t.nuoc_thai};
+}
+function _deltaText(cur,prev,lbl){
+  if(!(prev>0))return '';
+  var p=(cur-prev)/prev*100;
+  if(Math.abs(p)<0.5)return '≈ bằng '+lbl;
+  return (p>0?'▲ ':'▼ ')+Math.abs(p).toLocaleString('vi-VN',{maximumFractionDigits:Math.abs(p)<10?1:0})+'% so với '+lbl;
+}
 function renderStatCards(t){
-  var totalRacNH=t.rac_nh_long+t.rac_nh_ran;
-  var totalRac=totalRacNH+t.rac_knh;
-  var tvt=t.phuy_sat+t.phuy_nhua+t.can+t.thung_nhua_1m3;
-  var nam=selectedYear();
+  var nam=selectedYear(), q=curQuarter;
+  var v=_statVals(t);
+  var cur=sumPeriod(nam,q);
+
+  // So sánh với kỳ trước — chỉ khi kỳ trước có số liệu (từ 2026) và kỳ này
+  // đã nhập đủ số tháng tương đương, tránh báo "giảm 100%" khi quý mới bắt đầu.
+  var pv=null, pLbl='';
+  var pp=prevPeriod(nam,q);
+  if(pp.nam>=FIRST_YEAR){
+    var ps=sumPeriod(pp.nam,pp.q);
+    if(ps.n>0&&cur.n>=ps.n){
+      pv=_statVals(ps.t);
+      pLbl=pp.q?('Quý '+Q_ROMAN[pp.q]+(pp.nam!==nam?'/'+pp.nam:'')):('năm '+pp.nam);
+    }
+  }
+  function sub(k){ return pv?_deltaText(v[k],pv[k],pLbl):''; }
+
+  // Tiến độ nhập trong kỳ
+  var now=new Date(), cy=now.getFullYear(), cm=now.getMonth()+1;
+  var have=0, need=0, missing=[];
+  monthsOf(q).forEach(function(m){
+    var has=!!getRecord(nam,m);
+    if(monthState(nam,m,has)==="future")return;
+    if(has){ have++; need++; }
+    else if(nam<cy||m<cm){ need++; missing.push('T'+m); }
+  });
+  var progSub, progCls;
+  if(need===0){ progSub='Chưa đến kỳ nhập'; progCls=''; }
+  else if(missing.length){ progSub='Thiếu: '+missing.join(', '); progCls='warn'; }
+  else { progSub='Đủ số liệu các tháng đã qua'; progCls='ok'; }
+
+  var f1={maximumFractionDigits:1}, f3={maximumFractionDigits:3};
   var cards=[
-    {label:'Tổng rác thải – Năm '+nam,value:totalRac.toLocaleString('vi-VN',{maximumFractionDigits:1}),unit:'kg',cls:''},
-    {label:'Rác nguy hại (lỏng + rắn)',value:totalRacNH.toLocaleString('vi-VN',{maximumFractionDigits:1}),unit:'kg',cls:'red'},
-    {label:'Rác không nguy hại',value:t.rac_knh.toLocaleString('vi-VN',{maximumFractionDigits:1}),unit:'kg',cls:'green'},
-    {label:'Vỏ thùng các loại xử lý',value:tvt.toLocaleString('vi-VN'),unit:'cái',cls:'orange'},
-    {label:'Dầu nhớt thải xử lý',value:t.dau_nhot.toLocaleString('vi-VN',{maximumFractionDigits:3}),unit:'m³',cls:'teal'},
-    {label:'Nước thải xử lý',value:t.nuoc_thai.toLocaleString('vi-VN',{maximumFractionDigits:3}),unit:'m³',cls:''},
+    {label:'Tổng rác thải – '+periodLabel(nam,q),value:v.tong.toLocaleString('vi-VN',f1),unit:'kg',cls:'',sub:sub('tong')},
+    {label:'Rác nguy hại (lỏng + rắn)',value:v.nh.toLocaleString('vi-VN',f1),unit:'kg',cls:'red',sub:sub('nh')},
+    {label:'Rác không nguy hại',value:v.knh.toLocaleString('vi-VN',f1),unit:'kg',cls:'green',sub:sub('knh')},
+    {label:'Vỏ thùng các loại xử lý',value:v.vt.toLocaleString('vi-VN'),unit:'cái',cls:'orange',sub:sub('vt')},
+    {label:'Dầu nhớt thải xử lý',value:v.dau.toLocaleString('vi-VN',f3),unit:'m³',cls:'teal',sub:sub('dau')},
+    {label:'Nước thải xử lý',value:v.nuoc.toLocaleString('vi-VN',f3),unit:'m³',cls:'',sub:sub('nuoc')},
+    {label:'Số liệu đã nhập',value:have+'/'+need,unit:'tháng',cls:(missing.length?'orange':'green'),sub:progSub,subCls:progCls}
   ];
   var el=document.getElementById("statCards");
   if(!el)return;
@@ -597,15 +786,218 @@ function renderStatCards(t){
     return '<div class="stat-card '+c.cls+'">'+
       '<div class="stat-label">'+c.label+'</div>'+
       '<div><span class="stat-value">'+c.value+'</span><span class="stat-unit">'+c.unit+'</span></div>'+
+      (c.sub?'<div class="stat-sub '+(c.subCls||'')+'">'+esc(c.sub)+'</div>':'')+
     '</div>';
   }).join('');
 }
 
+// ── Biểu đồ cột chồng: rác nguy hại / không nguy hại theo tháng ──
+var _chartData=[];
+function _niceMax(v){
+  if(!(v>0))return 1;
+  var p=Math.pow(10,Math.floor(Math.log(v)/Math.LN10)), n=v/p;
+  var steps=[1,1.2,1.5,2,2.5,3,4,5,6,8,10], st=10;
+  for(var i=0;i<steps.length;i++){ if(n<=steps[i]){ st=steps[i]; break; } }
+  var s=st;
+  return s*p;
+}
+// Cột có 4px bo tròn ở đầu trên, chân cột vuông sát trục
+function _barPath(x,y,w,h,roundTop,color){
+  if(h<=0)return '';
+  var r=roundTop?Math.min(4,h,w/2):0;
+  if(!r)return '<rect x="'+x+'" y="'+y+'" width="'+w+'" height="'+h+'" fill="'+color+'"/>';
+  return '<path d="M'+x+','+(y+h)+'V'+(y+r)+'Q'+x+','+y+' '+(x+r)+','+y+'H'+(x+w-r)+
+         'Q'+(x+w)+','+y+' '+(x+w)+','+(y+r)+'V'+(y+h)+'Z" fill="'+color+'"/>';
+}
+function renderChart(){
+  var box=document.getElementById("chartBox");
+  if(!box)return;
+  var nam=selectedYear(), q=curQuarter;
+  var title=document.getElementById("chartTitle");
+  if(title)title.textContent='Rác thải theo tháng – '+periodLabel(nam,q)+' (kg)';
+  var tip=document.getElementById("chartTip");
+  if(tip)tip.style.display='none';
+
+  _chartData=monthsOf(q).map(function(m){
+    var r=getRecord(nam,m);
+    return r?{m:m,nam:nam,has:true,l:num(r.rac_nh_long),r:num(r.rac_nh_ran),k:num(r.rac_knh)}
+            :{m:m,nam:nam,has:false,future:monthState(nam,m,false)==="future"};
+  });
+  var max=0, any=false;
+  _chartData.forEach(function(d){ if(d.has){ any=true; max=Math.max(max,d.l+d.r+d.k); } });
+  if(!any){
+    box.innerHTML='<div class="chart-empty">Chưa có số liệu '+(q?'trong quý này':'trong năm này')+'.</div>';
+    return;
+  }
+
+  var W=Math.max(box.clientWidth||640,320), H=200, padL=56, padR=8, padT=12, padB=26;
+  var plotW=W-padL-padR, plotH=H-padT-padB, base=padT+plotH;
+  var top=_niceMax(max), ticks=4;
+  var s='<svg width="'+W+'" height="'+H+'" viewBox="0 0 '+W+' '+H+'" role="img" aria-label="Biểu đồ rác thải theo tháng, '+periodLabel(nam,q)+'" style="display:block">';
+  for(var i=0;i<=ticks;i++){
+    var val=top*i/ticks, y=base-plotH*i/ticks;
+    s+='<line x1="'+padL+'" x2="'+(W-padR)+'" y1="'+y+'" y2="'+y+'" stroke="'+(i===0?'#c8d3e1':'#edf1f6')+'" stroke-width="1"/>';
+    s+='<text x="'+(padL-8)+'" y="'+(y+4)+'" text-anchor="end" font-size="11" fill="#7a879a">'+val.toLocaleString('vi-VN',{maximumFractionDigits:1})+'</text>';
+  }
+  var slot=plotW/_chartData.length, bw=Math.min(q?60:36, slot*0.56);
+  _chartData.forEach(function(d,i){
+    var cx=padL+slot*i+slot/2, x=cx-bw/2;
+    s+='<rect class="ch-hl" data-i="'+i+'" x="'+(padL+slot*i+2)+'" y="'+padT+'" width="'+(slot-4)+'" height="'+plotH+'" rx="4" fill="#0F62AC" fill-opacity="0"/>';
+    if(d.has){
+      var hNH=plotH*(d.l+d.r)/top, hK=plotH*d.k/top;
+      var gap=(hNH>0&&hK>0)?2:0;                 // khe 2px giữa hai phần cột
+      s+=_barPath(x,base-hNH,bw,hNH,!(hK>0),CHART_NH);
+      if(hK>0){ var hk2=Math.max(hK-gap,1); s+=_barPath(x,base-hNH-gap-hk2,bw,hk2,true,CHART_KNH); }
+    }
+    s+='<text x="'+cx+'" y="'+(H-8)+'" text-anchor="middle" font-size="11" fill="'+(d.has?'#5F6E82':'#b3bdcc')+'">T'+d.m+'</text>';
+  });
+  // Vùng rê chuột phủ cả cột tháng (to hơn cột để dễ trỏ)
+  _chartData.forEach(function(d,i){
+    s+='<rect class="ch-hit" data-i="'+i+'" x="'+(padL+slot*i)+'" y="'+padT+'" width="'+slot+'" height="'+(plotH+padB)+'" fill="transparent" style="cursor:default"/>';
+  });
+  s+='</svg>';
+  box.innerHTML=s;
+
+  var hits=box.querySelectorAll('.ch-hit');
+  for(var j=0;j<hits.length;j++){
+    hits[j].addEventListener('mousemove',_chartHover);
+    hits[j].addEventListener('mouseleave',_chartLeave);
+  }
+}
+function _chartHover(ev){
+  var i=parseInt(this.getAttribute('data-i'),10), d=_chartData[i];
+  var card=document.getElementById('chartCard'), tip=document.getElementById('chartTip');
+  if(!d||!card||!tip)return;
+  var hl=card.querySelectorAll('.ch-hl');
+  for(var k=0;k<hl.length;k++)hl[k].setAttribute('fill-opacity',k===i?'0.06':'0');
+  var f2={maximumFractionDigits:2};
+  var h='<b>Tháng '+d.m+'/'+d.nam+'</b><br>';
+  if(d.has){
+    h+='<i style="background:'+CHART_NH+'"></i>Nguy hại: <b>'+(d.l+d.r).toLocaleString('vi-VN',f2)+'</b> kg'+
+       ' <span style="opacity:.75">(lỏng '+d.l.toLocaleString('vi-VN',f2)+' · rắn '+d.r.toLocaleString('vi-VN',f2)+')</span><br>'+
+       '<i style="background:'+CHART_KNH+'"></i>Không nguy hại: <b>'+d.k.toLocaleString('vi-VN',f2)+'</b> kg<br>'+
+       'Tổng: <b>'+(d.l+d.r+d.k).toLocaleString('vi-VN',f2)+'</b> kg';
+  } else {
+    h+=d.future?'Chưa đến kỳ':'Chưa có số liệu';
+  }
+  tip.innerHTML=h;
+  tip.style.display='block';
+  var r=card.getBoundingClientRect();
+  var x=ev.clientX-r.left+14, y=ev.clientY-r.top+14;
+  if(x+tip.offsetWidth>r.width-6)x=ev.clientX-r.left-tip.offsetWidth-14;
+  tip.style.left=Math.max(6,x)+'px';
+  tip.style.top=y+'px';
+}
+function _chartLeave(){
+  var tip=document.getElementById('chartTip');
+  if(tip)tip.style.display='none';
+  var hl=document.querySelectorAll('#chartCard .ch-hl');
+  for(var k=0;k<hl.length;k++)hl[k].setAttribute('fill-opacity','0');
+}
+
+/* ── XUẤT EXCEL ─────────────────────────────────────────
+   Xuất đúng kỳ đang xem (cả năm hoặc 1 quý). SheetJS nạp trễ khi bấm nút;
+   không tải được (mạng nội bộ chặn) → rơi về file .xls dạng bảng HTML.
+────────────────────────────────────────────────────────── */
+var _xlsxLoading=null;
+function _ensureXLSX(){
+  if(typeof XLSX!=="undefined")return Promise.resolve(true);
+  if(_xlsxLoading)return _xlsxLoading;
+  _xlsxLoading=new Promise(function(resolve){
+    var sc=document.createElement("script");
+    sc.src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js";
+    sc.onload=function(){resolve(typeof XLSX!=="undefined");};
+    sc.onerror=function(){_xlsxLoading=null;resolve(false);};
+    document.head.appendChild(sc);
+  });
+  return _xlsxLoading;
+}
+function _exportData(){
+  var nam=selectedYear(), q=curQuarter;
+  var head=["Tháng"].concat(MT_FIELDS.slice(0,8).map(function(f){return FIELD_LABEL[f];}))
+            .concat(["Tổng vỏ thùng (cái)"])
+            .concat(MT_FIELDS.slice(8).map(function(f){return FIELD_LABEL[f];}));
+  var tot=emptyTotals(), body=[];
+  monthsOf(q).forEach(function(m){
+    var r=getRecord(nam,m);
+    var row=["Tháng "+m];
+    if(r){
+      MT_FIELDS.forEach(function(f){tot[f]+=num(r[f]);});
+      var vals=MT_FIELDS.map(function(f){return num(r[f]);});
+      row=row.concat(vals.slice(0,8)).concat([vals[4]+vals[5]+vals[6]+vals[7]]).concat(vals.slice(8));
+    } else {
+      var st=monthState(nam,m,false);
+      row.push(st==="future"?"Chưa đến kỳ":"Chưa có số liệu");
+      for(var i=1;i<13;i++)row.push("");
+    }
+    body.push(row);
+  });
+  var tv=MT_FIELDS.map(function(f){return Math.round(tot[f]*1000)/1000;});
+  body.push([q?("Tổng Quý "+Q_ROMAN[q]):"Tổng lũy kế"].concat(tv.slice(0,8))
+            .concat([tv[4]+tv[5]+tv[6]+tv[7]]).concat(tv.slice(8)));
+  return {head:head, body:body, nam:nam, q:q};
+}
+function _exportFallback(title,sub,d,name){
+  var html='<meta charset="utf-8"><table border="1">'+
+    '<tr><th colspan="'+d.head.length+'">'+esc(title)+'</th></tr>'+
+    '<tr><td colspan="'+d.head.length+'">'+esc(sub)+'</td></tr><tr>'+
+    d.head.map(function(x){return '<th>'+esc(x)+'</th>';}).join('')+'</tr>'+
+    d.body.map(function(r){return '<tr>'+r.map(function(c){return '<td>'+esc(c)+'</td>';}).join('')+'</tr>';}).join('')+
+    '</table>';
+  var url=URL.createObjectURL(new Blob(["﻿"+html],{type:"application/vnd.ms-excel"}));
+  var a=document.createElement("a");
+  a.href=url; a.download=name;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  setTimeout(function(){URL.revokeObjectURL(url);},2000);
+}
+function exportExcel(btn){
+  var d=_exportData();
+  var title="THỐNG KÊ XỬ LÝ CHẤT THẢI – "+periodLabel(d.nam,d.q).toUpperCase();
+  var dd=new Date();
+  var stamp=dd.getFullYear()+String(dd.getMonth()+1).padStart(2,"0")+String(dd.getDate()).padStart(2,"0");
+  var sub="Xí nghiệp Dịch vụ Cảng và Cung ứng vật tư thiết bị · Xuất ngày "+dd.toLocaleDateString("vi-VN");
+  var name="XuLyChatThai_"+d.nam+(d.q?"_Q"+d.q:"")+"_"+stamp;
+  var old=btn?btn.innerHTML:"";
+  if(btn){btn.disabled=true;btn.textContent="Đang xuất...";}
+  _ensureXLSX().then(function(ok){
+    try{
+      if(ok){
+        var aoa=[[title],[sub],[]].concat([d.head]).concat(d.body);
+        var ws=XLSX.utils.aoa_to_sheet(aoa);
+        ws["!cols"]=[{wch:14}].concat(d.head.slice(1).map(function(){return {wch:14};}));
+        ws["!merges"]=[{s:{r:0,c:0},e:{r:0,c:d.head.length-1}},{s:{r:1,c:0},e:{r:1,c:d.head.length-1}}];
+        var wb=XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb,ws,d.q?("Quy "+d.q+"-"+d.nam):("Nam "+d.nam));
+        XLSX.writeFile(wb,name+".xlsx");
+      } else {
+        _exportFallback(title,sub,d,name+".xls");
+      }
+    }catch(e){ alert("Không xuất được Excel: "+(e&&e.message||e)); }
+    if(btn){btn.disabled=false;btn.innerHTML=old;}
+  });
+}
+
 // ── Inline edit (chỉnh trực tiếp trên bảng) ──
+/* Ô nhập dạng chữ (không dùng type="number") để:
+   - nhận dấu phẩy thập phân kiểu Việt Nam (12,5);
+   - lăn chuột trên ô không còn làm số tự tăng/giảm. */
+function fieldError(f,s){
+  var n=parseVN(s);
+  if(isNaN(n))return "không phải số hợp lệ";
+  if(INT_FIELDS[f]&&Math.round(n)!==n)return "phải là số nguyên";
+  return "";
+}
 function cellInput(f,d){
-  var v=(d[f]!==undefined&&d[f]!==null&&d[f]!=='')?d[f]:'';
-  return '<td class="editing-cell"><input class="inline-input" data-field="'+f+'" type="number" min="0" step="'+
-    (FIELD_STEP[f]||'0.01')+'" value="'+esc(v)+'" oninput="onInlineInput()" onchange="onInlineInput()" placeholder="0"></td>';
+  var raw=d[f], v='';
+  if(raw!==undefined&&raw!==null&&raw!==''){
+    // Số đã lưu (1.5) → hiện "1,5"; chuỗi đang gõ dở trong bản nháp giữ nguyên
+    v=(typeof raw==="number"||/^\d+(\.\d+)?$/.test(String(raw)))?toVN(raw):String(raw);
+  }
+  var bad=fieldError(f,v);
+  return '<td class="editing-cell"><input class="inline-input'+(bad?' bad':'')+'" data-field="'+f+'" type="text" '+
+    'inputmode="'+(INT_FIELDS[f]?'numeric':'decimal')+'" autocomplete="off" value="'+esc(v)+'" placeholder="0" '+
+    'title="'+esc(FIELD_LABEL[f]+(INT_FIELDS[f]?' — số nguyên':' — số thập phân dùng dấu phẩy, ví dụ 12,5'))+'" '+
+    'oninput="onInlineInput(this)" onkeydown="onInlineKey(event)" onblur="onInlineBlur(this)"></td>';
 }
 function updateInlineTotal(){
   var row=document.querySelector('tr.editing');
@@ -614,14 +1006,46 @@ function updateInlineTotal(){
   var sum=0;
   ['phuy_sat','phuy_nhua','can','thung_nhua_1m3'].forEach(function(f){
     var el=row.querySelector('.inline-input[data-field="'+f+'"]');
-    if(el)sum+=num(el.value);
+    var n=el?parseVN(el.value):0;
+    if(!isNaN(n))sum+=n;
   });
   cell.textContent=sum.toLocaleString('vi-VN');
 }
-// Mỗi lần gõ: cập nhật cột Tổng + ghi tạm bản nháp vào máy
-function onInlineInput(){
+function markField(el){
+  if(!el)return;
+  var err=fieldError(el.getAttribute('data-field'),el.value);
+  el.classList.toggle('bad',!!err);
+}
+// Mỗi lần gõ: kiểm tra ô, cập nhật cột Tổng + ghi tạm bản nháp vào máy
+function onInlineInput(el){
+  markField(el);
   updateInlineTotal();
   captureDraft();
+}
+// Rời ô: chuẩn hoá cách viết (1.5 → 1,5) để người nhập thấy máy hiểu số thế nào
+function onInlineBlur(el){
+  if(!el||!el.isConnected)return;
+  markField(el);
+  if(el.value.trim()!==""&&!el.classList.contains('bad')){
+    var nv=toVN(parseVN(el.value));
+    if(nv!==el.value){ el.value=nv; captureDraft(); }
+  }
+}
+// Enter = Lưu, Esc = Huỷ
+function onInlineKey(ev){
+  if(!editingKey)return;
+  if(ev.key==="Enter"){
+    ev.preventDefault();
+    var p=String(editingKey).split("-");
+    saveInlineEdit(parseInt(p[0],10),parseInt(p[1],10));
+  } else if(ev.key==="Escape"){
+    ev.preventDefault();
+    cancelInlineEdit();
+  }
+}
+function updateKbdHint(){
+  var el=document.getElementById("kbdHint");
+  if(el)el.style.display=document.querySelector('tr.editing')?'':'none';
 }
 function startInlineEdit(nam,thang){
   var u=currentUser();
@@ -648,11 +1072,19 @@ function saveInlineEdit(nam,thang){
   if(!canEdit(u)){alert("Bạn không có quyền nhập liệu.");return;}
   var row=document.querySelector('tr.editing');
   if(!row)return;
-  var vals={};
+  var vals={}, bad=null;
   MT_FIELDS.forEach(function(f){
     var el=row.querySelector('.inline-input[data-field="'+f+'"]');
-    vals[f]=el?el.value:0;
+    var err=el?fieldError(f,el.value):"";
+    if(err&&!bad)bad={el:el,f:f,err:err};
+    vals[f]=el?parseVN(el.value):0;
   });
+  if(bad){
+    bad.el.classList.add('bad');
+    bad.el.focus();
+    alert('Ô "'+FIELD_LABEL[bad.f]+'" '+bad.err+'. Vui lòng sửa lại trước khi lưu.');
+    return;
+  }
   persistRecord(nam,thang,vals);
   clearDraft();
   editingKey=null;
@@ -679,14 +1111,14 @@ function persistRecord(nam,thang,vals){
     if(typeof DB!=="undefined"){
       setSyncStatus("syncing","Đang lưu...");
       DB.update(SH_MT,id,data)
-        .then(function(){setSyncStatus("ok","Đã lưu vào Sheets ✓");})
+        .then(function(){setSyncStatus("ok","Đã lưu ✓");})
         .catch(function(e){
           var msg=e&&e.message||"";
           if(msg.indexOf("Không tìm thấy")>=0||msg.indexOf("id=")>=0){
             DB.insert(SH_MT,data)
-              .then(function(){setSyncStatus("ok","Đã lưu vào Sheets ✓");})
-              .catch(function(e2){setSyncStatus("err","Lỗi Sheets: "+(e2&&e2.message||"unknown"));});
-          } else {setSyncStatus("err","Lỗi Sheets: "+msg);}
+              .then(function(){setSyncStatus("ok","Đã lưu ✓");})
+              .catch(function(e2){setSyncStatus("err","Lỗi lưu: "+(e2&&e2.message||"unknown"));});
+          } else {setSyncStatus("err","Lỗi lưu: "+msg);}
         });
     }
   } else {
@@ -697,8 +1129,8 @@ function persistRecord(nam,thang,vals){
     if(typeof DB!=="undefined"){
       setSyncStatus("syncing","Đang lưu...");
       DB.insert(SH_MT,data)
-        .then(function(){setSyncStatus("ok","Đã lưu vào Sheets ✓");})
-        .catch(function(e){setSyncStatus("err","Lỗi Sheets: "+(e&&e.message||"unknown"));});
+        .then(function(){setSyncStatus("ok","Đã lưu ✓");})
+        .catch(function(e){setSyncStatus("err","Lỗi lưu: "+(e&&e.message||"unknown"));});
     }
   }
 }
@@ -757,6 +1189,13 @@ window.addEventListener("DOMContentLoaded",function(){
   window.addEventListener("beforeunload",captureDraft);
 
   safePull();
+
+  // Vẽ lại biểu đồ cho vừa khung khi đổi kích thước cửa sổ
+  var _rzT=null;
+  window.addEventListener("resize",function(){
+    clearTimeout(_rzT);
+    _rzT=setTimeout(function(){ try{ renderChart(); }catch(e){} },150);
+  });
 
   // Đồng bộ quyền thật từ Supabase → vẽ lại UI khi có kết quả
   hydrateCurrentUser();
