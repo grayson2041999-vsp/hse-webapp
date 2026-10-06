@@ -65,7 +65,21 @@
       'flex-shrink:0;box-shadow:0 1px 3px rgba(0,0,0,.18);transition:.15s}'+
     '.pn-logo:hover{box-shadow:0 0 0 3px rgba(255,255,255,.35)}'+
     '.pn-logo img{height:100%;width:auto;display:block}'+
-    '@media(max-width:920px){.pn-logo{height:38px;padding:3px 6px}}';
+    '@media(max-width:920px){.pn-logo{height:38px;padding:3px 6px}}'+
+    /* Điện thoại: thanh tiêu đề gọn — ẩn họ tên và chữ "Đăng xuất" (giữ icon + chip vai trò),
+       ẩn tên xí nghiệp dưới 600px để logo · Trang chủ · tài khoản nằm vừa một hàng.
+       Dùng tiền tố .topbar để thắng header-auth.css (nạp sau). */
+    '@media(max-width:768px){'+
+      '.topbar{padding:0 10px!important;gap:8px}'+
+      '.topbar .pn-left{gap:8px}'+
+      '.topbar .pn-right{gap:6px;flex-shrink:0}'+
+      '.topbar .pn-user>span:not(.pn-chip),.topbar .pn-logout>span{display:none}'+
+      '.topbar .pn-user,.topbar .pn-logout{padding:5px 8px}'+
+      '.topbar .pn-gear{width:30px;height:30px}'+
+    '}'+
+    '@media(max-width:600px){.topbar .pn-left>div,.topbar .pn-viewer{display:none}.topbar .portal-back{padding:6px 9px}'+
+      '.topbar .pn-left{min-width:0;overflow:hidden}}'+
+    '@media(max-width:340px){.topbar .portal-back span{display:none}}';
   var st = document.createElement("style");
   st.textContent = css;
   document.head.appendChild(st);
@@ -106,10 +120,10 @@
       : '';
     var box;
     if(u){
-      box = '<div class="pn-user">'+svg("user",15)+'<span>'+esc(u.fullname||u.username)+'</span>'+
+      box = '<div class="pn-user" title="'+esc(u.fullname||u.username)+'">'+svg("user",15)+'<span>'+esc(u.fullname||u.username)+'</span>'+
               '<span class="pn-chip" style="background:'+roleColor(u.role)+'">'+roleLabel(u.role)+'</span>'+
             '</div>'+
-            '<button class="pn-logout" onclick="__pnLogout()">'+svg("log-out",15)+'<span>Đăng xuất</span></button>';
+            '<button class="pn-logout" onclick="__pnLogout()" title="Đăng xuất" aria-label="Đăng xuất">'+svg("log-out",15)+'<span>Đăng xuất</span></button>';
     } else {
       box = '<span class="pn-viewer">Chế độ xem</span>' + pnLoginBtn();
     }

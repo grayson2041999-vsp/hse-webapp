@@ -306,6 +306,77 @@
     .dt-grid dd{font-size:13px;white-space:pre-wrap;word-break:break-word;}
     .dt-report{background:#f4fbf6;border:1.5px solid #bfe5cd;border-radius:10px;padding:12px 14px;margin-top:18px;font-size:13px;}
     .dt-rh{display:flex;align-items:center;gap:6px;font-weight:700;color:#0B7A3E;margin-bottom:6px;}
+
+    /* ══ ĐIỆN THOẠI (10/2026) ══════════════════════════════════════
+       Trước đây bảng có các cột rộng cố định (~770px) → cột "Nội dung" bị ép
+       còn 1 chữ (tên chạy dọc), cả trang bị đẩy rộng ~830px nên điện thoại
+       tự thu nhỏ, panel Sửa/Chi tiết bị cắt mất nửa. */
+    .kh-fab{display:none;}
+    .fbar #khSearch{max-width:100%;}
+    .fbar select.inp{max-width:100%;}
+    @media(max-width:1100px){
+      .kpis{grid-template-columns:repeat(3,minmax(0,1fr));}
+    }
+    @media(max-width:768px){
+      .layout{display:block;}
+      .main{min-width:0;padding:72px 12px 96px;}
+      .kh-head{gap:8px;}
+      .kh-head>div:first-child{flex-basis:100%;line-height:1.4;}
+      .kh-add-top{display:none!important;}
+      .q-nav .q-today{padding:0 10px;}
+      /* Thẻ tổng quan 3 × 2 */
+      .kpis{gap:6px;}
+      .kpi{padding:7px 9px;border-top-width:3px;}
+      .kpi .l{font-size:11.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+      .kpi .n{font-size:20px;}
+      .kpi .s{font-size:10.5px;}
+      .fbar .cnt{margin-left:0;flex-basis:100%;}
+      /* Bảng → danh sách thẻ: mỗi công việc là 1 khối */
+      .table-wrap{overflow:visible;}
+      .plan-table,.plan-table tbody{display:block;width:100%;}
+      .plan-table colgroup,.plan-table thead{display:none;}
+      .plan-table tr{display:block;}
+      .plan-table tr.plan-row{display:grid;grid-template-columns:minmax(0,1fr) auto;
+        grid-template-areas:"name act" "st st" "time time" "ct ct" "ph ph";
+        gap:5px 10px;padding:12px 12px 12px 14px;border-bottom:1px solid #e2e8f2;}
+      .plan-table tr.plan-row:last-child{border-bottom:none;}
+      .plan-table tr.plan-row td{display:block;border:none!important;padding:0!important;background:transparent!important;}
+      .plan-table tr.plan-row.late{background:#fdf6f5;box-shadow:inset 3px 0 0 #D32F2F;}
+      .plan-table tr.plan-row:hover{background:#f4f8fd;}
+      .plan-table tr.plan-row.late:hover{background:#fbe9e7;}
+      .plan-table td.c-idx{display:none!important;}
+      .plan-table td.c-name{grid-area:name;}
+      .plan-table td.c-act{grid-area:act;}
+      .plan-table td.c-st{grid-area:st;}
+      .plan-table td.c-time{grid-area:time;max-width:340px;}
+      .plan-table td.c-chutri{grid-area:ct;font-size:12px!important;}
+      .plan-table td.c-phoihop{grid-area:ph;}
+      .plan-table td.c-phoihop.c-none{display:none!important;}
+      .plan-table td.c-chutri::before{content:"Chủ trì: ";color:var(--text-light);font-weight:600;}
+      .plan-table td.c-phoihop::before{content:"Phối hợp: ";font-weight:600;}
+      .plan-name{font-size:13.5px;}
+      .name-sub{white-space:normal;}
+      .row-act{gap:6px;}
+      .ic-btn{width:34px;height:34px;}
+      .plan-table td.empty-cell{display:block;}
+      /* Nút "+" nổi để thêm công việc */
+      .kh-fab{display:flex;position:fixed;right:16px;bottom:calc(18px + env(safe-area-inset-bottom));z-index:250;
+        width:54px;height:54px;border-radius:50%;border:none;align-items:center;justify-content:center;
+        background:var(--primary);color:#fff;box-shadow:0 6px 18px rgba(10,63,115,.35);cursor:pointer;}
+      .kh-fab:active{transform:scale(.96);}
+      /* Thông báo: nằm sát đáy bên trái, không đè nút "+" */
+      #toast{left:12px!important;right:84px!important;bottom:calc(24px + env(safe-area-inset-bottom))!important;}
+      /* Panel Sửa / Chi tiết: toàn màn hình, nút Lưu luôn ở đáy */
+      .drawer{width:100%;max-width:100%;animation:none;}
+      .dr-head{padding:12px 14px;}
+      .dr-body{padding:14px 14px 18px;-webkit-overflow-scrolling:touch;}
+      .dr-foot{padding:10px 14px calc(10px + env(safe-area-inset-bottom));flex-wrap:wrap;}
+      .dt-grid{grid-template-columns:96px 1fr;}
+      .modal .modal-footer{flex-wrap:wrap;}
+    }
+    @media(max-width:380px){
+      .fld-row{grid-template-columns:1fr;}
+    }
   </style>
   <link rel="stylesheet" href="assets/flatpickr.min.css">
   <script src="assets/flatpickr.min.js"></script>
@@ -907,15 +978,15 @@ function _timeInner(t){
   return { cls:cls, html:'<div class="tm-d">'+esc(range)+'</div>'+
     '<div class="tm-bar"><i style="width:'+pct+'%"></i></div><div class="tm-l">'+esc(lbl)+'</div>' };
 }
-function _timeCell(t){ var r=_timeInner(t); return '<td class="'+r.cls+'">'+r.html+'</td>'; }
+function _timeCell(t){ var r=_timeInner(t); return '<td class="c-time '+r.cls+'">'+r.html+'</td>'; }
 function _nameCell(t){
   var sub=t.coSo?'<div class="name-sub" title="'+esc(t.coSo)+'">Cơ sở: '+esc(t.coSo)+'</div>':'';
   var note=t.ghiChu?'<div class="name-sub" title="'+esc(t.ghiChu)+'">Ghi chú: '+esc(t.ghiChu)+'</div>':'';
-  return '<td><div class="plan-name">'+esc(t.name)+'</div>'+sub+note+'</td>';
+  return '<td class="c-name"><div class="plan-name">'+esc(t.name)+'</div>'+sub+note+'</td>';
 }
 function _unitCells(t){
-  return '<td style="font-size:12.5px">'+esc(t.chuTri||"—")+'</td>'+
-    '<td style="font-size:12px;color:var(--text-light)">'+(_phStr(t)?esc(_phStr(t)):"—")+'</td>';
+  return '<td class="c-chutri" style="font-size:12.5px">'+esc(t.chuTri||"—")+'</td>'+
+    '<td class="c-phoihop'+(_phStr(t)?'':' c-none')+'" style="font-size:12px;color:var(--text-light)">'+(_phStr(t)?esc(_phStr(t)):"—")+'</td>';
 }
 var ICO_EDIT='<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"/><path d="m15 5 4 4"/></svg>';
 var ICO_OK='<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>';
@@ -998,7 +1069,7 @@ function renderPlan(){
         '<button class="q-today" onclick="goToday()">Quý hiện tại</button>'+
         '<button title="Quý sau" onclick="switchQuarter(1)">&#8250;</button>'+
       '</div>')+
-      (editable?'<button class="btn btn-primary btn-sm" onclick="planAdd(\'oncetime\')">'+IC.plus+' Thêm công việc</button>':'')+
+      (editable?'<button class="btn btn-primary btn-sm kh-add-top" onclick="planAdd(\'oncetime\')">'+IC.plus+' Thêm công việc</button>':'')+
     '</div></div>';
 
   // Thẻ tổng quan
@@ -1047,6 +1118,10 @@ function renderPlan(){
     if(editable) html+='<button class="add-row-btn" style="border-color:#0B7A3E;color:#0B7A3E;background:#f0faf4" onclick="planAdd(\'recurring\')">'+IC.plus+' Thêm công việc định kỳ</button>';
   }
 
+  // Nút tròn "+" nổi ở góc dưới — chỉ hiện trên điện thoại (xem CSS .kh-fab)
+  if(editable) html+='<button type="button" class="kh-fab" onclick="planAdd(\'oncetime\')" title="Thêm công việc có kỳ hạn" aria-label="Thêm công việc có kỳ hạn">'+
+    '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button>';
+
   box.innerHTML=html;
   if(focusSearch){ var s=document.getElementById("khSearch"); if(s){ s.focus(); var L=s.value.length; try{s.setSelectionRange(L,L);}catch(e){} } }
 }
@@ -1055,14 +1130,14 @@ function deadlineViewRow(t,n,editable){
   var st=computeStatus(t);
   var act='';
   if(editable){
-    act='<td><div class="row-act">'+
+    act='<td class="c-act"><div class="row-act">'+
       (st!=="Đã hoàn thành"?'<button class="ic-btn ok" title="Báo cáo hoàn thành" onclick="event.stopPropagation();planComplete(\''+t.id+'\')">'+ICO_OK+'</button>':'')+
       '<button class="ic-btn" title="Sửa" onclick="event.stopPropagation();planEdit(\'oncetime\',\''+t.id+'\')">'+ICO_EDIT+'</button>'+
     '</div></td>';
   }
   return '<tr class="plan-row'+(st==="Trễ hạn"?' late':'')+'" onclick="openDetail(\'oncetime\',\''+t.id+'\')" title="Bấm để xem chi tiết">'+
-    '<td style="color:var(--text-light);font-size:12px">'+n+'</td>'+
-    _nameCell(t)+'<td>'+_stChip(st)+'</td>'+_timeCell(t)+_unitCells(t)+act+'</tr>';
+    '<td class="c-idx" style="color:var(--text-light);font-size:12px">'+n+'</td>'+
+    _nameCell(t)+'<td class="c-st">'+_stChip(st)+'</td>'+_timeCell(t)+_unitCells(t)+act+'</tr>';
 }
 
 /* ---------- ĐỊNH KỲ ---------- */
@@ -1088,17 +1163,17 @@ function nextOccurrence(t){
 }
 function _nextCell(t){
   var nx=nextOccurrence(t);
-  if(!nx) return '<td class="tm-todo"><div class="tm-l">—</div></td>';
+  if(!nx) return '<td class="c-time tm-todo"><div class="tm-l">—</div></td>';
   var n=_days(_today(),nx);
-  return '<td class="'+(n<=SOON_DAYS?"tm-soon":"tm-doing")+'"><div class="tm-d" style="font-weight:600">'+_dmy(nx)+'</div>'+
+  return '<td class="c-time '+(n<=SOON_DAYS?"tm-soon":"tm-doing")+'"><div class="tm-d" style="font-weight:600">'+_dmy(nx)+'</div>'+
     '<div class="tm-l">'+(n===0?"Hôm nay":"Còn "+n+" ngày")+'</div></td>';
 }
 function recurViewRow(t,n,editable){
-  var act=editable?'<td><div class="row-act"><button class="ic-btn" title="Sửa" onclick="event.stopPropagation();planEdit(\'recurring\',\''+t.id+'\')">'+ICO_EDIT+'</button></div></td>':'';
+  var act=editable?'<td class="c-act"><div class="row-act"><button class="ic-btn" title="Sửa" onclick="event.stopPropagation();planEdit(\'recurring\',\''+t.id+'\')">'+ICO_EDIT+'</button></div></td>':'';
   return '<tr class="plan-row" onclick="openDetail(\'recurring\',\''+t.id+'\')" title="Bấm để xem chi tiết">'+
-    '<td style="color:var(--text-light);font-size:12px">'+n+'</td>'+
+    '<td class="c-idx" style="color:var(--text-light);font-size:12px">'+n+'</td>'+
     _nameCell(t)+
-    '<td><span class="badge badge-green" style="font-size:11px;white-space:normal">'+esc(recurTimeStr(t))+'</span></td>'+
+    '<td class="c-st"><span class="badge badge-green" style="font-size:11px;white-space:normal">'+esc(recurTimeStr(t))+'</span></td>'+
     _nextCell(t)+_unitCells(t)+act+'</tr>';
 }
 
